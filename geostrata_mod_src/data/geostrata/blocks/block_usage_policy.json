@@ -1,0 +1,69 @@
+{
+  "policy": "v0_1_block_authority",
+  "rule": "GeoStrata owns underground block selection for ore-bearing and host-rock contexts.",
+  "zones": [
+    {
+      "zone": "cliff_exposure_and_river_cut",
+      "layers": [
+        "upper_sedimentary",
+        "lower_sedimentary",
+        "transition_metamorphic"
+      ],
+      "preferred_blocks": [
+        "minecraft:stone",
+        "minecraft:tuff",
+        "minecraft:calcite",
+        "minecraft:dripstone_block",
+        "minecraft:andesite"
+      ]
+    },
+    {
+      "zone": "shallow_subsurface",
+      "layers": [
+        "upper_sedimentary",
+        "lower_sedimentary",
+        "transition_metamorphic"
+      ],
+      "preferred_blocks": [
+        "minecraft:stone",
+        "minecraft:tuff",
+        "minecraft:andesite",
+        "minecraft:granite",
+        "minecraft:diorite"
+      ]
+    },
+    {
+      "zone": "ore_bearing_zone",
+      "layers": [
+        "lower_sedimentary",
+        "transition_metamorphic",
+        "basement_upper"
+      ],
+      "preferred_blocks": [
+        "minecraft:tuff",
+        "minecraft:andesite",
+        "minecraft:granite",
+        "minecraft:deepslate",
+        "minecraft:stone"
+      ]
+    },
+    {
+      "zone": "deep_basement",
+      "layers": [
+        "basement_upper",
+        "basement_deep"
+      ],
+      "preferred_blocks": [
+        "minecraft:deepslate",
+        "minecraft:tuff"
+      ]
+    }
+  ],
+  "fallback": {
+    "block_pool": [
+      "minecraft:stone",
+      "minecraft:deepslate"
+    ],
+    "notes": "Fallback blocks remain for compatibility and migration safety."
+  }
+}

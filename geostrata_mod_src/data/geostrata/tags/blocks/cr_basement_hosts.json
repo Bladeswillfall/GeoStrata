@@ -1,0 +1,9 @@
+{
+  "replace": false,
+  "values": [
+    { "id": "conquest:basalt", "required": false },
+    { "id": "conquest:dark_basalt", "required": false },
+    { "id": "conquest:amphibolite", "required": false },
+    { "id": "conquest:migmatite", "required": false }
+  ]
+}

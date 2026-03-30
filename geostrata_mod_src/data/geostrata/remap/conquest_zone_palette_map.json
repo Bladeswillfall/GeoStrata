@@ -1,0 +1,42 @@
+{
+  "profile": "conquest_zone_palette_v0_1",
+  "enabled_when_mod_loaded": "conquest_reforged",
+  "zone_palettes": [
+    {
+      "zone": "cliff_exposure_and_river_cut",
+      "preferred_tag": "#geostrata:cr_cliff_exposure_palette",
+      "fallback_blocks": [
+        "minecraft:stone",
+        "minecraft:calcite",
+        "minecraft:dripstone_block"
+      ]
+    },
+    {
+      "zone": "shallow_subsurface",
+      "preferred_tag": "#geostrata:cr_shallow_subsurface_palette",
+      "fallback_blocks": [
+        "minecraft:stone",
+        "minecraft:tuff",
+        "minecraft:andesite"
+      ]
+    },
+    {
+      "zone": "ore_bearing_zone",
+      "preferred_tag": "#geostrata:cr_ore_bearing_palette",
+      "fallback_blocks": [
+        "minecraft:tuff",
+        "minecraft:andesite",
+        "minecraft:granite",
+        "minecraft:deepslate"
+      ]
+    },
+    {
+      "zone": "deep_basement",
+      "preferred_tag": "#geostrata:cr_deep_basement_palette",
+      "fallback_blocks": [
+        "minecraft:deepslate",
+        "minecraft:tuff"
+      ]
+    }
+  ]
+}
