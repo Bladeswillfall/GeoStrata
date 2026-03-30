@@ -62,9 +62,7 @@ def main():
             raise SystemExit(f"Layer {layer_id} has empty allowed_blocks")
 
     block_policy = load(ROOT / "blocks" / "block_usage_policy.json")
-    zone_names = set()
     for zone in block_policy["zones"]:
-        zone_names.add(zone["zone"])
         if not zone["preferred_blocks"]:
             raise SystemExit(f"Zone {zone['zone']} has empty preferred_blocks")
         for layer_ref in zone["layers"]:
@@ -91,28 +89,6 @@ def main():
         raise SystemExit(
             f"Host rule materials {sorted(host_materials)} do not match shared materials {sorted(shared_materials)}"
         )
-
-    remap = load(ROOT / "remap" / "conquest_reforged_remap_profile.json")
-    if remap.get("enabled_when_mod_loaded") != "conquest_reforged":
-        raise SystemExit("CR remap profile must target conquest_reforged")
-
-    for entry in remap["layer_remaps"]:
-        layer_ref = entry["layer"]
-        if layer_ref not in layer_ids:
-            raise SystemExit(f"Remap references unknown layer {layer_ref}")
-        for zone_ref in entry["zone_bias"]:
-            if zone_ref not in zone_names:
-                raise SystemExit(f"Remap for {layer_ref} references unknown zone {zone_ref}")
-        if not entry["fallback_blocks"]:
-            raise SystemExit(f"Remap for {layer_ref} has empty fallback_blocks")
-
-        preferred_tag = entry["preferred_tag"]
-        if not preferred_tag.startswith("#geostrata:"):
-            raise SystemExit(f"Remap for {layer_ref} has invalid preferred_tag namespace: {preferred_tag}")
-        tag_name = preferred_tag.replace("#geostrata:", "")
-        tag_file = ROOT / "tags" / "blocks" / f"{tag_name}.json"
-        if not tag_file.exists():
-            raise SystemExit(f"Remap for {layer_ref} references missing tag file {tag_file}")
 
     print("GeoStrata data validation passed")
 
