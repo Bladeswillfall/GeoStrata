@@ -1,0 +1,9 @@
+{
+  "replace": false,
+  "values": [
+    { "id": "conquest:gneiss", "required": false },
+    { "id": "conquest:schist", "required": false },
+    { "id": "conquest:slate", "required": false },
+    { "id": "conquest:quartzite", "required": false }
+  ]
+}
