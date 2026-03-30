@@ -7,11 +7,20 @@ This folder contains the source files for a Fabric mod metadata + data bundle ta
 - Declares a loadable Fabric mod id: `geostrata`.
 - Ships versioned JSON tables for:
   - Default overworld geology slice layering.
+  - Underground layer ranges and allowed host block pools.
+  - Zone-based underground block usage policy (what blocks are valid and where).
+  - Ore host-rock rules by material.
   - Ore grade schema (`poor`, `medium`, `rich`, `massive`) with yield/XP multipliers.
   - Material authority split (`shared` vs `distinct`) with canonical item family mapping.
   - Controlled ore families and the native worldgen IDs intended for suppression.
   - Per-material deposit profiles for coal, iron, copper, and gold.
   - Optional material activation metadata (currently Create zinc).
+
+## Underground generation scope in v0.1
+
+- GeoStrata defines lithology layers and host block pools for the underground.
+- GeoStrata defines which ore materials are valid in which layers/host blocks.
+- GeoStrata **does not** alter cave carvers, cave features, or cave decoration in this stage.
 
 ## What it does not do yet
 
