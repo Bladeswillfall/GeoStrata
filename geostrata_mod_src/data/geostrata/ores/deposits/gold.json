@@ -1,0 +1,17 @@
+{
+  "material": "gold",
+  "host_context": [
+    "transition_zone",
+    "basement"
+  ],
+  "depth_preference": {
+    "y_min": -56,
+    "y_max": 32
+  },
+  "grade_weights": {
+    "poor": 45,
+    "medium": 30,
+    "rich": 20,
+    "massive": 5
+  }
+}

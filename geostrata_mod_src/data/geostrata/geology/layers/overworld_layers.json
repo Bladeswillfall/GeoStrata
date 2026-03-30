@@ -1,0 +1,76 @@
+{
+  "profile": "overworld_v0_1",
+  "notes": "Subsurface lithology ownership only; this profile does not alter cave carvers or cave feature generation.",
+  "layers": [
+    {
+      "id": "surface_regolith",
+      "y_min": 64,
+      "y_max": 196,
+      "replace_ratio": 0.2,
+      "allowed_blocks": [
+        "minecraft:dirt",
+        "minecraft:coarse_dirt",
+        "minecraft:gravel",
+        "minecraft:clay",
+        "minecraft:sand"
+      ]
+    },
+    {
+      "id": "upper_sedimentary",
+      "y_min": 28,
+      "y_max": 96,
+      "replace_ratio": 0.75,
+      "allowed_blocks": [
+        "minecraft:stone",
+        "minecraft:tuff",
+        "minecraft:dripstone_block",
+        "minecraft:calcite"
+      ]
+    },
+    {
+      "id": "lower_sedimentary",
+      "y_min": 0,
+      "y_max": 40,
+      "replace_ratio": 0.85,
+      "allowed_blocks": [
+        "minecraft:stone",
+        "minecraft:tuff",
+        "minecraft:andesite",
+        "minecraft:dripstone_block"
+      ]
+    },
+    {
+      "id": "transition_metamorphic",
+      "y_min": -24,
+      "y_max": 16,
+      "replace_ratio": 0.9,
+      "allowed_blocks": [
+        "minecraft:andesite",
+        "minecraft:granite",
+        "minecraft:diorite",
+        "minecraft:tuff"
+      ]
+    },
+    {
+      "id": "basement_upper",
+      "y_min": -48,
+      "y_max": -8,
+      "replace_ratio": 0.95,
+      "allowed_blocks": [
+        "minecraft:deepslate",
+        "minecraft:tuff",
+        "minecraft:andesite"
+      ]
+    },
+    {
+      "id": "basement_deep",
+      "y_min": -64,
+      "y_max": -32,
+      "replace_ratio": 1.0,
+      "allowed_blocks": [
+        "minecraft:deepslate",
+        "minecraft:tuff"
+      ]
+    }
+  ]
+}
