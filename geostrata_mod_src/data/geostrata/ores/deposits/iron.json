@@ -1,0 +1,17 @@
+{
+  "material": "iron",
+  "host_context": [
+    "sedimentary_cover",
+    "transition_zone"
+  ],
+  "depth_preference": {
+    "y_min": -32,
+    "y_max": 96
+  },
+  "grade_weights": {
+    "poor": 40,
+    "medium": 35,
+    "rich": 20,
+    "massive": 5
+  }
+}

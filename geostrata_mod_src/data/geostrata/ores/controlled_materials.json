@@ -1,0 +1,34 @@
+{
+  "authoritative_overworld_materials": [
+    {
+      "material": "coal",
+      "suppress_native_worldgen": [
+        "minecraft:ore_coal_upper",
+        "minecraft:ore_coal_lower"
+      ]
+    },
+    {
+      "material": "iron",
+      "suppress_native_worldgen": [
+        "minecraft:ore_iron_upper",
+        "minecraft:ore_iron_middle",
+        "minecraft:ore_iron_small"
+      ]
+    },
+    {
+      "material": "copper",
+      "suppress_native_worldgen": [
+        "minecraft:ore_copper",
+        "minecraft:ore_copper_large"
+      ]
+    },
+    {
+      "material": "gold",
+      "suppress_native_worldgen": [
+        "minecraft:ore_gold",
+        "minecraft:ore_gold_lower",
+        "minecraft:ore_gold_extra"
+      ]
+    }
+  ]
+}
