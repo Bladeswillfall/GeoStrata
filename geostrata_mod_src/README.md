@@ -9,8 +9,6 @@ This folder contains the source files for a Fabric mod metadata + data bundle ta
   - Default overworld geology slice layering.
   - Underground layer ranges and allowed host block pools.
   - Zone-based underground block usage policy (what blocks are valid and where).
-  - Conquest Reforged remap profile by layer/zone with safe fallback pools.
-  - Conquest zone-palette map and material texture-channel map for ore grade visuals.
   - Ore host-rock rules by material.
   - Ore grade schema (`poor`, `medium`, `rich`, `massive`) with yield/XP multipliers.
   - Material authority split (`shared` vs `distinct`) with canonical item family mapping.
@@ -23,7 +21,6 @@ This folder contains the source files for a Fabric mod metadata + data bundle ta
 - GeoStrata defines lithology layers and host block pools for the underground.
 - GeoStrata defines which ore materials are valid in which layers/host blocks.
 - GeoStrata **does not** alter cave carvers, cave features, or cave decoration in this stage.
-- CR remapping uses optional tags (`required: false`) so missing CR block IDs safely fall back to vanilla host blocks.
 
 ## What it does not do yet
 

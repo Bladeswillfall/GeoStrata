@@ -62,9 +62,7 @@ def main():
             raise SystemExit(f"Layer {layer_id} has empty allowed_blocks")
 
     block_policy = load(ROOT / "blocks" / "block_usage_policy.json")
-    zone_names = set()
     for zone in block_policy["zones"]:
-        zone_names.add(zone["zone"])
         if not zone["preferred_blocks"]:
             raise SystemExit(f"Zone {zone['zone']} has empty preferred_blocks")
         for layer_ref in zone["layers"]:
@@ -90,64 +88,6 @@ def main():
     if host_materials != shared_materials:
         raise SystemExit(
             f"Host rule materials {sorted(host_materials)} do not match shared materials {sorted(shared_materials)}"
-        )
-
-    remap = load(ROOT / "remap" / "conquest_reforged_remap_profile.json")
-    if remap.get("enabled_when_mod_loaded") != "conquest_reforged":
-        raise SystemExit("CR remap profile must target conquest_reforged")
-
-    for entry in remap["layer_remaps"]:
-        layer_ref = entry["layer"]
-        if layer_ref not in layer_ids:
-            raise SystemExit(f"Remap references unknown layer {layer_ref}")
-        for zone_ref in entry["zone_bias"]:
-            if zone_ref not in zone_names:
-                raise SystemExit(f"Remap for {layer_ref} references unknown zone {zone_ref}")
-        if not entry["fallback_blocks"]:
-            raise SystemExit(f"Remap for {layer_ref} has empty fallback_blocks")
-
-        preferred_tag = entry["preferred_tag"]
-        if not preferred_tag.startswith("#geostrata:"):
-            raise SystemExit(f"Remap for {layer_ref} has invalid preferred_tag namespace: {preferred_tag}")
-        tag_name = preferred_tag.replace("#geostrata:", "")
-        tag_file = ROOT / "tags" / "blocks" / f"{tag_name}.json"
-        if not tag_file.exists():
-            raise SystemExit(f"Remap for {layer_ref} references missing tag file {tag_file}")
-
-    zone_palette = load(ROOT / "remap" / "conquest_zone_palette_map.json")
-    if zone_palette.get("enabled_when_mod_loaded") != "conquest_reforged":
-        raise SystemExit("Zone palette map must target conquest_reforged")
-    for entry in zone_palette["zone_palettes"]:
-        zone = entry["zone"]
-        if zone not in zone_names:
-            raise SystemExit(f"Zone palette references unknown zone {zone}")
-        preferred_tag = entry["preferred_tag"]
-        if not preferred_tag.startswith("#geostrata:"):
-            raise SystemExit(f"Zone palette {zone} has invalid preferred_tag namespace: {preferred_tag}")
-        tag_name = preferred_tag.replace("#geostrata:", "")
-        tag_file = ROOT / "tags" / "blocks" / f"{tag_name}.json"
-        if not tag_file.exists():
-            raise SystemExit(f"Zone palette {zone} references missing tag file {tag_file}")
-        if not entry["fallback_blocks"]:
-            raise SystemExit(f"Zone palette {zone} has empty fallback_blocks")
-
-    texture_channels = load(ROOT / "remap" / "conquest_material_texture_channels.json")
-    if texture_channels.get("enabled_when_mod_loaded") != "conquest_reforged":
-        raise SystemExit("Material texture channels must target conquest_reforged")
-
-    texture_materials = set()
-    for entry in texture_channels["materials"]:
-        mat = entry["material"]
-        texture_materials.add(mat)
-        if mat not in shared_materials:
-            raise SystemExit(f"Texture channel material {mat} is not a shared material")
-        grades = set(entry["grade_texture_sets"].keys())
-        if grades != allowed_grades:
-            raise SystemExit(f"Texture channel grades for {mat} mismatch: {sorted(grades)}")
-
-    if texture_materials != shared_materials:
-        raise SystemExit(
-            f"Texture channel materials {sorted(texture_materials)} do not match shared materials {sorted(shared_materials)}"
         )
 
     print("GeoStrata data validation passed")
