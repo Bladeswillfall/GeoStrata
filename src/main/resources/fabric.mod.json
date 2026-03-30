@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "id": "geostrata",
+  "version": "${version}",
+  "name": "GeoStrata",
+  "description": "GeoStrata v0.1 bootstrap integration layer for a geology-first 1.20.1 Fabric pack.",
+  "authors": [
+    "GeoStrata Pack"
+  ],
+  "license": "All-Rights-Reserved",
+  "environment": "*",
+  "depends": {
+    "fabricloader": ">=0.15.0",
+    "minecraft": "1.20.1",
+    "java": ">=17"
+  },
+  "custom": {
+    "geostrata_stage": "v0.1",
+    "geostrata_scope": "pack-integration-bootstrap"
+  }
+}
