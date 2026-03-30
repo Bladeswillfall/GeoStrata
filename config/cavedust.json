@@ -8,7 +8,7 @@
   "superFlatStatus": false,
   "upperLimit": 64.0,
   "lowerLimit": -64.0,
-  "particleMultiplier": 1,
+  "particleMultiplier": 5,
   "particleMultiplierMultiplier": 10,
   "particleID": 80
 }
