@@ -1,0 +1,14 @@
+logs/
+crash-reports/
+*.log
+mods/
+resourcepacks/
+shaderpacks/
+saves/
+screenshots/
+backups/
+downloads/
+*.sqlite
+states-pls.txt
+usercache.json
+usernamecache.json
