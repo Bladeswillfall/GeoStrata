@@ -1,4 +1,3 @@
-
 #.
 #The Backbone of Create
 [infrastructure]
@@ -8,7 +7,6 @@
 	#These packets help animations to be more accurate when tps is below 20.
 	#Range: > 5
 	tickrateSyncTimer = 20
-
 #.
 #Packmakers' control panel for internal recipe compat
 [recipes]
@@ -60,7 +58,6 @@
 	#.
 	#Display vanilla Log-stripping interactions in JEI.
 	displayLogStrippingRecipes = true
-
 #.
 #Parameters and abilities of Create's kinetic mechanisms
 [kinetics]
@@ -134,7 +131,6 @@
 		#Maximum distance in blocks from where Fans can pull entities.
 		#Range: > 5
 		fanPullDistance = 20
-
 	#.
 	#Moving Contraptions
 	[kinetics.contraptions]
@@ -207,7 +203,6 @@
 		#Maximum allowed distance of two coupled minecarts.
 		#Range: > 1
 		maxCartCouplingLength = 32
-
 	#.
 	#Configure speed/capacity levels for requirements and indicators.
 	[kinetics.stats]
@@ -241,13 +236,10 @@
 		#Minimum added Capacity by sources to be considered 'high'
 		#Range: 0.0 ~ 65535.0
 		highCapacity = 1024.0
-
 	[kinetics.stressValues]
-
 		#.
 		#Fine tune the kinetic stats of individual components
 		[kinetics.stressValues.v2]
-
 			#.
 			#.
 			#[in Stress Units]
@@ -299,7 +291,6 @@
 				speedometer = 0.0
 				millstone = 4.0
 				shaft = 0.0
-
 			#.
 			#[in Stress Units]
 			#Configure how much stress a source can accommodate for.
@@ -311,7 +302,6 @@
 				windmill_bearing = 512.0
 				steam_engine = 1024.0
 				water_wheel = 32.0
-
 #.
 #Create's liquid manipulation tools
 [fluids]
@@ -355,7 +345,6 @@
 	#.
 	#Whether hose pulleys should be allowed to place fluid sources.
 	fluidFillPlaceFluidSourceBlocks = true
-
 #.
 #Tweaks for logistical components
 [logistics]
@@ -391,7 +380,6 @@
 	#Maximum possible distance in blocks between data gatherers and their target.
 	#Range: > 1
 	displayLinkRange = 64
-
 #.
 #Everything related to Schematic tools
 [schematics]
@@ -429,7 +417,6 @@
 		#Amount of blocks a Schematicannon can print per Gunpowder item provided.
 		#Range: > 1
 		schematicannonShotsPerGunpowder = 400
-
 #.
 #Equipment and gadgets added by Create
 [equipment]
@@ -465,7 +452,6 @@
 	#Amount of free Potato Cannon shots provided by one filled Copper Backtank. Set to 0 makes Potato Cannons unbreakable
 	#Range: > 0
 	maxPotatoCannonShots = 200
-
 #.
 #Create's builtin Railway systems
 [trains]
@@ -508,7 +494,6 @@
 		#The acceleration of powered Trains.
 		#Range: 0.0 ~ 3.4028234663852886E38
 		poweredTrainAcceleration = 3.0
-
 	#.
 	#Standard Trains
 	[trains.trainStats]
@@ -527,4 +512,3 @@
 		#The top speed of any assembled Train.
 		#Range: 0.0 ~ 3.4028234663852886E38
 		trainTopSpeed = 28.0
-

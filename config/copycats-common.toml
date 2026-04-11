@@ -41,7 +41,6 @@ disableMigration = false
 	copycat_beam = true
 	copycat_door = true
 	copycat_slab = true
-
 #.
 #Enable/disable categories of features. Disabling a category hides all related features. Values on server override clients
 [feature_categories]
@@ -64,4 +63,3 @@ disableMigration = false
 	#.
 	#All copycats that support multiple materials in a single block
 	multistates = true
-
