@@ -1,0 +1,10 @@
+{
+  "profile": "replacement_priority_v0_1",
+  "priority": [
+    "geostrata:grade_marked_ore_host",
+    "geostrata:host_rock",
+    "geostrata:fallback_rock",
+    "minecraft:world_feature_replacement"
+  ],
+  "notes": "Data contract for future runtime patching; higher index may overwrite lower index only if explicitly allowed by guardrails."
+}

@@ -1,0 +1,42 @@
+{
+  "profile": "overwrite_guardrails_v0_1",
+  "scope": "block_replacement_priority",
+  "rules": [
+    {
+      "id": "preserve_grade_hosts",
+      "applies_to": [
+        "ore_bearing_zone",
+        "deep_basement"
+      ],
+      "target_layers": [
+        "lower_sedimentary",
+        "transition_metamorphic",
+        "basement_upper",
+        "basement_deep"
+      ],
+      "replacement_policy": "deny_non_geostrata_replacement"
+    },
+    {
+      "id": "allow_surface_rework",
+      "applies_to": [
+        "cliff_exposure_and_river_cut",
+        "shallow_subsurface"
+      ],
+      "target_layers": [
+        "upper_sedimentary",
+        "lower_sedimentary"
+      ],
+      "replacement_policy": "allow_if_no_ore_grade_marker"
+    }
+  ],
+  "special_cases": {
+    "sculk_spread": {
+      "policy": "allow_with_constraints",
+      "disallow_on_tag": "#geostrata:protected_host_rock",
+      "allow_on_fallback": [
+        "minecraft:stone",
+        "minecraft:deepslate"
+      ]
+    }
+  }
+}

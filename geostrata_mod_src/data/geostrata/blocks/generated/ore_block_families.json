@@ -1,0 +1,59 @@
+{
+  "profile": "ore_block_families_v0_1",
+  "naming_pattern": "geostrata:{material}_{grade}_{host_family}",
+  "materials": [
+    {
+      "material": "coal",
+      "host_families": [
+        "sedimentary",
+        "metamorphic"
+      ],
+      "grades": [
+        "poor",
+        "medium",
+        "rich",
+        "massive"
+      ]
+    },
+    {
+      "material": "iron",
+      "host_families": [
+        "sedimentary",
+        "metamorphic",
+        "basement"
+      ],
+      "grades": [
+        "poor",
+        "medium",
+        "rich",
+        "massive"
+      ]
+    },
+    {
+      "material": "copper",
+      "host_families": [
+        "sedimentary",
+        "metamorphic"
+      ],
+      "grades": [
+        "poor",
+        "medium",
+        "rich",
+        "massive"
+      ]
+    },
+    {
+      "material": "gold",
+      "host_families": [
+        "metamorphic",
+        "basement"
+      ],
+      "grades": [
+        "poor",
+        "medium",
+        "rich",
+        "massive"
+      ]
+    }
+  ]
+}
