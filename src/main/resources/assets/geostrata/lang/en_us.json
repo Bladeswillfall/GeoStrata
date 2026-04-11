@@ -1,0 +1,8 @@
+{
+  "block.geostrata.limestone": "Limestone",
+  "block.geostrata.shale": "Shale",
+  "block.geostrata.clay_loam": "Clay Loam",
+  "block.geostrata.compacted_mud": "Compacted Mud",
+  "modmenu.nameTranslation.geostrata": "GeoStrata",
+  "modmenu.descriptionTranslation.geostrata": "Runtime geology block pass with placeholder textures and tags."
+}
