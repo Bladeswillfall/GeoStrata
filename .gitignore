@@ -13,4 +13,6 @@ states-pls.txt
 usercache.json
 usernamecache.json
 
+.gradle/
+build/
 artifacts/*.jar

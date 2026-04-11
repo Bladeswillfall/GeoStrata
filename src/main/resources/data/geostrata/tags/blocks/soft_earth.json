@@ -1,0 +1,7 @@
+{
+  "replace": false,
+  "values": [
+    "geostrata:clay_loam",
+    "geostrata:compacted_mud"
+  ]
+}
