@@ -1,5 +1,5 @@
 plugins {
-    id 'fabric-loom' version '1.6-SNAPSHOT'
+    id 'fabric-loom' version '1.16-SNAPSHOT'
     id 'maven-publish'
 }
 
@@ -12,6 +12,7 @@ base {
 
 repositories {
     maven {
+        name = 'Fabric'
         url = 'https://maven.fabricmc.net/'
     }
     mavenCentral()
@@ -40,4 +41,10 @@ java {
     sourceCompatibility = JavaVersion.VERSION_17
     targetCompatibility = JavaVersion.VERSION_17
     withSourcesJar()
+}
+
+jar {
+    from('LICENSE') {
+        rename { "${it}_${base.archivesName.get()}" }
+    }
 }
