@@ -1,7 +1,1 @@
-{
-  "replace": false,
-  "values": [
-    "geostrata:clay_loam",
-    "geostrata:compacted_mud"
-  ]
-}
+{"replace":false,"values":["geostrata:clay_loam","geostrata:sandy_loam","geostrata:silty_loam","geostrata:peat_soil","geostrata:wet_mud","geostrata:compacted_mud","geostrata:blue_clay","geostrata:red_clay"]}

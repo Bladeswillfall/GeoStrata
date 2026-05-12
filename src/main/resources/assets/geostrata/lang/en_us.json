@@ -1,8 +1,26 @@
 {
   "block.geostrata.limestone": "Limestone",
+  "block.geostrata.chalk": "Chalk",
   "block.geostrata.shale": "Shale",
+  "block.geostrata.slate": "Slate",
+  "block.geostrata.mudstone": "Mudstone",
+  "block.geostrata.siltstone": "Siltstone",
+  "block.geostrata.marble": "Marble",
+  "block.geostrata.quartzite": "Quartzite",
+  "block.geostrata.schist": "Schist",
+  "block.geostrata.gneiss": "Gneiss",
+  "block.geostrata.basalt": "Basalt",
+  "block.geostrata.rhyolite": "Rhyolite",
+  "block.geostrata.conglomerate": "Conglomerate",
+  "block.geostrata.breccia": "Breccia",
   "block.geostrata.clay_loam": "Clay Loam",
+  "block.geostrata.sandy_loam": "Sandy Loam",
+  "block.geostrata.silty_loam": "Silty Loam",
+  "block.geostrata.peat_soil": "Peat Soil",
+  "block.geostrata.wet_mud": "Wet Mud",
   "block.geostrata.compacted_mud": "Compacted Mud",
+  "block.geostrata.blue_clay": "Blue Clay",
+  "block.geostrata.red_clay": "Red Clay",
   "modmenu.nameTranslation.geostrata": "GeoStrata",
-  "modmenu.descriptionTranslation.geostrata": "Runtime geology block pass with placeholder textures and tags."
+  "modmenu.descriptionTranslation.geostrata": "Runtime geology block catalog with placeholder textures and data-driven compatibility hooks."
 }
