@@ -1,7 +1,1 @@
-{
-  "variants": {
-    "": {
-      "model": "geostrata:block/clay_loam"
-    }
-  }
-}
+{"variants":{"":{"model":"geostrata:block/clay_loam"}}}

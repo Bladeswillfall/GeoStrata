@@ -1,7 +1,1 @@
-{
-  "variants": {
-    "": {
-      "model": "geostrata:block/compacted_mud"
-    }
-  }
-}
+{"variants":{"":{"model":"geostrata:block/compacted_mud"}}}

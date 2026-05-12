@@ -18,32 +18,29 @@ public final class GeoStrataBlocks {
     private static final List<Block> ROCK_BLOCKS = new ArrayList<>();
     private static final List<Block> EARTH_BLOCKS = new ArrayList<>();
 
-    public static final Block LIMESTONE = registerRock(
-            "limestone",
-            AbstractBlock.Settings.copy(Blocks.STONE)
-                    .strength(1.5F, 6.0F)
-                    .sounds(BlockSoundGroup.STONE)
-                    .requiresTool()
-    );
-    public static final Block SHALE = registerRock(
-            "shale",
-            AbstractBlock.Settings.copy(Blocks.TUFF)
-                    .strength(1.4F, 6.0F)
-                    .sounds(BlockSoundGroup.TUFF)
-                    .requiresTool()
-    );
-    public static final Block CLAY_LOAM = registerEarth(
-            "clay_loam",
-            AbstractBlock.Settings.copy(Blocks.DIRT)
-                    .strength(0.6F)
-                    .sounds(BlockSoundGroup.ROOTED_DIRT)
-    );
-    public static final Block COMPACTED_MUD = registerEarth(
-            "compacted_mud",
-            AbstractBlock.Settings.copy(Blocks.MUD)
-                    .strength(0.7F)
-                    .sounds(BlockSoundGroup.MUD)
-    );
+    public static final Block LIMESTONE = registerRock("limestone", rock(Blocks.STONE, 1.5F, BlockSoundGroup.STONE));
+    public static final Block CHALK = registerRock("chalk", rock(Blocks.CALCITE, 1.0F, BlockSoundGroup.CALCITE));
+    public static final Block SHALE = registerRock("shale", rock(Blocks.TUFF, 1.4F, BlockSoundGroup.TUFF));
+    public static final Block SLATE = registerRock("slate", rock(Blocks.DEEPSLATE, 2.8F, BlockSoundGroup.DEEPSLATE));
+    public static final Block MUDSTONE = registerRock("mudstone", rock(Blocks.STONE, 1.3F, BlockSoundGroup.STONE));
+    public static final Block SILTSTONE = registerRock("siltstone", rock(Blocks.SANDSTONE, 1.2F, BlockSoundGroup.STONE));
+    public static final Block MARBLE = registerRock("marble", rock(Blocks.CALCITE, 1.7F, BlockSoundGroup.CALCITE));
+    public static final Block QUARTZITE = registerRock("quartzite", rock(Blocks.SMOOTH_QUARTZ, 2.0F, BlockSoundGroup.STONE));
+    public static final Block SCHIST = registerRock("schist", rock(Blocks.TUFF, 1.8F, BlockSoundGroup.TUFF));
+    public static final Block GNEISS = registerRock("gneiss", rock(Blocks.GRANITE, 1.9F, BlockSoundGroup.STONE));
+    public static final Block BASALT = registerRock("basalt", rock(Blocks.BASALT, 2.0F, BlockSoundGroup.BASALT));
+    public static final Block RHYOLITE = registerRock("rhyolite", rock(Blocks.GRANITE, 1.7F, BlockSoundGroup.STONE));
+    public static final Block CONGLOMERATE = registerRock("conglomerate", rock(Blocks.COBBLESTONE, 1.6F, BlockSoundGroup.STONE));
+    public static final Block BRECCIA = registerRock("breccia", rock(Blocks.COBBLESTONE, 1.7F, BlockSoundGroup.STONE));
+
+    public static final Block CLAY_LOAM = registerEarth("clay_loam", earth(Blocks.DIRT, 0.6F, BlockSoundGroup.ROOTED_DIRT));
+    public static final Block SANDY_LOAM = registerEarth("sandy_loam", earth(Blocks.COARSE_DIRT, 0.55F, BlockSoundGroup.GRAVEL));
+    public static final Block SILTY_LOAM = registerEarth("silty_loam", earth(Blocks.DIRT, 0.55F, BlockSoundGroup.ROOTED_DIRT));
+    public static final Block PEAT_SOIL = registerEarth("peat_soil", earth(Blocks.PODZOL, 0.45F, BlockSoundGroup.ROOTED_DIRT));
+    public static final Block WET_MUD = registerEarth("wet_mud", earth(Blocks.MUD, 0.45F, BlockSoundGroup.MUD));
+    public static final Block COMPACTED_MUD = registerEarth("compacted_mud", earth(Blocks.MUD, 0.7F, BlockSoundGroup.MUD));
+    public static final Block BLUE_CLAY = registerEarth("blue_clay", earth(Blocks.CLAY, 0.6F, BlockSoundGroup.GRAVEL));
+    public static final Block RED_CLAY = registerEarth("red_clay", earth(Blocks.CLAY, 0.6F, BlockSoundGroup.GRAVEL));
 
     private GeoStrataBlocks() {
     }
@@ -55,7 +52,7 @@ public final class GeoStrataBlocks {
             EARTH_BLOCKS.forEach(entries::add);
         });
         GeoStrata.LOGGER.info(
-                "Registered {} rock blocks and {} earth blocks for the placeholder runtime pass",
+                "Registered {} rock blocks and {} earth blocks for the normal Fabric Loom runtime catalog",
                 ROCK_BLOCKS.size(),
                 EARTH_BLOCKS.size()
         );
@@ -63,6 +60,19 @@ public final class GeoStrataBlocks {
 
     public static int count() {
         return ROCK_BLOCKS.size() + EARTH_BLOCKS.size();
+    }
+
+    private static AbstractBlock.Settings rock(Block base, float hardness, BlockSoundGroup soundGroup) {
+        return AbstractBlock.Settings.copy(base)
+                .strength(hardness, 6.0F)
+                .sounds(soundGroup)
+                .requiresTool();
+    }
+
+    private static AbstractBlock.Settings earth(Block base, float hardness, BlockSoundGroup soundGroup) {
+        return AbstractBlock.Settings.copy(base)
+                .strength(hardness)
+                .sounds(soundGroup);
     }
 
     private static Block registerRock(String name, AbstractBlock.Settings settings) {
