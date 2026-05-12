@@ -62,6 +62,21 @@ public final class GeoStrataBlocks {
         return ROCK_BLOCKS.size() + EARTH_BLOCKS.size();
     }
 
+    public static List<Block> allBlocks() {
+        List<Block> blocks = new ArrayList<>(ROCK_BLOCKS.size() + EARTH_BLOCKS.size());
+        blocks.addAll(ROCK_BLOCKS);
+        blocks.addAll(EARTH_BLOCKS);
+        return List.copyOf(blocks);
+    }
+
+    public static List<Block> rockBlocks() {
+        return List.copyOf(ROCK_BLOCKS);
+    }
+
+    public static List<Block> earthBlocks() {
+        return List.copyOf(EARTH_BLOCKS);
+    }
+
     private static AbstractBlock.Settings rock(Block base, float hardness, BlockSoundGroup soundGroup) {
         return AbstractBlock.Settings.copy(base)
                 .strength(hardness, 6.0F)
