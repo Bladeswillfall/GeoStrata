@@ -19,6 +19,11 @@ jobs:
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
         with:
-          gradle-version: 8.7
+          gradle-version: 9.4.0
       - name: Build
         run: gradle build --stacktrace
+      - name: Upload built jars
+        uses: actions/upload-artifact@v4
+        with:
+          name: geostrata-jars
+          path: build/libs/*.jar
