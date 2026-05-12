@@ -1,7 +1,1 @@
-{
-  "variants": {
-    "": {
-      "model": "geostrata:block/shale"
-    }
-  }
-}
+{"variants":{"":{"model":"geostrata:block/shale"}}}

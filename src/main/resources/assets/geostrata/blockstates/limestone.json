@@ -1,7 +1,1 @@
-{
-  "variants": {
-    "": {
-      "model": "geostrata:block/limestone"
-    }
-  }
-}
+{"variants":{"":{"model":"geostrata:block/limestone"}}}
