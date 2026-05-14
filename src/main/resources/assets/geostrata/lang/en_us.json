@@ -23,5 +23,8 @@
   "block.geostrata.blue_clay": "Blue Clay",
   "block.geostrata.red_clay": "Red Clay",
   "modmenu.nameTranslation.geostrata": "GeoStrata",
-  "modmenu.descriptionTranslation.geostrata": "Runtime geology block catalog with placeholder textures and data-driven compatibility hooks."
+  "modmenu.descriptionTranslation.geostrata": "Runtime geology block catalog with placeholder textures and data-driven compatibility hooks.",
+  "block.geostrata.limestone_stairs": "Limestone Stairs",
+  "block.geostrata.limestone_slab": "Limestone Slab",
+  "block.geostrata.limestone_wall": "Limestone Wall"
 }
