@@ -2,6 +2,7 @@ package com.geostrata;
 
 import com.geostrata.block.GeoStrataBlocks;
 import com.geostrata.item.GeoStrataItemGroups;
+import com.geostrata.worldgen.GeoStrataWorldgen;
 import net.fabricmc.api.ModInitializer;
 import net.minecraft.util.Identifier;
 import org.slf4j.Logger;
@@ -15,7 +16,8 @@ public final class GeoStrata implements ModInitializer {
     public void onInitialize() {
         GeoStrataBlocks.register();
         GeoStrataItemGroups.register();
-        LOGGER.info("GeoStrata registered {} placeholder runtime blocks", GeoStrataBlocks.count());
+        GeoStrataWorldgen.register();
+        LOGGER.info("GeoStrata registered {} placeholder runtime blocks with baseline overworld generation", GeoStrataBlocks.count());
     }
 
     public static Identifier id(String path) {
