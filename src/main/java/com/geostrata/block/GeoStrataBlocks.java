@@ -7,6 +7,9 @@ import net.fabricmc.fabric.api.itemgroup.v1.ItemGroupEvents;
 import net.minecraft.block.AbstractBlock;
 import net.minecraft.block.Block;
 import net.minecraft.block.Blocks;
+import net.minecraft.block.SlabBlock;
+import net.minecraft.block.StairsBlock;
+import net.minecraft.block.WallBlock;
 import net.minecraft.item.BlockItem;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemGroups;
@@ -32,6 +35,10 @@ public final class GeoStrataBlocks {
     public static final Block RHYOLITE = registerRock("rhyolite", rock(Blocks.GRANITE, 1.7F, BlockSoundGroup.STONE));
     public static final Block CONGLOMERATE = registerRock("conglomerate", rock(Blocks.COBBLESTONE, 1.6F, BlockSoundGroup.STONE));
     public static final Block BRECCIA = registerRock("breccia", rock(Blocks.COBBLESTONE, 1.7F, BlockSoundGroup.STONE));
+
+    public static final Block LIMESTONE_STAIRS = registerRockVariant("limestone_stairs", new StairsBlock(LIMESTONE.getDefaultState(), rock(Blocks.STONE, 1.5F, BlockSoundGroup.STONE)));
+    public static final Block LIMESTONE_SLAB = registerRockVariant("limestone_slab", new SlabBlock(rock(Blocks.STONE, 1.5F, BlockSoundGroup.STONE)));
+    public static final Block LIMESTONE_WALL = registerRockVariant("limestone_wall", new WallBlock(rock(Blocks.STONE, 1.5F, BlockSoundGroup.STONE)));
 
     public static final Block CLAY_LOAM = registerEarth("clay_loam", earth(Blocks.DIRT, 0.6F, BlockSoundGroup.ROOTED_DIRT));
     public static final Block SANDY_LOAM = registerEarth("sandy_loam", earth(Blocks.COARSE_DIRT, 0.55F, BlockSoundGroup.GRAVEL));
@@ -91,7 +98,11 @@ public final class GeoStrataBlocks {
     }
 
     private static Block registerRock(String name, AbstractBlock.Settings settings) {
-        Block block = register(name, settings);
+        return registerRockVariant(name, new Block(settings));
+    }
+
+    private static Block registerRockVariant(String name, Block block) {
+        block = register(name, block);
         ROCK_BLOCKS.add(block);
         return block;
     }
@@ -103,7 +114,11 @@ public final class GeoStrataBlocks {
     }
 
     private static Block register(String name, AbstractBlock.Settings settings) {
-        Block block = Registry.register(Registries.BLOCK, GeoStrata.id(name), new Block(settings));
+        return register(name, new Block(settings));
+    }
+
+    private static Block register(String name, Block block) {
+        block = Registry.register(Registries.BLOCK, GeoStrata.id(name), block);
         Registry.register(Registries.ITEM, GeoStrata.id(name), new BlockItem(block, new Item.Settings()));
         return block;
     }
