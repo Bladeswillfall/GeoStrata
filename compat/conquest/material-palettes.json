@@ -1,0 +1,173 @@
+{
+  "schemaVersion": 1,
+  "model": "geostrata:conquest_material_palettes",
+  "runtimeStatus": "compatibility_metadata",
+  "targetMod": {
+    "id": "conquest",
+    "baselineVersion": "1.7.0",
+    "referenceCatalog": "compat/conquest/reference/conquest_wp.csv"
+  },
+  "description": "Curated semantic mappings from GeoStrata lithologies to Conquest Reforged material families. This file is outside the core jar and is intended for optional pack/data integrations only.",
+  "roles": {
+    "geology": "Solid Conquest material variants suitable for representing the lithology itself when a Conquest-aware integration is active.",
+    "weathered": "Solid surface/weathering variants suitable near exposed contacts.",
+    "rubble": "Loose rock/debris variants suitable for scree, talus or eroded exposures.",
+    "construction": "Processed architectural material families suitable for geology-aware structures/building palettes, not natural rock replacement."
+  },
+  "lithologies": [
+    {
+      "id": "limestone",
+      "status": "exact",
+      "reason": "Conquest contains a direct limestone family plus natural colour/weathering and loose-rock variants.",
+      "palette": {
+        "geology": ["conquest:limestone", "conquest:gray_limestone", "conquest:pale_limestone"],
+        "weathered": ["conquest:mossy_limestone", "conquest:tan_limestone"],
+        "rubble": ["conquest:limestone_rocks"],
+        "construction": ["conquest:limestone_cobble", "conquest:limestone_brick", "conquest:carved_limestone"]
+      }
+    },
+    {
+      "id": "chalk",
+      "status": "exact",
+      "reason": "Conquest contains direct chalk and layered-chalk materials.",
+      "palette": {
+        "geology": ["conquest:chalk", "conquest:layered_chalk"],
+        "weathered": [],
+        "rubble": [],
+        "construction": []
+      }
+    },
+    {
+      "id": "shale",
+      "status": "exact",
+      "reason": "Conquest contains a direct shale material family.",
+      "palette": {
+        "geology": ["conquest:shale"],
+        "weathered": [],
+        "rubble": [],
+        "construction": []
+      }
+    },
+    {
+      "id": "mudstone",
+      "status": "exact",
+      "reason": "Conquest contains direct mudstone plus a loose-rock exposure variant.",
+      "palette": {
+        "geology": ["conquest:mudstone"],
+        "weathered": [],
+        "rubble": ["conquest:mudstone_rocks"],
+        "construction": []
+      }
+    },
+    {
+      "id": "siltstone",
+      "status": "unmapped",
+      "reason": "The reference catalog contains silty soils but no defensible siltstone rock material; soil is not treated as a rock substitute.",
+      "palette": {
+        "geology": [],
+        "weathered": [],
+        "rubble": [],
+        "construction": []
+      }
+    },
+    {
+      "id": "conglomerate",
+      "status": "unmapped",
+      "reason": "No direct conglomerate material was found in the Conquest 1.7 reference catalog.",
+      "palette": {
+        "geology": [],
+        "weathered": [],
+        "rubble": [],
+        "construction": []
+      }
+    },
+    {
+      "id": "breccia",
+      "status": "unmapped",
+      "reason": "No direct breccia material was found in the Conquest 1.7 reference catalog.",
+      "palette": {
+        "geology": [],
+        "weathered": [],
+        "rubble": [],
+        "construction": []
+      }
+    },
+    {
+      "id": "slate",
+      "status": "exact",
+      "reason": "Conquest contains direct slate, wet-slate and loose slate-rock material families.",
+      "palette": {
+        "geology": ["conquest:slate"],
+        "weathered": ["conquest:wet_slate"],
+        "rubble": ["conquest:slate_rocks"],
+        "construction": ["conquest:slate_mortar_wall"]
+      }
+    },
+    {
+      "id": "marble",
+      "status": "family",
+      "reason": "Conquest represents marble as several named geological/decorative varieties rather than one neutral generic natural block.",
+      "palette": {
+        "geology": ["conquest:carrara_white_marble", "conquest:fior_de_bosco_gray_marble", "conquest:rough_marble"],
+        "weathered": ["conquest:dark_rough_marble"],
+        "rubble": [],
+        "construction": ["conquest:marble_brick", "conquest:marble_column"]
+      }
+    },
+    {
+      "id": "quartzite",
+      "status": "family",
+      "reason": "Conquest provides gray, pink and yellow quartzite families rather than a single generic quartzite block.",
+      "palette": {
+        "geology": ["conquest:gray_quartzite", "conquest:pink_quartzite", "conquest:yellow_quartzite"],
+        "weathered": [],
+        "rubble": [],
+        "construction": []
+      }
+    },
+    {
+      "id": "schist",
+      "status": "partial",
+      "reason": "The catalog has schist debris but no defensible neutral solid schist material; only exposure/rubble use is currently mapped.",
+      "palette": {
+        "geology": [],
+        "weathered": [],
+        "rubble": ["conquest:schist_debris"],
+        "construction": []
+      }
+    },
+    {
+      "id": "gneiss",
+      "status": "exact",
+      "reason": "Conquest contains direct gneiss and eroded-gneiss material families.",
+      "palette": {
+        "geology": ["conquest:gneiss"],
+        "weathered": ["conquest:eroded_gneiss"],
+        "rubble": [],
+        "construction": []
+      }
+    },
+    {
+      "id": "basalt",
+      "status": "family",
+      "reason": "Conquest exposes multiple basalt textures appropriate to flow interiors, porous lava and weathered/columnar surfaces.",
+      "palette": {
+        "geology": ["conquest:smooth_basalt", "conquest:porous_basalt", "conquest:columnal_basalt"],
+        "weathered": ["conquest:weathered_basalt"],
+        "rubble": [],
+        "construction": []
+      }
+    },
+    {
+      "id": "rhyolite",
+      "status": "exact",
+      "reason": "Conquest contains direct rhyolite plus porous and columnar rhyolite variants.",
+      "palette": {
+        "geology": ["conquest:rhyolite", "conquest:porous_rhyolite", "conquest:columnar_rhyolite"],
+        "weathered": [],
+        "rubble": [],
+        "construction": []
+      }
+    }
+  ]
+}
