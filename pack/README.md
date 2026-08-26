@@ -8,7 +8,7 @@ The mod source remains at repository root (`src/`, Gradle files and `src/main/re
 
 - `manifest.json` — CurseForge dependency manifest for the current Fabric 1.20.1 integration environment.
 - `dependencies.json` — human-readable inventory paired to every numeric CurseForge project/file entry in the manifest.
-- `artifact-locks.json` — cryptographic identity for verified integration artifacts that are not yet safely expressible in the active CurseForge manifest; this is metadata only and never a substitute for committing third-party jars.
+- `artifact-locks.json` — cryptographic identity for verified integration jars that cannot yet be represented safely in the active CurseForge manifest.
 - `overrides/config/` — intentionally maintained mod configuration.
 - `overrides/kubejs/` — intentionally maintained KubeJS integration/customization.
 - `instance.png` — development pack icon.
@@ -23,13 +23,13 @@ Run the pack contract check from repository root:
 python3 scripts/validate_pack_manifest.py
 ```
 
-CI runs this before the Java build. `manifest.json` and `dependencies.json` must describe the same active project IDs, file IDs and required flags. `artifact-locks.json` separately records verified binaries whose distribution metadata is still incomplete; pending locks must not masquerade as active manifest entries and must include an exact filename, byte size and SHA-256.
+CI runs this before the Java build. `manifest.json` and `dependencies.json` must describe the same project IDs, file IDs and required flags. Artifact locks are also checked against the active manifest. This makes dependency changes reviewable instead of leaving unexplained numbers in the export.
 
 ## GeoStrata jar
 
 The GeoStrata jar is deliberately **not committed** into this directory. Build it from the repository and inject the resulting release/dev jar into the assembled pack. This keeps the mod source authoritative and avoids binary drift.
 
-Third-party mod jars are likewise not committed merely because a developer supplied or verified one locally. The pack records source metadata and cryptographic identity, then pins a supported distribution source when its identifier is independently verified.
+Third-party mod jars are likewise not committed. A verified artifact may be recorded in `artifact-locks.json` while its distribution pin is unresolved, but a pending lock is not treated as an installed pack dependency.
 
 ## Compatibility rule
 
@@ -37,4 +37,4 @@ A mod being present in this development pack does not make it a GeoStrata core d
 
 Conquest Reforged is explicitly classified as integration content. Fabric API is the only CurseForge project in this pack inventory classified as a GeoStrata core dependency; Fabric Loader is declared separately by the manifest loader entry.
 
-The current manifest was inherited from the previous Conquest-based instance and still needs a dependency-by-dependency freshness/config audit. Its structure is deterministic and now machine-validated, but its current pins should not yet be treated as the final recommended public pack.
+The current pack is a deliberately conservative integration baseline: Conquest has been advanced to the 1.7.0 Fabric line with its required visual-support surface, while unrelated performance/UI pins remain on the previously green 1.20.1 set until they are audited independently.

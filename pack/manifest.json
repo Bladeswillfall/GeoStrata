@@ -11,7 +11,7 @@
   "manifestType": "minecraftModpack",
   "manifestVersion": 1,
   "name": "GeoStrata Development Pack",
-  "version": "0.1.0-dev",
+  "version": "0.2.0-dev",
   "author": "GeoStrata",
   "files": [
     { "projectID": 348521, "fileID": 5729104, "required": true },
@@ -23,6 +23,7 @@
     { "projectID": 308702, "fileID": 5162837, "required": true },
     { "projectID": 568563, "fileID": 6925373, "required": true },
     { "projectID": 844662, "fileID": 6922713, "required": true },
+    { "projectID": 531351, "fileID": 5962874, "required": true },
     { "projectID": 511319, "fileID": 5075462, "required": true },
     { "projectID": 360438, "fileID": 6097158, "required": true },
     { "projectID": 419699, "fileID": 5137936, "required": true },
@@ -38,9 +39,10 @@
     { "projectID": 448233, "fileID": 6780225, "required": true },
     { "projectID": 394468, "fileID": 6260639, "required": true },
     { "projectID": 958094, "fileID": 6933815, "required": true },
+    { "projectID": 563977, "fileID": 7394086, "required": true },
     { "projectID": 619718, "fileID": 5844813, "required": true },
     { "projectID": 459857, "fileID": 4810977, "required": true },
-    { "projectID": 250077, "fileID": 7208296, "required": true }
+    { "projectID": 250077, "fileID": 8702617, "required": true }
   ],
   "overrides": "overrides"
 }
