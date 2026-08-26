@@ -27,6 +27,9 @@ jobs:
       - name: Validate strata lens configs
         run: python3 scripts/validate_strata_lens_configs.py
 
+      - name: Validate Conquest material palettes
+        run: python3 scripts/validate_conquest_palettes.py
+
       - name: Validate optional integration data
         run: python3 scripts/validate_optional_integrations.py
 
