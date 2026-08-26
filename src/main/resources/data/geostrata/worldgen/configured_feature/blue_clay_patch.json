@@ -1,1 +1,18 @@
-{"type":"minecraft:ore","config":{"size":18,"discard_chance_on_air_exposure":0.0,"targets":[{"target":{"predicate_type":"minecraft:block_match","block":"minecraft:clay"},"state":{"Name":"geostrata:blue_clay"}}]}}
+{
+  "type": "minecraft:ore",
+  "config": {
+    "size": 18,
+    "discard_chance_on_air_exposure": 0.0,
+    "targets": [
+      {
+        "target": {
+          "predicate_type": "minecraft:tag_match",
+          "tag": "geostrata:worldgen/clay_replaceables"
+        },
+        "state": {
+          "Name": "geostrata:blue_clay"
+        }
+      }
+    ]
+  }
+}

@@ -1,1 +1,18 @@
-{"type":"minecraft:ore","config":{"size":18,"discard_chance_on_air_exposure":0.0,"targets":[{"target":{"predicate_type":"minecraft:block_match","block":"minecraft:dirt"},"state":{"Name":"geostrata:peat_soil"}}]}}
+{
+  "type": "minecraft:ore",
+  "config": {
+    "size": 18,
+    "discard_chance_on_air_exposure": 0.0,
+    "targets": [
+      {
+        "target": {
+          "predicate_type": "minecraft:tag_match",
+          "tag": "geostrata:worldgen/soil_replaceables"
+        },
+        "state": {
+          "Name": "geostrata:peat_soil"
+        }
+      }
+    ]
+  }
+}
