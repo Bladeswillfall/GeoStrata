@@ -1,0 +1,20 @@
+{
+  "tags": [
+    "geostrata:has_swamp_soils",
+    "minecraft:is_overworld"
+  ],
+  "bed": [
+    "geostrata:wet_mud",
+    "geostrata:peat_soil",
+    "minecraft:mud"
+  ],
+  "waterline": [
+    "geostrata:wet_mud",
+    "minecraft:mud"
+  ],
+  "bank_enabled": false,
+  "waterline_below": 2,
+  "waterline_above": 1,
+  "underwater_noise": 0.25,
+  "above_water_noise": 0.20
+}

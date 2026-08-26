@@ -1,0 +1,22 @@
+{
+  "tags": [
+    "geostrata:has_river_soils",
+    "minecraft:is_overworld"
+  ],
+  "bed": [
+    "geostrata:silty_loam",
+    "geostrata:blue_clay",
+    "minecraft:gravel",
+    "minecraft:gravel"
+  ],
+  "waterline": [
+    "geostrata:silty_loam",
+    "geostrata:blue_clay",
+    "minecraft:gravel"
+  ],
+  "bank_enabled": false,
+  "waterline_below": 2,
+  "waterline_above": 0,
+  "underwater_noise": 0.20,
+  "above_water_noise": 0.12
+}

@@ -24,6 +24,9 @@ jobs:
       - name: Validate province profiles
         run: python3 scripts/validate_province_profiles.py
 
+      - name: Validate optional integration data
+        run: python3 scripts/validate_optional_integrations.py
+
       - name: Set up Java 21 for Gradle and Loom
         uses: actions/setup-java@v4
         with:
