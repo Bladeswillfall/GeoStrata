@@ -1,0 +1,46 @@
+{
+  "minecraft": {
+    "version": "1.20.1",
+    "modLoaders": [
+      {
+        "id": "fabric-0.16.11",
+        "primary": true
+      }
+    ]
+  },
+  "manifestType": "minecraftModpack",
+  "manifestVersion": 1,
+  "name": "GeoStrata Development Pack",
+  "version": "0.1.0-dev",
+  "author": "GeoStrata",
+  "files": [
+    { "projectID": 348521, "fileID": 5729104, "required": true },
+    { "projectID": 521783, "fileID": 4572096, "required": true },
+    { "projectID": 455508, "fileID": 6258195, "required": true },
+    { "projectID": 459496, "fileID": 6237037, "required": true },
+    { "projectID": 374274, "fileID": 4581910, "required": true },
+    { "projectID": 508933, "fileID": 6791186, "required": true },
+    { "projectID": 308702, "fileID": 5162837, "required": true },
+    { "projectID": 568563, "fileID": 6925373, "required": true },
+    { "projectID": 844662, "fileID": 6922713, "required": true },
+    { "projectID": 511319, "fileID": 5075462, "required": true },
+    { "projectID": 360438, "fileID": 6097158, "required": true },
+    { "projectID": 419699, "fileID": 5137936, "required": true },
+    { "projectID": 310111, "fileID": 5846921, "required": true },
+    { "projectID": 686911, "fileID": 6745705, "required": true },
+    { "projectID": 533006, "fileID": 5426907, "required": true },
+    { "projectID": 401648, "fileID": 4863625, "required": true },
+    { "projectID": 835546, "fileID": 5915050, "required": true },
+    { "projectID": 667299, "fileID": 6336639, "required": true },
+    { "projectID": 408209, "fileID": 4761944, "required": true },
+    { "projectID": 306612, "fileID": 5383715, "required": true },
+    { "projectID": 521427, "fileID": 5821272, "required": true },
+    { "projectID": 448233, "fileID": 6780225, "required": true },
+    { "projectID": 394468, "fileID": 6260639, "required": true },
+    { "projectID": 958094, "fileID": 6933815, "required": true },
+    { "projectID": 619718, "fileID": 5844813, "required": true },
+    { "projectID": 459857, "fileID": 4810977, "required": true },
+    { "projectID": 250077, "fileID": 7208296, "required": true }
+  ],
+  "overrides": "overrides"
+}
