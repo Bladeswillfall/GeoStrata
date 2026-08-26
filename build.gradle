@@ -76,8 +76,36 @@ tasks.register('validateWorldgenCompatibilityContracts') {
     }
 }
 
+tasks.register('validateGeologyContactOwnership') {
+    group = 'verification'
+    description = 'Ensures core rock bodies replace only vanilla host stone and never earlier GeoStrata geology.'
+
+    doLast {
+        def tagFile = file('src/main/resources/data/geostrata/tags/blocks/worldgen/base_stone_replaceables.json')
+        if (!tagFile.isFile()) {
+            throw new GradleException("Missing core base-stone replacement tag: ${tagFile}")
+        }
+
+        def json = new groovy.json.JsonSlurper().parse(tagFile)
+        def values = json?.values
+        def expectedHosts = [
+                '#minecraft:stone_ore_replaceables',
+                '#minecraft:deepslate_ore_replaceables'
+        ]
+
+        if (!(values instanceof List) || values.size() != expectedHosts.size() || values.toSet() != expectedHosts.toSet()) {
+            throw new GradleException(
+                    'Core geostrata:worldgen/base_stone_replaceables must contain exactly the two vanilla ore-replaceable tags. '
+                            + 'GeoStrata rocks must stay out of this default tag so intersecting geological bodies cannot overwrite one another; '
+                            + 'third-party host stones belong in additive compatibility datapacks.'
+            )
+        }
+    }
+}
+
 tasks.named('check') {
     dependsOn tasks.named('validateWorldgenCompatibilityContracts')
+    dependsOn tasks.named('validateGeologyContactOwnership')
 }
 
 tasks.withType(Test).configureEach {
