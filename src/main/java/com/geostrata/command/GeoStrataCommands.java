@@ -3,6 +3,7 @@ package com.geostrata.command;
 import com.geostrata.geology.GeologyProvinceProfiles;
 import com.geostrata.geology.GeologyProvinceSampler;
 import com.geostrata.geology.GeologySurvey;
+import com.geostrata.geology.LithologyCatalog;
 import com.geostrata.geology.SedimentaryContactPlanner;
 import com.geostrata.geology.SedimentaryFieldProfiles;
 import com.geostrata.geology.SedimentaryStratigraphicField;
@@ -42,6 +43,12 @@ public final class GeoStrataCommands {
                                 .executes(context -> showColumn(context.getSource())))
                         .then(CommandManager.literal("field")
                                 .executes(context -> showField(context.getSource())))
+                        .then(CommandManager.literal("lithology")
+                                .then(CommandManager.argument("lithology", StringArgumentType.word())
+                                        .executes(context -> showLithology(
+                                                context.getSource(),
+                                                StringArgumentType.getString(context, "lithology")
+                                        ))))
                         .then(CommandManager.literal("survey")
                                 .then(CommandManager.argument("lithology", StringArgumentType.word())
                                         .executes(context -> survey(
@@ -234,6 +241,37 @@ public final class GeoStrataCommands {
                                 + " | " + selection.succession().continuity() + " profile, cycle "
                                 + Math.round(parameters.cycleThicknessBlocks()) + " blocks"
                                 + " | virtual model only; no blocks placed"
+                ),
+                false
+        );
+        return 1;
+    }
+
+    private static int showLithology(ServerCommandSource source, String lithology) {
+        LithologyCatalog.Snapshot catalog = LithologyCatalog.current();
+        if (!catalog.loaded()) {
+            source.sendError(Text.literal("GeoStrata lithology catalog has not been loaded yet."));
+            return 0;
+        }
+
+        LithologyCatalog.Entry entry;
+        try {
+            entry = catalog.require(lithology);
+        } catch (IllegalArgumentException exception) {
+            source.sendError(Text.literal(exception.getMessage()));
+            return 0;
+        }
+
+        source.sendFeedback(
+                () -> Text.literal(
+                        "GeoStrata lithology " + entry.id()
+                                + ": " + entry.rockClass() + ", " + entry.genesis()
+                                + " | body " + entry.bodyStyle()
+                                + ", depth " + entry.depthAffinity()
+                                + ", continuity " + entry.continuity()
+                                + " | block " + entry.block()
+                                + " | biome tag #" + entry.biomeTag()
+                                + " | baseline " + entry.baselineFeature()
                 ),
                 false
         );
