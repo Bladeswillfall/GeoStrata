@@ -27,6 +27,8 @@ final class SedimentaryContactPlannerTest {
         assertEquals(5, plan.intervals().size());
         assertEquals(List.of("siltstone", "shale", "limestone", "shale", "mudstone"),
                 plan.intervals().stream().map(SedimentaryContactPlanner.Interval::lithology).toList());
+        assertEquals(List.of(0, 1, 2, 3, 4),
+                plan.intervals().stream().map(SedimentaryContactPlanner.Interval::ordinal).toList());
         assertEquals(0.0, plan.intervals().get(0).lowerFraction(), EPSILON);
         assertEquals(0.8 / 4.6, plan.intervals().get(0).upperFraction(), EPSILON);
         assertEquals(2.0 / 4.6, plan.intervals().get(1).upperFraction(), EPSILON);
@@ -98,6 +100,22 @@ final class SedimentaryContactPlannerTest {
                         new SedimentarySuccessions.Bed("shale", 1.0),
                         new SedimentarySuccessions.Bed("limestone", Double.POSITIVE_INFINITY)
                 )
+        ));
+    }
+
+    @Test
+    void rejectsOutOfOrderIntervalOrdinals() {
+        List<SedimentaryContactPlanner.Interval> intervals = List.of(
+                new SedimentaryContactPlanner.Interval(1, "shale", 1.0, 0.0, 0.5),
+                new SedimentaryContactPlanner.Interval(0, "limestone", 1.0, 0.5, 1.0)
+        );
+
+        assertThrows(IllegalArgumentException.class, () -> new SedimentaryContactPlanner.Plan(
+                "broken_order",
+                "regional",
+                2.0,
+                0.25,
+                intervals
         ));
     }
 
