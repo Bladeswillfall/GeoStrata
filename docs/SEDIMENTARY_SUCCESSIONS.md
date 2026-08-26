@@ -30,6 +30,8 @@ The plan also records a deterministic phase value derived from world seed and pr
 
 This normalized plan deliberately separates **order and ownership** from **scale and exposure**. A future runtime consumer can decide how many blocks a motif spans, how its contacts dip/warp, where terrain exposes it and how biome filters affect individual lithologies without changing the canonical lower-to-upper ownership rule.
 
+`/geostrata column` exposes that normalized plan in-game for the current primary province site. It reports each lower-to-upper bed as a percentage interval plus the deterministic site phase. Those percentages are motif proportions only; they are deliberately not presented as Minecraft block heights or promises about generated material.
+
 ## Validation
 
 `python3 scripts/validate_sedimentary_successions.py` cross-checks the succession file against the live lithology catalog and province profiles. It rejects unknown or non-sedimentary lithologies, unknown province contexts, malformed ordering, invalid thickness ratios, duplicate IDs and accidental worldgen activation. The bundled succession set must collectively cover every live sedimentary lithology, including lithologies that have not yet migrated from the ore-style compatibility baseline.
