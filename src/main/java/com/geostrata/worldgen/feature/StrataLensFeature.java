@@ -41,7 +41,7 @@ public final class StrataLensFeature extends Feature<StrataLensConfig> {
         int longRadius = config.longRadius();
         double shortRatio = config.shortRadiusRatio()
                 + (random.nextDouble() * 2.0 - 1.0) * config.shortRadiusVariation();
-        int shortRadius = Math.max(2, (int) Math.round(longRadius * shortRatio));
+        int shortRadius = StrataLensGeometry.shortRadius(longRadius, shortRatio);
 
         double angle = random.nextDouble() * Math.PI * 2.0;
         double cos = Math.cos(angle);
@@ -56,22 +56,25 @@ public final class StrataLensFeature extends Feature<StrataLensConfig> {
 
         for (int dx = -longRadius; dx <= longRadius; dx++) {
             for (int dz = -longRadius; dz <= longRadius; dz++) {
-                double along = dx * cos + dz * sin;
-                double across = -dx * sin + dz * cos;
-                double radial = square(along / longRadius) + square(across / shortRadius);
-                if (radial > 1.0) {
+                double along = StrataLensGeometry.along(dx, dz, cos, sin);
+                double across = StrataLensGeometry.across(dx, dz, cos, sin);
+                double radial = StrataLensGeometry.radial(along, across, longRadius, shortRadius);
+                if (!StrataLensGeometry.inside(radial)) {
                     continue;
                 }
 
-                double taper = Math.sqrt(1.0 - radial);
-                double centerY = origin.getY()
-                        + slope * along
-                        + warpAmplitude * Math.sin(
-                        (along + across * 0.35) / config.warpWavelength() + warpPhase
+                double centerY = origin.getY() + StrataLensGeometry.centerOffset(
+                        along,
+                        across,
+                        slope,
+                        warpAmplitude,
+                        config.warpWavelength(),
+                        warpPhase
                 );
-                double localHalfThickness = Math.max(
-                        config.edgeHalfThickness(),
-                        config.halfThickness() * taper
+                double localHalfThickness = StrataLensGeometry.halfThickness(
+                        radial,
+                        config.halfThickness(),
+                        config.edgeHalfThickness()
                 );
                 int minY = (int) Math.ceil(centerY - localHalfThickness);
                 int maxY = (int) Math.floor(centerY + localHalfThickness);
@@ -166,9 +169,5 @@ public final class StrataLensFeature extends Feature<StrataLensConfig> {
             }
         }
         return false;
-    }
-
-    private static double square(double value) {
-        return value * value;
     }
 }
