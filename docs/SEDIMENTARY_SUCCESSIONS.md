@@ -20,8 +20,18 @@ Each succession receives a thickness-weighted mean of the province's existing li
 
 The command is intentionally explicit that the result is diagnostic metadata only. Chunk generation still runs the currently migrated independent `strata_lens` features; the selected succession does not yet place, suppress or reorder any blocks.
 
+## Normalized contact planning
+
+`SedimentaryContactPlanner` is the next pure layer between succession selection and world mutation. Given a selected succession and its deterministic province-site anchor, it converts the lower-to-upper relative thicknesses into contiguous normalized intervals spanning exactly `0.0..1.0`. It does **not** choose Minecraft Y levels, inspect biomes, access registries or place blocks.
+
+Contacts are lower-inclusive and upper-exclusive. An exact internal contact therefore belongs to the overlying bed rather than whichever feature happened to execute first. The top boundary at `1.0` is outside the motif; wrapping or repetition, if introduced later, must be an explicit worldgen rule rather than an accidental modulo operation.
+
+The plan also records a deterministic phase value derived from world seed and province-site coordinates. That phase is metadata for future regional vertical alignment and does not currently offset contacts or affect generation. Anchoring it to the province site means the value is stable while moving around within the same geological region.
+
+This normalized plan deliberately separates **order and ownership** from **scale and exposure**. A future runtime consumer can decide how many blocks a motif spans, how its contacts dip/warp, where terrain exposes it and how biome filters affect individual lithologies without changing the canonical lower-to-upper ownership rule.
+
 ## Validation
 
 `python3 scripts/validate_sedimentary_successions.py` cross-checks the succession file against the live lithology catalog and province profiles. It rejects unknown or non-sedimentary lithologies, unknown province contexts, malformed ordering, invalid thickness ratios, duplicate IDs and accidental worldgen activation. The bundled succession set must collectively cover every live sedimentary lithology, including lithologies that have not yet migrated from the ore-style compatibility baseline.
 
-The Java reload parser independently enforces the same safety properties for datapack overrides. JUnit tests cover parsing failures, context scoring and deterministic weighted selection before any future worldgen consumer is allowed to use the model.
+The Java reload parser independently enforces the same safety properties for datapack overrides. JUnit tests cover parsing failures, context scoring and deterministic weighted selection before any future worldgen consumer is allowed to use the model. Additional contact-planner tests pin normalized thickness ratios, repeated-bed ordering, exact contact ownership, input rejection and deterministic site-anchored phase metadata.
