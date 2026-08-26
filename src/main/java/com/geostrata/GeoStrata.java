@@ -3,6 +3,7 @@ package com.geostrata;
 import com.geostrata.block.GeoStrataBlocks;
 import com.geostrata.item.GeoStrataItemGroups;
 import com.geostrata.worldgen.GeoStrataWorldgen;
+import com.geostrata.worldgen.feature.GeoStrataFeatures;
 import net.fabricmc.api.ModInitializer;
 import net.minecraft.util.Identifier;
 import org.slf4j.Logger;
@@ -16,6 +17,7 @@ public final class GeoStrata implements ModInitializer {
     public void onInitialize() {
         GeoStrataBlocks.register();
         GeoStrataItemGroups.register();
+        GeoStrataFeatures.register();
         GeoStrataWorldgen.register();
         LOGGER.info(
                 "GeoStrata initialized {} runtime blocks with data-driven overworld geology",

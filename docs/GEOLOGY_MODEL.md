@@ -4,11 +4,13 @@ GeoStrata is moving from a collection of themed stone features toward a world-le
 
 ## Current runtime versus geological intent
 
-The current 1.20.1 pre-alpha still generates its rock types with ordinary Minecraft configured/placed ore features. Those features are a compatibility baseline, not the intended final geology model.
+The current 1.20.1 pre-alpha still generates most rock types with ordinary Minecraft configured/placed ore features. Those features are a compatibility baseline, not the intended final geology model.
 
-`data/geostrata/geology/lithologies.json` records the semantic meaning of every live GeoStrata rock independently of that temporary generator. The file is deliberately marked `runtimeStatus: metadata_only` until a custom geological generator consumes it.
+Limestone is the first migration pilot. Its configured feature now uses GeoStrata's `strata_lens` feature type, which produces a broad tapered bed/lens with gentle tilt and local warping while preserving the same `geostrata:worldgen/base_stone_replaceables` target contract. The remaining rock types stay on the ore-style baseline until the pilot is validated in real worlds.
 
-That separation is important: we can make the geology model richer without silently changing existing worlds, and compatibility packs can reason about lithologies without depending on one terrain generator.
+`data/geostrata/geology/lithologies.json` records the semantic meaning of every live GeoStrata rock independently of the current generator. The file remains marked `runtimeStatus: metadata_only` until generation logic begins consuming the catalog directly.
+
+That separation is important: we can make the geology model richer without silently changing every existing feature at once, and compatibility packs can reason about lithologies without depending on one terrain generator.
 
 ## Lithology fields
 
@@ -20,7 +22,7 @@ Each core rock defines:
 - `depthAffinity` — a qualitative tendency rather than an absolute Y range.
 - `continuity` — whether the intended body should generally be local or regionally persistent.
 - `biomeTag` — the current GeoStrata-owned biome affinity used by baseline generation.
-- `baselineFeature` — the temporary configured/placed feature that currently represents this lithology.
+- `baselineFeature` — the configured/placed feature currently representing this lithology, whether it uses a vanilla or GeoStrata feature type.
 
 The qualitative fields are intentional. GeoStrata should not encode "gneiss lives below Y=-32" as a universal truth when a terrain mod may radically alter relief, sea level or crust exposure.
 
@@ -35,7 +37,7 @@ The intended generator architecture is:
 5. place ores/minerals as consequences of host lithology and geological process;
 6. let optional integrations add valid host blocks, biome mappings, surface palettes and structures without redefining the core geology.
 
-This is deliberately different from running fourteen independent ore generators. The current ore-style features remain only until each replacement can be introduced and tested without breaking vanilla/Fabric compatibility.
+This is deliberately different from running fourteen independent ore generators. Feature migrations should be incremental: one geological body family is introduced, built, profiled and observed before the next family replaces its baseline implementation.
 
 ## Compatibility
 
