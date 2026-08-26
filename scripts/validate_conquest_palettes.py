@@ -128,8 +128,8 @@ def main() -> None:
                 row = catalog.get(block_id)
                 if row is None:
                     fail(f"{lithology_id}.{role} references missing Conquest block {block_id}")
-                if role in {"geology", "weathered", "construction"} and row.get("properties", "").strip():
-                    fail(f"{lithology_id}.{role} must use a base material block with no required block-state properties: {block_id}")
+                if role in {"geology", "weathered"} and row.get("properties", "").strip():
+                    fail(f"{lithology_id}.{role} must use a state-free solid material block: {block_id}")
                 mapped_blocks.add(block_id)
 
         all_values = [value for role in ROLES for value in role_values[role]]

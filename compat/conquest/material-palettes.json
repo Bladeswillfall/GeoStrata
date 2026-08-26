@@ -17,10 +17,10 @@
   "lithologies": [
     {
       "id": "limestone",
-      "status": "exact",
-      "reason": "Conquest contains a direct limestone family plus natural colour/weathering and loose-rock variants.",
+      "status": "family",
+      "reason": "Conquest has no neutral block named conquest:limestone; it represents limestone with named colour/weathering families plus loose-rock and processed variants.",
       "palette": {
-        "geology": ["conquest:limestone", "conquest:gray_limestone", "conquest:pale_limestone"],
+        "geology": ["conquest:gray_limestone", "conquest:pale_limestone", "conquest:pink_limestone"],
         "weathered": ["conquest:mossy_limestone", "conquest:tan_limestone"],
         "rubble": ["conquest:limestone_rocks"],
         "construction": ["conquest:limestone_cobble", "conquest:limestone_brick", "conquest:carved_limestone"]
@@ -150,9 +150,9 @@
     {
       "id": "basalt",
       "status": "family",
-      "reason": "Conquest exposes multiple basalt textures appropriate to flow interiors, porous lava and weathered/columnar surfaces.",
+      "reason": "Conquest exposes multiple state-free basalt textures appropriate to flow interiors and porous/weathered surfaces; columnal basalt is left for a later state-aware adapter.",
       "palette": {
-        "geology": ["conquest:smooth_basalt", "conquest:porous_basalt", "conquest:columnal_basalt"],
+        "geology": ["conquest:smooth_basalt", "conquest:porous_basalt"],
         "weathered": ["conquest:weathered_basalt"],
         "rubble": [],
         "construction": []
@@ -161,9 +161,9 @@
     {
       "id": "rhyolite",
       "status": "exact",
-      "reason": "Conquest contains direct rhyolite plus porous and columnar rhyolite variants.",
+      "reason": "Conquest contains direct and porous rhyolite materials; stateful columnar variants are reserved for a later adapter.",
       "palette": {
-        "geology": ["conquest:rhyolite", "conquest:porous_rhyolite", "conquest:columnar_rhyolite"],
+        "geology": ["conquest:rhyolite", "conquest:porous_rhyolite"],
         "weathered": [],
         "rubble": [],
         "construction": []
