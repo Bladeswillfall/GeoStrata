@@ -6,9 +6,9 @@ GeoStrata is moving from a collection of themed stone features toward a world-le
 
 The current 1.20.1 pre-alpha still generates most rock types with ordinary Minecraft configured/placed ore features. Those features are a compatibility baseline, not the intended final geology model.
 
-Limestone is the first active migration pilot. Its configured feature uses GeoStrata's `strata_lens` feature type, producing a broad tapered bed/lens with gentle tilt and local warping while preserving the same `geostrata:worldgen/base_stone_replaceables` target contract. Its placement attempt is accepted according to the effective blended limestone suitability of the local geological province. The remaining rock types stay on the ore-style baseline and do not consume province weights yet.
+Limestone and shale are the first active bedded-rock migrations. Both use GeoStrata's `strata_lens` feature type, producing coherent tapered beds/lenses with tilt and local warping while preserving the same `geostrata:worldgen/base_stone_replaceables` target contract. Their placement attempts are accepted according to the effective blended suitability of their lithology in the local geological province. The remaining rock types stay on the ore-style baseline and do not consume province weights yet.
 
-The limestone lens geometry is data-driven in `worldgen/configured_feature/limestone_ore.json`. Long/short radius, central and edge thickness, maximum slope, warp amplitude/variation and warp wavelength are explicit config fields rather than Java constants. The checked-in values reproduce the original pilot's statistical geometry, so tuning those fields should be treated as a deliberate world-generation change rather than an implementation refactor.
+The lens geometry is data-driven per configured feature. Long/short radius, central and edge thickness, maximum slope, warp amplitude/variation and warp wavelength are explicit config fields rather than Java constants. Limestone remains the broader carbonate pilot; shale uses a slightly smaller, thinner and more deformable body profile. Shale also moves from two small ore-style attempts to one coherent bed attempt per chunk, so this migration intentionally changes body geometry and abundance together and should be evaluated in fresh chunks.
 
 `data/geostrata/geology/lithologies.json` records the semantic meaning of every live GeoStrata rock independently of the current generator. Its formation hints remain metadata while individual runtime consumers are introduced deliberately.
 
@@ -28,13 +28,13 @@ The runtime loader also reads the lithology catalog and validates that each prof
 
 Weights are preferences, not permissions. Every province/lithology pair has a positive weight, so a low value means uncommon rather than impossible. The default profile declares a 192-block transition width. Effective weights blend the primary and neighboring profile as the sampler approaches a boundary rather than abruptly switching probabilities on the Voronoi line.
 
-Province profiles declare `runtime_bias`. A GeoStrata `strata_lens` targeting one catalogued GeoStrata lithology uses the effective weight as its placement-acceptance probability. Currently limestone is the only live feature using `strata_lens`, so this changes limestone distribution only. Future migrations automatically inherit the same regional contract once moved to that feature type.
+Province profiles declare `runtime_bias`. A GeoStrata `strata_lens` targeting one catalogued GeoStrata lithology uses the effective weight as its placement-acceptance probability. Limestone and shale currently consume that contract; future migrations automatically inherit the same regional behavior when moved to the feature type.
 
 Use `/geostrata profile` to inspect the strongest effective lithologies and current primary/neighbor blend at the command source's location.
 
 ## Deterministic feature decisions
 
-Province acceptance uses `GeologyDeterminism.unitRoll`, a stable world-seed/XYZ hash with a feature-specific salt. It deliberately does not consume Minecraft's feature RNG stream. An accepted limestone lens therefore retains the same size/tilt/warp RNG sequence it had before province bias was introduced; regional gating is a separate deterministic decision.
+Province acceptance uses `GeologyDeterminism.unitRoll`, a stable world-seed/XYZ hash with a feature-specific salt. It deliberately does not consume Minecraft's feature RNG stream. Accepted strata lenses therefore retain their configured geometry RNG sequence independently of the regional acceptance decision.
 
 The roll mapping is covered by fixed regression vectors. Changing its hash or salt is a world-generation compatibility change and should be treated accordingly.
 
