@@ -4,6 +4,8 @@ import com.geostrata.geology.GeologyProvinceProfiles;
 import com.geostrata.geology.GeologyProvinceSampler;
 import com.geostrata.geology.GeologySurvey;
 import com.geostrata.geology.SedimentaryContactPlanner;
+import com.geostrata.geology.SedimentaryFieldProfiles;
+import com.geostrata.geology.SedimentaryStratigraphicField;
 import com.geostrata.geology.SedimentarySuccessionSelector;
 import com.geostrata.geology.SedimentarySuccessions;
 import com.mojang.brigadier.arguments.StringArgumentType;
@@ -38,6 +40,8 @@ public final class GeoStrataCommands {
                                 .executes(context -> showSuccession(context.getSource())))
                         .then(CommandManager.literal("column")
                                 .executes(context -> showColumn(context.getSource())))
+                        .then(CommandManager.literal("field")
+                                .executes(context -> showField(context.getSource())))
                         .then(CommandManager.literal("survey")
                                 .then(CommandManager.argument("lithology", StringArgumentType.word())
                                         .executes(context -> survey(
@@ -174,6 +178,62 @@ public final class GeoStrataCommands {
                                 + " | normalized lower→upper: " + column(plan)
                                 + " | site phase " + Math.round(plan.phase() * 100.0) + "%"
                                 + " | percentages are relative motif thickness, not Minecraft Y levels"
+                ),
+                false
+        );
+        return 1;
+    }
+
+    private static int showField(ServerCommandSource source) {
+        GeologyProvinceProfiles.Snapshot profiles = GeologyProvinceProfiles.current();
+        SedimentarySuccessions.Snapshot successions = SedimentarySuccessions.current();
+        SedimentaryFieldProfiles.Snapshot fieldProfiles = SedimentaryFieldProfiles.current();
+        if (!profiles.loaded() || !successions.loaded() || !fieldProfiles.loaded()) {
+            source.sendError(Text.literal("GeoStrata geology field metadata has not been loaded yet."));
+            return 0;
+        }
+
+        Vec3d position = source.getPosition();
+        int x = MathHelper.floor(position.x);
+        int z = MathHelper.floor(position.z);
+        long seed = source.getWorld().getSeed();
+        GeologyProvinceSampler.Sample province = GeologyProvinceSampler.sample(seed, x, z);
+        SedimentarySuccessionSelector.Selection selection = SedimentarySuccessionSelector.selectForSite(
+                seed,
+                province.province(),
+                province.siteX(),
+                province.siteZ(),
+                profiles,
+                successions
+        );
+        SedimentaryContactPlanner.Plan plan = SedimentaryContactPlanner.plan(
+                seed,
+                province.siteX(),
+                province.siteZ(),
+                selection.succession()
+        );
+        SedimentaryStratigraphicField.Parameters parameters = fieldProfiles.parametersFor(
+                selection.succession().continuity()
+        );
+        SedimentaryStratigraphicField.Field field = SedimentaryStratigraphicField.forSite(
+                seed,
+                province.siteX(),
+                province.siteZ(),
+                parameters
+        );
+        SedimentaryStratigraphicField.Sample fieldSample = field.sample(x, position.y, z, plan);
+
+        source.sendFeedback(
+                () -> Text.literal(
+                        "GeoStrata field: " + fieldSample.bed().lithology()
+                                + " | succession " + plan.successionId()
+                                + " [" + province.province().displayName() + "]"
+                                + " | cycle " + fieldSample.cycleIndex()
+                                + ", position " + Math.round(fieldSample.fraction() * 100.0) + "%"
+                                + " | structural offset " + Math.round(fieldSample.verticalOffset()) + " blocks"
+                                + " | " + selection.succession().continuity() + " profile, cycle "
+                                + Math.round(parameters.cycleThicknessBlocks()) + " blocks"
+                                + " | virtual model only; no blocks placed"
                 ),
                 false
         );

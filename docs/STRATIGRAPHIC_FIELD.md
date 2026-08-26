@@ -17,6 +17,23 @@ The initial regional profile uses a 48-block motif, maximum dip `0.08`, four blo
 
 No absolute Y level, sea level, biome ID, terrain-generator ID or optional-mod ID appears in the profile. The field remains anchored to deterministic geological province sites, so terrain mods can change relief without redefining the underlying coordinate model.
 
+## Runtime loading and dry-run diagnostics
+
+`SedimentaryFieldProfiles` loads the profile resource through Fabric's server-data resource manager. Datapack overrides are validated again at reload time rather than relying only on CI validation of the bundled resource. The Java parser independently enforces metadata-only status, exact `local`/`regional` continuity coverage, safe spatial limits and the two-block minimum virtual bed thickness.
+
+`/geostrata field` is the first end-to-end read-only consumer of the complete sedimentary model. At the command source's actual X/Y/Z it:
+
+1. samples the deterministic geological province and province-site anchor;
+2. selects that site's diagnostic sedimentary succession from the province profile;
+3. builds the normalized lower-to-upper contact plan and exact contact ownership;
+4. resolves the succession's `local` or `regional` field profile;
+5. derives the site-anchored dip/warp field from world seed and site coordinates;
+6. samples the virtual cycle, normalized position and lithology owner at the source Y.
+
+The command reports the virtual lithology, succession, province, cycle index, normalized position, structural offset and cycle scale. It is deliberately explicit that this is a virtual model only: it does not inspect generated blocks and it does not place, remove or suppress any blocks.
+
+Together, `/geostrata succession`, `/geostrata column` and `/geostrata field` form progressively more concrete diagnostics: family selection, normalized contact geometry, then full X/Y/Z virtual ownership. This makes it possible to evaluate the intended correlated geology before granting it world-generation authority.
+
 ## Validation rules
 
 `scripts/validate_sedimentary_field_profiles.py` cross-checks the profile resource against the live succession metadata. CI requires:
@@ -40,5 +57,7 @@ The intended path from this metadata to real blocks is staged:
 3. compare the virtual field with fresh-world terrain and cave exposures;
 4. only then introduce an opt-in correlated succession generator;
 5. remove overlapping independent sedimentary features only after the correlated generator is demonstrated to preserve standalone compatibility and acceptable abundance.
+
+Steps 1 and 2 are now implemented. The next engineering milestone is therefore an explicitly opt-in runtime experiment, not silent activation of the field in ordinary worlds.
 
 This order keeps GeoStrata's standalone Fabric contract intact and gives terrain/biome integrations a stable data seam before the geology model becomes more authoritative.
