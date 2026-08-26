@@ -6,29 +6,35 @@ GeoStrata is moving from a collection of themed stone features toward a world-le
 
 The current 1.20.1 pre-alpha still generates most rock types with ordinary Minecraft configured/placed ore features. Those features are a compatibility baseline, not the intended final geology model.
 
-Limestone is the first migration pilot. Its configured feature now uses GeoStrata's `strata_lens` feature type, which produces a broad tapered bed/lens with gentle tilt and local warping while preserving the same `geostrata:worldgen/base_stone_replaceables` target contract. The remaining rock types stay on the ore-style baseline until the pilot is validated in real worlds.
+Limestone is the first active migration pilot. Its configured feature uses GeoStrata's `strata_lens` feature type, producing a broad tapered bed/lens with gentle tilt and local warping while preserving the same `geostrata:worldgen/base_stone_replaceables` target contract. Its placement attempt is now accepted according to the effective blended limestone suitability of the local geological province. The remaining rock types stay on the ore-style baseline and do not consume province weights yet.
 
-`data/geostrata/geology/lithologies.json` records the semantic meaning of every live GeoStrata rock independently of the current generator. The file remains marked `runtimeStatus: metadata_only` until generation logic begins consuming the catalog directly.
-
-That separation is important: we can make the geology model richer without silently changing every existing feature at once, and compatibility packs can reason about lithologies without depending on one terrain generator.
+`data/geostrata/geology/lithologies.json` records the semantic meaning of every live GeoStrata rock independently of the current generator. Its formation hints remain metadata while individual runtime consumers are introduced deliberately.
 
 ## Regional province sampling
 
-GeoStrata has a deterministic province sampler that assigns broad regional context without changing chunk output yet. Province sites are jittered inside a 768-block grid and nearest-site ownership creates irregular Voronoi-style boundaries. Five archetypes currently exist: sedimentary basin, cratonic shield, orogenic belt, volcanic arc and rift province.
+GeoStrata has a deterministic province sampler that assigns broad regional context. Province sites are jittered inside a 768-block grid and nearest-site ownership creates irregular Voronoi-style boundaries. Five archetypes currently exist: sedimentary basin, cratonic shield, orogenic belt, volcanic arc and rift province.
 
 The sampler is a pure function of world seed and block X/Z. It stores no mutable world state, does not depend on chunk generation order and is covered by regression vectors. This is an important compatibility constraint: pregeneration, multiplayer and revisiting a partially explored world must all agree on province boundaries.
 
-The sampler also tracks the second-nearest site and computes the exact local distance to the bisector between the two sites. Future runtime generation can therefore blend neighboring province profiles across a transition zone instead of producing visible hard borders. `/geostrata province` reports the current province, neighboring province and approximate distance to that boundary.
+The sampler also tracks the second-nearest site and computes the exact local distance to the bisector between the two sites. Runtime generation can therefore blend neighboring province profiles across a transition zone instead of producing visible hard borders. `/geostrata province` reports the current province, neighboring province and approximate distance to that boundary.
 
 ## Province profiles
 
-`data/geostrata/geology/province_profiles.json` defines relative suitability for every live lithology in every province. The profile remains generation-neutral at this stage, but it is now loaded through Fabric's server-data resource manager and can be overridden by a datapack at the same `geostrata:geology/province_profiles.json` resource ID.
+`data/geostrata/geology/province_profiles.json` defines relative suitability for every live lithology in every province and is loaded through Fabric's server-data resource manager. It can be overridden by a datapack at the same `geostrata:geology/province_profiles.json` resource ID.
 
 The runtime loader also reads the lithology catalog and validates that each profile covers the current catalog exactly. A malformed or incomplete datapack override fails resource reload instead of silently changing the geology model.
 
 Weights are preferences, not permissions. Every province/lithology pair has a positive weight, so a low value means uncommon rather than impossible. The default profile declares a 192-block transition width. Effective weights blend the primary and neighboring profile as the sampler approaches a boundary rather than abruptly switching probabilities on the Voronoi line.
 
-Use `/geostrata profile` to inspect the strongest effective lithologies and current primary/neighbor blend at the command source's location. This is diagnostic only in this stage; the next narrow runtime migration can make the limestone pilot consume its effective suitability weight.
+Province profiles now declare `runtime_bias`. A GeoStrata `strata_lens` targeting one catalogued GeoStrata lithology uses the effective weight as its placement-acceptance probability. Currently limestone is the only live feature using `strata_lens`, so this changes limestone distribution only. Future migrations automatically inherit the same regional contract once moved to that feature type.
+
+Use `/geostrata profile` to inspect the strongest effective lithologies and current primary/neighbor blend at the command source's location.
+
+## Deterministic feature decisions
+
+Province acceptance uses `GeologyDeterminism.unitRoll`, a stable world-seed/XYZ hash with a feature-specific salt. It deliberately does not consume Minecraft's feature RNG stream. An accepted limestone lens therefore retains the same size/tilt/warp RNG sequence it had before province bias was introduced; regional gating is a separate deterministic decision.
+
+The roll mapping is covered by fixed regression vectors. Changing its hash or salt is a world-generation compatibility change and should be treated accordingly.
 
 ## Lithology fields
 
@@ -56,7 +62,7 @@ The intended generator architecture is:
 6. place ores/minerals as consequences of host lithology and geological process;
 7. let optional integrations add valid host blocks, biome mappings, surface palettes and structures without redefining the core geology.
 
-This is deliberately different from running fourteen independent ore generators. Feature migrations should be incremental: one geological body family is introduced, built, profiled and observed before the next family replaces its baseline implementation.
+This is deliberately different from running fourteen independent ore generators. Feature migrations remain incremental: one geological body family is introduced, built, profiled and observed before the next family replaces its baseline implementation.
 
 ## Compatibility
 
@@ -75,4 +81,4 @@ python3 scripts/validate_geology_catalog.py
 python3 scripts/validate_province_profiles.py
 ```
 
-The catalog validator enforces that every live rock appears exactly once in the catalog and exactly once in a rock-class tag, that referenced biome tags exist, and that each baseline configured/placed feature actually generates the catalogued block. The province validator enforces exact coverage of all five provinces and every live lithology, positive bounded weights, a valid blend width, and at least one characteristic regional context for every rock. CI runs both before the Gradle build. Province sampling and profile blending also have JUnit regression coverage so the world-seed-to-province mapping and blend behavior cannot drift accidentally.
+The catalog validator enforces that every live rock appears exactly once in the catalog and exactly once in a rock-class tag, that referenced biome tags exist, and that each baseline configured/placed feature actually generates the catalogued block. The province validator enforces exact coverage of all five provinces and every live lithology, positive bounded weights, a valid blend width, and at least one characteristic regional context for every rock. CI runs both before the Gradle build. Province sampling, profile blending, suitability acceptance and the coordinate-hash mapping have regression coverage so regional behavior cannot drift accidentally.

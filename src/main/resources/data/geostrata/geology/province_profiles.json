@@ -1,9 +1,9 @@
 {
   "schemaVersion": 1,
   "model": "geostrata:province_profiles",
-  "runtimeStatus": "metadata_only",
+  "runtimeStatus": "runtime_bias",
   "blendWidthBlocks": 192,
-  "description": "Relative lithology suitability by broad geological province. Positive low weights mean uncommon rather than impossible; future runtime generation should blend neighboring profiles near province boundaries.",
+  "description": "Relative lithology suitability by broad geological province. Positive low weights mean uncommon rather than impossible. Strata-lens features now use the effective blended suitability as a deterministic placement acceptance probability.",
   "profiles": [
     {
       "province": "sedimentary_basin",
