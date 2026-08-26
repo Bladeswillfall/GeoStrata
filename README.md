@@ -24,6 +24,16 @@ Compatibility should be added in this order:
 
 See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for the rules maintainers should preserve.
 
+## Repository layout
+
+- `src/` — authoritative GeoStrata mod source and resources.
+- `pack/` — curated development/integration modpack source; it is not part of the core jar.
+- `compat/` — integration-specific reference data and, over time, optional compatibility artifacts.
+- `scripts/` — validation/build-support tooling.
+- `archive/` and `docs/archive/` — superseded prototypes/design snapshots retained for historical reference only.
+
+Minecraft launcher state, downloaded/processed jars, caches and player-local files do not belong in source control.
+
 ## Current content
 
 GeoStrata currently registers rock families including limestone, chalk, shale, slate, mudstone, siltstone, marble, quartzite, schist, gneiss, basalt, rhyolite, conglomerate and breccia, plus several soil/clay materials.
