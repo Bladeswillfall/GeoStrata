@@ -42,6 +42,16 @@ Province acceptance uses `GeologyDeterminism.unitRoll`, a stable world-seed/XYZ 
 
 The roll mapping is covered by fixed regression vectors. Changing its hash or salt is a world-generation compatibility change and should be treated accordingly.
 
+## Sedimentary succession and spatial-field staging
+
+GeoStrata now has a metadata-only sedimentary succession model plus a deterministic selector and normalized contact planner. Those components establish lower-to-upper bed order, relative thickness and exact contact ownership without changing generated blocks. The contact planner assigns internal boundaries to the overlying bed, replacing feature-registration order with an explicit future ownership rule.
+
+`SedimentaryStratigraphicField` is the next pure staging layer. It accepts cycle thickness, maximum dip, warp amplitude and warp wavelength as explicit caller parameters, derives stable structural orientation from world seed plus province-site coordinates, and maps an X/Y/Z sample to an unbounded cycle index plus normalized position inside the selected motif. It has no Minecraft registry access and performs no world mutation.
+
+The province site is a zero-offset structural anchor. At the site itself, `Y=0` maps exactly to the contact plan's deterministic phase; dip and warp deform contacts only away from that anchor. Repetition is represented explicitly by the returned cycle index rather than hidden inside the contact planner, so a future runtime consumer can choose whether and where repeated motifs are actually permitted.
+
+No default cycle thickness, dip or warp values are part of the runtime contract yet. Those parameters must be tuned and validated separately before correlated succession generation is activated. This keeps the pure spatial mathematics testable without turning preliminary tuning choices into permanent world-generation behavior.
+
 ## Lithology fields
 
 Each core rock defines:
@@ -88,4 +98,4 @@ python3 scripts/validate_province_profiles.py
 python3 scripts/validate_strata_lens_configs.py
 ```
 
-The catalog validator enforces that every live rock appears exactly once in the catalog and exactly once in a rock-class tag, that referenced biome tags exist, and that each baseline configured/placed feature actually generates the catalogued block. The province validator enforces exact coverage of all five provinces and every live lithology, positive bounded weights, a valid blend width, and at least one characteristic regional context for every rock. The strata-lens validator enforces safe geometry ranges, replacement-target presence and matching placed-feature contracts for every custom lens. CI runs all of these before the Gradle build. Province sampling, profile blending, suitability acceptance, coordinate-hash mapping and the pure strata-lens geometry calculations have regression coverage so regional and body-shape behavior cannot drift accidentally.
+The catalog validator enforces that every live rock appears exactly once in the catalog and exactly once in a rock-class tag, that referenced biome tags exist, and that each baseline configured/placed feature actually generates the catalogued block. The province validator enforces exact coverage of all five provinces and every live lithology, positive bounded weights, a valid blend width, and at least one characteristic regional context for every rock. The strata-lens validator enforces safe geometry ranges, replacement-target presence and matching placed-feature contracts for every custom lens. CI runs all of these before the Gradle build. Province sampling, profile blending, suitability acceptance, coordinate-hash mapping, pure strata-lens geometry, normalized succession contacts and the stratigraphic spatial transform have regression coverage so regional and body-shape behavior cannot drift accidentally.
