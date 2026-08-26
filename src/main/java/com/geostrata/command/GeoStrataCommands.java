@@ -3,6 +3,7 @@ package com.geostrata.command;
 import com.geostrata.geology.GeologyProvinceProfiles;
 import com.geostrata.geology.GeologyProvinceSampler;
 import com.geostrata.geology.GeologySurvey;
+import com.geostrata.geology.SedimentaryContactPlanner;
 import com.geostrata.geology.SedimentarySuccessionSelector;
 import com.geostrata.geology.SedimentarySuccessions;
 import com.mojang.brigadier.arguments.StringArgumentType;
@@ -35,6 +36,8 @@ public final class GeoStrataCommands {
                                 .executes(context -> showProfile(context.getSource())))
                         .then(CommandManager.literal("succession")
                                 .executes(context -> showSuccession(context.getSource())))
+                        .then(CommandManager.literal("column")
+                                .executes(context -> showColumn(context.getSource())))
                         .then(CommandManager.literal("survey")
                                 .then(CommandManager.argument("lithology", StringArgumentType.word())
                                         .executes(context -> survey(
@@ -139,9 +142,55 @@ public final class GeoStrataCommands {
         return 1;
     }
 
+    private static int showColumn(ServerCommandSource source) {
+        GeologyProvinceProfiles.Snapshot profiles = GeologyProvinceProfiles.current();
+        SedimentarySuccessions.Snapshot successions = SedimentarySuccessions.current();
+        if (!profiles.loaded() || !successions.loaded()) {
+            source.sendError(Text.literal("GeoStrata geology metadata has not been loaded yet."));
+            return 0;
+        }
+
+        GeologyProvinceSampler.Sample sample = sample(source);
+        long seed = source.getWorld().getSeed();
+        SedimentarySuccessionSelector.Selection selection = SedimentarySuccessionSelector.selectForSite(
+                seed,
+                sample.province(),
+                sample.siteX(),
+                sample.siteZ(),
+                profiles,
+                successions
+        );
+        SedimentaryContactPlanner.Plan plan = SedimentaryContactPlanner.plan(
+                seed,
+                sample.siteX(),
+                sample.siteZ(),
+                selection.succession()
+        );
+
+        source.sendFeedback(
+                () -> Text.literal(
+                        "GeoStrata column: " + plan.successionId()
+                                + " [" + sample.province().displayName() + "]"
+                                + " | normalized lower→upper: " + column(plan)
+                                + " | site phase " + Math.round(plan.phase() * 100.0) + "%"
+                                + " | percentages are relative motif thickness, not Minecraft Y levels"
+                ),
+                false
+        );
+        return 1;
+    }
+
     private static String sequence(SedimentarySuccessions.Succession succession) {
         return succession.beds().stream()
                 .map(SedimentarySuccessions.Bed::lithology)
+                .collect(Collectors.joining(" → "));
+    }
+
+    private static String column(SedimentaryContactPlanner.Plan plan) {
+        return plan.intervals().stream()
+                .map(interval -> Math.round(interval.lowerFraction() * 100.0)
+                        + "–" + Math.round(interval.upperFraction() * 100.0)
+                        + "% " + interval.lithology())
                 .collect(Collectors.joining(" → "));
     }
 
