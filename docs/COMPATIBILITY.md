@@ -15,6 +15,10 @@ Core configured features target GeoStrata-owned block tags rather than third-par
 
 These tags are deliberately conservative. Core should not add blocks from optional mods to them.
 
+The core `base_stone_replaceables` definition has an additional geological-ownership invariant: it contains only the two vanilla ore-replaceable host-stone tags and never GeoStrata rock blocks or `#geostrata:rocks`. Once a GeoStrata body has claimed a block, a later independent body therefore cannot overwrite it through the common replacement target. The current compatibility baseline is consequently first-writer-wins at intersecting bodies; feature registration order is **not** a geological contact API and will be replaced by an explicit succession/contact planner before correlated strata become authoritative.
+
+Third-party terrain integrations may still append genuine host stones from their own datapacks. That extension changes what natural terrain GeoStrata may replace; it should not add already-generated GeoStrata geology back into the host set.
+
 ## Example datapack extension
 
 A terrain compatibility datapack can add its own base stone without changing GeoStrata Java or replacing GeoStrata's defaults:
