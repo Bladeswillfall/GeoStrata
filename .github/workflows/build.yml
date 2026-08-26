@@ -18,6 +18,9 @@ jobs:
       - name: Validate development pack contract
         run: python3 scripts/validate_pack_manifest.py
 
+      - name: Validate geology catalog
+        run: python3 scripts/validate_geology_catalog.py
+
       - name: Set up Java 21 for Gradle and Loom
         uses: actions/setup-java@v4
         with:
