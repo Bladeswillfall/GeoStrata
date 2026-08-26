@@ -28,36 +28,52 @@ public final class GeologyProvinceSampler {
         int baseCellX = Math.floorDiv(blockX, CELL_SIZE);
         int baseCellZ = Math.floorDiv(blockZ, CELL_SIZE);
 
-        long bestDistance = Long.MAX_VALUE;
-        int bestCellX = 0;
-        int bestCellZ = 0;
-        int bestSiteX = 0;
-        int bestSiteZ = 0;
-        GeologyProvince bestProvince = GeologyProvince.SEDIMENTARY_BASIN;
+        Candidate best = null;
+        Candidate second = null;
 
         for (int offsetX = -SEARCH_RADIUS; offsetX <= SEARCH_RADIUS; offsetX++) {
             for (int offsetZ = -SEARCH_RADIUS; offsetZ <= SEARCH_RADIUS; offsetZ++) {
                 int cellX = baseCellX + offsetX;
                 int cellZ = baseCellZ + offsetZ;
-                int siteX = siteCoordinate(worldSeed, cellX, cellZ, SITE_X_SALT, cellX);
-                int siteZ = siteCoordinate(worldSeed, cellX, cellZ, SITE_Z_SALT, cellZ);
+                Candidate candidate = candidate(worldSeed, blockX, blockZ, cellX, cellZ);
 
-                long dx = (long) blockX - siteX;
-                long dz = (long) blockZ - siteZ;
-                long distance = dx * dx + dz * dz;
-
-                if (distance < bestDistance || (distance == bestDistance && comesBefore(cellX, cellZ, bestCellX, bestCellZ))) {
-                    bestDistance = distance;
-                    bestCellX = cellX;
-                    bestCellZ = cellZ;
-                    bestSiteX = siteX;
-                    bestSiteZ = siteZ;
-                    bestProvince = provinceFor(hash(worldSeed, cellX, cellZ, PROVINCE_SALT));
+                if (best == null || candidate.precedes(best)) {
+                    second = best;
+                    best = candidate;
+                } else if (second == null || candidate.precedes(second)) {
+                    second = candidate;
                 }
             }
         }
 
-        return new Sample(bestProvince, bestCellX, bestCellZ, bestSiteX, bestSiteZ, bestDistance);
+        if (best == null || second == null) {
+            throw new IllegalStateException("GeoStrata province sampler did not produce two candidate sites");
+        }
+
+        return new Sample(
+                best.province,
+                best.cellX,
+                best.cellZ,
+                best.siteX,
+                best.siteZ,
+                best.distanceSquared,
+                second.province,
+                second.cellX,
+                second.cellZ,
+                second.siteX,
+                second.siteZ,
+                second.distanceSquared
+        );
+    }
+
+    private static Candidate candidate(long seed, int blockX, int blockZ, int cellX, int cellZ) {
+        int siteX = siteCoordinate(seed, cellX, cellZ, SITE_X_SALT, cellX);
+        int siteZ = siteCoordinate(seed, cellX, cellZ, SITE_Z_SALT, cellZ);
+        long dx = (long) blockX - siteX;
+        long dz = (long) blockZ - siteZ;
+        long distanceSquared = dx * dx + dz * dz;
+        GeologyProvince province = provinceFor(hash(seed, cellX, cellZ, PROVINCE_SALT));
+        return new Candidate(province, cellX, cellZ, siteX, siteZ, distanceSquared);
     }
 
     private static int siteCoordinate(long seed, int cellX, int cellZ, long salt, int axisCell) {
@@ -83,10 +99,6 @@ public final class GeologyProvinceSampler {
         return GeologyProvince.RIFT_PROVINCE;
     }
 
-    private static boolean comesBefore(int cellX, int cellZ, int otherCellX, int otherCellZ) {
-        return cellX < otherCellX || (cellX == otherCellX && cellZ < otherCellZ);
-    }
-
     private static long hash(long seed, long cellX, long cellZ, long salt) {
         long value = seed ^ salt;
         value += cellX * 0x9E3779B97F4A7C15L;
@@ -104,16 +116,65 @@ public final class GeologyProvinceSampler {
         return (hash >>> 11) * 0x1.0p-53;
     }
 
+    private record Candidate(
+            GeologyProvince province,
+            int cellX,
+            int cellZ,
+            int siteX,
+            int siteZ,
+            long distanceSquared
+    ) {
+        private boolean precedes(Candidate other) {
+            if (distanceSquared != other.distanceSquared) {
+                return distanceSquared < other.distanceSquared;
+            }
+            if (cellX != other.cellX) {
+                return cellX < other.cellX;
+            }
+            return cellZ < other.cellZ;
+        }
+    }
+
     public record Sample(
             GeologyProvince province,
             int sourceCellX,
             int sourceCellZ,
             int siteX,
             int siteZ,
-            long distanceSquared
+            long distanceSquared,
+            GeologyProvince neighborProvince,
+            int neighborCellX,
+            int neighborCellZ,
+            int neighborSiteX,
+            int neighborSiteZ,
+            long neighborDistanceSquared
     ) {
         public double distanceToSite() {
             return Math.sqrt(distanceSquared);
+        }
+
+        /**
+         * Exact distance to the bisector between the nearest and second-nearest
+         * province sites. This is the local Voronoi boundary relevant to
+         * blending those two province profiles.
+         */
+        public double distanceToBoundary() {
+            double siteDistance = Math.hypot((double) neighborSiteX - siteX, (double) neighborSiteZ - siteZ);
+            if (siteDistance == 0.0) {
+                return 0.0;
+            }
+            return (neighborDistanceSquared - distanceSquared) / (2.0 * siteDistance);
+        }
+
+        /**
+         * Returns 0 at the nearest province boundary and 1 once the requested
+         * interior blend width has been traversed.
+         */
+        public double interiorBlend(double blendWidthBlocks) {
+            if (blendWidthBlocks <= 0.0) {
+                return 1.0;
+            }
+            return Math.min(1.0, Math.max(0.0, distanceToBoundary() / blendWidthBlocks));
         }
     }
 }

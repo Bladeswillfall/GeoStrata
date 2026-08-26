@@ -33,6 +33,8 @@ public final class GeoStrataCommands {
                                 + " — " + sample.province().summary()
                                 + " | site " + sample.siteX() + ", " + sample.siteZ()
                                 + " | " + Math.round(sample.distanceToSite()) + " blocks from site"
+                                + " | nearest boundary ~" + Math.round(sample.distanceToBoundary()) + " blocks"
+                                + " toward " + sample.neighborProvince().displayName()
                 ),
                 false
         );

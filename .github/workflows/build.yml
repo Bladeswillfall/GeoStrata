@@ -21,6 +21,9 @@ jobs:
       - name: Validate geology catalog
         run: python3 scripts/validate_geology_catalog.py
 
+      - name: Validate province profiles
+        run: python3 scripts/validate_province_profiles.py
+
       - name: Set up Java 21 for Gradle and Loom
         uses: actions/setup-java@v4
         with:

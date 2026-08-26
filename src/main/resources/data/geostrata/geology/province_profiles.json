@@ -1,0 +1,104 @@
+{
+  "schemaVersion": 1,
+  "model": "geostrata:province_profiles",
+  "runtimeStatus": "metadata_only",
+  "blendWidthBlocks": 192,
+  "description": "Relative lithology suitability by broad geological province. Positive low weights mean uncommon rather than impossible; future runtime generation should blend neighboring profiles near province boundaries.",
+  "profiles": [
+    {
+      "province": "sedimentary_basin",
+      "lithologyWeights": {
+        "limestone": 1.0,
+        "chalk": 0.65,
+        "shale": 1.0,
+        "mudstone": 0.95,
+        "siltstone": 0.85,
+        "conglomerate": 0.6,
+        "breccia": 0.15,
+        "slate": 0.15,
+        "marble": 0.1,
+        "quartzite": 0.1,
+        "schist": 0.08,
+        "gneiss": 0.05,
+        "basalt": 0.2,
+        "rhyolite": 0.05
+      }
+    },
+    {
+      "province": "cratonic_shield",
+      "lithologyWeights": {
+        "limestone": 0.2,
+        "chalk": 0.08,
+        "shale": 0.2,
+        "mudstone": 0.15,
+        "siltstone": 0.12,
+        "conglomerate": 0.15,
+        "breccia": 0.15,
+        "slate": 0.45,
+        "marble": 0.35,
+        "quartzite": 0.7,
+        "schist": 0.8,
+        "gneiss": 1.0,
+        "basalt": 0.25,
+        "rhyolite": 0.08
+      }
+    },
+    {
+      "province": "orogenic_belt",
+      "lithologyWeights": {
+        "limestone": 0.35,
+        "chalk": 0.12,
+        "shale": 0.35,
+        "mudstone": 0.3,
+        "siltstone": 0.25,
+        "conglomerate": 0.4,
+        "breccia": 0.7,
+        "slate": 0.85,
+        "marble": 0.7,
+        "quartzite": 0.9,
+        "schist": 1.0,
+        "gneiss": 0.85,
+        "basalt": 0.3,
+        "rhyolite": 0.3
+      }
+    },
+    {
+      "province": "volcanic_arc",
+      "lithologyWeights": {
+        "limestone": 0.18,
+        "chalk": 0.08,
+        "shale": 0.2,
+        "mudstone": 0.18,
+        "siltstone": 0.2,
+        "conglomerate": 0.3,
+        "breccia": 0.65,
+        "slate": 0.25,
+        "marble": 0.2,
+        "quartzite": 0.25,
+        "schist": 0.35,
+        "gneiss": 0.4,
+        "basalt": 1.0,
+        "rhyolite": 0.85
+      }
+    },
+    {
+      "province": "rift_province",
+      "lithologyWeights": {
+        "limestone": 0.45,
+        "chalk": 0.12,
+        "shale": 0.8,
+        "mudstone": 0.7,
+        "siltstone": 0.75,
+        "conglomerate": 0.85,
+        "breccia": 0.5,
+        "slate": 0.18,
+        "marble": 0.12,
+        "quartzite": 0.18,
+        "schist": 0.2,
+        "gneiss": 0.22,
+        "basalt": 1.0,
+        "rhyolite": 0.3
+      }
+    }
+  ]
+}
