@@ -85,6 +85,9 @@ public final class SedimentaryFieldProfiles implements SimpleSynchronousResource
             JsonObject succession = element.getAsJsonObject();
             String id = requireString(succession, "id");
             String continuity = requireString(succession, "continuity");
+            if (!continuity.equals("local") && !continuity.equals("regional")) {
+                throw new IllegalArgumentException(id + " continuity must be local or regional");
+            }
             continuities.add(continuity);
 
             JsonArray rawBeds = requiredArray(succession, "beds");
