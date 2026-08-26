@@ -1,3 +1,21 @@
+# Gradle / build output
+.gradle/
+build/
+out/
+artifacts/*.jar
+*.class
+
+# IDE / editor
+.idea/
+.vscode/
+*.iml
+.DS_Store
+
+# Minecraft/Fabric development runtime
+run/
+.fabric/
+.physics_mod_cache/
+.curseclient
 logs/
 crash-reports/
 *.log
@@ -8,11 +26,21 @@ saves/
 screenshots/
 backups/
 downloads/
-*.sqlite
-states-pls.txt
+libraries/
+versions/
+webcache*/
+
+# Launcher/player state
+options.txt
+optionsof.txt
+servers.dat
+servers.dat_old
 usercache.json
 usernamecache.json
+realms_persistence.json
+irisUpdateInfo.json
+*.sqlite
 
-.gradle/
-build/
-artifacts/*.jar
+# Local inventory/debug exports
+states-pls.txt
+blocks-pls.txt

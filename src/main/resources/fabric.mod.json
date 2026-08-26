@@ -3,9 +3,9 @@
   "id": "geostrata",
   "version": "${version}",
   "name": "GeoStrata",
-  "description": "GeoStrata runtime geology block catalog with placeholder assets for Fabric 1.20.1.",
+  "description": "Data-driven geology and building materials for Fabric 1.20.1. Runs standalone and exposes compatibility hooks that modpacks can extend with terrain and content mods.",
   "authors": [
-    "GeoStrata Pack"
+    "GeoStrata contributors"
   ],
   "license": "All-Rights-Reserved",
   "environment": "*",
@@ -21,7 +21,7 @@
     "fabric-api": ">=0.92.2"
   },
   "custom": {
-    "geostrata_stage": "v0.2",
-    "geostrata_scope": "normal-loom-runtime-catalog"
+    "geostrata_stage": "pre-alpha",
+    "geostrata_compatibility_model": "standalone-core-plus-optional-integrations"
   }
 }

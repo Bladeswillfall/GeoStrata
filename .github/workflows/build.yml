@@ -5,25 +5,33 @@ on:
     branches: [ main ]
   pull_request:
 
+permissions:
+  contents: read
+
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Set up Java 17
+
+      - name: Set up Java 21 for Gradle and Loom
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: 17
-      - name: Set up Gradle
+          java-version: 21
+
+      - name: Set up Gradle 9.4
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: 9.4.0
-      - name: Build
-        run: gradle build --stacktrace
+
+      - name: Build Java 17 mod artifacts
+        run: gradle clean build --stacktrace
+
       - name: Upload built jars
         uses: actions/upload-artifact@v4
         with:
           name: geostrata-jars
           path: build/libs/*.jar
+          if-no-files-found: error
