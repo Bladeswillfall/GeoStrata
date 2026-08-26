@@ -71,7 +71,7 @@ public final class SedimentarySuccessions implements SimpleSynchronousResourceRe
         requireString(root, "order", "lower_to_upper");
 
         JsonArray rawSuccessions = requiredArray(root, "successions");
-        if (rawSuccessions.isEmpty()) {
+        if (rawSuccessions.size() == 0) {
             throw new IllegalArgumentException("sedimentary successions must not be empty");
         }
 
@@ -93,7 +93,7 @@ public final class SedimentarySuccessions implements SimpleSynchronousResourceRe
             }
 
             JsonArray rawContexts = requiredArray(object, "contexts");
-            if (rawContexts.isEmpty()) {
+            if (rawContexts.size() == 0) {
                 throw new IllegalArgumentException(id + " must declare at least one context");
             }
             List<GeologyProvince> contexts = new ArrayList<>();
