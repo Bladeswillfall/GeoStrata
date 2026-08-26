@@ -3,6 +3,8 @@ package com.geostrata.command;
 import com.geostrata.geology.GeologyProvinceProfiles;
 import com.geostrata.geology.GeologyProvinceSampler;
 import com.geostrata.geology.GeologySurvey;
+import com.geostrata.geology.SedimentarySuccessionSelector;
+import com.geostrata.geology.SedimentarySuccessions;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.minecraft.server.command.CommandManager;
@@ -14,6 +16,7 @@ import net.minecraft.util.math.Vec3d;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /** Small diagnostic command surface for inspecting deterministic geology. */
 public final class GeoStrataCommands {
@@ -30,6 +33,8 @@ public final class GeoStrataCommands {
                                 .executes(context -> showProvince(context.getSource())))
                         .then(CommandManager.literal("profile")
                                 .executes(context -> showProfile(context.getSource())))
+                        .then(CommandManager.literal("succession")
+                                .executes(context -> showSuccession(context.getSource())))
                         .then(CommandManager.literal("survey")
                                 .then(CommandManager.argument("lithology", StringArgumentType.word())
                                         .executes(context -> survey(
@@ -91,6 +96,53 @@ public final class GeoStrataCommands {
                 false
         );
         return 1;
+    }
+
+    private static int showSuccession(ServerCommandSource source) {
+        GeologyProvinceProfiles.Snapshot profiles = GeologyProvinceProfiles.current();
+        SedimentarySuccessions.Snapshot successions = SedimentarySuccessions.current();
+        if (!profiles.loaded() || !successions.loaded()) {
+            source.sendError(Text.literal("GeoStrata geology metadata has not been loaded yet."));
+            return 0;
+        }
+
+        GeologyProvinceSampler.Sample sample = sample(source);
+        long seed = source.getWorld().getSeed();
+        SedimentarySuccessionSelector.Selection primary = SedimentarySuccessionSelector.selectForSite(
+                seed,
+                sample.province(),
+                sample.siteX(),
+                sample.siteZ(),
+                profiles,
+                successions
+        );
+        SedimentarySuccessionSelector.Selection neighbor = SedimentarySuccessionSelector.selectForSite(
+                seed,
+                sample.neighborProvince(),
+                sample.neighborSiteX(),
+                sample.neighborSiteZ(),
+                profiles,
+                successions
+        );
+
+        source.sendFeedback(
+                () -> Text.literal(
+                        "GeoStrata succession: " + primary.succession().id()
+                                + " [" + sample.province().displayName() + "]"
+                                + " | beds lower→upper: " + sequence(primary.succession())
+                                + " | neighbor: " + neighbor.succession().id()
+                                + " [" + sample.neighborProvince().displayName() + "]"
+                                + " | diagnostic model only; chunk generation still uses independent features"
+                ),
+                false
+        );
+        return 1;
+    }
+
+    private static String sequence(SedimentarySuccessions.Succession succession) {
+        return succession.beds().stream()
+                .map(SedimentarySuccessions.Bed::lithology)
+                .collect(Collectors.joining(" → "));
     }
 
     private static int survey(ServerCommandSource source, String lithology) {
