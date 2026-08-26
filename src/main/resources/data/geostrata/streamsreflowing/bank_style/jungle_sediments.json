@@ -1,0 +1,20 @@
+{
+  "tags": [
+    "geostrata:has_jungle_soils",
+    "minecraft:is_overworld"
+  ],
+  "bed": [
+    "geostrata:compacted_mud",
+    "geostrata:wet_mud",
+    "minecraft:gravel"
+  ],
+  "waterline": [
+    "geostrata:compacted_mud",
+    "minecraft:gravel"
+  ],
+  "bank_enabled": false,
+  "waterline_below": 1,
+  "waterline_above": 0,
+  "underwater_noise": 0.20,
+  "above_water_noise": 0.15
+}

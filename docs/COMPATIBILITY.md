@@ -35,6 +35,21 @@ Place that file at `data/geostrata/tags/blocks/worldgen/base_stone_replaceables.
 
 GeoStrata also owns biome tags such as `geostrata:has_mountain_rocks`, `geostrata:has_fluvial_rocks`, and `geostrata:has_river_soils`. Integrations should extend those tags when a mod introduces biomes GeoStrata should recognize.
 
+## Streams Reflowing
+
+GeoStrata ships a data-only bridge for Streams Reflowing under `data/geostrata/streamsreflowing/bank_style/`. Streams Reflowing discovers bank-style JSON from other mod namespaces when it is installed; ordinary Minecraft and GeoStrata never load Java classes from Streams Reflowing.
+
+The core bridge is intentionally conservative:
+
+- fluvial biomes can use silty loam and blue clay in stream beds/waterlines;
+- swamp biomes can use wet mud and peat soil;
+- jungle biomes can use compacted/wet mud;
+- cut banks remain natural (`bank_enabled: false`), so erosion exposes the lithology GeoStrata actually generated instead of painting a biome-selected rock over it;
+- selectors use GeoStrata-owned biome tags plus `minecraft:is_overworld`, allowing biome mods/modpacks to opt in by extending GeoStrata tags;
+- core does not contest Streams Reflowing's exact-biome presets. The curated GeoStrata pack may provide stronger pack-level choices later, but the standalone jar stays cooperative.
+
+This arrangement is deliberately asymmetric: Streams Reflowing being absent changes nothing about GeoStrata, while its presence discovers extra GeoStrata-aware sediment styling automatically.
+
 ## Integration rule
 
 Prefer, in order:
