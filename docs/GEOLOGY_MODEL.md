@@ -6,9 +6,9 @@ GeoStrata is moving from a collection of themed stone features toward a world-le
 
 The current 1.20.1 pre-alpha still generates most rock types with ordinary Minecraft configured/placed ore features. Those features are a compatibility baseline, not the intended final geology model.
 
-Limestone and shale are the first active bedded-rock migrations. Both use GeoStrata's `strata_lens` feature type, producing coherent tapered beds/lenses with tilt and local warping while preserving the same `geostrata:worldgen/base_stone_replaceables` target contract. Their placement attempts are accepted according to the effective blended suitability of their lithology in the local geological province. The remaining rock types stay on the ore-style baseline and do not consume province weights yet.
+Limestone, shale and mudstone are the first active bedded-rock migrations. All three use GeoStrata's `strata_lens` feature type, producing coherent tapered beds/lenses with tilt and local warping while preserving the same `geostrata:worldgen/base_stone_replaceables` target contract. Their placement attempts are accepted according to the effective blended suitability of their lithology in the local geological province. The remaining rock types stay on the ore-style baseline and do not consume province weights yet.
 
-The lens geometry is data-driven per configured feature. Long/short radius, central and edge thickness, maximum slope, warp amplitude/variation and warp wavelength are explicit config fields rather than Java constants. Limestone remains the broader carbonate pilot; shale uses a slightly smaller, thinner and more deformable body profile. Shale also moves from two small ore-style attempts to one coherent bed attempt per chunk, so this migration intentionally changes body geometry and abundance together and should be evaluated in fresh chunks.
+The lens geometry is data-driven per configured feature. Long/short radius, central and edge thickness, maximum slope, warp amplitude/variation and warp wavelength are explicit config fields rather than Java constants. Limestone remains the broader carbonate pilot; shale uses a smaller, thinner and more deformable profile; mudstone uses a somewhat thicker, more massive low-slope bed with gentler warping. Shale and mudstone each move from two small ore-style attempts to one coherent bed attempt per chunk, so these migrations intentionally change body geometry and abundance together and should be evaluated in fresh chunks.
 
 `data/geostrata/geology/lithologies.json` records the semantic meaning of every live GeoStrata rock independently of the current generator. Its formation hints remain metadata while individual runtime consumers are introduced deliberately.
 
@@ -28,9 +28,9 @@ The runtime loader also reads the lithology catalog and validates that each prof
 
 Weights are preferences, not permissions. Every province/lithology pair has a positive weight, so a low value means uncommon rather than impossible. The default profile declares a 192-block transition width. Effective weights blend the primary and neighboring profile as the sampler approaches a boundary rather than abruptly switching probabilities on the Voronoi line.
 
-Province profiles declare `runtime_bias`. A GeoStrata `strata_lens` targeting one catalogued GeoStrata lithology uses the effective weight as its placement-acceptance probability. Limestone and shale currently consume that contract; future migrations automatically inherit the same regional behavior when moved to the feature type.
+Province profiles declare `runtime_bias`. A GeoStrata `strata_lens` targeting one catalogued GeoStrata lithology uses the effective weight as its placement-acceptance probability. Limestone, shale and mudstone currently consume that contract; future migrations automatically inherit the same regional behavior when moved to the feature type.
 
-Use `/geostrata profile` to inspect the strongest effective lithologies and current primary/neighbor blend at the command source's location.
+Use `/geostrata profile` to inspect the strongest effective lithologies and current primary/neighbor blend at the command source's location. `/geostrata survey <lithology>` performs a coarse deterministic search of the same regional model around the command source and reports the nearest best sampled suitability target. The survey does not load chunks or search for generated blocks, so its result is a testing/navigation hint rather than a promise that a particular rock body exists at that coordinate.
 
 ## Deterministic feature decisions
 
