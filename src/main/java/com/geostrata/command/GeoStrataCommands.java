@@ -2,6 +2,8 @@ package com.geostrata.command;
 
 import com.geostrata.geology.GeologyProvinceProfiles;
 import com.geostrata.geology.GeologyProvinceSampler;
+import com.geostrata.geology.GeologySurvey;
+import com.mojang.brigadier.arguments.StringArgumentType;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.minecraft.server.command.CommandManager;
 import net.minecraft.server.command.ServerCommandSource;
@@ -15,6 +17,9 @@ import java.util.Map;
 
 /** Small diagnostic command surface for inspecting deterministic geology. */
 public final class GeoStrataCommands {
+    private static final int SURVEY_RADIUS = 1536;
+    private static final int SURVEY_STEP = 96;
+
     private GeoStrataCommands() {
     }
 
@@ -24,7 +29,13 @@ public final class GeoStrataCommands {
                         .then(CommandManager.literal("province")
                                 .executes(context -> showProvince(context.getSource())))
                         .then(CommandManager.literal("profile")
-                                .executes(context -> showProfile(context.getSource()))))
+                                .executes(context -> showProfile(context.getSource())))
+                        .then(CommandManager.literal("survey")
+                                .then(CommandManager.argument("lithology", StringArgumentType.word())
+                                        .executes(context -> survey(
+                                                context.getSource(),
+                                                StringArgumentType.getString(context, "lithology")
+                                        )))))
         );
     }
 
@@ -76,6 +87,48 @@ public final class GeoStrataCommands {
                                 + " / " + sample.neighborProvince().displayName()
                                 + " | primary share " + primaryShare + "%"
                                 + " | strongest lithologies: " + top
+                ),
+                false
+        );
+        return 1;
+    }
+
+    private static int survey(ServerCommandSource source, String lithology) {
+        GeologyProvinceProfiles.Snapshot profiles = GeologyProvinceProfiles.current();
+        if (!profiles.loaded()) {
+            source.sendError(Text.literal("GeoStrata province profiles have not been loaded yet."));
+            return 0;
+        }
+        if (!profiles.lithologyIds().contains(lithology)) {
+            source.sendError(Text.literal("Unknown GeoStrata lithology: " + lithology));
+            return 0;
+        }
+
+        Vec3d position = source.getPosition();
+        int originX = MathHelper.floor(position.x);
+        int originZ = MathHelper.floor(position.z);
+        long seed = source.getWorld().getSeed();
+        GeologyProvinceSampler.Sample here = GeologyProvinceSampler.sample(seed, originX, originZ);
+        double hereWeight = profiles.effectiveWeight(here, lithology);
+        GeologySurvey.Result best = GeologySurvey.findBest(
+                seed,
+                originX,
+                originZ,
+                lithology,
+                profiles,
+                SURVEY_RADIUS,
+                SURVEY_STEP
+        );
+
+        source.sendFeedback(
+                () -> Text.literal(
+                        "GeoStrata survey " + lithology
+                                + ": here " + Math.round(hereWeight * 100.0) + "% suitability"
+                                + " | best sampled " + Math.round(best.weight() * 100.0) + "% at "
+                                + best.x() + ", " + best.z()
+                                + " (~" + Math.round(best.distance()) + " blocks, "
+                                + best.province().displayName() + ")"
+                                + " | regional suitability only; not a located rock body"
                 ),
                 false
         );
