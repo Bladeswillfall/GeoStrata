@@ -6,7 +6,9 @@ GeoStrata is moving from a collection of themed stone features toward a world-le
 
 The current 1.20.1 pre-alpha still generates most rock types with ordinary Minecraft configured/placed ore features. Those features are a compatibility baseline, not the intended final geology model.
 
-Limestone is the first active migration pilot. Its configured feature uses GeoStrata's `strata_lens` feature type, producing a broad tapered bed/lens with gentle tilt and local warping while preserving the same `geostrata:worldgen/base_stone_replaceables` target contract. Its placement attempt is now accepted according to the effective blended limestone suitability of the local geological province. The remaining rock types stay on the ore-style baseline and do not consume province weights yet.
+Limestone is the first active migration pilot. Its configured feature uses GeoStrata's `strata_lens` feature type, producing a broad tapered bed/lens with gentle tilt and local warping while preserving the same `geostrata:worldgen/base_stone_replaceables` target contract. Its placement attempt is accepted according to the effective blended limestone suitability of the local geological province. The remaining rock types stay on the ore-style baseline and do not consume province weights yet.
+
+The limestone lens geometry is data-driven in `worldgen/configured_feature/limestone_ore.json`. Long/short radius, central and edge thickness, maximum slope, warp amplitude/variation and warp wavelength are explicit config fields rather than Java constants. The checked-in values reproduce the original pilot's statistical geometry, so tuning those fields should be treated as a deliberate world-generation change rather than an implementation refactor.
 
 `data/geostrata/geology/lithologies.json` records the semantic meaning of every live GeoStrata rock independently of the current generator. Its formation hints remain metadata while individual runtime consumers are introduced deliberately.
 
@@ -26,7 +28,7 @@ The runtime loader also reads the lithology catalog and validates that each prof
 
 Weights are preferences, not permissions. Every province/lithology pair has a positive weight, so a low value means uncommon rather than impossible. The default profile declares a 192-block transition width. Effective weights blend the primary and neighboring profile as the sampler approaches a boundary rather than abruptly switching probabilities on the Voronoi line.
 
-Province profiles now declare `runtime_bias`. A GeoStrata `strata_lens` targeting one catalogued GeoStrata lithology uses the effective weight as its placement-acceptance probability. Currently limestone is the only live feature using `strata_lens`, so this changes limestone distribution only. Future migrations automatically inherit the same regional contract once moved to that feature type.
+Province profiles declare `runtime_bias`. A GeoStrata `strata_lens` targeting one catalogued GeoStrata lithology uses the effective weight as its placement-acceptance probability. Currently limestone is the only live feature using `strata_lens`, so this changes limestone distribution only. Future migrations automatically inherit the same regional contract once moved to that feature type.
 
 Use `/geostrata profile` to inspect the strongest effective lithologies and current primary/neighbor blend at the command source's location.
 
@@ -79,6 +81,7 @@ Run:
 ```text
 python3 scripts/validate_geology_catalog.py
 python3 scripts/validate_province_profiles.py
+python3 scripts/validate_strata_lens_configs.py
 ```
 
-The catalog validator enforces that every live rock appears exactly once in the catalog and exactly once in a rock-class tag, that referenced biome tags exist, and that each baseline configured/placed feature actually generates the catalogued block. The province validator enforces exact coverage of all five provinces and every live lithology, positive bounded weights, a valid blend width, and at least one characteristic regional context for every rock. CI runs both before the Gradle build. Province sampling, profile blending, suitability acceptance and the coordinate-hash mapping have regression coverage so regional behavior cannot drift accidentally.
+The catalog validator enforces that every live rock appears exactly once in the catalog and exactly once in a rock-class tag, that referenced biome tags exist, and that each baseline configured/placed feature actually generates the catalogued block. The province validator enforces exact coverage of all five provinces and every live lithology, positive bounded weights, a valid blend width, and at least one characteristic regional context for every rock. The strata-lens validator enforces the safe geometry ranges and replacement-target presence for every custom lens configured feature. CI runs all of these before the Gradle build. Province sampling, profile blending, suitability acceptance and the coordinate-hash mapping have regression coverage so regional behavior cannot drift accidentally.

@@ -1,8 +1,6 @@
 {
   "type": "geostrata:strata_lens",
   "config": {
-    "size": 36,
-    "discard_chance_on_air_exposure": 0.0,
     "targets": [
       {
         "target": {
@@ -13,6 +11,16 @@
           "Name": "geostrata:limestone"
         }
       }
-    ]
+    ],
+    "discard_chance_on_air_exposure": 0.0,
+    "long_radius": 9,
+    "short_radius_ratio": 0.66,
+    "short_radius_variation": 0.08,
+    "half_thickness": 1.5,
+    "edge_half_thickness": 0.55,
+    "max_slope": 0.09,
+    "warp_amplitude": 0.475,
+    "warp_variation": 0.225,
+    "warp_wavelength": 6.0
   }
 }
