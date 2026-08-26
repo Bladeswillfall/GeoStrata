@@ -32,7 +32,7 @@ World generation uses GeoStrata-owned biome tags such as `geostrata:has_mountain
 
 ## Build
 
-GeoStrata targets Java 17 bytecode for Minecraft 1.20.1. The build itself uses Fabric Loom 1.16 and Gradle 9.4, which run under Java 21 in CI.
+GeoStrata targets Java 17 bytecode for Minecraft 1.20.1. The build itself uses Fabric Loom 1.16.3 and Gradle 9.4, which run under Java 21 in CI.
 
 ```text
 gradle clean build
