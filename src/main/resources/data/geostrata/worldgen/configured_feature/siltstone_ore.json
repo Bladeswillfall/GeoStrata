@@ -1,8 +1,6 @@
 {
-  "type": "minecraft:ore",
+  "type": "geostrata:strata_lens",
   "config": {
-    "size": 24,
-    "discard_chance_on_air_exposure": 0.0,
     "targets": [
       {
         "target": {
@@ -13,6 +11,16 @@
           "Name": "geostrata:siltstone"
         }
       }
-    ]
+    ],
+    "discard_chance_on_air_exposure": 0.0,
+    "long_radius": 8,
+    "short_radius_ratio": 0.8,
+    "short_radius_variation": 0.06,
+    "half_thickness": 1.15,
+    "edge_half_thickness": 0.4,
+    "max_slope": 0.06,
+    "warp_amplitude": 0.25,
+    "warp_variation": 0.1,
+    "warp_wavelength": 7.0
   }
 }
