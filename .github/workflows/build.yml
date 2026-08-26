@@ -24,6 +24,9 @@ jobs:
       - name: Validate province profiles
         run: python3 scripts/validate_province_profiles.py
 
+      - name: Validate strata lens configs
+        run: python3 scripts/validate_strata_lens_configs.py
+
       - name: Validate optional integration data
         run: python3 scripts/validate_optional_integrations.py
 
