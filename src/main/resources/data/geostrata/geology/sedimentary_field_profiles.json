@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "model": "geostrata:sedimentary_field_profiles",
+  "runtimeStatus": "metadata_only",
+  "description": "Initial diagnostic-only spatial tuning for normalized sedimentary successions. Values are explicit test parameters, not final world-generation commitments.",
+  "profiles": [
+    {
+      "continuity": "regional",
+      "cycleThicknessBlocks": 48.0,
+      "maxDip": 0.08,
+      "warpAmplitudeBlocks": 4.0,
+      "warpWavelengthBlocks": 192.0
+    },
+    {
+      "continuity": "local",
+      "cycleThicknessBlocks": 32.0,
+      "maxDip": 0.16,
+      "warpAmplitudeBlocks": 5.0,
+      "warpWavelengthBlocks": 96.0
+    }
+  ]
+}
