@@ -14,11 +14,19 @@ That separation is important: we can make the geology model richer without silen
 
 ## Regional province sampling
 
-GeoStrata now has a deterministic province sampler that assigns broad regional context without changing chunk output yet. Province sites are jittered inside a 768-block grid and nearest-site ownership creates irregular Voronoi-style boundaries. Five archetypes currently exist: sedimentary basin, cratonic shield, orogenic belt, volcanic arc and rift province.
+GeoStrata has a deterministic province sampler that assigns broad regional context without changing chunk output yet. Province sites are jittered inside a 768-block grid and nearest-site ownership creates irregular Voronoi-style boundaries. Five archetypes currently exist: sedimentary basin, cratonic shield, orogenic belt, volcanic arc and rift province.
 
 The sampler is a pure function of world seed and block X/Z. It stores no mutable world state, does not depend on chunk generation order and is covered by regression vectors. This is an important compatibility constraint: pregeneration, multiplayer and revisiting a partially explored world must all agree on province boundaries.
 
-Use `/geostrata province` in a world to inspect the province at the command source's current position. For now this is diagnostic only; the limestone pilot and baseline features are not gated by province. The next worldgen stage can therefore be developed against a visible regional model without silently changing existing geology first.
+The sampler also tracks the second-nearest site and computes the exact local distance to the bisector between the two sites. Future runtime generation can therefore blend neighboring province profiles across a transition zone instead of producing visible hard borders. `/geostrata province` reports the current province, neighboring province and approximate distance to that boundary.
+
+## Province profiles
+
+`data/geostrata/geology/province_profiles.json` defines relative suitability for every live lithology in every province. The profile is intentionally metadata-only in this stage: no existing feature is gated by these weights yet.
+
+Weights are preferences, not permissions. Every province/lithology pair has a positive weight, so a low value means uncommon rather than impossible. The default profile declares a 192-block transition width. A future runtime consumer should blend the primary and neighboring profile as the sampler approaches a boundary rather than abruptly switching probabilities on the Voronoi line.
+
+This distinction matters geologically and visually. Real contacts can be sharp at local scale, but broad province archetypes should not create a map-shaped wall where an entire rock type becomes impossible one block later.
 
 ## Lithology fields
 
@@ -39,17 +47,18 @@ The qualitative fields are intentional. GeoStrata should not encode "gneiss live
 The intended generator architecture is:
 
 1. choose a broad geological province from world seed and low-frequency fields;
-2. assign a lithological succession/body family within that province;
-3. construct coherent beds, bands, intrusive/volcanic bodies and contacts across chunk boundaries;
-4. expose those bodies through terrain, caves, erosion and hydrology;
-5. place ores/minerals as consequences of host lithology and geological process;
-6. let optional integrations add valid host blocks, biome mappings, surface palettes and structures without redefining the core geology.
+2. blend its lithological suitability with the neighboring province near regional boundaries;
+3. assign a lithological succession/body family within that regional context;
+4. construct coherent beds, bands, intrusive/volcanic bodies and contacts across chunk boundaries;
+5. expose those bodies through terrain, caves, erosion and hydrology;
+6. place ores/minerals as consequences of host lithology and geological process;
+7. let optional integrations add valid host blocks, biome mappings, surface palettes and structures without redefining the core geology.
 
 This is deliberately different from running fourteen independent ore generators. Feature migrations should be incremental: one geological body family is introduced, built, profiled and observed before the next family replaces its baseline implementation.
 
 ## Compatibility
 
-Third-party mods should not edit the core lithology catalog to add their own blocks. A compatibility artifact should map external terrain/content into GeoStrata's semantic extension points (replacement tags, biome tags, and future host/material mappings).
+Third-party mods should not edit the core lithology or province catalogs to add their own blocks. A compatibility artifact should map external terrain/content into GeoStrata's semantic extension points (replacement tags, biome tags, and future host/material mappings).
 
 For example, a terrain mod can add its natural stone to `geostrata:worldgen/base_stone_replaceables`; a Conquest integration can add suitable surface/building palettes without making Conquest a dependency of the core jar.
 
@@ -61,6 +70,7 @@ Run:
 
 ```text
 python3 scripts/validate_geology_catalog.py
+python3 scripts/validate_province_profiles.py
 ```
 
-The validator enforces that every live rock appears exactly once in the catalog and exactly once in a rock-class tag, that referenced biome tags exist, and that each baseline configured/placed feature actually generates the catalogued block. CI runs this before the Gradle build. Province sampling also has JUnit regression vectors so the world-seed-to-province mapping cannot drift accidentally.
+The catalog validator enforces that every live rock appears exactly once in the catalog and exactly once in a rock-class tag, that referenced biome tags exist, and that each baseline configured/placed feature actually generates the catalogued block. The province validator enforces exact coverage of all five provinces and every live lithology, positive bounded weights, a valid blend width, and at least one characteristic regional context for every rock. CI runs both before the Gradle build. Province sampling also has JUnit regression vectors so the world-seed-to-province mapping and nearest-boundary behavior cannot drift accidentally.
