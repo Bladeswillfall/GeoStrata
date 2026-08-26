@@ -90,11 +90,13 @@ public final class SedimentaryStratigraphicField {
             if (!Double.isFinite(cycleThicknessBlocks) || cycleThicknessBlocks < 1.0) {
                 throw new IllegalArgumentException("cycle thickness must be finite and at least one block");
             }
-            if (!Double.isFinite(dipX) || !Double.isFinite(dipZ)) {
-                throw new IllegalArgumentException("dip components must be finite");
+            if (!Double.isFinite(dipX) || !Double.isFinite(dipZ) || Math.hypot(dipX, dipZ) > 1.0) {
+                throw new IllegalArgumentException("dip components must be finite and combine to at most one block per block");
             }
-            if (!Double.isFinite(warpAmplitudeBlocks) || warpAmplitudeBlocks < 0.0) {
-                throw new IllegalArgumentException("warp amplitude must be finite and non-negative");
+            if (!Double.isFinite(warpAmplitudeBlocks)
+                    || warpAmplitudeBlocks < 0.0
+                    || warpAmplitudeBlocks > cycleThicknessBlocks) {
+                throw new IllegalArgumentException("warp amplitude must be within 0..cycle thickness");
             }
             if (!Double.isFinite(warpWavelengthBlocks) || warpWavelengthBlocks < 1.0) {
                 throw new IllegalArgumentException("warp wavelength must be finite and at least one block");
