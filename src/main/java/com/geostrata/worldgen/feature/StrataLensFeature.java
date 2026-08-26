@@ -129,7 +129,7 @@ public final class StrataLensFeature extends Feature<OreFeatureConfig> {
                 origin.getZ(),
                 PROVINCE_ACCEPTANCE_SALT
         );
-        return passesSuitability(suitability, roll);
+        return GeologyDeterminism.passesChance(suitability, roll);
     }
 
     private static Optional<String> profiledLithology(
@@ -152,12 +152,6 @@ public final class StrataLensFeature extends Feature<OreFeatureConfig> {
             }
         }
         return Optional.of(first.getPath());
-    }
-
-    static boolean passesSuitability(double suitability, double roll) {
-        double clampedSuitability = Math.min(1.0, Math.max(0.0, suitability));
-        double clampedRoll = Math.min(Math.nextDown(1.0), Math.max(0.0, roll));
-        return clampedRoll < clampedSuitability;
     }
 
     private static boolean shouldDiscardOnAirExposure(

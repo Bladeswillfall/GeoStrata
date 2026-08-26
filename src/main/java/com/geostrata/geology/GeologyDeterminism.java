@@ -1,6 +1,6 @@
 package com.geostrata.geology;
 
-/** Stable coordinate hashing for geology decisions that must not consume feature RNG state. */
+/** Stable helpers for geology decisions that must not consume Minecraft feature RNG state. */
 public final class GeologyDeterminism {
     private GeologyDeterminism() {
     }
@@ -22,5 +22,12 @@ public final class GeologyDeterminism {
         value *= 0xC4CEB9FE1A85EC53L;
         value ^= value >>> 33;
         return (value >>> 11) * 0x1.0p-53;
+    }
+
+    /** Applies a safely clamped probability threshold to a deterministic unit roll. */
+    public static boolean passesChance(double chance, double roll) {
+        double clampedChance = Math.min(1.0, Math.max(0.0, chance));
+        double clampedRoll = Math.min(Math.nextDown(1.0), Math.max(0.0, roll));
+        return clampedRoll < clampedChance;
     }
 }

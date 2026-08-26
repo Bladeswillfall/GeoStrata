@@ -3,6 +3,7 @@ package com.geostrata.geology;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 final class GeologyDeterminismTest {
@@ -24,5 +25,19 @@ final class GeologyDeterminismTest {
             double roll = GeologyDeterminism.unitRoll(8675309L, i * 7919, i, i * -104729, STRATA_SALT);
             assertTrue(roll >= 0.0 && roll < 1.0, "roll out of range: " + roll);
         }
+    }
+
+    @Test
+    void chanceActsAsAcceptanceProbability() {
+        assertTrue(GeologyDeterminism.passesChance(1.0, 0.999999));
+        assertTrue(GeologyDeterminism.passesChance(0.2, 0.199999));
+        assertFalse(GeologyDeterminism.passesChance(0.2, 0.2));
+        assertFalse(GeologyDeterminism.passesChance(0.05, 0.9));
+    }
+
+    @Test
+    void chanceInputsAreSafelyClamped() {
+        assertFalse(GeologyDeterminism.passesChance(-1.0, 0.0));
+        assertTrue(GeologyDeterminism.passesChance(2.0, 0.999999));
     }
 }
