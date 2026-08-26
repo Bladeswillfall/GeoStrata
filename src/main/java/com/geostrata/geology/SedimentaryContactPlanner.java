@@ -117,8 +117,13 @@ public final class SedimentaryContactPlanner {
                     || Double.compare(intervals.get(intervals.size() - 1).upperFraction(), 1.0) != 0) {
                 throw new IllegalArgumentException("plan intervals must span exactly 0..1");
             }
-            for (int index = 1; index < intervals.size(); index++) {
-                if (Double.compare(intervals.get(index - 1).upperFraction(), intervals.get(index).lowerFraction()) != 0) {
+            for (int index = 0; index < intervals.size(); index++) {
+                Interval interval = intervals.get(index);
+                if (interval.ordinal() != index) {
+                    throw new IllegalArgumentException("plan interval ordinals must match lower-to-upper order");
+                }
+                if (index > 0
+                        && Double.compare(intervals.get(index - 1).upperFraction(), interval.lowerFraction()) != 0) {
                     throw new IllegalArgumentException("plan intervals must be contiguous");
                 }
             }
