@@ -5,12 +5,14 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+import re
 import sys
 
 ROOT = Path(__file__).resolve().parents[1]
 PACK = ROOT / "pack"
 MANIFEST_PATH = PACK / "manifest.json"
 INVENTORY_PATH = PACK / "dependencies.json"
+ARTIFACT_LOCKS_PATH = PACK / "artifact-locks.json"
 
 
 def fail(message: str) -> None:
@@ -38,9 +40,80 @@ def unique_by(items, key, label: str):
     return result
 
 
+def validate_artifact_locks(locks, manifest_entries, expected_mc: str) -> int:
+    if locks.get("schemaVersion") != 1:
+        fail("pack/artifact-locks.json schemaVersion must be 1")
+    entries = locks.get("entries")
+    if not isinstance(entries, list):
+        fail("pack/artifact-locks.json entries must be an array")
+
+    project_ids = set()
+    mod_ids = set()
+    filenames = set()
+    for entry in entries:
+        if not isinstance(entry, dict):
+            fail(f"artifact lock entry must be an object: {entry!r}")
+        required = {
+            "name", "slug", "role", "source", "projectID", "fileID", "status",
+            "filename", "size", "sha256", "modID", "version", "minecraftVersion", "loader"
+        }
+        missing = sorted(required - set(entry))
+        if missing:
+            fail(f"artifact lock is missing fields {missing}: {entry}")
+
+        project_id = entry["projectID"]
+        mod_id = entry["modID"]
+        filename = entry["filename"]
+        if not isinstance(project_id, int) or isinstance(project_id, bool) or project_id <= 0:
+            fail(f"artifact lock projectID must be a positive integer: {entry}")
+        if project_id in project_ids:
+            fail(f"duplicate projectID {project_id} in artifact locks")
+        project_ids.add(project_id)
+        if not isinstance(mod_id, str) or not re.fullmatch(r"[a-z0-9_-]+", mod_id):
+            fail(f"artifact lock has invalid modID {mod_id!r}")
+        if mod_id in mod_ids:
+            fail(f"duplicate modID {mod_id} in artifact locks")
+        mod_ids.add(mod_id)
+        if not isinstance(filename, str) or Path(filename).name != filename or not filename.endswith(".jar"):
+            fail(f"artifact lock filename must be a bare .jar filename: {filename!r}")
+        if filename in filenames:
+            fail(f"duplicate filename {filename} in artifact locks")
+        filenames.add(filename)
+
+        if entry["source"] != "curseforge":
+            fail(f"unsupported artifact-lock source {entry['source']!r}")
+        if entry["loader"] != "fabric":
+            fail(f"artifact lock {filename} must target Fabric")
+        if entry["minecraftVersion"] != expected_mc:
+            fail(f"artifact lock {filename} targets Minecraft {entry['minecraftVersion']} instead of {expected_mc}")
+        if not isinstance(entry["size"], int) or isinstance(entry["size"], bool) or entry["size"] <= 0:
+            fail(f"artifact lock {filename} has invalid size")
+        if not isinstance(entry["sha256"], str) or not re.fullmatch(r"[0-9a-f]{64}", entry["sha256"]):
+            fail(f"artifact lock {filename} must contain a lowercase SHA-256 hash")
+
+        status = entry["status"]
+        file_id = entry["fileID"]
+        if status == "verified-pending-manifest-pin":
+            if file_id is not None:
+                fail(f"pending artifact lock {filename} must keep fileID null until independently verified")
+            if project_id in manifest_entries:
+                fail(f"pending artifact project {project_id} is already present in the active CurseForge manifest")
+        elif status == "manifest-pinned":
+            if not isinstance(file_id, int) or isinstance(file_id, bool) or file_id <= 0:
+                fail(f"manifest-pinned artifact {filename} requires a positive fileID")
+            manifest_entry = manifest_entries.get(project_id)
+            if not manifest_entry or manifest_entry.get("fileID") != file_id:
+                fail(f"manifest-pinned artifact {filename} does not match pack/manifest.json")
+        else:
+            fail(f"artifact lock {filename} has unsupported status {status!r}")
+
+    return len(entries)
+
+
 def main() -> None:
     manifest = load_json(MANIFEST_PATH)
     inventory = load_json(INVENTORY_PATH)
+    artifact_locks = load_json(ARTIFACT_LOCKS_PATH)
 
     if manifest.get("manifestType") != "minecraftModpack" or manifest.get("manifestVersion") != 1:
         fail("pack/manifest.json is not a CurseForge manifest v1")
@@ -109,9 +182,11 @@ def main() -> None:
     if not fabric_api or fabric_api.get("role") != "geostrata-core-dependency":
         fail("Fabric API must remain identified as the pack dependency required by GeoStrata core")
 
+    lock_count = validate_artifact_locks(artifact_locks, manifest_entries, expected_mc)
+
     print(
         f"pack validation OK: Minecraft {expected_mc}, {primary_loaders[0]}, "
-        f"{len(manifest_entries)} CurseForge projects"
+        f"{len(manifest_entries)} CurseForge projects, {lock_count} verified pending/pinned artifact locks"
     )
 
 

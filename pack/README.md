@@ -8,6 +8,7 @@ The mod source remains at repository root (`src/`, Gradle files and `src/main/re
 
 - `manifest.json` — CurseForge dependency manifest for the current Fabric 1.20.1 integration environment.
 - `dependencies.json` — human-readable inventory paired to every numeric CurseForge project/file entry in the manifest.
+- `artifact-locks.json` — cryptographic identity for verified integration artifacts that are not yet safely expressible in the active CurseForge manifest; this is metadata only and never a substitute for committing third-party jars.
 - `overrides/config/` — intentionally maintained mod configuration.
 - `overrides/kubejs/` — intentionally maintained KubeJS integration/customization.
 - `instance.png` — development pack icon.
@@ -22,11 +23,13 @@ Run the pack contract check from repository root:
 python3 scripts/validate_pack_manifest.py
 ```
 
-CI runs this before the Java build. `manifest.json` and `dependencies.json` must describe the same project IDs, file IDs and required flags. This makes dependency changes reviewable instead of leaving unexplained numbers in the export.
+CI runs this before the Java build. `manifest.json` and `dependencies.json` must describe the same active project IDs, file IDs and required flags. `artifact-locks.json` separately records verified binaries whose distribution metadata is still incomplete; pending locks must not masquerade as active manifest entries and must include an exact filename, byte size and SHA-256.
 
 ## GeoStrata jar
 
 The GeoStrata jar is deliberately **not committed** into this directory. Build it from the repository and inject the resulting release/dev jar into the assembled pack. This keeps the mod source authoritative and avoids binary drift.
+
+Third-party mod jars are likewise not committed merely because a developer supplied or verified one locally. The pack records source metadata and cryptographic identity, then pins a supported distribution source when its identifier is independently verified.
 
 ## Compatibility rule
 
