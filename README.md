@@ -22,7 +22,7 @@ Compatibility should be added in this order:
 3. guarded Java integration when a data-only bridge cannot express the feature;
 4. separate compatibility artifacts when an integration would otherwise make core depend on another mod.
 
-See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for the design rules and [`docs/COMPATIBILITY.md`](docs/COMPATIBILITY.md) for the concrete data extension points.
+See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for the design rules, [`docs/COMPATIBILITY.md`](docs/COMPATIBILITY.md) for the concrete data extension points, and [`docs/GEOLOGY_MODEL.md`](docs/GEOLOGY_MODEL.md) for the live lithology contract and generator direction.
 
 ## Repository layout
 
@@ -39,6 +39,8 @@ Minecraft launcher state, downloaded/processed jars, caches and player-local fil
 GeoStrata currently registers rock families including limestone, chalk, shale, slate, mudstone, siltstone, marble, quartzite, schist, gneiss, basalt, rhyolite, conglomerate and breccia, plus several soil/clay materials.
 
 World generation uses GeoStrata-owned biome tags such as `geostrata:has_mountain_rocks` and `geostrata:has_river_soils`, plus replacement tags such as `geostrata:worldgen/base_stone_replaceables`. Modpacks can extend those tags to teach GeoStrata about modded biomes and terrain blocks without changing Java code.
+
+The semantic meaning of each live rock is recorded in `data/geostrata/geology/lithologies.json`. The current ore-style placements remain a baseline implementation while coherent geological bodies are developed.
 
 ## Build
 

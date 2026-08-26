@@ -1,0 +1,162 @@
+{
+  "schemaVersion": 1,
+  "model": "geostrata:lithology_catalog",
+  "runtimeStatus": "metadata_only",
+  "description": "Semantic geology contract for GeoStrata rock types. The baseline ore-style generator does not yet consume these formation hints directly.",
+  "lithologies": [
+    {
+      "id": "limestone",
+      "block": "geostrata:limestone",
+      "rockClass": "sedimentary",
+      "genesis": "carbonate",
+      "bodyStyle": "bedded",
+      "depthAffinity": "shallow_to_mid",
+      "continuity": "regional",
+      "biomeTag": "geostrata:has_common_rocks",
+      "baselineFeature": "limestone_ore"
+    },
+    {
+      "id": "chalk",
+      "block": "geostrata:chalk",
+      "rockClass": "sedimentary",
+      "genesis": "carbonate",
+      "bodyStyle": "bedded",
+      "depthAffinity": "shallow",
+      "continuity": "regional",
+      "biomeTag": "geostrata:has_coastal_rocks",
+      "baselineFeature": "chalk_ore"
+    },
+    {
+      "id": "shale",
+      "block": "geostrata:shale",
+      "rockClass": "sedimentary",
+      "genesis": "mudrock",
+      "bodyStyle": "bedded",
+      "depthAffinity": "shallow_to_mid",
+      "continuity": "regional",
+      "biomeTag": "geostrata:has_common_rocks",
+      "baselineFeature": "shale_ore"
+    },
+    {
+      "id": "mudstone",
+      "block": "geostrata:mudstone",
+      "rockClass": "sedimentary",
+      "genesis": "mudrock",
+      "bodyStyle": "bedded",
+      "depthAffinity": "shallow_to_mid",
+      "continuity": "regional",
+      "biomeTag": "geostrata:has_common_rocks",
+      "baselineFeature": "mudstone_ore"
+    },
+    {
+      "id": "siltstone",
+      "block": "geostrata:siltstone",
+      "rockClass": "sedimentary",
+      "genesis": "silt_clastic",
+      "bodyStyle": "bedded",
+      "depthAffinity": "shallow",
+      "continuity": "regional",
+      "biomeTag": "geostrata:has_fluvial_rocks",
+      "baselineFeature": "siltstone_ore"
+    },
+    {
+      "id": "conglomerate",
+      "block": "geostrata:conglomerate",
+      "rockClass": "sedimentary",
+      "genesis": "coarse_clastic",
+      "bodyStyle": "channel_or_bed",
+      "depthAffinity": "shallow",
+      "continuity": "local",
+      "biomeTag": "geostrata:has_fluvial_rocks",
+      "baselineFeature": "conglomerate_ore"
+    },
+    {
+      "id": "breccia",
+      "block": "geostrata:breccia",
+      "rockClass": "sedimentary",
+      "genesis": "coarse_clastic",
+      "bodyStyle": "lens_or_bed",
+      "depthAffinity": "broad",
+      "continuity": "local",
+      "biomeTag": "geostrata:has_mountain_rocks",
+      "baselineFeature": "breccia_ore"
+    },
+    {
+      "id": "slate",
+      "block": "geostrata:slate",
+      "rockClass": "metamorphic",
+      "genesis": "low_grade_foliated",
+      "bodyStyle": "metamorphic_band",
+      "depthAffinity": "mid",
+      "continuity": "regional",
+      "biomeTag": "geostrata:has_mountain_rocks",
+      "baselineFeature": "slate_ore"
+    },
+    {
+      "id": "marble",
+      "block": "geostrata:marble",
+      "rockClass": "metamorphic",
+      "genesis": "carbonate_metamorphic",
+      "bodyStyle": "lens_or_band",
+      "depthAffinity": "mid",
+      "continuity": "local",
+      "biomeTag": "geostrata:has_mountain_rocks",
+      "baselineFeature": "marble_ore"
+    },
+    {
+      "id": "quartzite",
+      "block": "geostrata:quartzite",
+      "rockClass": "metamorphic",
+      "genesis": "quartz_rich_metamorphic",
+      "bodyStyle": "metamorphic_band",
+      "depthAffinity": "mid",
+      "continuity": "regional",
+      "biomeTag": "geostrata:has_mountain_rocks",
+      "baselineFeature": "quartzite_ore"
+    },
+    {
+      "id": "schist",
+      "block": "geostrata:schist",
+      "rockClass": "metamorphic",
+      "genesis": "medium_grade_foliated",
+      "bodyStyle": "metamorphic_band",
+      "depthAffinity": "mid_to_deep",
+      "continuity": "regional",
+      "biomeTag": "geostrata:has_mountain_rocks",
+      "baselineFeature": "schist_ore"
+    },
+    {
+      "id": "gneiss",
+      "block": "geostrata:gneiss",
+      "rockClass": "metamorphic",
+      "genesis": "high_grade_banded",
+      "bodyStyle": "basement_massif",
+      "depthAffinity": "deep",
+      "continuity": "regional",
+      "biomeTag": "geostrata:has_mountain_rocks",
+      "baselineFeature": "gneiss_ore"
+    },
+    {
+      "id": "basalt",
+      "block": "geostrata:basalt",
+      "rockClass": "igneous",
+      "genesis": "mafic_extrusive",
+      "bodyStyle": "flow_or_sheet",
+      "depthAffinity": "shallow_to_mid",
+      "continuity": "regional",
+      "biomeTag": "geostrata:has_common_rocks",
+      "baselineFeature": "basalt_ore"
+    },
+    {
+      "id": "rhyolite",
+      "block": "geostrata:rhyolite",
+      "rockClass": "igneous",
+      "genesis": "felsic_extrusive",
+      "bodyStyle": "volcanic_body",
+      "depthAffinity": "shallow_to_mid",
+      "continuity": "local",
+      "biomeTag": "geostrata:has_mountain_rocks",
+      "baselineFeature": "rhyolite_ore"
+    }
+  ]
+}
