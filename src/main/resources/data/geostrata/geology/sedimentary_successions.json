@@ -1,0 +1,54 @@
+{
+  "schemaVersion": 1,
+  "model": "geostrata:sedimentary_successions",
+  "runtimeStatus": "metadata_only",
+  "order": "lower_to_upper",
+  "description": "Ordered sedimentary bed motifs for future correlated stratigraphy. Relative thickness values are ratios, not block counts; contexts express broad geological fit rather than hard placement permissions.",
+  "successions": [
+    {
+      "id": "basin_mudrock_carbonate_cycle",
+      "contexts": ["sedimentary_basin"],
+      "continuity": "regional",
+      "beds": [
+        {"lithology": "siltstone", "relativeThickness": 0.8},
+        {"lithology": "shale", "relativeThickness": 1.2},
+        {"lithology": "limestone", "relativeThickness": 1.0},
+        {"lithology": "shale", "relativeThickness": 0.7},
+        {"lithology": "mudstone", "relativeThickness": 0.9}
+      ]
+    },
+    {
+      "id": "shelf_chalk_carbonate_cycle",
+      "contexts": ["sedimentary_basin"],
+      "continuity": "regional",
+      "beds": [
+        {"lithology": "mudstone", "relativeThickness": 0.8},
+        {"lithology": "chalk", "relativeThickness": 1.1},
+        {"lithology": "limestone", "relativeThickness": 0.7},
+        {"lithology": "shale", "relativeThickness": 0.6}
+      ]
+    },
+    {
+      "id": "rift_fining_upward_clastics",
+      "contexts": ["rift_province", "sedimentary_basin"],
+      "continuity": "regional",
+      "beds": [
+        {"lithology": "conglomerate", "relativeThickness": 0.7},
+        {"lithology": "siltstone", "relativeThickness": 0.9},
+        {"lithology": "mudstone", "relativeThickness": 1.0},
+        {"lithology": "shale", "relativeThickness": 0.8}
+      ]
+    },
+    {
+      "id": "orogenic_fan_fining_upward",
+      "contexts": ["orogenic_belt", "rift_province"],
+      "continuity": "local",
+      "beds": [
+        {"lithology": "breccia", "relativeThickness": 0.6},
+        {"lithology": "conglomerate", "relativeThickness": 0.9},
+        {"lithology": "siltstone", "relativeThickness": 0.8},
+        {"lithology": "shale", "relativeThickness": 0.5}
+      ]
+    }
+  ]
+}
