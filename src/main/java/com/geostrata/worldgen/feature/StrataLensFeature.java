@@ -1,8 +1,14 @@
 package com.geostrata.worldgen.feature;
 
+import com.geostrata.GeoStrata;
+import com.geostrata.geology.GeologyDeterminism;
+import com.geostrata.geology.GeologyProvinceProfiles;
+import com.geostrata.geology.GeologyProvinceSampler;
 import com.mojang.serialization.Codec;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
+import net.minecraft.registry.Registries;
+import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.random.Random;
@@ -10,6 +16,8 @@ import net.minecraft.world.StructureWorldAccess;
 import net.minecraft.world.gen.feature.Feature;
 import net.minecraft.world.gen.feature.OreFeatureConfig;
 import net.minecraft.world.gen.feature.util.FeatureContext;
+
+import java.util.Optional;
 
 /**
  * Generates a broad, tapered and gently tilted lithological lens instead of a
@@ -21,6 +29,8 @@ import net.minecraft.world.gen.feature.util.FeatureContext;
  * body-scale hint rather than an exact block count.</p>
  */
 public final class StrataLensFeature extends Feature<OreFeatureConfig> {
+    private static final long PROVINCE_ACCEPTANCE_SALT = 0x6A09E667F3BCC909L;
+
     public StrataLensFeature(Codec<OreFeatureConfig> codec) {
         super(codec);
     }
@@ -31,6 +41,10 @@ public final class StrataLensFeature extends Feature<OreFeatureConfig> {
         BlockPos origin = context.getOrigin();
         Random random = context.getRandom();
         OreFeatureConfig config = context.getConfig();
+
+        if (!passesProvinceSuitability(world, origin, config)) {
+            return false;
+        }
 
         int longRadius = Math.max(6, Math.min(14, (int) Math.ceil(Math.sqrt(config.size) * 1.35)));
         int shortRadius = Math.max(4, (int) Math.round(longRadius * (0.58 + random.nextDouble() * 0.16)));
@@ -85,6 +99,59 @@ public final class StrataLensFeature extends Feature<OreFeatureConfig> {
         }
 
         return placed > 0;
+    }
+
+    private static boolean passesProvinceSuitability(
+            StructureWorldAccess world,
+            BlockPos origin,
+            OreFeatureConfig config
+    ) {
+        GeologyProvinceProfiles.Snapshot profiles = GeologyProvinceProfiles.current();
+        if (!profiles.loaded()) {
+            return true;
+        }
+
+        Optional<String> lithology = profiledLithology(config, profiles);
+        if (lithology.isEmpty()) {
+            return true;
+        }
+
+        GeologyProvinceSampler.Sample sample = GeologyProvinceSampler.sample(
+                world.getSeed(),
+                origin.getX(),
+                origin.getZ()
+        );
+        double suitability = profiles.effectiveWeight(sample, lithology.get());
+        double roll = GeologyDeterminism.unitRoll(
+                world.getSeed(),
+                origin.getX(),
+                origin.getY(),
+                origin.getZ(),
+                PROVINCE_ACCEPTANCE_SALT
+        );
+        return GeologyDeterminism.passesChance(suitability, roll);
+    }
+
+    private static Optional<String> profiledLithology(
+            OreFeatureConfig config,
+            GeologyProvinceProfiles.Snapshot profiles
+    ) {
+        if (config.targets.isEmpty()) {
+            return Optional.empty();
+        }
+
+        Identifier first = Registries.BLOCK.getId(config.targets.get(0).state.getBlock());
+        if (!GeoStrata.MOD_ID.equals(first.getNamespace()) || !profiles.lithologyIds().contains(first.getPath())) {
+            return Optional.empty();
+        }
+
+        for (OreFeatureConfig.Target target : config.targets) {
+            Identifier targetId = Registries.BLOCK.getId(target.state.getBlock());
+            if (!targetId.equals(first)) {
+                return Optional.empty();
+            }
+        }
+        return Optional.of(first.getPath());
     }
 
     private static boolean shouldDiscardOnAirExposure(

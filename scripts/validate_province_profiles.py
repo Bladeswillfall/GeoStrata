@@ -48,8 +48,8 @@ def main() -> None:
         fail("province profile schemaVersion must be 1")
     if data.get("model") != "geostrata:province_profiles":
         fail("unexpected province profile model identifier")
-    if data.get("runtimeStatus") != "metadata_only":
-        fail("province profiles must remain metadata-only until a reviewed runtime consumer is added")
+    if data.get("runtimeStatus") != "runtime_bias":
+        fail("province profiles must declare runtime_bias while strata-lens generation consumes their weights")
 
     blend_width = data.get("blendWidthBlocks")
     if not isinstance(blend_width, int) or isinstance(blend_width, bool) or not 1 <= blend_width <= 384:
@@ -104,7 +104,7 @@ def main() -> None:
 
     print(
         f"province profile validation OK: {len(profiles)} provinces, "
-        f"{len(lithology_ids)} lithologies, {blend_width}-block blend width"
+        f"{len(lithology_ids)} lithologies, {blend_width}-block blend width, runtime bias active"
     )
 
 
