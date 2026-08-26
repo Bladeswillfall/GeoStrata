@@ -103,6 +103,11 @@ final class SedimentaryStratigraphicFieldTest {
         assertThrows(IllegalArgumentException.class,
                 () -> new SedimentaryStratigraphicField.Parameters(32.0, 0.1, 2.0, 0.0));
 
+        assertThrows(IllegalArgumentException.class,
+                () -> new SedimentaryStratigraphicField.Field(0, 0, 32.0, 1.0, 1.0, 0.0, 64.0, 0.0));
+        assertThrows(IllegalArgumentException.class,
+                () -> new SedimentaryStratigraphicField.Field(0, 0, 32.0, 0.0, 0.0, 33.0, 64.0, 0.0));
+
         SedimentaryStratigraphicField.Field field = SedimentaryStratigraphicField.forSite(
                 1L,
                 0,
