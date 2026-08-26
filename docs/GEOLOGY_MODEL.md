@@ -12,6 +12,14 @@ Limestone is the first migration pilot. Its configured feature now uses GeoStrat
 
 That separation is important: we can make the geology model richer without silently changing every existing feature at once, and compatibility packs can reason about lithologies without depending on one terrain generator.
 
+## Regional province sampling
+
+GeoStrata now has a deterministic province sampler that assigns broad regional context without changing chunk output yet. Province sites are jittered inside a 768-block grid and nearest-site ownership creates irregular Voronoi-style boundaries. Five archetypes currently exist: sedimentary basin, cratonic shield, orogenic belt, volcanic arc and rift province.
+
+The sampler is a pure function of world seed and block X/Z. It stores no mutable world state, does not depend on chunk generation order and is covered by regression vectors. This is an important compatibility constraint: pregeneration, multiplayer and revisiting a partially explored world must all agree on province boundaries.
+
+Use `/geostrata province` in a world to inspect the province at the command source's current position. For now this is diagnostic only; the limestone pilot and baseline features are not gated by province. The next worldgen stage can therefore be developed against a visible regional model without silently changing existing geology first.
+
 ## Lithology fields
 
 Each core rock defines:
@@ -55,4 +63,4 @@ Run:
 python3 scripts/validate_geology_catalog.py
 ```
 
-The validator enforces that every live rock appears exactly once in the catalog and exactly once in a rock-class tag, that referenced biome tags exist, and that each baseline configured/placed feature actually generates the catalogued block. CI runs this before the Gradle build.
+The validator enforces that every live rock appears exactly once in the catalog and exactly once in a rock-class tag, that referenced biome tags exist, and that each baseline configured/placed feature actually generates the catalogued block. CI runs this before the Gradle build. Province sampling also has JUnit regression vectors so the world-seed-to-province mapping cannot drift accidentally.

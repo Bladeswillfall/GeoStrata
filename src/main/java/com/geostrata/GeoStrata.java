@@ -1,6 +1,7 @@
 package com.geostrata;
 
 import com.geostrata.block.GeoStrataBlocks;
+import com.geostrata.command.GeoStrataCommands;
 import com.geostrata.item.GeoStrataItemGroups;
 import com.geostrata.worldgen.GeoStrataWorldgen;
 import com.geostrata.worldgen.feature.GeoStrataFeatures;
@@ -19,6 +20,7 @@ public final class GeoStrata implements ModInitializer {
         GeoStrataItemGroups.register();
         GeoStrataFeatures.register();
         GeoStrataWorldgen.register();
+        GeoStrataCommands.register();
         LOGGER.info(
                 "GeoStrata initialized {} runtime blocks with data-driven overworld geology",
                 GeoStrataBlocks.count()
