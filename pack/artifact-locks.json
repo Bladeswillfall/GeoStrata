@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "entries": [
+    {
+      "name": "Streams Reflowing",
+      "slug": "streams-reflowing",
+      "role": "integration-worldgen",
+      "source": "curseforge",
+      "projectID": 1581408,
+      "fileID": null,
+      "status": "verified-pending-manifest-pin",
+      "filename": "StreamsReflowing-1.20.1-fabric-2.12.8.jar",
+      "size": 2591301,
+      "sha256": "23af39c62723cf8c2fd63231c0afc71d3c27594230d84fe328334e79be7ee678",
+      "modID": "streamsreflowing",
+      "version": "2.12.8",
+      "minecraftVersion": "1.20.1",
+      "loader": "fabric",
+      "minimumFabricLoader": "0.16.9"
+    }
+  ]
+}
