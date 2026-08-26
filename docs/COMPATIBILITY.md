@@ -37,7 +37,7 @@ GeoStrata also owns biome tags such as `geostrata:has_mountain_rocks`, `geostrat
 
 ## Streams Reflowing
 
-GeoStrata ships a data-only bridge for Streams Reflowing under `data/geostrata/streamsreflowing/bank_style/`. Streams Reflowing discovers bank-style JSON from other mod namespaces when it is installed; ordinary Minecraft and GeoStrata never load Java classes from Streams Reflowing.
+GeoStrata ships a data-only bridge for Streams Reflowing. Streams Reflowing discovers bank-style JSON from other mod namespaces and uses ordinary Minecraft tags for several ecological/geographical decisions, so the integration requires no Streams Java classes and no hard dependency.
 
 The core bridge is intentionally conservative:
 
@@ -46,9 +46,11 @@ The core bridge is intentionally conservative:
 - jungle biomes can use compacted/wet mud;
 - cut banks remain natural (`bank_enabled: false`), so erosion exposes the lithology GeoStrata actually generated instead of painting a biome-selected rock over it;
 - selectors use GeoStrata-owned biome tags plus `minecraft:is_overworld`, allowing biome mods/modpacks to opt in by extending GeoStrata tags;
+- `#streamsreflowing:rocky_banks` inherits `#geostrata:has_mountain_rocks`, so a biome classified once as a GeoStrata mountain also receives Streams' existing rocky-bank treatment;
+- all GeoStrata earth blocks extend `#streamsreflowing:underwater_vegetation_floor`, allowing Streams' underwater flora system to recognize GeoStrata loams, muds, peat and clays as natural substrate;
 - core does not contest Streams Reflowing's exact-biome presets. The curated GeoStrata pack may provide stronger pack-level choices later, but the standalone jar stays cooperative.
 
-This arrangement is deliberately asymmetric: Streams Reflowing being absent changes nothing about GeoStrata, while its presence discovers extra GeoStrata-aware sediment styling automatically.
+This arrangement is deliberately asymmetric: Streams Reflowing being absent changes nothing about GeoStrata, while its presence discovers extra GeoStrata-aware sediment, terrain-classification and vegetation behavior automatically.
 
 ## Integration rule
 

@@ -11,6 +11,8 @@ import sys
 ROOT = Path(__file__).resolve().parents[1]
 BLOCKS_JAVA = ROOT / "src/main/java/com/geostrata/block/GeoStrataBlocks.java"
 STREAMS_STYLES = ROOT / "src/main/resources/data/geostrata/streamsreflowing/bank_style"
+STREAMS_FLOOR_TAG = ROOT / "src/main/resources/data/streamsreflowing/tags/blocks/underwater_vegetation_floor.json"
+STREAMS_ROCKY_BANKS_TAG = ROOT / "src/main/resources/data/streamsreflowing/tags/worldgen/biome/rocky_banks.json"
 
 
 def fail(message: str) -> None:
@@ -18,16 +20,30 @@ def fail(message: str) -> None:
     raise SystemExit(1)
 
 
-def registered_blocks() -> set[str]:
+def block_registrations() -> tuple[set[str], set[str]]:
     try:
         source = BLOCKS_JAVA.read_text(encoding="utf-8")
     except OSError as exc:
         fail(f"cannot read {BLOCKS_JAVA.relative_to(ROOT)}: {exc}")
 
-    names = set(re.findall(r'register(?:Rock|RockVariant|Earth)\("([a-z0-9_]+)"', source))
-    if not names:
+    all_names = set(re.findall(r'register(?:Rock|RockVariant|Earth)\("([a-z0-9_]+)"', source))
+    earth_names = set(re.findall(r'registerEarth\("([a-z0-9_]+)"', source))
+    if not all_names or not earth_names:
         fail("could not discover GeoStrata block registrations")
-    return {f"geostrata:{name}" for name in names}
+    return (
+        {f"geostrata:{name}" for name in all_names},
+        {f"geostrata:{name}" for name in earth_names},
+    )
+
+
+def load_object(path: Path) -> dict:
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        fail(f"cannot read {path.relative_to(ROOT)}: {exc}")
+    if not isinstance(data, dict):
+        fail(f"{path.relative_to(ROOT)} must contain a JSON object")
+    return data
 
 
 def block_values(value, field: str, path: Path) -> list[str]:
@@ -48,7 +64,7 @@ def validate_streams_reflowing() -> None:
     if not STREAMS_STYLES.is_dir():
         fail("Streams Reflowing bridge directory is missing")
 
-    blocks = registered_blocks()
+    blocks, earth_blocks = block_registrations()
     paths = sorted(STREAMS_STYLES.glob("*.json"))
     expected = {"fluvial_sediments.json", "swamp_sediments.json", "jungle_sediments.json"}
     if {path.name for path in paths} != expected:
@@ -56,13 +72,7 @@ def validate_streams_reflowing() -> None:
 
     seen_geostrata_blocks: set[str] = set()
     for path in paths:
-        try:
-            data = json.loads(path.read_text(encoding="utf-8"))
-        except (OSError, json.JSONDecodeError) as exc:
-            fail(f"cannot read {path.relative_to(ROOT)}: {exc}")
-
-        if not isinstance(data, dict):
-            fail(f"{path.relative_to(ROOT)} must contain a JSON object")
+        data = load_object(path)
         if "biomes" in data:
             fail(f"{path.relative_to(ROOT)} must not contest Streams Reflowing exact-biome styles")
         if data.get("bank_enabled") is not False:
@@ -97,11 +107,29 @@ def validate_streams_reflowing() -> None:
             if not isinstance(value, (int, float)) or isinstance(value, bool) or not 0.0 <= float(value) <= 0.5:
                 fail(f"{path.relative_to(ROOT)} field {field} must be between 0.0 and 0.5")
 
+    floor = load_object(STREAMS_FLOOR_TAG)
+    if floor.get("replace") is not False:
+        fail("Streams Reflowing underwater vegetation floor extension must use replace=false")
+    floor_values = floor.get("values")
+    if not isinstance(floor_values, list) or not all(isinstance(value, str) for value in floor_values):
+        fail("Streams Reflowing underwater vegetation floor extension must contain direct block IDs")
+    if set(floor_values) != earth_blocks:
+        fail(
+            "underwater vegetation floor integration must explicitly classify every GeoStrata earth block; "
+            f"missing={sorted(earth_blocks - set(floor_values))}, extra={sorted(set(floor_values) - earth_blocks)}"
+        )
+
+    rocky = load_object(STREAMS_ROCKY_BANKS_TAG)
+    if rocky.get("replace") is not False:
+        fail("Streams Reflowing rocky_banks extension must use replace=false")
+    if rocky.get("values") != ["#geostrata:has_mountain_rocks"]:
+        fail("Streams Reflowing rocky_banks must inherit exactly #geostrata:has_mountain_rocks")
+
     if not seen_geostrata_blocks:
         fail("Streams Reflowing bridge does not actually use any GeoStrata material")
     print(
         f"optional integration validation OK: {len(paths)} Streams Reflowing bank styles, "
-        f"{len(seen_geostrata_blocks)} GeoStrata sediment/soil blocks referenced"
+        f"{len(seen_geostrata_blocks)} styled GeoStrata materials, {len(earth_blocks)} vegetation-floor blocks"
     )
 
 
