@@ -2,6 +2,7 @@ package com.geostrata;
 
 import com.geostrata.block.GeoStrataBlocks;
 import com.geostrata.command.GeoStrataCommands;
+import com.geostrata.geology.GeologyProvinceProfiles;
 import com.geostrata.item.GeoStrataItemGroups;
 import com.geostrata.worldgen.GeoStrataWorldgen;
 import com.geostrata.worldgen.feature.GeoStrataFeatures;
@@ -19,6 +20,7 @@ public final class GeoStrata implements ModInitializer {
         GeoStrataBlocks.register();
         GeoStrataItemGroups.register();
         GeoStrataFeatures.register();
+        GeologyProvinceProfiles.register();
         GeoStrataWorldgen.register();
         GeoStrataCommands.register();
         LOGGER.info(
