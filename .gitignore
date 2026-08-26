@@ -29,6 +29,9 @@ downloads/
 libraries/
 versions/
 webcache*/
+modernfix/
+local/
+data/fabricDefaultResourcePacks.dat
 
 # Launcher/player state
 options.txt
@@ -39,6 +42,8 @@ usercache.json
 usernamecache.json
 realms_persistence.json
 irisUpdateInfo.json
+minecraftinstance.json
+rhino.local.properties
 *.sqlite
 
 # Local inventory/debug exports
