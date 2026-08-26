@@ -12,6 +12,7 @@
     {"projectID": 308702, "fileID": 5162837, "required": true, "name": "Mod Menu", "slug": "modmenu", "role": "client-ui"},
     {"projectID": 568563, "fileID": 6925373, "required": true, "name": "Entity Texture Features (ETF)", "slug": "entity-texture-features-fabric", "role": "resourcepack-support"},
     {"projectID": 844662, "fileID": 6922713, "required": true, "name": "Entity Model Features (EMF)", "slug": "entity-model-features", "role": "resourcepack-support"},
+    {"projectID": 531351, "fileID": 5962874, "required": true, "name": "Continuity", "slug": "continuity", "role": "resourcepack-support"},
     {"projectID": 511319, "fileID": 5075462, "required": true, "name": "Reese's Sodium Options", "slug": "reeses-sodium-options", "role": "client-ui"},
     {"projectID": 360438, "fileID": 6097158, "required": true, "name": "Lithium", "slug": "lithium", "role": "performance"},
     {"projectID": 419699, "fileID": 5137936, "required": true, "name": "Architectury API", "slug": "architectury-api", "role": "library"},
@@ -27,8 +28,9 @@
     {"projectID": 448233, "fileID": 6780225, "required": true, "name": "Entity Culling", "slug": "entityculling", "role": "performance"},
     {"projectID": 394468, "fileID": 6260639, "required": true, "name": "Sodium", "slug": "sodium", "role": "performance"},
     {"projectID": 958094, "fileID": 6933815, "required": true, "name": "Polytone", "slug": "polytone", "role": "resourcepack-support"},
+    {"projectID": 563977, "fileID": 7394086, "required": true, "name": "Puzzle", "slug": "puzzle", "role": "resourcepack-support"},
     {"projectID": 619718, "fileID": 5844813, "required": true, "name": "Cull Less Leaves", "slug": "cull-less-leaves", "role": "client-rendering"},
     {"projectID": 459857, "fileID": 4810977, "required": true, "name": "FerriteCore", "slug": "ferritecore-fabric", "role": "performance"},
-    {"projectID": 250077, "fileID": 7208296, "required": true, "name": "Conquest Reforged", "slug": "conquest-reforged", "role": "integration-content"}
+    {"projectID": 250077, "fileID": 8702617, "required": true, "name": "Conquest Reforged", "slug": "conquest-reforged", "role": "integration-content"}
   ]
 }

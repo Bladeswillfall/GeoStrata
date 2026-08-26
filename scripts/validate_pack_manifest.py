@@ -14,6 +14,19 @@ MANIFEST_PATH = PACK / "manifest.json"
 INVENTORY_PATH = PACK / "dependencies.json"
 ARTIFACT_LOCKS_PATH = PACK / "artifact-locks.json"
 
+CONQUEST_PROJECT_ID = 250077
+CONQUEST_170_FILE_ID = 8702617
+FORGE_SKYBOXES_PROJECT_ID = 918052
+CONQUEST_FABRIC_SUPPORT = {
+    568563: "Entity Texture Features (ETF)",
+    844662: "Entity Model Features (EMF)",
+    531351: "Continuity",
+    563977: "Puzzle",
+    958094: "Polytone",
+    408209: "Nuit",
+    835546: "ArdaGrass",
+}
+
 
 def fail(message: str) -> None:
     print(f"pack validation failed: {message}", file=sys.stderr)
@@ -110,6 +123,32 @@ def validate_artifact_locks(locks, manifest_entries, expected_mc: str) -> int:
     return len(entries)
 
 
+def validate_conquest_fabric_stack(inventory_entries) -> None:
+    conquest = inventory_entries.get(CONQUEST_PROJECT_ID)
+    if not conquest or conquest.get("role") != "integration-content":
+        fail("Conquest Reforged must remain classified as optional integration content, not a GeoStrata core dependency")
+
+    if FORGE_SKYBOXES_PROJECT_ID in inventory_entries:
+        fail("ForgeSkyboxes must not be present in the Fabric development pack; use Nuit/FabricSkyBoxes")
+
+    if conquest.get("fileID") == CONQUEST_170_FILE_ID:
+        missing = [
+            f"{project_id} ({name})"
+            for project_id, name in CONQUEST_FABRIC_SUPPORT.items()
+            if project_id not in inventory_entries
+        ]
+        if missing:
+            fail("Conquest 1.7.0 Fabric baseline is missing support projects: " + ", ".join(missing))
+
+        expected_pins = {
+            531351: 5962874,
+            563977: 7394086,
+        }
+        for project_id, file_id in expected_pins.items():
+            if inventory_entries[project_id].get("fileID") != file_id:
+                fail(f"Conquest 1.7.0 support project {project_id} must remain pinned to verified file {file_id}")
+
+
 def main() -> None:
     manifest = load_json(MANIFEST_PATH)
     inventory = load_json(INVENTORY_PATH)
@@ -174,9 +213,7 @@ def main() -> None:
         seen_names.add(name)
         seen_slugs.add(slug)
 
-    conquest = inventory_entries.get(250077)
-    if not conquest or conquest.get("role") != "integration-content":
-        fail("Conquest Reforged must remain classified as optional integration content, not a GeoStrata core dependency")
+    validate_conquest_fabric_stack(inventory_entries)
 
     fabric_api = inventory_entries.get(306612)
     if not fabric_api or fabric_api.get("role") != "geostrata-core-dependency":
