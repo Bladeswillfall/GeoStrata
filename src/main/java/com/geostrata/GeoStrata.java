@@ -17,7 +17,10 @@ public final class GeoStrata implements ModInitializer {
         GeoStrataBlocks.register();
         GeoStrataItemGroups.register();
         GeoStrataWorldgen.register();
-        LOGGER.info("GeoStrata registered {} placeholder runtime blocks with baseline overworld generation", GeoStrataBlocks.count());
+        LOGGER.info(
+                "GeoStrata initialized {} runtime blocks with data-driven overworld geology",
+                GeoStrataBlocks.count()
+        );
     }
 
     public static Identifier id(String path) {
