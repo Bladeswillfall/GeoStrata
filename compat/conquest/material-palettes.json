@@ -23,7 +23,7 @@
         "geology": ["conquest:gray_limestone", "conquest:pale_limestone", "conquest:pink_limestone"],
         "weathered": ["conquest:mossy_limestone", "conquest:tan_limestone"],
         "rubble": ["conquest:limestone_rocks"],
-        "construction": ["conquest:limestone_cobble", "conquest:limestone_brick", "conquest:carved_limestone"]
+        "construction": ["conquest:light_limestone_cobble", "conquest:light_limestone_brick", "conquest:carved_limestone"]
       }
     },
     {
@@ -111,7 +111,7 @@
         "geology": ["conquest:carrara_white_marble", "conquest:fior_de_bosco_gray_marble", "conquest:rough_marble"],
         "weathered": ["conquest:dark_rough_marble"],
         "rubble": [],
-        "construction": ["conquest:marble_brick", "conquest:marble_column"]
+        "construction": ["conquest:marble_column", "conquest:simple_marble_column_design"]
       }
     },
     {
