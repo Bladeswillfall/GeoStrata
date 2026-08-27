@@ -52,8 +52,9 @@ public final class ProvinceDeformationProfiles implements SimpleSynchronousResou
             Snapshot loaded = parse(readObject(manager, PROFILES_RESOURCE));
             snapshot = loaded;
             GeoStrata.LOGGER.info(
-                    "Loaded GeoStrata province deformation profiles: {} provinces",
-                    loaded.profiles().size()
+                    "Loaded GeoStrata province deformation profiles: {} provinces, {}-block blend width",
+                    loaded.profiles().size(),
+                    loaded.blendWidthBlocks()
             );
         } catch (IOException | JsonParseException | IllegalArgumentException exception) {
             throw new IllegalStateException("Failed to load GeoStrata province deformation profiles", exception);
@@ -65,14 +66,28 @@ public final class ProvinceDeformationProfiles implements SimpleSynchronousResou
         requireString(root, "model", "geostrata:province_deformation_profiles");
         requireString(root, "runtimeStatus", "metadata_only");
 
+        int blendWidthBlocks = requireBlendWidth(root);
         Normalization normalization = parseNormalization(requiredObject(root, "morphologyNormalization"));
         Map<GeologyProvince, Profile> profiles = parseProfiles(requiredArray(root, "profiles"));
         requireExactProvinceCoverage(profiles.keySet());
-        return new Snapshot("metadata_only", normalization, Collections.unmodifiableMap(profiles));
+        return new Snapshot(
+                "metadata_only",
+                blendWidthBlocks,
+                normalization,
+                Collections.unmodifiableMap(profiles)
+        );
+    }
+
+    private static int requireBlendWidth(JsonObject root) {
+        int blendWidthBlocks = requireInt(root, "blendWidthBlocks");
+        if (blendWidthBlocks < 1 || blendWidthBlocks > 384) {
+            throw new IllegalArgumentException("blendWidthBlocks must be within 1..384");
+        }
+        return blendWidthBlocks;
     }
 
     private static Normalization parseNormalization(JsonObject object) {
-        Normalization normalization = new Normalization(
+        return new Normalization(
                 requireDouble(object, "reliefScaleBlocks"),
                 requireDouble(object, "slopeScale"),
                 requireDouble(object, "ridgeProminenceScaleBlocks"),
@@ -80,13 +95,6 @@ public final class ProvinceDeformationProfiles implements SimpleSynchronousResou
                 requireDouble(object, "slopeWeight"),
                 requireDouble(object, "ridgeWeight")
         );
-        double weightSum = normalization.reliefWeight()
-                + normalization.slopeWeight()
-                + normalization.ridgeWeight();
-        if (Math.abs(weightSum - 1.0) > WEIGHT_EPSILON) {
-            throw new IllegalArgumentException("morphology normalization weights must sum to 1.0");
-        }
-        return normalization;
     }
 
     private static Map<GeologyProvince, Profile> parseProfiles(JsonArray array) {
@@ -108,21 +116,14 @@ public final class ProvinceDeformationProfiles implements SimpleSynchronousResou
     }
 
     private static Profile parseProfile(JsonObject object) {
-        GeologyProvince province = requireProvince(requireString(object, "province"));
-        Profile profile = new Profile(
-                province,
+        return new Profile(
+                requireProvince(requireString(object, "province")),
                 requireUnit(object, "baselineIntensity"),
                 requireUnit(object, "terrainCoupling"),
                 requireUnit(object, "dipPotential"),
                 requireUnit(object, "foldPotential"),
                 requireUnit(object, "faultPotential")
         );
-        if (profile.baselineIntensity() + profile.terrainCoupling() > 1.0 + WEIGHT_EPSILON) {
-            throw new IllegalArgumentException(
-                    province.id() + " baselineIntensity + terrainCoupling must not exceed 1.0"
-            );
-        }
-        return profile;
     }
 
     private static GeologyProvince requireProvince(String id) {
@@ -226,10 +227,20 @@ public final class ProvinceDeformationProfiles implements SimpleSynchronousResou
 
     private static double requireUnit(JsonObject object, String key) {
         double value = requireDouble(object, key);
-        if (value < 0.0 || value > 1.0) {
-            throw new IllegalArgumentException(key + " must be within 0..1");
-        }
+        requireUnitValue(value, key);
         return value;
+    }
+
+    private static void requirePositive(double value, String name) {
+        if (!Double.isFinite(value) || value <= 0.0) {
+            throw new IllegalArgumentException(name + " must be finite and positive");
+        }
+    }
+
+    private static void requireUnitValue(double value, String name) {
+        if (!Double.isFinite(value) || value < 0.0 || value > 1.0) {
+            throw new IllegalArgumentException(name + " must be finite and within 0..1");
+        }
     }
 
     public record Normalization(
@@ -247,17 +258,9 @@ public final class ProvinceDeformationProfiles implements SimpleSynchronousResou
             requireUnitValue(reliefWeight, "relief weight");
             requireUnitValue(slopeWeight, "slope weight");
             requireUnitValue(ridgeWeight, "ridge weight");
-        }
-
-        private static void requirePositive(double value, String name) {
-            if (!Double.isFinite(value) || value <= 0.0) {
-                throw new IllegalArgumentException(name + " must be finite and positive");
-            }
-        }
-
-        private static void requireUnitValue(double value, String name) {
-            if (!Double.isFinite(value) || value < 0.0 || value > 1.0) {
-                throw new IllegalArgumentException(name + " must be finite and within 0..1");
+            double weightSum = reliefWeight + slopeWeight + ridgeWeight;
+            if (Math.abs(weightSum - 1.0) > WEIGHT_EPSILON) {
+                throw new IllegalArgumentException("morphology normalization weights must sum to 1.0");
             }
         }
     }
@@ -274,20 +277,33 @@ public final class ProvinceDeformationProfiles implements SimpleSynchronousResou
             if (province == null) {
                 throw new IllegalArgumentException("deformation profile province must not be null");
             }
+            requireUnitValue(baselineIntensity, "baseline intensity");
+            requireUnitValue(terrainCoupling, "terrain coupling");
+            requireUnitValue(dipPotential, "dip potential");
+            requireUnitValue(foldPotential, "fold potential");
+            requireUnitValue(faultPotential, "fault potential");
+            if (baselineIntensity + terrainCoupling > 1.0 + WEIGHT_EPSILON) {
+                throw new IllegalArgumentException(
+                        province.id() + " baseline intensity + terrain coupling must not exceed 1.0"
+                );
+            }
         }
     }
 
     public record Snapshot(
             String runtimeStatus,
+            int blendWidthBlocks,
             Normalization normalization,
             Map<GeologyProvince, Profile> profiles
     ) {
         private static Snapshot unloaded() {
-            return new Snapshot("unloaded", null, Map.of());
+            return new Snapshot("unloaded", 0, null, Map.of());
         }
 
         public boolean loaded() {
-            return normalization != null && profiles.size() == GeologyProvince.values().length;
+            return blendWidthBlocks > 0
+                    && normalization != null
+                    && profiles.size() == GeologyProvince.values().length;
         }
 
         public Profile profileFor(GeologyProvince province) {
