@@ -44,6 +44,14 @@ Province acceptance uses `GeologyDeterminism.unitRoll`, a stable world-seed/XYZ 
 
 The roll mapping is covered by fixed regression vectors. Changing its hash or salt is a world-generation compatibility change and should be treated accordingly.
 
+## Terrain morphology evidence
+
+`TerrainMorphologySample` is the first small terrain-aware seam in the refactored codebase. It converts a center height plus four cardinal observations into coarse relief, X/Z gradient, slope magnitude and ridge/valley prominence without depending on Minecraft classes.
+
+`ChunkGeneratorTerrainMorphologySampler` supplies those observations from the active terrain generator's `OCEAN_FLOOR_WG` height at 128-block spacing. It asks the generator directly rather than loading neighboring chunks, so vanilla noise settings and compatible terrain generators can contribute through the same adapter without becoming core dependencies.
+
+Use `/geostrata terrain` to inspect that evidence at the command source. The command is read-only: the current stratigraphic field still uses its deterministic dip and warp unchanged. The next terrain-aware milestone is to turn reviewed morphology plus province context into an explicit structural transform, then route both diagnostics and the opt-in correlated generator through that shared transform before it receives block ownership.
+
 ## Sedimentary succession and spatial-field staging
 
 GeoStrata now has a metadata-only sedimentary succession model plus a deterministic selector and normalized contact planner. Those components establish lower-to-upper bed order, relative thickness and exact contact ownership without changing generated blocks. The contact planner assigns internal boundaries to the overlying bed, replacing feature-registration order with an explicit future ownership rule.

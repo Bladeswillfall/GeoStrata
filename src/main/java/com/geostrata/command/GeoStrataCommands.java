@@ -3,6 +3,7 @@ package com.geostrata.command;
 import com.geostrata.geology.CorrelatedExperimentChunkOwnership;
 import com.geostrata.geology.CorrelatedSedimentaryExperiment;
 import com.geostrata.geology.CorrelatedSedimentaryRuntime;
+import com.geostrata.geology.ChunkGeneratorTerrainMorphologySampler;
 import com.geostrata.geology.GeologyProvinceProfiles;
 import com.geostrata.geology.GeologyProvinceSampler;
 import com.geostrata.geology.GeologySurvey;
@@ -12,6 +13,7 @@ import com.geostrata.geology.SedimentaryFieldProfiles;
 import com.geostrata.geology.SedimentaryStratigraphicField;
 import com.geostrata.geology.SedimentarySuccessionSelector;
 import com.geostrata.geology.SedimentarySuccessions;
+import com.geostrata.geology.TerrainMorphologySample;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.minecraft.registry.Registries;
@@ -48,6 +50,8 @@ public final class GeoStrataCommands {
                                 .executes(context -> showColumn(context.getSource())))
                         .then(CommandManager.literal("field")
                                 .executes(context -> showField(context.getSource())))
+                        .then(CommandManager.literal("terrain")
+                                .executes(context -> showTerrain(context.getSource())))
                         .then(CommandManager.literal("experiment")
                                 .executes(context -> showExperiment(context.getSource())))
                         .then(CommandManager.literal("lithology")
@@ -254,6 +258,28 @@ public final class GeoStrataCommands {
         return 1;
     }
 
+    private static int showTerrain(ServerCommandSource source) {
+        Vec3d position = source.getPosition();
+        int x = MathHelper.floor(position.x);
+        int z = MathHelper.floor(position.z);
+        TerrainMorphologySample terrain = ChunkGeneratorTerrainMorphologySampler.sample(source.getWorld(), x, z);
+
+        source.sendFeedback(
+                () -> Text.literal(
+                        "GeoStrata terrain: generator height " + Math.round(terrain.centerHeight())
+                                + " | relief " + Math.round(terrain.relief()) + " blocks"
+                                + " | slope " + round(terrain.slopeMagnitude())
+                                + " [x " + round(terrain.gradientX()) + ", z " + round(terrain.gradientZ()) + "]"
+                                + " | prominence " + round(terrain.prominence()) + " blocks"
+                                + " | spacing "
+                                + ChunkGeneratorTerrainMorphologySampler.DEFAULT_SAMPLE_SPACING_BLOCKS + " blocks"
+                                + " | structural evidence only; strata are not adjusted yet"
+                ),
+                false
+        );
+        return 1;
+    }
+
     private static int showExperiment(ServerCommandSource source) {
         CorrelatedSedimentaryExperiment.Snapshot experiment = CorrelatedSedimentaryExperiment.current();
         if (!experiment.loaded()) {
@@ -438,5 +464,9 @@ public final class GeoStrataCommands {
         int x = MathHelper.floor(position.x);
         int z = MathHelper.floor(position.z);
         return GeologyProvinceSampler.sample(source.getWorld().getSeed(), x, z);
+    }
+
+    private static double round(double value) {
+        return Math.round(value * 100.0) / 100.0;
     }
 }
