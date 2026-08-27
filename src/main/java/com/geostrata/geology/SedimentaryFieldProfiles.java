@@ -66,121 +66,198 @@ public final class SedimentaryFieldProfiles implements SimpleSynchronousResource
     }
 
     static Snapshot parse(JsonObject successionsRoot, JsonObject profilesRoot) {
-        requireInt(successionsRoot, "schemaVersion", 1);
-        requireString(successionsRoot, "model", "geostrata:sedimentary_successions");
-        requireString(successionsRoot, "runtimeStatus", "metadata_only");
-        requireString(successionsRoot, "order", "lower_to_upper");
+        List<SuccessionScale> scales = parseSuccessionScales(successionsRoot);
+        Set<String> continuities = continuitySet(scales);
+        LinkedHashMap<String, SedimentaryStratigraphicField.Parameters> parameters = parseProfiles(
+                profilesRoot,
+                continuities
+        );
+        requireExactContinuityCoverage(parameters.keySet(), continuities);
+        requireMinimumBedThickness(scales, parameters);
+        return new Snapshot("metadata_only", Collections.unmodifiableMap(parameters));
+    }
 
-        JsonArray rawSuccessions = requiredArray(successionsRoot, "successions");
+    private static List<SuccessionScale> parseSuccessionScales(JsonObject root) {
+        requireInt(root, "schemaVersion", 1);
+        requireString(root, "model", "geostrata:sedimentary_successions");
+        requireString(root, "runtimeStatus", "metadata_only");
+        requireString(root, "order", "lower_to_upper");
+
+        JsonArray rawSuccessions = requiredArray(root, "successions");
         if (rawSuccessions.size() == 0) {
             throw new IllegalArgumentException("sedimentary successions must not be empty");
         }
 
-        Set<String> continuities = new HashSet<>();
         List<SuccessionScale> scales = new ArrayList<>();
         for (JsonElement element : rawSuccessions) {
-            if (!element.isJsonObject()) {
-                throw new IllegalArgumentException("succession entry must be an object");
-            }
-            JsonObject succession = element.getAsJsonObject();
-            String id = requireString(succession, "id");
-            String continuity = requireString(succession, "continuity");
-            if (!continuity.equals("local") && !continuity.equals("regional")) {
-                throw new IllegalArgumentException(id + " continuity must be local or regional");
-            }
-            continuities.add(continuity);
+            scales.add(parseSuccessionScale(element));
+        }
+        return scales;
+    }
 
-            JsonArray rawBeds = requiredArray(succession, "beds");
-            if (rawBeds.size() == 0) {
-                throw new IllegalArgumentException(id + " must contain beds");
-            }
-            List<Double> thicknesses = new ArrayList<>(rawBeds.size());
-            for (JsonElement rawBed : rawBeds) {
-                if (!rawBed.isJsonObject()) {
-                    throw new IllegalArgumentException(id + " bed must be an object");
-                }
-                double thickness = requireDouble(rawBed.getAsJsonObject(), "relativeThickness");
-                if (!(thickness > 0.0)) {
-                    throw new IllegalArgumentException(id + " relative thicknesses must be positive");
-                }
-                thicknesses.add(thickness);
-            }
-            scales.add(new SuccessionScale(id, continuity, List.copyOf(thicknesses)));
+    private static SuccessionScale parseSuccessionScale(JsonElement element) {
+        if (!element.isJsonObject()) {
+            throw new IllegalArgumentException("succession entry must be an object");
+        }
+        JsonObject succession = element.getAsJsonObject();
+        String id = requireString(succession, "id");
+        String continuity = requireContinuity(id, succession);
+        List<Double> thicknesses = parseRelativeThicknesses(id, succession);
+        return new SuccessionScale(id, continuity, List.copyOf(thicknesses));
+    }
+
+    private static String requireContinuity(String id, JsonObject succession) {
+        String continuity = requireString(succession, "continuity");
+        if (!continuity.equals("local") && !continuity.equals("regional")) {
+            throw new IllegalArgumentException(id + " continuity must be local or regional");
+        }
+        return continuity;
+    }
+
+    private static List<Double> parseRelativeThicknesses(String id, JsonObject succession) {
+        JsonArray rawBeds = requiredArray(succession, "beds");
+        if (rawBeds.size() == 0) {
+            throw new IllegalArgumentException(id + " must contain beds");
         }
 
-        requireInt(profilesRoot, "schemaVersion", 1);
-        requireString(profilesRoot, "model", "geostrata:sedimentary_field_profiles");
-        requireString(profilesRoot, "runtimeStatus", "metadata_only");
+        List<Double> thicknesses = new ArrayList<>(rawBeds.size());
+        for (JsonElement rawBed : rawBeds) {
+            if (!rawBed.isJsonObject()) {
+                throw new IllegalArgumentException(id + " bed must be an object");
+            }
+            double thickness = requireDouble(rawBed.getAsJsonObject(), "relativeThickness");
+            if (!(thickness > 0.0)) {
+                throw new IllegalArgumentException(id + " relative thicknesses must be positive");
+            }
+            thicknesses.add(thickness);
+        }
+        return thicknesses;
+    }
 
-        JsonArray rawProfiles = requiredArray(profilesRoot, "profiles");
+    private static Set<String> continuitySet(List<SuccessionScale> scales) {
+        Set<String> continuities = new HashSet<>();
+        for (SuccessionScale scale : scales) {
+            continuities.add(scale.continuity());
+        }
+        return continuities;
+    }
+
+    private static LinkedHashMap<String, SedimentaryStratigraphicField.Parameters> parseProfiles(
+            JsonObject root,
+            Set<String> continuities
+    ) {
+        requireInt(root, "schemaVersion", 1);
+        requireString(root, "model", "geostrata:sedimentary_field_profiles");
+        requireString(root, "runtimeStatus", "metadata_only");
+
+        JsonArray rawProfiles = requiredArray(root, "profiles");
         if (rawProfiles.size() == 0) {
             throw new IllegalArgumentException("sedimentary field profiles must not be empty");
         }
 
         LinkedHashMap<String, SedimentaryStratigraphicField.Parameters> parameters = new LinkedHashMap<>();
         for (JsonElement element : rawProfiles) {
-            if (!element.isJsonObject()) {
-                throw new IllegalArgumentException("sedimentary field profile entry must be an object");
+            ParsedProfile profile = parseProfile(element, continuities);
+            if (parameters.put(profile.continuity(), profile.parameters()) != null) {
+                throw new IllegalArgumentException(
+                        "duplicate sedimentary field continuity profile: " + profile.continuity()
+                );
             }
-            JsonObject profile = element.getAsJsonObject();
-            String continuity = requireString(profile, "continuity");
-            if (!continuities.contains(continuity)) {
-                throw new IllegalArgumentException("unused sedimentary field continuity profile: " + continuity);
-            }
-            if (parameters.containsKey(continuity)) {
-                throw new IllegalArgumentException("duplicate sedimentary field continuity profile: " + continuity);
-            }
-
-            double cycle = requireDouble(profile, "cycleThicknessBlocks");
-            double maxDip = requireDouble(profile, "maxDip");
-            double warpAmplitude = requireDouble(profile, "warpAmplitudeBlocks");
-            double warpWavelength = requireDouble(profile, "warpWavelengthBlocks");
-
-            if (cycle < 8.0 || cycle > 256.0) {
-                throw new IllegalArgumentException(continuity + " cycle thickness must be within 8..256 blocks");
-            }
-            if (maxDip < 0.0 || maxDip > 0.35) {
-                throw new IllegalArgumentException(continuity + " max dip must be within 0..0.35");
-            }
-            if (warpAmplitude < 0.0 || warpAmplitude > cycle * 0.25) {
-                throw new IllegalArgumentException(continuity + " warp amplitude must be within 0..25% of cycle thickness");
-            }
-            if (warpWavelength < cycle * 2.0 || warpWavelength > 2048.0) {
-                throw new IllegalArgumentException(continuity + " warp wavelength must be at least two cycles and at most 2048 blocks");
-            }
-
-            parameters.put(
-                    continuity,
-                    new SedimentaryStratigraphicField.Parameters(cycle, maxDip, warpAmplitude, warpWavelength)
-            );
         }
+        return parameters;
+    }
 
-        if (!parameters.keySet().equals(continuities)) {
-            Set<String> missing = new HashSet<>(continuities);
-            missing.removeAll(parameters.keySet());
-            Set<String> extra = new HashSet<>(parameters.keySet());
-            extra.removeAll(continuities);
+    private static ParsedProfile parseProfile(JsonElement element, Set<String> continuities) {
+        if (!element.isJsonObject()) {
+            throw new IllegalArgumentException("sedimentary field profile entry must be an object");
+        }
+        JsonObject profile = element.getAsJsonObject();
+        String continuity = requireString(profile, "continuity");
+        if (!continuities.contains(continuity)) {
+            throw new IllegalArgumentException("unused sedimentary field continuity profile: " + continuity);
+        }
+        return new ParsedProfile(continuity, parseParameters(continuity, profile));
+    }
+
+    private static SedimentaryStratigraphicField.Parameters parseParameters(
+            String continuity,
+            JsonObject profile
+    ) {
+        double cycle = requireDouble(profile, "cycleThicknessBlocks");
+        double maxDip = requireDouble(profile, "maxDip");
+        double warpAmplitude = requireDouble(profile, "warpAmplitudeBlocks");
+        double warpWavelength = requireDouble(profile, "warpWavelengthBlocks");
+
+        requireCycleRange(continuity, cycle);
+        requireDipRange(continuity, maxDip);
+        requireWarpAmplitudeRange(continuity, warpAmplitude, cycle);
+        requireWarpWavelengthRange(continuity, warpWavelength, cycle);
+        return new SedimentaryStratigraphicField.Parameters(cycle, maxDip, warpAmplitude, warpWavelength);
+    }
+
+    private static void requireCycleRange(String continuity, double cycle) {
+        if (cycle < 8.0 || cycle > 256.0) {
+            throw new IllegalArgumentException(continuity + " cycle thickness must be within 8..256 blocks");
+        }
+    }
+
+    private static void requireDipRange(String continuity, double maxDip) {
+        if (maxDip < 0.0 || maxDip > 0.35) {
+            throw new IllegalArgumentException(continuity + " max dip must be within 0..0.35");
+        }
+    }
+
+    private static void requireWarpAmplitudeRange(String continuity, double warpAmplitude, double cycle) {
+        if (warpAmplitude < 0.0 || warpAmplitude > cycle * 0.25) {
+            throw new IllegalArgumentException(continuity + " warp amplitude must be within 0..25% of cycle thickness");
+        }
+    }
+
+    private static void requireWarpWavelengthRange(String continuity, double warpWavelength, double cycle) {
+        if (warpWavelength < cycle * 2.0 || warpWavelength > 2048.0) {
             throw new IllegalArgumentException(
-                    "sedimentary field profiles must cover succession continuities exactly; missing="
-                            + missing + ", extra=" + extra
+                    continuity + " warp wavelength must be at least two cycles and at most 2048 blocks"
             );
         }
+    }
 
+    private static void requireExactContinuityCoverage(Set<String> provided, Set<String> required) {
+        if (provided.equals(required)) {
+            return;
+        }
+        Set<String> missing = new HashSet<>(required);
+        missing.removeAll(provided);
+        Set<String> extra = new HashSet<>(provided);
+        extra.removeAll(required);
+        throw new IllegalArgumentException(
+                "sedimentary field profiles must cover succession continuities exactly; missing="
+                        + missing + ", extra=" + extra
+        );
+    }
+
+    private static void requireMinimumBedThickness(
+            List<SuccessionScale> scales,
+            Map<String, SedimentaryStratigraphicField.Parameters> parameters
+    ) {
         for (SuccessionScale scale : scales) {
-            SedimentaryStratigraphicField.Parameters profile = parameters.get(scale.continuity());
-            double total = scale.relativeThicknesses().stream().mapToDouble(Double::doubleValue).sum();
-            double thinnest = scale.relativeThicknesses().stream()
-                    .mapToDouble(value -> value / total * profile.cycleThicknessBlocks())
-                    .min()
-                    .orElseThrow();
+            double thinnest = thinnestBedBlocks(scale, parameters.get(scale.continuity()));
             if (thinnest < 2.0) {
                 throw new IllegalArgumentException(
                         scale.id() + " would compress its thinnest diagnostic bed below two blocks: " + thinnest
                 );
             }
         }
+    }
 
-        return new Snapshot("metadata_only", Collections.unmodifiableMap(parameters));
+    private static double thinnestBedBlocks(
+            SuccessionScale scale,
+            SedimentaryStratigraphicField.Parameters profile
+    ) {
+        double total = scale.relativeThicknesses().stream().mapToDouble(Double::doubleValue).sum();
+        return scale.relativeThicknesses().stream()
+                .mapToDouble(value -> value / total * profile.cycleThicknessBlocks())
+                .min()
+                .orElseThrow();
     }
 
     private static JsonObject readObject(ResourceManager manager, Identifier id) throws IOException {
@@ -251,6 +328,12 @@ public final class SedimentaryFieldProfiles implements SimpleSynchronousResource
     }
 
     private record SuccessionScale(String id, String continuity, List<Double> relativeThicknesses) {
+    }
+
+    private record ParsedProfile(
+            String continuity,
+            SedimentaryStratigraphicField.Parameters parameters
+    ) {
     }
 
     public record Snapshot(
