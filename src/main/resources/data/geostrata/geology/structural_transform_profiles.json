@@ -1,0 +1,48 @@
+{
+  "schemaVersion": 1,
+  "model": "geostrata:structural_transform_profiles",
+  "runtimeStatus": "metadata_only",
+  "description": "Diagnostic-only physical scales for deterministic structural transform primitives. These values do not alter generated blocks.",
+  "profiles": [
+    {
+      "province": "sedimentary_basin",
+      "maxDipDegrees": 18.0,
+      "maxFoldAmplitudeBlocks": 6.0,
+      "foldWavelengthBlocks": 512.0,
+      "maxFaultDisplacementBlocks": 8.0,
+      "faultPlaneOffsetRangeBlocks": 192.0
+    },
+    {
+      "province": "cratonic_shield",
+      "maxDipDegrees": 28.0,
+      "maxFoldAmplitudeBlocks": 12.0,
+      "foldWavelengthBlocks": 640.0,
+      "maxFaultDisplacementBlocks": 16.0,
+      "faultPlaneOffsetRangeBlocks": 192.0
+    },
+    {
+      "province": "orogenic_belt",
+      "maxDipDegrees": 68.0,
+      "maxFoldAmplitudeBlocks": 48.0,
+      "foldWavelengthBlocks": 256.0,
+      "maxFaultDisplacementBlocks": 48.0,
+      "faultPlaneOffsetRangeBlocks": 192.0
+    },
+    {
+      "province": "volcanic_arc",
+      "maxDipDegrees": 38.0,
+      "maxFoldAmplitudeBlocks": 20.0,
+      "foldWavelengthBlocks": 384.0,
+      "maxFaultDisplacementBlocks": 32.0,
+      "faultPlaneOffsetRangeBlocks": 192.0
+    },
+    {
+      "province": "rift_province",
+      "maxDipDegrees": 48.0,
+      "maxFoldAmplitudeBlocks": 10.0,
+      "foldWavelengthBlocks": 512.0,
+      "maxFaultDisplacementBlocks": 64.0,
+      "faultPlaneOffsetRangeBlocks": 192.0
+    }
+  ]
+}
