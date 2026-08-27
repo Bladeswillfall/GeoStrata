@@ -1,0 +1,5 @@
+{
+  "schemaVersion": 1,
+  "model": "geostrata:correlated_sedimentary_activation",
+  "experiment": "geostrata:correlated_sedimentary_experiment"
+}
