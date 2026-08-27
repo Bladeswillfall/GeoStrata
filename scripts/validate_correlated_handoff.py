@@ -58,14 +58,21 @@ require("GenerationStep.Feature.UNDERGROUND_DECORATION" in worldgen_source,
 require("BiomeSelectors.tag(HAS_COMMON_ROCKS)" in worldgen_source,
         "initial correlated registration must use the GeoStrata common-rock biome seam")
 
-require("CorrelatedExperimentChunkOwnership.suppressesBaselineLithology" in lens_source,
-        "baseline strata lenses must use the same ownership service for suppression")
+require("CorrelatedExperimentChunkOwnership.suppressionActiveFor" in lens_source,
+        "baseline strata lenses must compute the correlated suppression fast path")
+require(lens_source.count("CorrelatedExperimentChunkOwnership.ownershipForChunk") >= 2,
+        "baseline strata lenses must check ownership at both origin and destination chunks")
+require("mutable.getX()" in lens_source and "mutable.getZ()" in lens_source,
+        "cross-chunk lens placement must clip candidate blocks entering correlated-owned chunks")
+
 require("Math.floorDiv" in ownership_source and "CHUNK_CENTER_OFFSET" in ownership_source,
         "chunk ownership adapter must normalize coordinates with floor division")
+require("experiment.enabled()" in ownership_source,
+        "chunk suppression fast path must require explicit experiment activation")
 require("ownershipAt(" in ownership_source,
         "chunk ownership adapter must delegate to the canonical experiment ownership evaluator")
 
 print(
-    "Validated atomic correlated handoff: later-stage registration + shared chunk ownership + "
-    "baseline suppression are wired while core activation remains disabled"
+    "Validated atomic correlated handoff: later-stage registration + chunk-normalized suppression + "
+    "cross-chunk clipping are wired while core activation remains disabled"
 )
