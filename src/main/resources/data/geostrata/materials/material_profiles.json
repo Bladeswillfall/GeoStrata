@@ -1,0 +1,483 @@
+{
+  "schemaVersion": 1,
+  "model": "geostrata:material_profile_catalog",
+  "runtimeStatus": "validated_metadata_only",
+  "textureSets": {
+    "placeholder_rock": {
+      "status": "placeholder",
+      "textures": ["geostrata:block/placeholder_rock"]
+    },
+    "placeholder_earth": {
+      "status": "placeholder",
+      "textures": ["geostrata:block/placeholder_earth"]
+    }
+  },
+  "materials": [
+    {
+      "id": "limestone",
+      "primaryBlock": "geostrata:limestone",
+      "derivedBlocks": [
+        "geostrata:limestone_stairs",
+        "geostrata:limestone_slab",
+        "geostrata:limestone_wall"
+      ],
+      "family": "rock",
+      "compatibilityRole": "geostrata:rock/carbonate/limestone",
+      "semanticTags": ["geostrata:rocks", "geostrata:sedimentary_rocks"],
+      "gameplay": {
+        "breaking": {
+          "copyFrom": "minecraft:stone",
+          "hardness": 1.5,
+          "blastResistance": 6.0,
+          "requiresTool": true,
+          "mineableWith": "pickaxe",
+          "minimumToolTier": "stone",
+          "soundGroup": "stone"
+        },
+        "cultivation": {"status": "not_applicable"}
+      },
+      "assets": {"textureSet": "placeholder_rock"}
+    },
+    {
+      "id": "chalk",
+      "primaryBlock": "geostrata:chalk",
+      "derivedBlocks": [],
+      "family": "rock",
+      "compatibilityRole": "geostrata:rock/carbonate/chalk",
+      "semanticTags": ["geostrata:rocks", "geostrata:sedimentary_rocks"],
+      "gameplay": {
+        "breaking": {
+          "copyFrom": "minecraft:calcite",
+          "hardness": 1.0,
+          "blastResistance": 6.0,
+          "requiresTool": true,
+          "mineableWith": "pickaxe",
+          "minimumToolTier": "stone",
+          "soundGroup": "calcite"
+        },
+        "cultivation": {"status": "not_applicable"}
+      },
+      "assets": {"textureSet": "placeholder_rock"}
+    },
+    {
+      "id": "shale",
+      "primaryBlock": "geostrata:shale",
+      "derivedBlocks": [],
+      "family": "rock",
+      "compatibilityRole": "geostrata:rock/clastic/shale",
+      "semanticTags": ["geostrata:rocks", "geostrata:sedimentary_rocks"],
+      "gameplay": {
+        "breaking": {
+          "copyFrom": "minecraft:tuff",
+          "hardness": 1.4,
+          "blastResistance": 6.0,
+          "requiresTool": true,
+          "mineableWith": "pickaxe",
+          "minimumToolTier": "stone",
+          "soundGroup": "tuff"
+        },
+        "cultivation": {"status": "not_applicable"}
+      },
+      "assets": {"textureSet": "placeholder_rock"}
+    },
+    {
+      "id": "slate",
+      "primaryBlock": "geostrata:slate",
+      "derivedBlocks": [],
+      "family": "rock",
+      "compatibilityRole": "geostrata:rock/metamorphic/slate",
+      "semanticTags": ["geostrata:rocks", "geostrata:metamorphic_rocks"],
+      "gameplay": {
+        "breaking": {
+          "copyFrom": "minecraft:deepslate",
+          "hardness": 2.8,
+          "blastResistance": 6.0,
+          "requiresTool": true,
+          "mineableWith": "pickaxe",
+          "minimumToolTier": "stone",
+          "soundGroup": "deepslate"
+        },
+        "cultivation": {"status": "not_applicable"}
+      },
+      "assets": {"textureSet": "placeholder_rock"}
+    },
+    {
+      "id": "mudstone",
+      "primaryBlock": "geostrata:mudstone",
+      "derivedBlocks": [],
+      "family": "rock",
+      "compatibilityRole": "geostrata:rock/clastic/mudstone",
+      "semanticTags": ["geostrata:rocks", "geostrata:sedimentary_rocks"],
+      "gameplay": {
+        "breaking": {
+          "copyFrom": "minecraft:stone",
+          "hardness": 1.3,
+          "blastResistance": 6.0,
+          "requiresTool": true,
+          "mineableWith": "pickaxe",
+          "minimumToolTier": "stone",
+          "soundGroup": "stone"
+        },
+        "cultivation": {"status": "not_applicable"}
+      },
+      "assets": {"textureSet": "placeholder_rock"}
+    },
+    {
+      "id": "siltstone",
+      "primaryBlock": "geostrata:siltstone",
+      "derivedBlocks": [],
+      "family": "rock",
+      "compatibilityRole": "geostrata:rock/clastic/siltstone",
+      "semanticTags": ["geostrata:rocks", "geostrata:sedimentary_rocks"],
+      "gameplay": {
+        "breaking": {
+          "copyFrom": "minecraft:sandstone",
+          "hardness": 1.2,
+          "blastResistance": 6.0,
+          "requiresTool": true,
+          "mineableWith": "pickaxe",
+          "minimumToolTier": "stone",
+          "soundGroup": "stone"
+        },
+        "cultivation": {"status": "not_applicable"}
+      },
+      "assets": {"textureSet": "placeholder_rock"}
+    },
+    {
+      "id": "marble",
+      "primaryBlock": "geostrata:marble",
+      "derivedBlocks": [],
+      "family": "rock",
+      "compatibilityRole": "geostrata:rock/metamorphic/marble",
+      "semanticTags": ["geostrata:rocks", "geostrata:metamorphic_rocks"],
+      "gameplay": {
+        "breaking": {
+          "copyFrom": "minecraft:calcite",
+          "hardness": 1.7,
+          "blastResistance": 6.0,
+          "requiresTool": true,
+          "mineableWith": "pickaxe",
+          "minimumToolTier": "stone",
+          "soundGroup": "calcite"
+        },
+        "cultivation": {"status": "not_applicable"}
+      },
+      "assets": {"textureSet": "placeholder_rock"}
+    },
+    {
+      "id": "quartzite",
+      "primaryBlock": "geostrata:quartzite",
+      "derivedBlocks": [],
+      "family": "rock",
+      "compatibilityRole": "geostrata:rock/metamorphic/quartzite",
+      "semanticTags": ["geostrata:rocks", "geostrata:metamorphic_rocks"],
+      "gameplay": {
+        "breaking": {
+          "copyFrom": "minecraft:smooth_quartz",
+          "hardness": 2.0,
+          "blastResistance": 6.0,
+          "requiresTool": true,
+          "mineableWith": "pickaxe",
+          "minimumToolTier": "stone",
+          "soundGroup": "stone"
+        },
+        "cultivation": {"status": "not_applicable"}
+      },
+      "assets": {"textureSet": "placeholder_rock"}
+    },
+    {
+      "id": "schist",
+      "primaryBlock": "geostrata:schist",
+      "derivedBlocks": [],
+      "family": "rock",
+      "compatibilityRole": "geostrata:rock/metamorphic/schist",
+      "semanticTags": ["geostrata:rocks", "geostrata:metamorphic_rocks"],
+      "gameplay": {
+        "breaking": {
+          "copyFrom": "minecraft:tuff",
+          "hardness": 1.8,
+          "blastResistance": 6.0,
+          "requiresTool": true,
+          "mineableWith": "pickaxe",
+          "minimumToolTier": "stone",
+          "soundGroup": "tuff"
+        },
+        "cultivation": {"status": "not_applicable"}
+      },
+      "assets": {"textureSet": "placeholder_rock"}
+    },
+    {
+      "id": "gneiss",
+      "primaryBlock": "geostrata:gneiss",
+      "derivedBlocks": [],
+      "family": "rock",
+      "compatibilityRole": "geostrata:rock/metamorphic/gneiss",
+      "semanticTags": ["geostrata:rocks", "geostrata:metamorphic_rocks"],
+      "gameplay": {
+        "breaking": {
+          "copyFrom": "minecraft:granite",
+          "hardness": 1.9,
+          "blastResistance": 6.0,
+          "requiresTool": true,
+          "mineableWith": "pickaxe",
+          "minimumToolTier": "stone",
+          "soundGroup": "stone"
+        },
+        "cultivation": {"status": "not_applicable"}
+      },
+      "assets": {"textureSet": "placeholder_rock"}
+    },
+    {
+      "id": "basalt",
+      "primaryBlock": "geostrata:basalt",
+      "derivedBlocks": [],
+      "family": "rock",
+      "compatibilityRole": "geostrata:rock/igneous/basalt",
+      "semanticTags": ["geostrata:rocks", "geostrata:igneous_rocks"],
+      "gameplay": {
+        "breaking": {
+          "copyFrom": "minecraft:basalt",
+          "hardness": 2.0,
+          "blastResistance": 6.0,
+          "requiresTool": true,
+          "mineableWith": "pickaxe",
+          "minimumToolTier": "stone",
+          "soundGroup": "basalt"
+        },
+        "cultivation": {"status": "not_applicable"}
+      },
+      "assets": {"textureSet": "placeholder_rock"}
+    },
+    {
+      "id": "rhyolite",
+      "primaryBlock": "geostrata:rhyolite",
+      "derivedBlocks": [],
+      "family": "rock",
+      "compatibilityRole": "geostrata:rock/igneous/rhyolite",
+      "semanticTags": ["geostrata:rocks", "geostrata:igneous_rocks"],
+      "gameplay": {
+        "breaking": {
+          "copyFrom": "minecraft:granite",
+          "hardness": 1.7,
+          "blastResistance": 6.0,
+          "requiresTool": true,
+          "mineableWith": "pickaxe",
+          "minimumToolTier": "stone",
+          "soundGroup": "stone"
+        },
+        "cultivation": {"status": "not_applicable"}
+      },
+      "assets": {"textureSet": "placeholder_rock"}
+    },
+    {
+      "id": "conglomerate",
+      "primaryBlock": "geostrata:conglomerate",
+      "derivedBlocks": [],
+      "family": "rock",
+      "compatibilityRole": "geostrata:rock/clastic/conglomerate",
+      "semanticTags": ["geostrata:rocks", "geostrata:sedimentary_rocks"],
+      "gameplay": {
+        "breaking": {
+          "copyFrom": "minecraft:cobblestone",
+          "hardness": 1.6,
+          "blastResistance": 6.0,
+          "requiresTool": true,
+          "mineableWith": "pickaxe",
+          "minimumToolTier": "stone",
+          "soundGroup": "stone"
+        },
+        "cultivation": {"status": "not_applicable"}
+      },
+      "assets": {"textureSet": "placeholder_rock"}
+    },
+    {
+      "id": "breccia",
+      "primaryBlock": "geostrata:breccia",
+      "derivedBlocks": [],
+      "family": "rock",
+      "compatibilityRole": "geostrata:rock/clastic/breccia",
+      "semanticTags": ["geostrata:rocks", "geostrata:sedimentary_rocks"],
+      "gameplay": {
+        "breaking": {
+          "copyFrom": "minecraft:cobblestone",
+          "hardness": 1.7,
+          "blastResistance": 6.0,
+          "requiresTool": true,
+          "mineableWith": "pickaxe",
+          "minimumToolTier": "stone",
+          "soundGroup": "stone"
+        },
+        "cultivation": {"status": "not_applicable"}
+      },
+      "assets": {"textureSet": "placeholder_rock"}
+    },
+    {
+      "id": "clay_loam",
+      "primaryBlock": "geostrata:clay_loam",
+      "derivedBlocks": [],
+      "family": "soil",
+      "compatibilityRole": "geostrata:soil/loam/clay",
+      "semanticTags": ["geostrata:soft_earth", "geostrata:clays"],
+      "gameplay": {
+        "breaking": {
+          "copyFrom": "minecraft:dirt",
+          "hardness": 0.6,
+          "blastResistance": 0.6,
+          "requiresTool": false,
+          "mineableWith": "shovel",
+          "minimumToolTier": "none",
+          "soundGroup": "rooted_dirt"
+        },
+        "cultivation": {"status": "not_implemented"}
+      },
+      "assets": {"textureSet": "placeholder_earth"}
+    },
+    {
+      "id": "sandy_loam",
+      "primaryBlock": "geostrata:sandy_loam",
+      "derivedBlocks": [],
+      "family": "soil",
+      "compatibilityRole": "geostrata:soil/loam/sandy",
+      "semanticTags": ["geostrata:soft_earth"],
+      "gameplay": {
+        "breaking": {
+          "copyFrom": "minecraft:coarse_dirt",
+          "hardness": 0.55,
+          "blastResistance": 0.55,
+          "requiresTool": false,
+          "mineableWith": "shovel",
+          "minimumToolTier": "none",
+          "soundGroup": "gravel"
+        },
+        "cultivation": {"status": "not_implemented"}
+      },
+      "assets": {"textureSet": "placeholder_earth"}
+    },
+    {
+      "id": "silty_loam",
+      "primaryBlock": "geostrata:silty_loam",
+      "derivedBlocks": [],
+      "family": "soil",
+      "compatibilityRole": "geostrata:soil/loam/silty",
+      "semanticTags": ["geostrata:soft_earth"],
+      "gameplay": {
+        "breaking": {
+          "copyFrom": "minecraft:dirt",
+          "hardness": 0.55,
+          "blastResistance": 0.55,
+          "requiresTool": false,
+          "mineableWith": "shovel",
+          "minimumToolTier": "none",
+          "soundGroup": "rooted_dirt"
+        },
+        "cultivation": {"status": "not_implemented"}
+      },
+      "assets": {"textureSet": "placeholder_earth"}
+    },
+    {
+      "id": "peat_soil",
+      "primaryBlock": "geostrata:peat_soil",
+      "derivedBlocks": [],
+      "family": "soil",
+      "compatibilityRole": "geostrata:soil/organic/peat",
+      "semanticTags": ["geostrata:soft_earth"],
+      "gameplay": {
+        "breaking": {
+          "copyFrom": "minecraft:podzol",
+          "hardness": 0.45,
+          "blastResistance": 0.45,
+          "requiresTool": false,
+          "mineableWith": "shovel",
+          "minimumToolTier": "none",
+          "soundGroup": "rooted_dirt"
+        },
+        "cultivation": {"status": "not_implemented"}
+      },
+      "assets": {"textureSet": "placeholder_earth"}
+    },
+    {
+      "id": "wet_mud",
+      "primaryBlock": "geostrata:wet_mud",
+      "derivedBlocks": [],
+      "family": "mud",
+      "compatibilityRole": "geostrata:mud/wet",
+      "semanticTags": ["geostrata:soft_earth"],
+      "gameplay": {
+        "breaking": {
+          "copyFrom": "minecraft:mud",
+          "hardness": 0.45,
+          "blastResistance": 0.45,
+          "requiresTool": false,
+          "mineableWith": "shovel",
+          "minimumToolTier": "none",
+          "soundGroup": "mud"
+        },
+        "cultivation": {"status": "not_implemented"}
+      },
+      "assets": {"textureSet": "placeholder_earth"}
+    },
+    {
+      "id": "compacted_mud",
+      "primaryBlock": "geostrata:compacted_mud",
+      "derivedBlocks": [],
+      "family": "mud",
+      "compatibilityRole": "geostrata:mud/compacted",
+      "semanticTags": ["geostrata:soft_earth"],
+      "gameplay": {
+        "breaking": {
+          "copyFrom": "minecraft:mud",
+          "hardness": 0.7,
+          "blastResistance": 0.7,
+          "requiresTool": false,
+          "mineableWith": "shovel",
+          "minimumToolTier": "none",
+          "soundGroup": "mud"
+        },
+        "cultivation": {"status": "not_implemented"}
+      },
+      "assets": {"textureSet": "placeholder_earth"}
+    },
+    {
+      "id": "blue_clay",
+      "primaryBlock": "geostrata:blue_clay",
+      "derivedBlocks": [],
+      "family": "clay",
+      "compatibilityRole": "geostrata:clay/blue",
+      "semanticTags": ["geostrata:soft_earth", "geostrata:clays"],
+      "gameplay": {
+        "breaking": {
+          "copyFrom": "minecraft:clay",
+          "hardness": 0.6,
+          "blastResistance": 0.6,
+          "requiresTool": false,
+          "mineableWith": "shovel",
+          "minimumToolTier": "none",
+          "soundGroup": "gravel"
+        },
+        "cultivation": {"status": "not_implemented"}
+      },
+      "assets": {"textureSet": "placeholder_earth"}
+    },
+    {
+      "id": "red_clay",
+      "primaryBlock": "geostrata:red_clay",
+      "derivedBlocks": [],
+      "family": "clay",
+      "compatibilityRole": "geostrata:clay/red",
+      "semanticTags": ["geostrata:soft_earth", "geostrata:clays"],
+      "gameplay": {
+        "breaking": {
+          "copyFrom": "minecraft:clay",
+          "hardness": 0.6,
+          "blastResistance": 0.6,
+          "requiresTool": false,
+          "mineableWith": "shovel",
+          "minimumToolTier": "none",
+          "soundGroup": "gravel"
+        },
+        "cultivation": {"status": "not_implemented"}
+      },
+      "assets": {"textureSet": "placeholder_earth"}
+    }
+  ]
+}

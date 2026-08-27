@@ -99,4 +99,6 @@ python3 scripts/validate_geology_catalog.py
 gradle test
 ```
 
+The same validation command also checks the material-profile LUT against registered blocks, gameplay settings, mining tags and live assets.
+
 The catalog validator enforces that every live rock appears exactly once in the catalog and exactly once in a rock-class tag, that referenced biome tags exist, and that each baseline configured/placed feature actually generates the catalogued block. `GeologyDataReload` validates the related geology resources once in dependency order. `GeologyResourceContractTest` sends the bundled files through those production parsers, then checks strata-lens resource pairing and bundled palette policy. Existing behavior tests cover province sampling, profile blending, suitability acceptance, coordinate hashing, strata-lens geometry, succession contacts and the stratigraphic field.
