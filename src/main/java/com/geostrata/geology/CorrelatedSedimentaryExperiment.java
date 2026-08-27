@@ -14,6 +14,7 @@ import net.minecraft.util.Identifier;
 
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.util.Optional;
 import java.util.Set;
 
 /**
@@ -24,6 +25,7 @@ public final class CorrelatedSedimentaryExperiment implements SimpleSynchronousR
     private static final CorrelatedSedimentaryExperiment INSTANCE = new CorrelatedSedimentaryExperiment();
     private static final Identifier RELOAD_ID = GeoStrata.id("correlated_sedimentary_experiment");
     private static final Identifier EXPERIMENT_RESOURCE = GeoStrata.id("geology/correlated_sedimentary_experiment.json");
+    private static final Identifier ACTIVATION_RESOURCE = GeoStrata.id("geology/correlated_sedimentary_activation.json");
     private static final Identifier SUCCESSIONS_RESOURCE = GeoStrata.id("geology/sedimentary_successions.json");
     private static final Identifier LITHOLOGIES_RESOURCE = GeoStrata.id("geology/lithologies.json");
     private static final Identifier PROFILES_RESOURCE = GeoStrata.id("geology/province_profiles.json");
@@ -73,6 +75,10 @@ public final class CorrelatedSedimentaryExperiment implements SimpleSynchronousR
                     readObject(manager, LITHOLOGIES_RESOURCE),
                     readObject(manager, PROFILES_RESOURCE)
             );
+            Optional<JsonObject> activation = readOptionalObject(manager, ACTIVATION_RESOURCE);
+            if (activation.isPresent()) {
+                loaded = CorrelatedExperimentActivation.apply(loaded, activation.get());
+            }
             snapshot = loaded;
             GeoStrata.LOGGER.info(
                     "Loaded GeoStrata correlated sedimentary experiment: enabled={}, targets={}, superseded={}",
@@ -142,6 +148,18 @@ public final class CorrelatedSedimentaryExperiment implements SimpleSynchronousR
     private static JsonObject readObject(ResourceManager manager, Identifier id) throws IOException {
         Resource resource = manager.getResource(id)
                 .orElseThrow(() -> new IOException("missing server-data resource " + id));
+        return readObject(resource, id);
+    }
+
+    private static Optional<JsonObject> readOptionalObject(ResourceManager manager, Identifier id) throws IOException {
+        Optional<Resource> resource = manager.getResource(id);
+        if (resource.isEmpty()) {
+            return Optional.empty();
+        }
+        return Optional.of(readObject(resource.get(), id));
+    }
+
+    private static JsonObject readObject(Resource resource, Identifier id) throws IOException {
         try (BufferedReader reader = resource.getReader()) {
             JsonElement root = JsonParser.parseReader(reader);
             if (!root.isJsonObject()) {
