@@ -30,6 +30,9 @@ jobs:
       - name: Validate sedimentary field profiles
         run: python3 scripts/validate_sedimentary_field_profiles.py
 
+      - name: Validate correlated sedimentary experiment
+        run: python3 scripts/validate_correlated_sedimentary_experiment.py
+
       - name: Validate strata lens configs
         run: python3 scripts/validate_strata_lens_configs.py
 
