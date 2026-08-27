@@ -1,5 +1,7 @@
 package com.geostrata.geology;
 
+import net.minecraft.server.world.ServerWorld;
+
 import java.util.Optional;
 
 /** Resolves the exact chunk-normalized sedimentary field used by experimental worldgen. */
@@ -17,6 +19,15 @@ public final class CorrelatedSedimentaryRuntime {
                 SedimentarySuccessions.current(),
                 SedimentaryFieldProfiles.current()
         );
+    }
+
+    /** Resolves the active-generator terrain transform used by worldgen and diagnostics. */
+    public static Optional<TerrainAwareSite> resolve(ServerWorld world, int blockX, int blockZ) {
+        if (world == null) {
+            throw new IllegalArgumentException("server world must not be null");
+        }
+        return resolve(world.getSeed(), blockX, blockZ)
+                .map(site -> terrainAware(world, site));
     }
 
     static Optional<Site> resolve(
@@ -81,6 +92,17 @@ public final class CorrelatedSedimentaryRuntime {
                 && fieldProfiles.loaded();
     }
 
+    private static TerrainAwareSite terrainAware(ServerWorld world, Site site) {
+        TerrainAwareStructuralField.Field field = ChunkGeneratorTerrainMorphologySampler.structuralField(
+                world,
+                site.chunkCenterX(),
+                site.chunkCenterZ(),
+                site.ownership().province(),
+                site.field()
+        );
+        return new TerrainAwareSite(site, field);
+    }
+
     public record Site(
             int chunkCenterX,
             int chunkCenterZ,
@@ -91,6 +113,33 @@ public final class CorrelatedSedimentaryRuntime {
     ) {
         public SedimentaryStratigraphicField.Sample sample(int x, double y, int z) {
             return field.sample(x, y, z, plan);
+        }
+    }
+
+    public record TerrainAwareSite(
+            Site base,
+            TerrainAwareStructuralField.Field field
+    ) {
+        public TerrainAwareSite {
+            if (base == null || field == null) {
+                throw new IllegalArgumentException("terrain-aware site components must not be null");
+            }
+        }
+
+        public CorrelatedSedimentaryExperiment.Ownership ownership() {
+            return base.ownership();
+        }
+
+        public SedimentarySuccessions.Succession succession() {
+            return base.succession();
+        }
+
+        public SedimentaryContactPlanner.Plan plan() {
+            return base.plan();
+        }
+
+        public SedimentaryStratigraphicField.Sample sample(int x, double y, int z) {
+            return field.sample(x, y, z, base.plan());
         }
     }
 }

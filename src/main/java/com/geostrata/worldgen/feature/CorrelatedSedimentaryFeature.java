@@ -3,7 +3,6 @@ package com.geostrata.worldgen.feature;
 import com.geostrata.geology.CorrelatedSedimentaryExperiment;
 import com.geostrata.geology.CorrelatedSedimentaryRuntime;
 import com.geostrata.geology.LithologyCatalog;
-import com.geostrata.geology.SedimentaryContactPlanner;
 import com.geostrata.geology.SedimentaryStratigraphicField;
 import com.geostrata.geology.SedimentarySuccessions;
 import net.minecraft.block.Block;
@@ -44,9 +43,8 @@ public final class CorrelatedSedimentaryFeature extends Feature<DefaultFeatureCo
         BlockPos origin = context.getOrigin();
         int startX = Math.floorDiv(origin.getX(), CHUNK_SIZE) * CHUNK_SIZE;
         int startZ = Math.floorDiv(origin.getZ(), CHUNK_SIZE) * CHUNK_SIZE;
-        long worldSeed = world.getSeed();
-        Optional<CorrelatedSedimentaryRuntime.Site> resolved = CorrelatedSedimentaryRuntime.resolve(
-                worldSeed,
+        Optional<CorrelatedSedimentaryRuntime.TerrainAwareSite> resolved = CorrelatedSedimentaryRuntime.resolve(
+                world.toServerWorld(),
                 origin.getX(),
                 origin.getZ()
         );
@@ -60,7 +58,7 @@ public final class CorrelatedSedimentaryFeature extends Feature<DefaultFeatureCo
             return false;
         }
 
-        CorrelatedSedimentaryRuntime.Site site = resolved.get();
+        CorrelatedSedimentaryRuntime.TerrainAwareSite site = resolved.get();
         TagKey<Block> hostTag = hostTag(experiment.hostBlockTag());
         Map<String, BlockState> outputStates = outputStates(site.succession(), catalog);
 
@@ -84,8 +82,7 @@ public final class CorrelatedSedimentaryFeature extends Feature<DefaultFeatureCo
                 minY,
                 maxY,
                 hostTag,
-                site.field(),
-                site.plan(),
+                site,
                 outputStates
         ) > 0;
     }
@@ -97,15 +94,14 @@ public final class CorrelatedSedimentaryFeature extends Feature<DefaultFeatureCo
             int minY,
             int maxY,
             TagKey<Block> hostTag,
-            SedimentaryStratigraphicField.Field field,
-            SedimentaryContactPlanner.Plan plan,
+            CorrelatedSedimentaryRuntime.TerrainAwareSite site,
             Map<String, BlockState> outputStates
     ) {
         int placed = 0;
         BlockPos.Mutable mutable = new BlockPos.Mutable();
         for (int x = startX; x < startX + CHUNK_SIZE; x++) {
             for (int z = startZ; z < startZ + CHUNK_SIZE; z++) {
-                placed += replaceColumn(world, x, z, minY, maxY, hostTag, field, plan, outputStates, mutable);
+                placed += replaceColumn(world, x, z, minY, maxY, hostTag, site, outputStates, mutable);
             }
         }
         return placed;
@@ -118,8 +114,7 @@ public final class CorrelatedSedimentaryFeature extends Feature<DefaultFeatureCo
             int minY,
             int maxY,
             TagKey<Block> hostTag,
-            SedimentaryStratigraphicField.Field field,
-            SedimentaryContactPlanner.Plan plan,
+            CorrelatedSedimentaryRuntime.TerrainAwareSite site,
             Map<String, BlockState> outputStates,
             BlockPos.Mutable mutable
     ) {
@@ -130,7 +125,7 @@ public final class CorrelatedSedimentaryFeature extends Feature<DefaultFeatureCo
                 continue;
             }
 
-            SedimentaryStratigraphicField.Sample sample = field.sample(x, y, z, plan);
+            SedimentaryStratigraphicField.Sample sample = site.sample(x, y, z);
             BlockState replacement = outputStates.get(sample.bed().lithology());
             if (replacement == null) {
                 throw new IllegalStateException(

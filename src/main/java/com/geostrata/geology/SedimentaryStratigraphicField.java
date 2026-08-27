@@ -132,14 +132,32 @@ public final class SedimentaryStratigraphicField {
                 int z,
                 SedimentaryContactPlanner.Plan plan
         ) {
+            return sample(x, y, z, plan, 0.0);
+        }
+
+        /**
+         * Samples the field with an additional terrain-derived vertical contact
+         * displacement. The caller owns that displacement; this method keeps
+         * cycle/contact ownership identical to the base field implementation.
+         */
+        public Sample sample(
+                int x,
+                double y,
+                int z,
+                SedimentaryContactPlanner.Plan plan,
+                double additionalVerticalOffset
+        ) {
             if (plan == null) {
                 throw new IllegalArgumentException("contact plan must not be null");
             }
             if (!Double.isFinite(y)) {
                 throw new IllegalArgumentException("sample Y must be finite");
             }
+            if (!Double.isFinite(additionalVerticalOffset)) {
+                throw new IllegalArgumentException("additional vertical offset must be finite");
+            }
 
-            double offset = verticalOffset(x, z);
+            double offset = verticalOffset(x, z) + additionalVerticalOffset;
             double coordinate = (y - offset) / cycleThicknessBlocks + plan.phase();
             if (!Double.isFinite(coordinate)) {
                 throw new IllegalArgumentException("stratigraphic coordinate must be finite");

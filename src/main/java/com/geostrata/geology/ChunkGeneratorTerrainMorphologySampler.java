@@ -8,7 +8,8 @@ import net.minecraft.world.gen.noise.NoiseConfig;
 
 /** Samples the active terrain generator without loading neighboring chunks. */
 public final class ChunkGeneratorTerrainMorphologySampler {
-    public static final int DEFAULT_SAMPLE_SPACING_BLOCKS = 128;
+    public static final int DEFAULT_SAMPLE_SPACING_BLOCKS =
+            TerrainAwareStructuralField.DEFAULT_GRID_SPACING_BLOCKS;
 
     private ChunkGeneratorTerrainMorphologySampler() {
     }
@@ -18,20 +19,50 @@ public final class ChunkGeneratorTerrainMorphologySampler {
             throw new IllegalArgumentException("server world must not be null");
         }
 
-        ServerChunkManager chunkManager = world.getChunkManager();
-        ChunkGenerator generator = chunkManager.getChunkGenerator();
-        NoiseConfig noiseConfig = chunkManager.getNoiseConfig();
-        return sample(
-                (sampleX, sampleZ) -> generator.getHeight(
-                        sampleX,
-                        sampleZ,
-                        Heightmap.Type.OCEAN_FLOOR_WG,
-                        world,
-                        noiseConfig
-                ),
+        return sample(heightSource(world), x, z, DEFAULT_SAMPLE_SPACING_BLOCKS);
+    }
+
+    public static TerrainAwareStructuralField.Field structuralField(
+            ServerWorld world,
+            int x,
+            int z,
+            GeologyProvince province,
+            SedimentaryStratigraphicField.Field baseField
+    ) {
+        if (world == null) {
+            throw new IllegalArgumentException("server world must not be null");
+        }
+        if (baseField == null) {
+            throw new IllegalArgumentException("base stratigraphic field must not be null");
+        }
+
+        HeightSource heights = heightSource(world);
+        TerrainAwareStructuralField.HeightPatch localPatch = TerrainAwareStructuralField.HeightPatch.sample(
+                heights::heightAt,
                 x,
                 z,
                 DEFAULT_SAMPLE_SPACING_BLOCKS
+        );
+        TerrainAwareStructuralField.HeightPatch anchorPatch = TerrainAwareStructuralField.HeightPatch.sample(
+                heights::heightAt,
+                baseField.siteX(),
+                baseField.siteZ(),
+                DEFAULT_SAMPLE_SPACING_BLOCKS
+        );
+        double anchorHeight = anchorPatch.heightAt(baseField.siteX(), baseField.siteZ());
+        return TerrainAwareStructuralField.apply(baseField, province, localPatch, anchorHeight);
+    }
+
+    private static HeightSource heightSource(ServerWorld world) {
+        ServerChunkManager chunkManager = world.getChunkManager();
+        ChunkGenerator generator = chunkManager.getChunkGenerator();
+        NoiseConfig noiseConfig = chunkManager.getNoiseConfig();
+        return (sampleX, sampleZ) -> generator.getHeight(
+                sampleX,
+                sampleZ,
+                Heightmap.Type.OCEAN_FLOOR_WG,
+                world,
+                noiseConfig
         );
     }
 

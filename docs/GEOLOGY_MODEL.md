@@ -50,7 +50,9 @@ The roll mapping is covered by fixed regression vectors. Changing its hash or sa
 
 `ChunkGeneratorTerrainMorphologySampler` supplies those observations from the active terrain generator's `OCEAN_FLOOR_WG` height at 128-block spacing. It asks the generator directly rather than loading neighboring chunks, so vanilla noise settings and compatible terrain generators can contribute through the same adapter without becoming core dependencies.
 
-Use `/geostrata terrain` to inspect that evidence at the command source. The command is read-only: the current stratigraphic field still uses its deterministic dip and warp unchanged. The next terrain-aware milestone is to turn reviewed morphology plus province context into an explicit structural transform, then route both diagnostics and the opt-in correlated generator through that shared transform before it receives block ownership.
+`TerrainAwareStructuralField` now turns the same active-generator height evidence into a continuous broad structural adjustment. It samples a fixed 128-block world grid and bilinearly interpolates between shared grid corners, so neighboring chunks cannot choose different terrain heights at their boundary. The deterministic province site remains the zero-reference anchor. Province archetypes then apply deliberately partial coupling: orogenic and rift settings respond more strongly than stable cratonic and sedimentary settings, preserving the underlying seed-derived dip and warp instead of simply painting beds parallel to every surface block.
+
+Both `/geostrata field` and the opt-in correlated generator construct this transform through `ChunkGeneratorTerrainMorphologySampler.structuralField`. The standalone independent-feature baseline remains unchanged. Use `/geostrata terrain` to inspect relief, slope, ridge/valley prominence and the active province coupling; `/geostrata field` reports the resulting terrain contribution to the structural offset. The coupling values are experimental world-generation tuning and must be evaluated in fresh companion worlds before broader activation.
 
 ## Sedimentary succession and spatial-field staging
 

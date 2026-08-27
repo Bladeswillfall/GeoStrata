@@ -45,7 +45,8 @@ The mutation host is still `geostrata:worldgen/base_stone_replaceables`. Third-p
 When the companion is installed and the experiment owns the chunk, `CorrelatedSedimentaryFeature`:
 
 - uses shared chunk-center ownership;
-- reuses the selected succession, contact plan and deterministic stratigraphic field;
+- reuses the selected succession, contact plan and deterministic base stratigraphic field;
+- samples the active terrain generator on a fixed 128-block grid and applies the shared province-aware structural transform;
 - resolves output blocks from the runtime lithology catalog only at the mutation boundary;
 - scans only the bounded sea-level-relative experiment window;
 - replaces only `hostBlockTag` members, preserving caves, ores and other non-host material;
@@ -57,9 +58,9 @@ The current vertical window is 96 blocks below to 48 blocks above sea level. It 
 
 ## Exact runtime inspection
 
-`CorrelatedSedimentaryRuntime` is the single resolver for both experimental worldgen and diagnostics. It normalizes the requested position to the owning chunk center, evaluates ownership, selects the succession, plans its contacts and constructs the site-anchored field once. This prevents diagnostics from sampling a point that the chunk-level generator did not own or from rebuilding a different field.
+`CorrelatedSedimentaryRuntime` is the single resolver for both experimental worldgen and diagnostics. It normalizes the requested position to the owning chunk center, evaluates ownership, selects the succession, plans its contacts and constructs the site-anchored base field once. Its active-world overload then applies `TerrainAwareStructuralField` through the same active-generator adapter used by mutation. This prevents diagnostics from sampling a point that the chunk-level generator did not own, rebuilding a different field or using different terrain evidence.
 
-With the companion installed, `/geostrata experiment` now reports the exact field lithology at the command source, the actual block at that position, cycle position and whether the position is inside the active mutation window. The actual block is intentionally not required to match the field: caves, ores and all other non-host material are preserved by design. The command is an inspection aid for fresh experiment worlds, not a repair or replacement pass.
+With the companion installed, `/geostrata experiment` now reports the exact terrain-adjusted field lithology at the command source, the terrain offset, actual block, cycle position and whether the position is inside the active mutation window. The actual block is intentionally not required to match the field: caves, ores and all other non-host material are preserved by design. The command is an inspection aid for fresh experiment worlds, not a repair or replacement pass.
 
 ## Validation
 
