@@ -31,6 +31,23 @@ The configured host material remains `geostrata:worldgen/base_stone_replaceables
 
 `/geostrata experiment` reports the loaded activation state. When disabled it shows the target/superseded scope; when enabled by a future datapack it reports whether the current X/Z is owned, the ownership reason, province, approximate boundary distance and selected succession. The command does not inspect or mutate blocks.
 
+## Dormant feature implementation
+
+`CorrelatedSedimentaryFeature` now implements the eventual chunk-local mutation path, but the placed feature is deliberately **not registered into any biome** yet. The feature type and configured/placed data can therefore compile and decode without creating a reachable generation path in ordinary worlds.
+
+If it is later biome-registered and the experiment is enabled, the feature:
+
+- evaluates ownership at the current chunk center;
+- reuses the selected succession, contact plan and deterministic stratigraphic field;
+- resolves output blocks only at the world-mutation boundary from the runtime lithology catalog;
+- scans only the experiment's bounded sea-level-relative vertical window;
+- replaces only blocks in `hostBlockTag`, preserving caves, ores and any material outside GeoStrata's host-stone contract;
+- uses one coherent field for the whole chunk rather than independent random deposits.
+
+The intended biome registration stage is `UNDERGROUND_DECORATION`, after vanilla's underground-ore stage. That sequencing is deliberate: vanilla ores already present in the chunk are not members of `base_stone_replaceables`, so the correlated pass preserves them instead of preventing their generation.
+
+`scripts/validate_dormant_correlated_feature.py` enforces the staging boundary. CI currently requires the type/data to exist while rejecting any biome-worldgen reference or early baseline suppression. The next activation PR must change those assertions atomically rather than allowing one side of the handoff to land alone.
+
 ## Vertical staging
 
 The initial experimental window is expressed relative to sea level, from 96 blocks below to 48 blocks above. This is intentionally not a permanent geological rule. It is a bounded mutation envelope for the first test consumer so the generator does not scan or replace an entire dimension column.
@@ -65,8 +82,8 @@ The implementation stages are intentionally separate:
 
 1. **complete** — load and validate this contract in Java;
 2. **complete** — expose a diagnostic showing whether the current position/chunk is owned by the experiment;
-3. implement a registered-but-disabled correlated feature that performs no work unless the contract is enabled;
-4. make the existing sedimentary lens features suppress themselves only inside owned experimental regions;
+3. **complete but intentionally unreachable** — implement/register the correlated feature type and data while keeping the placed feature out of biome worldgen;
+4. atomically register the correlated placed feature at `UNDERGROUND_DECORATION` and make existing superseded lens features suppress themselves only inside the same owned chunks;
 5. ship a separate experimental datapack that flips `enabled` and `runtimeStatus` together;
 6. evaluate fresh-world abundance, contacts, cave/cliff exposure, performance and compatibility before considering any default activation.
 
