@@ -9,3 +9,4 @@ pluginManagement {
 }
 
 rootProject.name = 'geostrata'
+include 'experiment-companion'
