@@ -114,11 +114,16 @@ public final class SedimentaryStratigraphicField {
             double dx = (double) x - siteX;
             double dz = (double) z - siteZ;
             double dipOffset = dipX * dx + dipZ * dz;
-
-            double alongWarp = dx * Math.cos(warpAngle) + dz * Math.sin(warpAngle);
-            double warpOffset = warpAmplitudeBlocks
-                    * Math.sin(TWO_PI * alongWarp / warpWavelengthBlocks);
+            double warpOffset = warpAmplitudeBlocks * warpShape(x, z);
             return dipOffset + warpOffset;
+        }
+
+        /** Normalized seed-derived fold shape shared by base warp and terrain amplification. */
+        public double warpShape(int x, int z) {
+            double dx = (double) x - siteX;
+            double dz = (double) z - siteZ;
+            double alongWarp = dx * Math.cos(warpAngle) + dz * Math.sin(warpAngle);
+            return Math.sin(TWO_PI * alongWarp / warpWavelengthBlocks);
         }
 
         /**
