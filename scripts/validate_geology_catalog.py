@@ -23,6 +23,9 @@ MINECRAFT_BLOCK_TAGS = ROOT / "src" / "main" / "resources" / "data" / "minecraft
 ASSETS = ROOT / "src" / "main" / "resources" / "assets" / "geostrata"
 BLOCKS_SOURCE = ROOT / "src" / "main" / "java" / "com" / "geostrata" / "block" / "GeoStrataBlocks.java"
 ORE_HOST_SOURCE = ROOT / "src" / "main" / "java" / "com" / "geostrata" / "block" / "OreHost.java"
+CONTINUITY_ROOT = ASSETS / "optifine" / "ctm" / "host"
+CONTINUITY_TEXTURES = ASSETS / "textures" / "optifine" / "ctm" / "host"
+CONTINUITY_VARIANTS = 4
 
 ROCK_CLASSES = ("sedimentary", "igneous", "metamorphic")
 ALLOWED_BODY_STYLES = {
@@ -89,6 +92,44 @@ def png_size(path: Path) -> tuple[int, int]:
     if len(header) != 24 or header[:8] != b"\x89PNG\r\n\x1a\n" or header[12:16] != b"IHDR":
         fail(f"{path.relative_to(ROOT)} must be a PNG image")
     return struct.unpack(">II", header[16:24])
+
+
+def validate_continuity_hosts(hosts: list[str]) -> None:
+    expected_properties = {f"{host}.properties" for host in hosts}
+    actual_properties = {path.name for path in CONTINUITY_ROOT.glob("*.properties")}
+    if actual_properties != expected_properties:
+        fail(
+            "Continuity host definitions must exactly cover the artist matrix; "
+            f"missing={sorted(expected_properties - actual_properties)}, "
+            f"extra={sorted(actual_properties - expected_properties)}"
+        )
+    for host in hosts:
+        tiles = " ".join(
+            f"geostrata:optifine/ctm/host/{host}/{index}"
+            for index in range(CONTINUITY_VARIANTS)
+        )
+        expected = (
+            "method=random\n"
+            f"matchTiles=geostrata:block/host/{host}\n"
+            f"tiles={tiles}\n"
+        )
+        path = CONTINUITY_ROOT / f"{host}.properties"
+        try:
+            actual = path.read_text(encoding="utf-8")
+        except OSError as exc:
+            fail(f"cannot read {path.relative_to(ROOT)}: {exc}")
+        if actual != expected:
+            fail(f"{path.relative_to(ROOT)} has drifted from the generated Continuity contract")
+
+        texture_root = CONTINUITY_TEXTURES / host
+        expected_textures = {f"{index}.png" for index in range(CONTINUITY_VARIANTS)}
+        actual_textures = {path.name for path in texture_root.glob("*.png")}
+        if actual_textures != expected_textures:
+            fail(f"Continuity host {host} must contain exactly {CONTINUITY_VARIANTS} variants")
+        for texture in expected_textures:
+            path = texture_root / texture
+            if png_size(path) != (16, 16):
+                fail(f"{path.relative_to(ROOT)} must be exactly 16x16")
 
 
 def tag_values(path: Path) -> set[str]:
@@ -551,6 +592,7 @@ def validate_material_catalog() -> int:
     source_hosts = set(re.findall(r'\b[A-Z_]+\("([a-z_]+)"\)', host_source))
     if source_hosts != set(matrix_hosts):
         fail("OreHost.java must exactly match the artist texture-matrix hosts")
+    validate_continuity_hosts(matrix_hosts)
     return len(materials)
 
 

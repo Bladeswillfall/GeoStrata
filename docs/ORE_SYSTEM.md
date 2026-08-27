@@ -107,7 +107,28 @@ Minecraft visual language. They are deliberately separated from generated
 composites so an artist can replace a host or mineral source and regenerate the
 whole matrix without editing hundreds of final textures by hand.
 
+Every host source is also checked as a self-contained seamless 16x16 tile. Its
+wrap-edge contrast may not exceed the ordinary contrast inside the texture by a
+conspicuous margin, preventing a bright or dark grid from appearing across a
+large exposure. Ore composites inherit the same host edge, so they remain
+compatible with adjacent host blocks and with normal Minecraft rendering.
+
+The development pack already includes Continuity `3.0.0+1.20.1` and Indium.
+When Continuity is active, generated `method=random` definitions select one of
+four subtle variants for each host. Only the inner 12x12 pixels vary; the
+two-pixel edge guard is byte-identical to the base host. This reduces obvious
+single-tile repetition without creating a seam where a varied host touches a
+fallback host or a graded ore composite. Continuity remains a client-side visual
+enhancement rather than a core GeoStrata dependency: without it, the base tile
+and all host/material/grade composites still render normally.
+
+`docs/images/host-tiling-preview.png` is regenerated with the matrix and shows
+four-by-four block exposures without cell outlines. It is the quick visual check
+for borders, framed tiles and high-contrast repetition.
+
 ![Host, mineral and grade authoring matrix](images/ore-texture-matrix-preview.png)
+
+![Seamless host tiling and Continuity variation](images/host-tiling-preview.png)
 
 Full-bright cells are currently permitted by geological occurrence rules. Dim
 cells are generated and asset-ready but will not occur naturally unless the
