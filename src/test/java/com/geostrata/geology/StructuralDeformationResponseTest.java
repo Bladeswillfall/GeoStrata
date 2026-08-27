@@ -101,6 +101,20 @@ final class StructuralDeformationResponseTest {
         assertTrue(response.terrainSignal() > 0.0);
     }
 
+    @Test
+    void provinceBoundaryUsesEqualPrimaryNeighborBlend() {
+        StructuralDeformationResponse.Result primary = result(0.8, 0.6, 0.4, 0.2);
+        StructuralDeformationResponse.Result neighbor = result(0.2, 0.2, 0.8, 1.0);
+
+        StructuralDeformationResponse.Result boundary = StructuralDeformationResponse.blend(primary, neighbor, 0.0);
+        StructuralDeformationResponse.Result interior = StructuralDeformationResponse.blend(primary, neighbor, 1.0);
+
+        assertEquals(0.5, boundary.intensity(), EPSILON);
+        assertEquals(0.6, boundary.dipPotential(), EPSILON);
+        assertEquals(0.6, boundary.foldPotential(), EPSILON);
+        assertEquals(primary, interior);
+    }
+
     private static ProvinceDeformationProfiles.Profile profile(
             GeologyProvince province,
             double baseline,
@@ -110,5 +124,14 @@ final class StructuralDeformationResponseTest {
             double fault
     ) {
         return new ProvinceDeformationProfiles.Profile(province, baseline, coupling, dip, fold, fault);
+    }
+
+    private static StructuralDeformationResponse.Result result(
+            double intensity,
+            double dip,
+            double fold,
+            double fault
+    ) {
+        return new StructuralDeformationResponse.Result(0.5, 0.5, 0.5, 0.5, intensity, dip, fold, fault);
     }
 }
