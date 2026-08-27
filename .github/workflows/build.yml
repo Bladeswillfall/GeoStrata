@@ -36,6 +36,9 @@ jobs:
       - name: Validate correlated core staging
         run: python3 scripts/validate_correlated_core_staging.py
 
+      - name: Validate correlated experiment companion
+        run: python3 scripts/validate_correlated_companion.py
+
       - name: Validate strata lens configs
         run: python3 scripts/validate_strata_lens_configs.py
 
@@ -57,11 +60,13 @@ jobs:
           gradle-version: 9.4.0
 
       - name: Build Java 17 mod artifacts
-        run: gradle clean build --stacktrace
+        run: gradle clean build :experiment-companion:build --stacktrace
 
       - name: Upload built jars
         uses: actions/upload-artifact@v4
         with:
           name: geostrata-jars
-          path: build/libs/*.jar
+          path: |
+            build/libs/*.jar
+            experiment-companion/build/libs/*.jar
           if-no-files-found: error
