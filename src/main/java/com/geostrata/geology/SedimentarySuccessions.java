@@ -65,11 +65,7 @@ public final class SedimentarySuccessions implements SimpleSynchronousResourceRe
 
     static Snapshot parse(JsonObject catalog, JsonObject root) {
         Set<String> sedimentary = sedimentaryLithologies(catalog);
-        requireInt(root, "schemaVersion", 1);
-        requireString(root, "model", "geostrata:sedimentary_successions");
-        requireString(root, "runtimeStatus", "metadata_only");
-        requireString(root, "order", "lower_to_upper");
-
+        requireRootContract(root);
         JsonArray rawSuccessions = requiredArray(root, "successions");
         if (rawSuccessions.size() == 0) {
             throw new IllegalArgumentException("sedimentary successions must not be empty");
@@ -78,88 +74,131 @@ public final class SedimentarySuccessions implements SimpleSynchronousResourceRe
         List<Succession> parsed = new ArrayList<>();
         LinkedHashMap<String, Succession> byId = new LinkedHashMap<>();
         Set<String> covered = new HashSet<>();
-
         for (JsonElement element : rawSuccessions) {
-            if (!element.isJsonObject()) {
-                throw new IllegalArgumentException("succession entry must be an object");
+            Succession succession = parseSuccession(element, sedimentary);
+            if (byId.put(succession.id(), succession) != null) {
+                throw new IllegalArgumentException("duplicate succession id: " + succession.id());
             }
-            JsonObject object = element.getAsJsonObject();
-            String id = requireString(object, "id");
-            if (!id.matches("[a-z0-9_]+")) {
-                throw new IllegalArgumentException("invalid succession id: " + id);
-            }
-            if (byId.containsKey(id)) {
-                throw new IllegalArgumentException("duplicate succession id: " + id);
-            }
-
-            JsonArray rawContexts = requiredArray(object, "contexts");
-            if (rawContexts.size() == 0) {
-                throw new IllegalArgumentException(id + " must declare at least one context");
-            }
-            List<GeologyProvince> contexts = new ArrayList<>();
-            Set<GeologyProvince> contextSet = new HashSet<>();
-            for (JsonElement rawContext : rawContexts) {
-                if (!rawContext.isJsonPrimitive() || !rawContext.getAsJsonPrimitive().isString()) {
-                    throw new IllegalArgumentException(id + " context must be a string");
-                }
-                GeologyProvince province = provinceById(rawContext.getAsString())
-                        .orElseThrow(() -> new IllegalArgumentException(
-                                id + " references unknown province context " + rawContext.getAsString()
-                        ));
-                if (!contextSet.add(province)) {
-                    throw new IllegalArgumentException(id + " contains duplicate context " + province.id());
-                }
-                contexts.add(province);
-            }
-
-            String continuity = requireString(object, "continuity");
-            if (!continuity.equals("local") && !continuity.equals("regional")) {
-                throw new IllegalArgumentException(id + " continuity must be local or regional");
-            }
-
-            JsonArray rawBeds = requiredArray(object, "beds");
-            if (rawBeds.size() < 3) {
-                throw new IllegalArgumentException(id + " must contain at least three beds");
-            }
-            List<Bed> beds = new ArrayList<>();
-            Set<String> distinct = new HashSet<>();
-            for (JsonElement rawBed : rawBeds) {
-                if (!rawBed.isJsonObject()) {
-                    throw new IllegalArgumentException(id + " bed must be an object");
-                }
-                JsonObject bed = rawBed.getAsJsonObject();
-                String lithology = requireString(bed, "lithology");
-                if (!sedimentary.contains(lithology)) {
-                    throw new IllegalArgumentException(id + " uses unknown or non-sedimentary lithology " + lithology);
-                }
-                double thickness = requireDouble(bed, "relativeThickness");
-                if (thickness < 0.1 || thickness > 4.0) {
-                    throw new IllegalArgumentException(id + "/" + lithology + " relativeThickness must be within 0.1..4.0");
-                }
-                beds.add(new Bed(lithology, thickness));
-                distinct.add(lithology);
-                covered.add(lithology);
-            }
-            if (distinct.size() < 2) {
-                throw new IllegalArgumentException(id + " must contain at least two distinct lithologies");
-            }
-
-            Succession succession = new Succession(id, contexts, continuity, beds);
             parsed.add(succession);
-            byId.put(id, succession);
+            addCoveredLithologies(covered, succession);
         }
 
-        if (!covered.equals(sedimentary)) {
-            Set<String> missing = new HashSet<>(sedimentary);
-            missing.removeAll(covered);
-            throw new IllegalArgumentException("succession metadata does not cover all sedimentary lithologies; missing=" + missing);
-        }
-
+        requireCatalogCoverage(covered, sedimentary);
         return new Snapshot(
                 "metadata_only",
                 Collections.unmodifiableList(parsed),
                 Collections.unmodifiableMap(byId)
         );
+    }
+
+    private static void requireRootContract(JsonObject root) {
+        requireInt(root, "schemaVersion", 1);
+        requireString(root, "model", "geostrata:sedimentary_successions");
+        requireString(root, "runtimeStatus", "metadata_only");
+        requireString(root, "order", "lower_to_upper");
+    }
+
+    private static Succession parseSuccession(JsonElement element, Set<String> sedimentary) {
+        if (!element.isJsonObject()) {
+            throw new IllegalArgumentException("succession entry must be an object");
+        }
+        JsonObject object = element.getAsJsonObject();
+        String id = requireSuccessionId(object);
+        List<GeologyProvince> contexts = parseContexts(id, object);
+        String continuity = requireContinuity(id, object);
+        List<Bed> beds = parseBeds(id, object, sedimentary);
+        return new Succession(id, contexts, continuity, beds);
+    }
+
+    private static String requireSuccessionId(JsonObject object) {
+        String id = requireString(object, "id");
+        if (!id.matches("[a-z0-9_]+")) {
+            throw new IllegalArgumentException("invalid succession id: " + id);
+        }
+        return id;
+    }
+
+    private static List<GeologyProvince> parseContexts(String id, JsonObject object) {
+        JsonArray rawContexts = requiredArray(object, "contexts");
+        if (rawContexts.size() == 0) {
+            throw new IllegalArgumentException(id + " must declare at least one context");
+        }
+
+        List<GeologyProvince> contexts = new ArrayList<>();
+        Set<GeologyProvince> contextSet = new HashSet<>();
+        for (JsonElement rawContext : rawContexts) {
+            if (!rawContext.isJsonPrimitive() || !rawContext.getAsJsonPrimitive().isString()) {
+                throw new IllegalArgumentException(id + " context must be a string");
+            }
+            String provinceId = rawContext.getAsString();
+            GeologyProvince province = provinceById(provinceId)
+                    .orElseThrow(() -> new IllegalArgumentException(
+                            id + " references unknown province context " + provinceId
+                    ));
+            if (!contextSet.add(province)) {
+                throw new IllegalArgumentException(id + " contains duplicate context " + province.id());
+            }
+            contexts.add(province);
+        }
+        return contexts;
+    }
+
+    private static String requireContinuity(String id, JsonObject object) {
+        String continuity = requireString(object, "continuity");
+        if (!continuity.equals("local") && !continuity.equals("regional")) {
+            throw new IllegalArgumentException(id + " continuity must be local or regional");
+        }
+        return continuity;
+    }
+
+    private static List<Bed> parseBeds(String id, JsonObject object, Set<String> sedimentary) {
+        JsonArray rawBeds = requiredArray(object, "beds");
+        if (rawBeds.size() < 3) {
+            throw new IllegalArgumentException(id + " must contain at least three beds");
+        }
+
+        List<Bed> beds = new ArrayList<>();
+        Set<String> distinct = new HashSet<>();
+        for (JsonElement rawBed : rawBeds) {
+            Bed bed = parseBed(id, rawBed, sedimentary);
+            beds.add(bed);
+            distinct.add(bed.lithology());
+        }
+        if (distinct.size() < 2) {
+            throw new IllegalArgumentException(id + " must contain at least two distinct lithologies");
+        }
+        return beds;
+    }
+
+    private static Bed parseBed(String id, JsonElement rawBed, Set<String> sedimentary) {
+        if (!rawBed.isJsonObject()) {
+            throw new IllegalArgumentException(id + " bed must be an object");
+        }
+        JsonObject bed = rawBed.getAsJsonObject();
+        String lithology = requireString(bed, "lithology");
+        if (!sedimentary.contains(lithology)) {
+            throw new IllegalArgumentException(id + " uses unknown or non-sedimentary lithology " + lithology);
+        }
+        double thickness = requireDouble(bed, "relativeThickness");
+        if (thickness < 0.1 || thickness > 4.0) {
+            throw new IllegalArgumentException(id + "/" + lithology + " relativeThickness must be within 0.1..4.0");
+        }
+        return new Bed(lithology, thickness);
+    }
+
+    private static void addCoveredLithologies(Set<String> covered, Succession succession) {
+        for (Bed bed : succession.beds()) {
+            covered.add(bed.lithology());
+        }
+    }
+
+    private static void requireCatalogCoverage(Set<String> covered, Set<String> sedimentary) {
+        if (covered.equals(sedimentary)) {
+            return;
+        }
+        Set<String> missing = new HashSet<>(sedimentary);
+        missing.removeAll(covered);
+        throw new IllegalArgumentException("succession metadata does not cover all sedimentary lithologies; missing=" + missing);
     }
 
     private static Set<String> sedimentaryLithologies(JsonObject catalog) {
