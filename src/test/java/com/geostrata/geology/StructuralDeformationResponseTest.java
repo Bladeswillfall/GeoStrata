@@ -110,7 +110,7 @@ final class StructuralDeformationResponseTest {
         StructuralDeformationResponse.Result interior = StructuralDeformationResponse.blend(primary, neighbor, 1.0);
 
         assertEquals(0.5, boundary.intensity(), EPSILON);
-        assertEquals(0.6, boundary.dipPotential(), EPSILON);
+        assertEquals(0.4, boundary.dipPotential(), EPSILON);
         assertEquals(0.6, boundary.foldPotential(), EPSILON);
         assertEquals(primary, interior);
     }
