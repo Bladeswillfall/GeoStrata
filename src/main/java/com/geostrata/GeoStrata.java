@@ -9,6 +9,7 @@ import com.geostrata.geology.LithologyCatalog;
 import com.geostrata.geology.ProvinceDeformationProfiles;
 import com.geostrata.geology.SedimentaryFieldProfiles;
 import com.geostrata.geology.SedimentarySuccessions;
+import com.geostrata.geology.StructuralTransformProfiles;
 import com.geostrata.item.GeoStrataItemGroups;
 import com.geostrata.worldgen.GeoStrataWorldgen;
 import com.geostrata.worldgen.feature.GeoStrataFeatures;
@@ -29,6 +30,7 @@ public final class GeoStrata implements ModInitializer {
         LithologyCatalog.register();
         GeologyProvinceProfiles.register();
         ProvinceDeformationProfiles.register();
+        StructuralTransformProfiles.register();
         SedimentarySuccessions.register();
         SedimentaryFieldProfiles.register();
         CorrelatedSedimentaryExperiment.register();
