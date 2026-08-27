@@ -20,9 +20,19 @@ The supported styles are deliberately limited to `coal_seam`, `vein`,
 an occurrence references an unknown lithology, province or style. Use
 `/geostrata ore <material>` to inspect the loaded occurrence contract.
 
-This is host-rock occurrence implementation, not deposit generation. No ore
-blocks are registered or placed by this catalog yet, and vanilla ore generation
-is not suppressed. The current baseline therefore remains unchanged.
+`OreDepositCandidatePlanner` now divides the world into deterministic
+256×256×64 candidate cells. For each material and cell it derives one jittered
+anchor and one style from the occurrence's allowed styles, without consuming
+Minecraft feature RNG state. The proposal becomes eligible only when the
+anchor's geological province and host lithology both match the occurrence
+contract. `/geostrata ore <material> candidate` exposes the proposal and its
+eligibility at the player's current 3D cell.
+
+This is candidate planning, not deposit activation. Every cell can be inspected
+without implying that every proposal will become a deposit; activation
+frequency and inter-deposit spacing remain deliberately unset. No ore blocks are registered or
+placed, grades are not assigned, and vanilla ore generation is not suppressed.
+The current baseline therefore remains unchanged.
 
 ## Grade contract
 
@@ -57,8 +67,8 @@ startup.
 ## Staged implementation path
 
 1. **complete** — validate phase-one host, province, style and output contracts.
-2. implement deterministic deposit candidates from world seed and geological
-   context without mutating blocks;
+2. **complete** — implement deterministic deposit candidates from world seed
+   and geological context without mutating blocks;
 3. add Poor/Medium/Rich/Massive block, loot, yield and XP behavior with Trace as
    non-economic evidence;
 4. activate deposits behind an explicit experimental boundary and evaluate

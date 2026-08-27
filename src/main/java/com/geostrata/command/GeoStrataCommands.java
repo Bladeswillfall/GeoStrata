@@ -8,6 +8,7 @@ import com.geostrata.geology.GeologyProvinceProfiles;
 import com.geostrata.geology.GeologyProvinceSampler;
 import com.geostrata.geology.GeologySurvey;
 import com.geostrata.geology.LithologyCatalog;
+import com.geostrata.geology.OreDepositCandidatePlanner;
 import com.geostrata.geology.OreOccurrenceCatalog;
 import com.geostrata.geology.SedimentaryContactPlanner;
 import com.geostrata.geology.SedimentaryFieldProfiles;
@@ -29,6 +30,7 @@ import net.minecraft.util.math.Vec3d;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 /** Small diagnostic command surface for inspecting deterministic geology. */
@@ -67,7 +69,12 @@ public final class GeoStrataCommands {
                                         .executes(context -> showOre(
                                                 context.getSource(),
                                                 StringArgumentType.getString(context, "material")
-                                        ))))
+                                        ))
+                                        .then(CommandManager.literal("candidate")
+                                                .executes(context -> showOreCandidate(
+                                                        context.getSource(),
+                                                        StringArgumentType.getString(context, "material")
+                                                )))))
                         .then(CommandManager.literal("survey")
                                 .then(CommandManager.argument("lithology", StringArgumentType.word())
                                         .executes(context -> survey(
@@ -460,6 +467,125 @@ public final class GeoStrataCommands {
                 false
         );
         return 1;
+    }
+
+    private static int showOreCandidate(ServerCommandSource source, String material) {
+        OreOccurrenceCatalog.Snapshot catalog = OreOccurrenceCatalog.current();
+        LithologyCatalog.Snapshot lithologies = LithologyCatalog.current();
+        if (!catalog.loaded() || !lithologies.loaded()) {
+            source.sendError(Text.literal("GeoStrata ore and lithology catalogs have not been loaded yet."));
+            return 0;
+        }
+
+        OreOccurrenceCatalog.Occurrence occurrence;
+        try {
+            occurrence = catalog.require(material);
+        } catch (IllegalArgumentException exception) {
+            source.sendError(Text.literal(exception.getMessage()));
+            return 0;
+        }
+
+        Vec3d position = source.getPosition();
+        int x = MathHelper.floor(position.x);
+        int y = MathHelper.floor(position.y);
+        int z = MathHelper.floor(position.z);
+        long seed = source.getWorld().getSeed();
+        OreDepositCandidatePlanner.Proposal proposal = OreDepositCandidatePlanner.propose(
+                seed,
+                x,
+                y,
+                z,
+                occurrence
+        );
+        GeologyProvinceSampler.Sample province = GeologyProvinceSampler.sample(
+                seed,
+                proposal.anchorX(),
+                proposal.anchorZ()
+        );
+        String host = candidateHost(source, proposal, lithologies);
+        boolean eligible = OreDepositCandidatePlanner.accept(
+                proposal,
+                occurrence,
+                province.province(),
+                host
+        ).isPresent();
+        String status = eligible
+                ? "ELIGIBLE metadata candidate"
+                : "ineligible: " + candidateRejection(source, proposal, occurrence, province, host);
+
+        source.sendFeedback(
+                () -> Text.literal(
+                        "GeoStrata ore candidate " + occurrence.id()
+                                + ": cell " + proposal.cellX() + "," + proposal.cellY() + "," + proposal.cellZ()
+                                + " | anchor " + proposal.anchorX() + "," + proposal.anchorY() + "," + proposal.anchorZ()
+                                + " | style " + proposal.depositStyle()
+                                + " | province " + province.province().id()
+                                + " | host " + (host == null ? "unresolved" : host)
+                                + " | " + status
+                                + " | no blocks, grades, yields or suppression active"
+                ),
+                false
+        );
+        return 1;
+    }
+
+    private static String candidateHost(
+            ServerCommandSource source,
+            OreDepositCandidatePlanner.Proposal proposal,
+            LithologyCatalog.Snapshot lithologies
+    ) {
+        Optional<CorrelatedSedimentaryRuntime.TerrainAwareSite> site = CorrelatedSedimentaryRuntime.resolve(
+                source.getWorld(),
+                proposal.anchorX(),
+                proposal.anchorZ()
+        );
+        if (site.isPresent() && insideCorrelatedWindow(source, proposal.anchorY())) {
+            return site.get().sample(proposal.anchorX(), proposal.anchorY(), proposal.anchorZ()).bed().lithology();
+        }
+
+        String block = blockAt(source, proposal);
+        return lithologies.entries().stream()
+                .filter(entry -> entry.block().equals(block))
+                .map(LithologyCatalog.Entry::id)
+                .findFirst()
+                .orElse(null);
+    }
+
+    private static boolean insideCorrelatedWindow(ServerCommandSource source, int y) {
+        CorrelatedSedimentaryExperiment.Snapshot experiment = CorrelatedSedimentaryExperiment.current();
+        if (!experiment.loaded() || !experiment.enabled()) {
+            return false;
+        }
+        int minY = Math.max(
+                source.getWorld().getBottomY(),
+                source.getWorld().getSeaLevel() + experiment.verticalWindow().minOffsetBlocks()
+        );
+        int maxY = Math.min(
+                source.getWorld().getTopY() - 1,
+                source.getWorld().getSeaLevel() + experiment.verticalWindow().maxOffsetBlocks()
+        );
+        return y >= minY && y <= maxY;
+    }
+
+    private static String candidateRejection(
+            ServerCommandSource source,
+            OreDepositCandidatePlanner.Proposal proposal,
+            OreOccurrenceCatalog.Occurrence occurrence,
+            GeologyProvinceSampler.Sample province,
+            String host
+    ) {
+        if (!occurrence.provinceContexts().contains(province.province())) {
+            return "province is outside the occurrence contract";
+        }
+        if (host == null) {
+            return "anchor block " + blockAt(source, proposal) + " has no GeoStrata host identity";
+        }
+        return "host " + host + " is outside the occurrence contract";
+    }
+
+    private static String blockAt(ServerCommandSource source, OreDepositCandidatePlanner.Proposal proposal) {
+        BlockPos anchor = new BlockPos(proposal.anchorX(), proposal.anchorY(), proposal.anchorZ());
+        return Registries.BLOCK.getId(source.getWorld().getBlockState(anchor).getBlock()).toString();
     }
 
     private static String sequence(SedimentarySuccessions.Succession succession) {
