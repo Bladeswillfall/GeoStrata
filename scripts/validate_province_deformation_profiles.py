@@ -56,6 +56,10 @@ def main() -> None:
     if root.get("runtimeStatus") != "metadata_only":
         fail("province deformation profiles must remain metadata_only until runtime deformation is reviewed")
 
+    blend_width = root.get("blendWidthBlocks")
+    if not isinstance(blend_width, int) or isinstance(blend_width, bool) or not 1 <= blend_width <= 384:
+        fail("blendWidthBlocks must be an integer from 1 to 384")
+
     normalization = root.get("morphologyNormalization")
     if not isinstance(normalization, dict):
         fail("morphologyNormalization must be an object")
@@ -106,7 +110,7 @@ def main() -> None:
 
     print(
         "province deformation profile validation OK: "
-        f"{len(raw_profiles)} provinces, metadata-only normalized response contract"
+        f"{len(raw_profiles)} provinces, {blend_width}-block blend width, metadata-only response contract"
     )
 
 
