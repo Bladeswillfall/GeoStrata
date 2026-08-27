@@ -116,6 +116,8 @@ final class SedimentaryStratigraphicFieldTest {
         );
         assertThrows(IllegalArgumentException.class,
                 () -> field.sample(0, Double.NaN, 0, twoBedPlan(0.0)));
+        assertThrows(IllegalArgumentException.class,
+                () -> field.sample(0, 0.0, 0, twoBedPlan(0.0), Double.POSITIVE_INFINITY));
     }
 
     private static SedimentaryContactPlanner.Plan twoBedPlan(double phase) {

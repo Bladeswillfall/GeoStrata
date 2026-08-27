@@ -14,6 +14,7 @@ import com.geostrata.geology.SedimentaryStratigraphicField;
 import com.geostrata.geology.SedimentarySuccessionSelector;
 import com.geostrata.geology.SedimentarySuccessions;
 import com.geostrata.geology.TerrainMorphologySample;
+import com.geostrata.geology.TerrainAwareStructuralField;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.minecraft.registry.Registries;
@@ -239,7 +240,14 @@ public final class GeoStrataCommands {
                 province.siteZ(),
                 parameters
         );
-        SedimentaryStratigraphicField.Sample fieldSample = field.sample(x, position.y, z, plan);
+        TerrainAwareStructuralField.Field structuralField = ChunkGeneratorTerrainMorphologySampler.structuralField(
+                source.getWorld(),
+                x,
+                z,
+                province.province(),
+                field
+        );
+        SedimentaryStratigraphicField.Sample fieldSample = structuralField.sample(x, position.y, z, plan);
 
         source.sendFeedback(
                 () -> Text.literal(
@@ -249,9 +257,12 @@ public final class GeoStrataCommands {
                                 + " | cycle " + fieldSample.cycleIndex()
                                 + ", position " + Math.round(fieldSample.fraction() * 100.0) + "%"
                                 + " | structural offset " + Math.round(fieldSample.verticalOffset()) + " blocks"
+                                + " (terrain " + Math.round(structuralField.terrainOffset(x, z)) + ")"
                                 + " | " + selection.succession().continuity() + " profile, cycle "
                                 + Math.round(parameters.cycleThicknessBlocks()) + " blocks"
-                                + " | virtual model only; no blocks placed"
+                                + " | terrain coupling "
+                                + Math.round(structuralField.response().terrainCoupling() * 100.0) + "%"
+                                + " | virtual model; active in opt-in correlated generation"
                 ),
                 false
         );
@@ -263,6 +274,8 @@ public final class GeoStrataCommands {
         int x = MathHelper.floor(position.x);
         int z = MathHelper.floor(position.z);
         TerrainMorphologySample terrain = ChunkGeneratorTerrainMorphologySampler.sample(source.getWorld(), x, z);
+        GeologyProvinceSampler.Sample province = sample(source);
+        TerrainAwareStructuralField.Response response = TerrainAwareStructuralField.responseFor(province.province());
 
         source.sendFeedback(
                 () -> Text.literal(
@@ -273,7 +286,9 @@ public final class GeoStrataCommands {
                                 + " | prominence " + round(terrain.prominence()) + " blocks"
                                 + " | spacing "
                                 + ChunkGeneratorTerrainMorphologySampler.DEFAULT_SAMPLE_SPACING_BLOCKS + " blocks"
-                                + " | structural evidence only; strata are not adjusted yet"
+                                + " | " + province.province().displayName() + " coupling "
+                                + Math.round(response.terrainCoupling() * 100.0) + "%"
+                                + " | active in the field model and opt-in correlated generation"
                 ),
                 false
         );
@@ -307,7 +322,7 @@ public final class GeoStrataCommands {
         long seed = source.getWorld().getSeed();
         CorrelatedSedimentaryExperiment.Ownership ownership =
                 CorrelatedExperimentChunkOwnership.ownershipForChunk(seed, x, z);
-        var resolved = CorrelatedSedimentaryRuntime.resolve(seed, x, z);
+        var resolved = CorrelatedSedimentaryRuntime.resolve(source.getWorld(), x, z);
         if (resolved.isPresent()) {
             return showResolvedExperiment(source, position, y, resolved.get());
         }
@@ -335,7 +350,7 @@ public final class GeoStrataCommands {
             ServerCommandSource source,
             Vec3d position,
             int y,
-            CorrelatedSedimentaryRuntime.Site site
+            CorrelatedSedimentaryRuntime.TerrainAwareSite site
     ) {
         CorrelatedSedimentaryExperiment.Snapshot experiment = CorrelatedSedimentaryExperiment.current();
         int x = MathHelper.floor(position.x);
@@ -365,6 +380,8 @@ public final class GeoStrataCommands {
                                 + " at Y " + y + " (actual " + actualBlock + ")"
                                 + " | cycle " + sample.cycleIndex()
                                 + ", position " + Math.round(sample.fraction() * 100.0) + "%"
+                                + " | terrain offset "
+                                + Math.round(site.field().terrainOffset(x, z)) + " blocks"
                                 + " | " + windowState + " mutation window " + minY + ".." + maxY
                 ),
                 false

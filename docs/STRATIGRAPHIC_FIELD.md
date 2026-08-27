@@ -15,7 +15,7 @@ Each succession already declares `continuity` as either `regional` or `local`. F
 
 The initial regional profile uses a 48-block motif, maximum dip `0.08`, four blocks of warp and a 192-block wavelength. The local profile uses a 32-block motif, maximum dip `0.16`, five blocks of warp and a 96-block wavelength. These values are conservative starting points for diagnostics, not claims about final geological scale.
 
-No absolute Y level, sea level, biome ID, terrain-generator ID or optional-mod ID appears in the profile. The field remains anchored to deterministic geological province sites, so terrain mods can change relief without redefining the underlying coordinate model.
+No absolute Y level, sea level, biome ID, terrain-generator ID or optional-mod ID appears in the profile. The base field remains anchored to deterministic geological province sites. A separate active-generator transform can therefore respond to broad modded relief without redefining the underlying succession or contact model.
 
 ## Runtime loading and dry-run diagnostics
 
@@ -28,9 +28,10 @@ No absolute Y level, sea level, biome ID, terrain-generator ID or optional-mod I
 3. builds the normalized lower-to-upper contact plan and exact contact ownership;
 4. resolves the succession's `local` or `regional` field profile;
 5. derives the site-anchored dip/warp field from world seed and site coordinates;
-6. samples the virtual cycle, normalized position and lithology owner at the source Y.
+6. samples the active terrain generator on the fixed structural grid and anchors that evidence to the province site;
+7. applies the province-specific terrain response, then samples the virtual cycle, normalized position and lithology owner at the source Y.
 
-The command reports the virtual lithology, succession, province, cycle index, normalized position, structural offset and cycle scale. It is deliberately explicit that this is a virtual model only: it does not inspect generated blocks and it does not place, remove or suppress any blocks.
+The command reports the virtual lithology, succession, province, cycle index, normalized position, total structural offset, terrain contribution, coupling and cycle scale. It remains read-only. The same terrain transform is used by the separately activated correlated experiment; standalone independent features are not changed.
 
 Together, `/geostrata succession`, `/geostrata column` and `/geostrata field` form progressively more concrete diagnostics: family selection, normalized contact geometry, then full X/Y/Z virtual ownership. This makes it possible to evaluate the intended correlated geology before granting it world-generation authority.
 
@@ -58,6 +59,6 @@ The intended path from this metadata to real blocks is staged:
 4. only then introduce an opt-in correlated succession generator;
 5. remove overlapping independent sedimentary features only after the correlated generator is demonstrated to preserve standalone compatibility and acceptable abundance.
 
-Steps 1 and 2 are now implemented. The next engineering milestone is therefore an explicitly opt-in runtime experiment, not silent activation of the field in ordinary worlds.
+Steps 1 through 4 are implemented, including the separately packaged opt-in runtime experiment. Terrain-aware structural coupling is now shared by its generator and diagnostics. Fresh-world visual and performance evaluation remains required before changing the standalone baseline.
 
 This order keeps GeoStrata's standalone Fabric contract intact and gives terrain/biome integrations a stable data seam before the geology model becomes more authoritative.
