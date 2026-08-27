@@ -78,7 +78,19 @@ public final class GeologyProvinceProfiles implements SimpleSynchronousResourceR
 
     static Snapshot parse(JsonObject catalog, JsonObject profilesRoot) {
         Set<String> lithologyIds = parseLithologyIds(catalog);
+        ProfileHeader header = parseHeader(profilesRoot);
+        EnumMap<GeologyProvince, Map<String, Double>> weights = parseProfiles(profilesRoot, lithologyIds);
+        requireCompleteProvinceCoverage(weights);
 
+        return new Snapshot(
+                header.runtimeStatus(),
+                header.blendWidthBlocks(),
+                Collections.unmodifiableSet(new HashSet<>(lithologyIds)),
+                Collections.unmodifiableMap(weights)
+        );
+    }
+
+    private static ProfileHeader parseHeader(JsonObject profilesRoot) {
         requireInt(profilesRoot, "schemaVersion", 1);
         requireString(profilesRoot, "model", "geostrata:province_profiles");
         String runtimeStatus = requireString(profilesRoot, "runtimeStatus");
@@ -90,66 +102,93 @@ public final class GeologyProvinceProfiles implements SimpleSynchronousResourceR
         if (blendWidth < 1 || blendWidth > GeologyProvinceSampler.CELL_SIZE / 2) {
             throw new IllegalArgumentException("blendWidthBlocks must be between 1 and half the province cell size");
         }
+        return new ProfileHeader(runtimeStatus, blendWidth);
+    }
 
-        JsonArray profiles = requiredArray(profilesRoot, "profiles");
+    private static EnumMap<GeologyProvince, Map<String, Double>> parseProfiles(
+            JsonObject profilesRoot,
+            Set<String> lithologyIds
+    ) {
         EnumMap<GeologyProvince, Map<String, Double>> weights = new EnumMap<>(GeologyProvince.class);
-
-        for (JsonElement element : profiles) {
+        for (JsonElement element : requiredArray(profilesRoot, "profiles")) {
             if (!element.isJsonObject()) {
                 throw new IllegalArgumentException("province profile entry must be an object");
             }
-            JsonObject profile = element.getAsJsonObject();
-            String provinceId = requireString(profile, "province");
-            GeologyProvince province = provinceById(provinceId)
-                    .orElseThrow(() -> new IllegalArgumentException("unknown geological province: " + provinceId));
-            if (weights.containsKey(province)) {
-                throw new IllegalArgumentException("duplicate geological province profile: " + provinceId);
+            ParsedProvinceProfile parsed = parseProfile(element.getAsJsonObject(), lithologyIds);
+            if (weights.put(parsed.province(), parsed.weights()) != null) {
+                throw new IllegalArgumentException("duplicate geological province profile: " + parsed.province().id());
             }
-
-            JsonObject rawWeights = requiredObject(profile, "lithologyWeights");
-            if (!rawWeights.keySet().equals(lithologyIds)) {
-                Set<String> missing = new HashSet<>(lithologyIds);
-                missing.removeAll(rawWeights.keySet());
-                Set<String> extra = new HashSet<>(rawWeights.keySet());
-                extra.removeAll(lithologyIds);
-                throw new IllegalArgumentException(
-                        provinceId + " must cover every lithology exactly; missing=" + missing + ", extra=" + extra
-                );
-            }
-
-            LinkedHashMap<String, Double> parsedWeights = new LinkedHashMap<>();
-            for (String lithology : lithologyIds) {
-                JsonElement rawWeight = rawWeights.get(lithology);
-                if (rawWeight == null || !rawWeight.isJsonPrimitive() || !rawWeight.getAsJsonPrimitive().isNumber()) {
-                    throw new IllegalArgumentException(provinceId + "/" + lithology + " weight must be numeric");
-                }
-                double weight = rawWeight.getAsDouble();
-                if (!(weight > 0.0 && weight <= 1.0) || !Double.isFinite(weight)) {
-                    throw new IllegalArgumentException(
-                            provinceId + "/" + lithology + " weight must be finite, > 0 and <= 1"
-                    );
-                }
-                parsedWeights.put(lithology, weight);
-            }
-            weights.put(province, Collections.unmodifiableMap(parsedWeights));
         }
+        return weights;
+    }
 
-        if (weights.size() != GeologyProvince.values().length) {
-            List<String> missing = new ArrayList<>();
-            for (GeologyProvince province : GeologyProvince.values()) {
-                if (!weights.containsKey(province)) {
-                    missing.add(province.id());
-                }
-            }
-            throw new IllegalArgumentException("missing geological province profiles: " + missing);
-        }
-
-        return new Snapshot(
-                runtimeStatus,
-                blendWidth,
-                Collections.unmodifiableSet(new HashSet<>(lithologyIds)),
-                Collections.unmodifiableMap(weights)
+    private static ParsedProvinceProfile parseProfile(JsonObject profile, Set<String> lithologyIds) {
+        String provinceId = requireString(profile, "province");
+        GeologyProvince province = provinceById(provinceId)
+                .orElseThrow(() -> new IllegalArgumentException("unknown geological province: " + provinceId));
+        JsonObject rawWeights = requiredObject(profile, "lithologyWeights");
+        requireExactLithologyCoverage(provinceId, rawWeights, lithologyIds);
+        return new ParsedProvinceProfile(
+                province,
+                Collections.unmodifiableMap(parseWeights(provinceId, rawWeights, lithologyIds))
         );
+    }
+
+    private static void requireExactLithologyCoverage(
+            String provinceId,
+            JsonObject rawWeights,
+            Set<String> lithologyIds
+    ) {
+        if (rawWeights.keySet().equals(lithologyIds)) {
+            return;
+        }
+        Set<String> missing = new HashSet<>(lithologyIds);
+        missing.removeAll(rawWeights.keySet());
+        Set<String> extra = new HashSet<>(rawWeights.keySet());
+        extra.removeAll(lithologyIds);
+        throw new IllegalArgumentException(
+                provinceId + " must cover every lithology exactly; missing=" + missing + ", extra=" + extra
+        );
+    }
+
+    private static LinkedHashMap<String, Double> parseWeights(
+            String provinceId,
+            JsonObject rawWeights,
+            Set<String> lithologyIds
+    ) {
+        LinkedHashMap<String, Double> parsed = new LinkedHashMap<>();
+        for (String lithology : lithologyIds) {
+            parsed.put(lithology, requireWeight(provinceId, lithology, rawWeights.get(lithology)));
+        }
+        return parsed;
+    }
+
+    private static double requireWeight(String provinceId, String lithology, JsonElement rawWeight) {
+        if (rawWeight == null || !rawWeight.isJsonPrimitive() || !rawWeight.getAsJsonPrimitive().isNumber()) {
+            throw new IllegalArgumentException(provinceId + "/" + lithology + " weight must be numeric");
+        }
+        double weight = rawWeight.getAsDouble();
+        if (!(weight > 0.0 && weight <= 1.0) || !Double.isFinite(weight)) {
+            throw new IllegalArgumentException(
+                    provinceId + "/" + lithology + " weight must be finite, > 0 and <= 1"
+            );
+        }
+        return weight;
+    }
+
+    private static void requireCompleteProvinceCoverage(
+            EnumMap<GeologyProvince, Map<String, Double>> weights
+    ) {
+        if (weights.size() == GeologyProvince.values().length) {
+            return;
+        }
+        List<String> missing = new ArrayList<>();
+        for (GeologyProvince province : GeologyProvince.values()) {
+            if (!weights.containsKey(province)) {
+                missing.add(province.id());
+            }
+        }
+        throw new IllegalArgumentException("missing geological province profiles: " + missing);
     }
 
     private static Set<String> parseLithologyIds(JsonObject catalog) {
@@ -242,6 +281,12 @@ public final class GeologyProvinceProfiles implements SimpleSynchronousResourceR
         if (!value.equals(expected)) {
             throw new IllegalArgumentException(key + " must be " + expected + ", found " + value);
         }
+    }
+
+    private record ProfileHeader(String runtimeStatus, int blendWidthBlocks) {
+    }
+
+    private record ParsedProvinceProfile(GeologyProvince province, Map<String, Double> weights) {
     }
 
     public record Snapshot(
