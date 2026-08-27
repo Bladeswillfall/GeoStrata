@@ -1,0 +1,139 @@
+package com.geostrata.geology;
+
+import org.junit.jupiter.api.Test;
+
+import java.util.List;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+final class OreDepositCandidatePlannerTest {
+    @Test
+    void proposalIsStableAcrossItsCellIncludingNegativeCoordinates() {
+        OreOccurrenceCatalog.Occurrence occurrence = iron();
+        OreDepositCandidatePlanner.Proposal nearEdge = OreDepositCandidatePlanner.propose(
+                8675309L,
+                -1,
+                -1,
+                -1,
+                occurrence
+        );
+        OreDepositCandidatePlanner.Proposal farEdge = OreDepositCandidatePlanner.propose(
+                8675309L,
+                -255,
+                -63,
+                -255,
+                occurrence
+        );
+
+        assertEquals(nearEdge, farEdge);
+        assertEquals(-1, nearEdge.cellX());
+        assertEquals(-1, nearEdge.cellY());
+        assertEquals(-1, nearEdge.cellZ());
+        assertEquals(-168, nearEdge.anchorX());
+        assertEquals(-35, nearEdge.anchorY());
+        assertEquals(-46, nearEdge.anchorZ());
+        assertEquals("stratiform", nearEdge.depositStyle());
+        assertTrue(nearEdge.anchorX() >= -240 && nearEdge.anchorX() <= -17);
+        assertTrue(nearEdge.anchorY() >= -56 && nearEdge.anchorY() <= -9);
+        assertTrue(nearEdge.anchorZ() >= -240 && nearEdge.anchorZ() <= -17);
+        assertTrue(occurrence.depositStyles().contains(nearEdge.depositStyle()));
+    }
+
+    @Test
+    void seedAndMaterialParticipateInTheProposal() {
+        OreDepositCandidatePlanner.Proposal first = OreDepositCandidatePlanner.propose(1L, 0, 32, 0, iron());
+        OreDepositCandidatePlanner.Proposal otherSeed = OreDepositCandidatePlanner.propose(2L, 0, 32, 0, iron());
+        OreDepositCandidatePlanner.Proposal otherMaterial = OreDepositCandidatePlanner.propose(1L, 0, 32, 0, gold());
+
+        assertNotEquals(first, otherSeed);
+        assertNotEquals(first.anchorX(), otherMaterial.anchorX());
+        assertNotEquals(first.material(), otherMaterial.material());
+    }
+
+    @Test
+    void acceptanceRequiresBothDeclaredProvinceAndHost() {
+        OreOccurrenceCatalog.Occurrence occurrence = iron();
+        OreDepositCandidatePlanner.Proposal proposal = OreDepositCandidatePlanner.propose(42L, 500, 20, -700, occurrence);
+
+        assertTrue(OreDepositCandidatePlanner.accept(
+                proposal,
+                occurrence,
+                GeologyProvince.OROGENIC_BELT,
+                "shale"
+        ).isPresent());
+        assertFalse(OreDepositCandidatePlanner.accept(
+                proposal,
+                occurrence,
+                GeologyProvince.SEDIMENTARY_BASIN,
+                "shale"
+        ).isPresent());
+        assertFalse(OreDepositCandidatePlanner.accept(
+                proposal,
+                occurrence,
+                GeologyProvince.OROGENIC_BELT,
+                "granite"
+        ).isPresent());
+        assertFalse(OreDepositCandidatePlanner.accept(
+                proposal,
+                occurrence,
+                GeologyProvince.OROGENIC_BELT,
+                null
+        ).isPresent());
+        OreDepositCandidatePlanner.Proposal unsupportedStyle = new OreDepositCandidatePlanner.Proposal(
+                proposal.material(),
+                "coal_seam",
+                proposal.cellX(),
+                proposal.cellY(),
+                proposal.cellZ(),
+                proposal.anchorX(),
+                proposal.anchorY(),
+                proposal.anchorZ()
+        );
+        assertFalse(OreDepositCandidatePlanner.accept(
+                unsupportedStyle,
+                occurrence,
+                GeologyProvince.OROGENIC_BELT,
+                "shale"
+        ).isPresent());
+    }
+
+    @Test
+    void rejectsMismatchedOccurrence() {
+        OreDepositCandidatePlanner.Proposal proposal = OreDepositCandidatePlanner.propose(42L, 0, 0, 0, iron());
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> OreDepositCandidatePlanner.accept(
+                        proposal,
+                        gold(),
+                        GeologyProvince.OROGENIC_BELT,
+                        "slate"
+                )
+        );
+    }
+
+    private static OreOccurrenceCatalog.Occurrence iron() {
+        return new OreOccurrenceCatalog.Occurrence(
+                "iron",
+                "minecraft",
+                "minecraft:raw_iron",
+                List.of("shale"),
+                List.of(GeologyProvince.OROGENIC_BELT),
+                List.of("vein", "stratiform", "massive_lens_or_pocket")
+        );
+    }
+
+    private static OreOccurrenceCatalog.Occurrence gold() {
+        return new OreOccurrenceCatalog.Occurrence(
+                "gold",
+                "minecraft",
+                "minecraft:raw_gold",
+                List.of("slate"),
+                List.of(GeologyProvince.OROGENIC_BELT),
+                List.of("vein", "disseminated")
+        );
+    }
+}
