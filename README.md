@@ -1,58 +1,102 @@
 # GeoStrata
 
-GeoStrata is a Fabric 1.20.1 geology mod built around one rule: **the base mod must be useful and stable on ordinary Minecraft, while optional integrations may make it richer when other mods are installed.**
+GeoStrata is a Minecraft geology mod for Fabric.
 
-The current pre-alpha provides a standalone rock/soil catalog and data-driven overworld placement. The long-term goal is a geology layer that other terrain, structure, building and content mods can extend without GeoStrata becoming hard-coupled to any one modpack.
+The idea is fairly simple: make the ground feel like it came from somewhere. Different places should have different kinds of stone, soil, clay, and rock, rather than the world being made from the same handful of blocks everywhere.
 
-## Compatibility contract
+It is still early days, so this is not a finished geology overhaul. The current version gives you a growing collection of rocks and soils, along with some basic world generation to place them in the overworld. The long-term plan is to build something that terrain mods, structure mods, building mods, and modpacks can all make use of without GeoStrata becoming tied to one particular setup.
 
-GeoStrata core depends only on:
+GeoStrata should also be worthwhile on its own. You should not need a huge modpack, a special terrain generator, or a particular collection of building mods for it to do anything useful.
 
-- Minecraft 1.20.1
-- Fabric Loader
-- Fabric API
-- Java 17 at runtime
+## What is included?
 
-Conquest Reforged, terrain generators, structure mods and other content mods are **optional integrations**, not core dependencies.
+The current pre-alpha includes rock families such as:
 
-Compatibility should be added in this order:
+- Limestone and chalk.
+- Shale, slate, mudstone, and siltstone.
+- Marble, quartzite, schist, and gneiss.
+- Basalt and rhyolite.
+- Conglomerate and breccia.
+- Several types of soil and clay.
 
-1. data tags and datapack extension points;
-2. optional resources/data that activate only when useful;
-3. guarded Java integration when a data-only bridge cannot express the feature;
-4. separate compatibility artifacts when an integration would otherwise make core depend on another mod.
+At the moment, the world generation is fairly basic. It uses ore-style placements as a starting point while the larger geological systems are being worked out. The eventual aim is to create more convincing geological areas, with related rocks appearing together in sensible places.
 
-See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for the design rules, [`docs/COMPATIBILITY.md`](docs/COMPATIBILITY.md) for the concrete data extension points, and [`docs/GEOLOGY_MODEL.md`](docs/GEOLOGY_MODEL.md) for the live lithology contract and generator direction.
+The mod also leaves room for other mods to join in. A modpack can add its own biomes, terrain blocks, or geological rules without GeoStrata needing to be rewritten for every individual mod.
 
-## Repository layout
+## Where things live
 
-- `src/` — authoritative GeoStrata mod source and resources.
-- `pack/` — curated development/integration modpack source; it is not part of the core jar.
-- `compat/`: distributable optional compatibility artifacts.
-- `scripts/` — validation/build-support tooling.
+- `src/` — the main GeoStrata source code and resources.
+- `pack/` — the development and integration modpack. This is not included in the core mod jar.
+- `compat/` — optional compatibility projects and add-ons.
+- `scripts/` — scripts used for checking and supporting the build.
 
-Minecraft launcher state, downloaded/processed jars, caches and player-local files do not belong in source control.
+Minecraft launcher files, downloaded jars, caches, and personal world files should stay out of the repository.
 
-## Current content
+## Technical details
 
-GeoStrata currently registers rock families including limestone, chalk, shale, slate, mudstone, siltstone, marble, quartzite, schist, gneiss, basalt, rhyolite, conglomerate and breccia, plus several soil/clay materials.
+GeoStrata core currently depends on:
 
-World generation uses GeoStrata-owned biome tags such as `geostrata:has_mountain_rocks` and `geostrata:has_river_soils`, plus replacement tags such as `geostrata:worldgen/base_stone_replaceables`. Modpacks can extend those tags to teach GeoStrata about modded biomes and terrain blocks without changing Java code.
+- Minecraft 1.20.1.
+- Fabric Loader.
+- Fabric API.
+- Java 17 at runtime.
 
-The semantic meaning of each live rock is recorded in `data/geostrata/geology/lithologies.json`. A companion material-profile LUT at `data/geostrata/materials/material_profiles.json` maps every registered rock, soil, mud and clay block to its live breaking traits, texture set, semantic tags and stable compatibility role. Both catalogs are checked against the implementation in CI. The current ore-style placements remain a baseline implementation while coherent geological bodies are developed.
+Other mods are optional. This includes Conquest Reforged, terrain generators, structure mods, and other content mods.
 
-## Build
+Compatibility is intended to be added gradually:
 
-GeoStrata targets Java 17 bytecode for Minecraft 1.20.1. The build itself uses Fabric Loom 1.16.3 and Gradle 9.4, which run under Java 21 in CI.
+1. Through tags and datapacks where possible.
+2. Through optional resources that only do something when they are useful.
+3. Through carefully guarded Java integrations where data alone is not enough.
+4. Through separate compatibility projects when adding an integration directly would make the core mod depend on another mod.
+
+The main extension points include GeoStrata biome tags such as:
+
+```text
+geostrata:has_mountain_rocks
+geostrata:has_river_soils
+```
+
+There are also replacement tags for blocks that can be used as the base stone during world generation:
+
+```text
+geostrata:worldgen/base_stone_replaceables
+```
+
+The meaning of each rock is recorded in:
+
+```text
+data/geostrata/geology/lithologies.json
+```
+
+The material profiles for rocks, soils, mud, and clay are recorded in:
+
+```text
+data/geostrata/materials/material_profiles.json
+```
+
+These files describe things such as breaking behaviour, texture sets, semantic tags, and compatibility roles. Automated checks compare the catalogues with the actual mod implementation.
+
+## Building
+
+GeoStrata is built for Java 17 bytecode and Minecraft 1.20.1.
+
+The build uses Fabric Loom 1.16.3 and Gradle 9.4. The CI build runs under Java 21.
 
 ```text
 gradle clean build
 ```
 
-Built jars are written to `build/libs/`.
+Built jars are placed in:
+
+```text
+build/libs/
+```
 
 ## Project status
 
-**Pre-alpha.** Existing worlds should be treated as disposable while worldgen rules and registry contracts are still being stabilized.
+**Pre-alpha.**
 
-The first milestone is a clean, reproducible standalone core. Compatibility packs and deeper geological systems should build on top of that baseline rather than bypassing it.
+World generation and registry details are still changing, so existing worlds should be treated as disposable for now. Things may move around, get renamed, or change shape as the foundations are improved.
+
+The first goal is a clean and dependable standalone mod. Optional compatibility packs and more ambitious geological features can then be built on top of that foundation.
