@@ -10,6 +10,31 @@ public final class StructuralDeformationResponse {
     }
 
     public static Result evaluate(
+            GeologyProvinceSampler.Sample provinceSample,
+            ProvinceDeformationProfiles.Snapshot profiles,
+            TerrainMorphologySample terrain
+    ) {
+        if (provinceSample == null || profiles == null || terrain == null) {
+            throw new IllegalArgumentException("blended deformation response inputs must not be null");
+        }
+        if (!profiles.loaded()) {
+            throw new IllegalStateException("GeoStrata province deformation profiles have not been loaded yet");
+        }
+
+        Result primary = evaluate(
+                profiles.normalization(),
+                profiles.profileFor(provinceSample.province()),
+                terrain
+        );
+        Result neighbor = evaluate(
+                profiles.normalization(),
+                profiles.profileFor(provinceSample.neighborProvince()),
+                terrain
+        );
+        return blend(primary, neighbor, provinceSample.interiorBlend(profiles.blendWidthBlocks()));
+    }
+
+    public static Result evaluate(
             ProvinceDeformationProfiles.Normalization normalization,
             ProvinceDeformationProfiles.Profile profile,
             TerrainMorphologySample terrain
@@ -38,6 +63,28 @@ public final class StructuralDeformationResponse {
                 intensity * profile.foldPotential(),
                 intensity * profile.faultPotential()
         );
+    }
+
+    static Result blend(Result primary, Result neighbor, double interiorBlend) {
+        if (primary == null || neighbor == null || !Double.isFinite(interiorBlend)) {
+            throw new IllegalArgumentException("deformation blend inputs must be finite and non-null");
+        }
+        double clamped = unit(interiorBlend);
+        double primaryShare = 0.5 + 0.5 * clamped;
+        return new Result(
+                mix(primary.reliefSignal(), neighbor.reliefSignal(), primaryShare),
+                mix(primary.slopeSignal(), neighbor.slopeSignal(), primaryShare),
+                mix(primary.ridgeSignal(), neighbor.ridgeSignal(), primaryShare),
+                mix(primary.terrainSignal(), neighbor.terrainSignal(), primaryShare),
+                mix(primary.intensity(), neighbor.intensity(), primaryShare),
+                mix(primary.dipPotential(), neighbor.dipPotential(), primaryShare),
+                mix(primary.foldPotential(), neighbor.foldPotential(), primaryShare),
+                mix(primary.faultPotential(), neighbor.faultPotential(), primaryShare)
+        );
+    }
+
+    private static double mix(double primary, double neighbor, double primaryShare) {
+        return primary * primaryShare + neighbor * (1.0 - primaryShare);
     }
 
     private static double unit(double value) {
