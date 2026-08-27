@@ -1,8 +1,8 @@
 # Correlated sedimentary experiment
 
-GeoStrata carries an experimental correlated sedimentary generator without making it part of standalone worldgen. The normal mod remains on the proven baseline unless an optional experiment companion explicitly activates and biome-registers the correlated consumer.
+GeoStrata carries an experimental correlated sedimentary generator without making it part of standalone worldgen. The normal mod remains on the proven baseline unless the separate `experiment-companion` artifact explicitly activates and biome-registers the correlated consumer.
 
-`data/geostrata/geology/correlated_sedimentary_experiment.json` is the staging contract. Core ships it as `metadata_only` with `enabled: false`. An activating overlay must pair `enabled: true` with `runtimeStatus: experimental_runtime`; partial activation fails validation.
+`data/geostrata/geology/correlated_sedimentary_experiment.json` is the staging contract. Core ships it as `metadata_only` with `enabled: false`. The companion supplies the paired `enabled: true` / `runtimeStatus: experimental_runtime` overlay; partial activation fails validation.
 
 Parsing and cross-resource validation live in `CorrelatedSedimentaryExperimentParser`. `CorrelatedSedimentaryExperiment` owns reload lifecycle and runtime ownership evaluation.
 
@@ -24,9 +24,11 @@ With the bundled disabled contract, the lens suppression fast path is inactive a
 
 Core registers the `geostrata:correlated_sedimentary` feature type and ships configured/placed feature data, but `GeoStrataWorldgen` deliberately does **not** add the correlated placed feature to any biome.
 
-That distinction is important for compatibility. Adding even a no-op feature to biome decoration can change feature ordering and decoration seeding. Merely installing standalone GeoStrata therefore must not insert the experimental consumer into another terrain mod's generation pipeline.
+That distinction protects compatibility. Adding even a no-op feature to biome decoration can change feature ordering and decoration seeding. Merely installing standalone GeoStrata therefore does not insert the experimental consumer into another terrain mod's generation pipeline.
 
-Biome registration and the activating data overlay belong to a separate optional experiment companion. Installing that companion is an explicit request to alter worldgen behavior; removing it leaves the base GeoStrata jar independently usable in ordinary Fabric or other modpacks.
+The `experiment-companion` subproject builds a separate Fabric jar. It depends on GeoStrata, registers `geostrata:correlated_sedimentary_experiment` through `geostrata:has_common_rocks` at `UNDERGROUND_DECORATION`, and supplies the activating contract overlay. Installing it is an explicit request to alter worldgen behavior; removing it leaves the base GeoStrata jar independently usable in ordinary Fabric or other modpacks.
+
+The companion is intentionally **not** part of the normal development-pack dependency set. Until the generator has been evaluated in-game, use it only for fresh or disposable experiment worlds.
 
 ## Ownership envelope
 
@@ -38,7 +40,7 @@ The mutation host is still `geostrata:worldgen/base_stone_replaceables`. Third-p
 
 ## Correlated mutation
 
-If the optional companion makes the feature reachable and the experiment owns the chunk, `CorrelatedSedimentaryFeature`:
+When the companion is installed and the experiment owns the chunk, `CorrelatedSedimentaryFeature`:
 
 - uses shared chunk-center ownership;
 - reuses the selected succession, contact plan and deterministic stratigraphic field;
@@ -47,23 +49,23 @@ If the optional companion makes the feature reachable and the experiment owns th
 - replaces only `hostBlockTag` members, preserving caves, ores and other non-host material;
 - uses one coherent field across the chunk instead of independent random deposits.
 
-The intended companion registration stage is `UNDERGROUND_DECORATION`, after vanilla underground ores. Vanilla ore blocks are not members of `base_stone_replaceables`, so the correlated replacement pass preserves them.
+The companion registers at `UNDERGROUND_DECORATION`, after vanilla underground ores. Vanilla ore blocks are not members of `base_stone_replaceables`, so the correlated replacement pass preserves them.
 
 The current vertical window is 96 blocks below to 48 blocks above sea level. It is a bounded experimental mutation envelope, not a permanent geological law; lithology `depthAffinity` remains qualitative and terrain-agnostic.
 
 ## Validation
 
-`scripts/validate_correlated_sedimentary_experiment.py` validates the experiment's geological/data contract. `scripts/validate_correlated_core_staging.py` validates the standalone boundary: feature type/data and activation-gated ownership handoff must exist, while bundled activation and core biome registration must remain absent.
+`scripts/validate_correlated_sedimentary_experiment.py` validates the geological/data contract. `scripts/validate_correlated_core_staging.py` validates the standalone boundary. `scripts/validate_correlated_companion.py` then requires the separate artifact, activation overlay and biome registration to match the same core ownership contract while confirming standalone core remains unregistered and disabled.
 
-Java tests cover activation status, suppression scope, deterministic ownership, province-boundary exclusion and positive/negative chunk-center normalization. Production Java is also subject to the repository-wide PMD cyclomatic and cognitive complexity ceiling of 20 with no grandfathered methods.
+Java tests cover activation status, suppression scope, deterministic ownership, province-boundary exclusion and positive/negative chunk-center normalization. Both core and companion production Java are subject to the repository-wide PMD cyclomatic and cognitive complexity ceiling of 20 with no grandfathered methods.
 
 ## Activation sequence
 
 1. **complete** — load and validate the experiment contract.
 2. **complete** — expose deterministic ownership diagnostics.
 3. **complete** — implement/register correlated feature type and data while keeping it unreachable from standalone biome worldgen.
-4. **complete in core staging** — prepare activation-gated baseline suppression and cross-chunk clipping using shared ownership.
-5. build the optional experiment companion that biome-registers the correlated placed feature and supplies the explicit activating overlay.
-6. evaluate fresh-world abundance, contacts, cave/cliff exposure, performance and compatibility before considering wider distribution.
+4. **complete** — prepare activation-gated baseline suppression and cross-chunk clipping using shared ownership.
+5. **complete as an optional artifact** — build the separate companion that biome-registers the correlated placed feature and supplies the explicit activating overlay.
+6. **next** — evaluate fresh-world abundance, contacts, cave/cliff exposure, performance and compatibility before considering wider distribution.
 
-Standalone GeoStrata remains on the baseline until the companion is deliberately installed.
+Standalone GeoStrata remains on the baseline unless the companion is deliberately installed.
