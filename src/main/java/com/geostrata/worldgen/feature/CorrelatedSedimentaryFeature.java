@@ -1,11 +1,9 @@
 package com.geostrata.worldgen.feature;
 
-import com.geostrata.geology.CorrelatedExperimentChunkOwnership;
 import com.geostrata.geology.CorrelatedSedimentaryExperiment;
-import com.geostrata.geology.GeologyProvinceSampler;
+import com.geostrata.geology.CorrelatedSedimentaryRuntime;
 import com.geostrata.geology.LithologyCatalog;
 import com.geostrata.geology.SedimentaryContactPlanner;
-import com.geostrata.geology.SedimentaryFieldProfiles;
 import com.geostrata.geology.SedimentaryStratigraphicField;
 import com.geostrata.geology.SedimentarySuccessions;
 import net.minecraft.block.Block;
@@ -23,15 +21,10 @@ import net.minecraft.world.gen.feature.util.FeatureContext;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
-/**
- * Experimental chunk-local consumer of the correlated sedimentary field.
- *
- * <p>This feature type is safe to register while dormant. It performs no work
- * unless the server-data experiment contract is explicitly enabled and the
- * current chunk is owned by that experiment.</p>
- */
+/** Experimental chunk-local consumer of the correlated sedimentary field. */
 public final class CorrelatedSedimentaryFeature extends Feature<DefaultFeatureConfig> {
     private static final int CHUNK_SIZE = 16;
 
@@ -48,64 +41,44 @@ public final class CorrelatedSedimentaryFeature extends Feature<DefaultFeatureCo
 
         StructureWorldAccess world = context.getWorld();
         BlockPos origin = context.getOrigin();
+        Optional<CorrelatedSedimentaryRuntime.Site> resolved = CorrelatedSedimentaryRuntime.resolve(
+                world.getSeed(),
+                origin.getX(),
+                origin.getZ()
+        );
+        if (resolved.isEmpty()) {
+            return false;
+        }
+
+        LithologyCatalog.Snapshot catalog = LithologyCatalog.current();
+        if (!catalog.loaded()) {
+            return false;
+        }
+
+        CorrelatedSedimentaryRuntime.Site site = resolved.get();
         int startX = Math.floorDiv(origin.getX(), CHUNK_SIZE) * CHUNK_SIZE;
         int startZ = Math.floorDiv(origin.getZ(), CHUNK_SIZE) * CHUNK_SIZE;
-        int centerX = CorrelatedExperimentChunkOwnership.centerCoordinate(origin.getX());
-        int centerZ = CorrelatedExperimentChunkOwnership.centerCoordinate(origin.getZ());
-        long worldSeed = world.getSeed();
-
-        CorrelatedSedimentaryExperiment.Ownership ownership =
-                CorrelatedExperimentChunkOwnership.ownershipForChunk(worldSeed, origin.getX(), origin.getZ());
-        if (!ownership.owned() || ownership.successionId() == null) {
-            return false;
-        }
-
-        SedimentarySuccessions.Snapshot successions = SedimentarySuccessions.current();
-        SedimentaryFieldProfiles.Snapshot fieldProfiles = SedimentaryFieldProfiles.current();
-        LithologyCatalog.Snapshot catalog = LithologyCatalog.current();
-        if (!successions.loaded() || !fieldProfiles.loaded() || !catalog.loaded()) {
-            return false;
-        }
-
-        SedimentarySuccessions.Succession succession = successions.byId().get(ownership.successionId());
-        if (succession == null) {
-            throw new IllegalStateException("Owned correlated succession is not loaded: " + ownership.successionId());
-        }
-
-        GeologyProvinceSampler.Sample province = GeologyProvinceSampler.sample(worldSeed, centerX, centerZ);
-        SedimentaryContactPlanner.Plan plan = SedimentaryContactPlanner.plan(
-                worldSeed,
-                province.siteX(),
-                province.siteZ(),
-                succession
-        );
-        SedimentaryStratigraphicField.Parameters fieldParameters = fieldProfiles.parametersFor(
-                succession.continuity()
-        );
-        SedimentaryStratigraphicField.Field field = SedimentaryStratigraphicField.forSite(
-                worldSeed,
-                province.siteX(),
-                province.siteZ(),
-                fieldParameters
-        );
-
         TagKey<Block> hostTag = hostTag(experiment.hostBlockTag());
-        Map<String, BlockState> outputStates = outputStates(succession, catalog);
+        Map<String, BlockState> outputStates = outputStates(site.succession(), catalog);
 
         int seaLevel = world.getSeaLevel();
-        int minY = Math.max(
-                world.getBottomY(),
-                seaLevel + experiment.verticalWindow().minOffsetBlocks()
-        );
-        int maxY = Math.min(
-                world.getTopY() - 1,
-                seaLevel + experiment.verticalWindow().maxOffsetBlocks()
-        );
+        int minY = Math.max(world.getBottomY(), seaLevel + experiment.verticalWindow().minOffsetBlocks());
+        int maxY = Math.min(world.getTopY() - 1, seaLevel + experiment.verticalWindow().maxOffsetBlocks());
         if (minY > maxY) {
             return false;
         }
 
-        return replaceChunk(world, startX, startZ, minY, maxY, hostTag, field, plan, outputStates) > 0;
+        return replaceChunk(
+                world,
+                startX,
+                startZ,
+                minY,
+                maxY,
+                hostTag,
+                site.field(),
+                site.plan(),
+                outputStates
+        ) > 0;
     }
 
     private static int replaceChunk(
