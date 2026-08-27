@@ -33,8 +33,8 @@ jobs:
       - name: Validate correlated sedimentary experiment
         run: python3 scripts/validate_correlated_sedimentary_experiment.py
 
-      - name: Validate dormant correlated feature
-        run: python3 scripts/validate_dormant_correlated_feature.py
+      - name: Validate atomic correlated handoff
+        run: python3 scripts/validate_correlated_handoff.py
 
       - name: Validate strata lens configs
         run: python3 scripts/validate_strata_lens_configs.py
