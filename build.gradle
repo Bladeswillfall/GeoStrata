@@ -1,6 +1,7 @@
 plugins {
     id 'fabric-loom' version '1.16.3'
     id 'maven-publish'
+    id 'pmd'
 }
 
 version = project.mod_version
@@ -26,6 +27,27 @@ dependencies {
 
     testImplementation 'org.junit.jupiter:junit-jupiter:5.10.2'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher:1.10.2'
+}
+
+pmd {
+    toolVersion = '7.16.0'
+    consoleOutput = true
+    ignoreFailures = false
+    ruleSets = []
+    ruleSetConfig = resources.text.fromFile('config/pmd/geostrata-complexity.xml')
+}
+
+// Complexity lint is a production-code guardrail. Tests are intentionally excluded so
+// parameterized/branch-heavy regression cases are not pressured into artificial splitting.
+tasks.named('pmdTest') {
+    enabled = false
+}
+
+tasks.named('pmdMain') {
+    reports {
+        xml.required = true
+        html.required = true
+    }
 }
 
 processResources {
