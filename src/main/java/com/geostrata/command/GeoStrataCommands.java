@@ -1,6 +1,8 @@
 package com.geostrata.command;
 
+import com.geostrata.geology.CorrelatedExperimentChunkOwnership;
 import com.geostrata.geology.CorrelatedSedimentaryExperiment;
+import com.geostrata.geology.CorrelatedSedimentaryRuntime;
 import com.geostrata.geology.GeologyProvinceProfiles;
 import com.geostrata.geology.GeologyProvinceSampler;
 import com.geostrata.geology.GeologySurvey;
@@ -12,9 +14,11 @@ import com.geostrata.geology.SedimentarySuccessionSelector;
 import com.geostrata.geology.SedimentarySuccessions;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
+import net.minecraft.registry.Registries;
 import net.minecraft.server.command.CommandManager;
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.text.Text;
+import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 
@@ -272,12 +276,16 @@ public final class GeoStrataCommands {
 
         Vec3d position = source.getPosition();
         int x = MathHelper.floor(position.x);
+        int y = MathHelper.floor(position.y);
         int z = MathHelper.floor(position.z);
-        CorrelatedSedimentaryExperiment.Ownership ownership = CorrelatedSedimentaryExperiment.ownershipAt(
-                source.getWorld().getSeed(),
-                x,
-                z
-        );
+        long seed = source.getWorld().getSeed();
+        CorrelatedSedimentaryExperiment.Ownership ownership =
+                CorrelatedExperimentChunkOwnership.ownershipForChunk(seed, x, z);
+        var resolved = CorrelatedSedimentaryRuntime.resolve(seed, x, z);
+        if (resolved.isPresent()) {
+            return showResolvedExperiment(source, position, y, resolved.get());
+        }
+
         String province = ownership.province() == null ? "n/a" : ownership.province().displayName();
         String succession = ownership.successionId() == null ? "n/a" : ownership.successionId();
         String boundary = Double.isFinite(ownership.boundaryDistanceBlocks())
@@ -286,11 +294,52 @@ public final class GeoStrataCommands {
 
         source.sendFeedback(
                 () -> Text.literal(
-                        "GeoStrata correlated experiment: " + (ownership.owned() ? "OWNS" : "baseline")
+                        "GeoStrata correlated experiment: baseline"
                                 + " | reason " + ownership.reason()
                                 + " | province " + province
                                 + " | boundary ~" + boundary + " blocks"
                                 + " | succession " + succession
+                ),
+                false
+        );
+        return 1;
+    }
+
+    private static int showResolvedExperiment(
+            ServerCommandSource source,
+            Vec3d position,
+            int y,
+            CorrelatedSedimentaryRuntime.Site site
+    ) {
+        CorrelatedSedimentaryExperiment.Snapshot experiment = CorrelatedSedimentaryExperiment.current();
+        int x = MathHelper.floor(position.x);
+        int z = MathHelper.floor(position.z);
+        SedimentaryStratigraphicField.Sample sample = site.sample(x, position.y, z);
+        int minY = Math.max(
+                source.getWorld().getBottomY(),
+                source.getWorld().getSeaLevel() + experiment.verticalWindow().minOffsetBlocks()
+        );
+        int maxY = Math.min(
+                source.getWorld().getTopY() - 1,
+                source.getWorld().getSeaLevel() + experiment.verticalWindow().maxOffsetBlocks()
+        );
+        String actualBlock = Registries.BLOCK.getId(
+                source.getWorld().getBlockState(new BlockPos(x, y, z)).getBlock()
+        ).toString();
+        String windowState = y >= minY && y <= maxY ? "inside" : "outside";
+        CorrelatedSedimentaryExperiment.Ownership ownership = site.ownership();
+
+        source.sendFeedback(
+                () -> Text.literal(
+                        "GeoStrata correlated experiment: OWNS"
+                                + " | province " + ownership.province().displayName()
+                                + " | boundary ~" + Math.round(ownership.boundaryDistanceBlocks()) + " blocks"
+                                + " | succession " + site.succession().id()
+                                + " | field " + sample.bed().lithology()
+                                + " at Y " + y + " (actual " + actualBlock + ")"
+                                + " | cycle " + sample.cycleIndex()
+                                + ", position " + Math.round(sample.fraction() * 100.0) + "%"
+                                + " | " + windowState + " mutation window " + minY + ".." + maxY
                 ),
                 false
         );
