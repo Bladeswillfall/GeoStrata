@@ -1,6 +1,7 @@
 package com.geostrata;
 
 import com.geostrata.block.GeoStrataBlocks;
+import com.geostrata.command.CorrelatedExperimentCommands;
 import com.geostrata.command.GeoStrataCommands;
 import com.geostrata.geology.CorrelatedSedimentaryExperiment;
 import com.geostrata.geology.GeologyProvinceProfiles;
@@ -31,6 +32,7 @@ public final class GeoStrata implements ModInitializer {
         CorrelatedSedimentaryExperiment.register();
         GeoStrataWorldgen.register();
         GeoStrataCommands.register();
+        CorrelatedExperimentCommands.register();
         LOGGER.info(
                 "GeoStrata initialized {} runtime blocks with data-driven overworld geology",
                 GeoStrataBlocks.count()
