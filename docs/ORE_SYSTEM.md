@@ -122,13 +122,73 @@ fallback host or a graded ore composite. Continuity remains a client-side visual
 enhancement rather than a core GeoStrata dependency: without it, the base tile
 and all host/material/grade composites still render normally.
 
+### Connected ore tilesets
+
+Graded ores use a separate topology-aware Continuity layer so exposed deposits
+can read as one mineral body instead of a grid of repeated single-block ore
+sprites. The authoring layout follows the composable-subtile approach described
+in [Pixel Art Game Tileset made easier](https://www.sandromaglione.com/articles/pixel-art-game-tileset-made-easier): artists maintain a small set of reusable
+pieces and the generator assembles the renderer-facing tiles.
+
+Each material owns one 40x24 RGBA source sheet at
+`textures/block/ore_source/tileset/<material>.png`. The sheet contains thirteen
+8x8 subtiles:
+
+```text
+outer_nw  border_n  outer_ne  | inner_nw  inner_ne
+border_w  center    border_e  | inner_sw  inner_se
+outer_sw  border_s  outer_se  |
+```
+
+That gives one center, four borders, four outer corners and four inner corners.
+`scripts/generate_ore_continuity_tilesets.py` derives the four grade densities
+from those sources and composes the five sprites defined by Continuity's
+`ctm_compact` method:
+
+0. unconnected / isolated block;
+1. fully connected interior;
+2. vertical connection;
+3. horizontal connection; and
+4. connected sides with an unconnected diagonal corner.
+
+The generated properties match one material, grade and host state, but use
+`connect=block`. Therefore adjacent blocks of the same material and grade can
+connect across a host-rock boundary while each block keeps the correct local
+host-rock composite. A grade boundary remains a visible concentration boundary
+because Poor, Medium, Rich and Massive are distinct block IDs.
+
+Only combinations listed in each material's `validHosts` are emitted. Phase one
+therefore produces 76 host/material/grade CTM definitions and 380 generated
+16x16 sprites instead of filling the texture atlas with combinations that
+geology cannot place. The ordinary flat host-aware ore textures remain the
+renderer-independent fallback for every state.
+
+A second `repeat` rule is deliberately not chained after the compact CTM rule.
+The compact topology already handles horizontal runs, vertical runs, corners and
+large connected interiors; layering a coordinate-repeat transform on top would
+make rule ordering renderer-dependent and weaken compatibility. Larger-scale
+variation should instead be added by extending the artist source tiles or with a
+CTM-supported variation scheme that preserves the same connection topology.
+
+Generated assets are committed and covered by
+`data/geostrata/materials/ore_ctm_manifest.json`. The manifest hashes the four
+artist sheets, every generated property file and sprite, and the preview so a
+source edit cannot silently leave stale renderer assets. Regenerate with
+`python3 scripts/generate_ore_continuity_tilesets.py`; normal CI validates the
+committed output with `python3 scripts/validate_ore_continuity_tilesets.py`
+without installing Pillow.
+
 `docs/images/host-tiling-preview.png` is regenerated with the matrix and shows
 four-by-four block exposures without cell outlines. It is the quick visual check
 for borders, framed tiles and high-contrast repetition.
+`docs/images/ore-ctm-tileset-preview.png` shows the five compact CTM outputs for
+each grade and material using its default host.
 
 ![Host, mineral and grade authoring matrix](images/ore-texture-matrix-preview.png)
 
 ![Seamless host tiling and Continuity variation](images/host-tiling-preview.png)
+
+![Compact connected ore tilesets](images/ore-ctm-tileset-preview.png)
 
 Full-bright cells are currently permitted by geological occurrence rules. Dim
 cells are generated and asset-ready but will not occur naturally unless the
