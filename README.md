@@ -39,7 +39,7 @@ GeoStrata currently registers rock families including limestone, chalk, shale, s
 
 World generation uses GeoStrata-owned biome tags such as `geostrata:has_mountain_rocks` and `geostrata:has_river_soils`, plus replacement tags such as `geostrata:worldgen/base_stone_replaceables`. Modpacks can extend those tags to teach GeoStrata about modded biomes and terrain blocks without changing Java code.
 
-The semantic meaning of each live rock is recorded in `data/geostrata/geology/lithologies.json`. The current ore-style placements remain a baseline implementation while coherent geological bodies are developed.
+The semantic meaning of each live rock is recorded in `data/geostrata/geology/lithologies.json`. A companion material-profile LUT at `data/geostrata/materials/material_profiles.json` maps every registered rock, soil, mud and clay block to its live breaking traits, texture set, semantic tags and stable compatibility role. Both catalogs are checked against the implementation in CI. The current ore-style placements remain a baseline implementation while coherent geological bodies are developed.
 
 ## Build
 

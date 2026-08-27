@@ -1,19 +1,24 @@
 #!/usr/bin/env python3
-"""Validate GeoStrata's semantic lithology contract against live resources."""
+"""Validate GeoStrata's semantic geology and material contracts."""
 
 from __future__ import annotations
 
 import json
 from pathlib import Path
+import re
 import sys
 
 ROOT = Path(__file__).resolve().parents[1]
 DATA = ROOT / "src" / "main" / "resources" / "data" / "geostrata"
 CATALOG = DATA / "geology" / "lithologies.json"
+MATERIAL_CATALOG = DATA / "materials" / "material_profiles.json"
 BLOCK_TAGS = DATA / "tags" / "blocks"
 BIOME_TAGS = DATA / "tags" / "worldgen" / "biome"
 CONFIGURED = DATA / "worldgen" / "configured_feature"
 PLACED = DATA / "worldgen" / "placed_feature"
+MINECRAFT_BLOCK_TAGS = ROOT / "src" / "main" / "resources" / "data" / "minecraft" / "tags" / "blocks"
+ASSETS = ROOT / "src" / "main" / "resources" / "assets" / "geostrata"
+BLOCKS_SOURCE = ROOT / "src" / "main" / "java" / "com" / "geostrata" / "block" / "GeoStrataBlocks.java"
 
 ROCK_CLASSES = ("sedimentary", "igneous", "metamorphic")
 ALLOWED_BODY_STYLES = {
@@ -35,6 +40,21 @@ ALLOWED_DEPTH_AFFINITIES = {
     "broad",
 }
 ALLOWED_CONTINUITY = {"local", "regional"}
+ALLOWED_MATERIAL_FAMILIES = {"rock", "soil", "mud", "clay"}
+SEMANTIC_BLOCK_TAGS = (
+    "rocks",
+    "sedimentary_rocks",
+    "igneous_rocks",
+    "metamorphic_rocks",
+    "soft_earth",
+    "clays",
+)
+
+BLOCK_REGISTRATION = re.compile(
+    r'register(?P<registration>Rock|Earth|RockVariant)\("(?P<name>[a-z0-9_]+)"'
+    r'.*?(?P<builder>rock|earth)\(Blocks\.(?P<copy_from>[A-Z0-9_]+), '
+    r'(?P<hardness>[0-9.]+)F, BlockSoundGroup\.(?P<sound_group>[A-Z0-9_]+)\)'
+)
 
 
 def fail(message: str) -> None:
@@ -59,6 +79,255 @@ def tag_values(path: Path) -> set[str]:
     if len(direct) != len(values):
         fail(f"{path.relative_to(ROOT)} must use direct GeoStrata block IDs for catalog validation")
     return direct
+
+
+def source_block_profiles() -> dict[str, dict[str, object]]:
+    try:
+        source = BLOCKS_SOURCE.read_text(encoding="utf-8")
+    except OSError as exc:
+        fail(f"cannot read {BLOCKS_SOURCE.relative_to(ROOT)}: {exc}")
+
+    profiles: dict[str, dict[str, object]] = {}
+    for line in source.splitlines():
+        match = BLOCK_REGISTRATION.search(line)
+        if not match:
+            continue
+
+        block = f"geostrata:{match.group('name')}"
+        if block in profiles:
+            fail(f"duplicate Java block registration: {block}")
+
+        is_rock = match.group("builder") == "rock"
+        hardness = float(match.group("hardness"))
+        profiles[block] = {
+            "family": "rock" if is_rock else "earth",
+            "copyFrom": f"minecraft:{match.group('copy_from').lower()}",
+            "hardness": hardness,
+            "blastResistance": 6.0 if is_rock else hardness,
+            "requiresTool": is_rock,
+            "soundGroup": match.group("sound_group").lower(),
+        }
+
+    declared_blocks = {
+        f"geostrata:{name.lower()}"
+        for name in re.findall(r"public static final Block ([A-Z0-9_]+) =", source)
+    }
+    if set(profiles) != declared_blocks:
+        fail(
+            "material validator could not parse every public block declaration; "
+            f"missing={sorted(declared_blocks - set(profiles))}, "
+            f"unexpected={sorted(set(profiles) - declared_blocks)}"
+        )
+    return profiles
+
+
+def nested_model_ids(value: object) -> set[str]:
+    models: set[str] = set()
+    if isinstance(value, dict):
+        for key, child in value.items():
+            if key == "model" and isinstance(child, str):
+                models.add(child)
+            else:
+                models.update(nested_model_ids(child))
+    elif isinstance(value, list):
+        for child in value:
+            models.update(nested_model_ids(child))
+    return models
+
+
+def block_textures(block: str) -> set[str]:
+    namespace, path = block.split(":", 1)
+    if namespace != "geostrata":
+        fail(f"material catalog may only own GeoStrata blocks, found {block}")
+
+    blockstate_path = ASSETS / "blockstates" / f"{path}.json"
+    blockstate = load_json(blockstate_path)
+    pending = list(nested_model_ids(blockstate))
+    visited: set[str] = set()
+    textures: set[str] = set()
+
+    while pending:
+        model = pending.pop()
+        if model in visited or not model.startswith("geostrata:block/"):
+            continue
+        visited.add(model)
+
+        model_path = ASSETS / "models" / "block" / f"{model.removeprefix('geostrata:block/')}.json"
+        model_data = load_json(model_path)
+        parent = model_data.get("parent")
+        if isinstance(parent, str) and parent.startswith("geostrata:block/"):
+            pending.append(parent)
+
+        declared = model_data.get("textures", {})
+        if not isinstance(declared, dict):
+            fail(f"{model_path.relative_to(ROOT)} textures must be an object")
+        textures.update(
+            texture
+            for texture in declared.values()
+            if isinstance(texture, str) and texture.startswith("geostrata:")
+        )
+
+    if not visited:
+        fail(f"{blockstate_path.relative_to(ROOT)} does not reference a GeoStrata block model")
+    return textures
+
+
+def validate_material_catalog() -> int:
+    catalog = load_json(MATERIAL_CATALOG)
+    if catalog.get("schemaVersion") != 1:
+        fail("material profile catalog schemaVersion must be 1")
+    if catalog.get("model") != "geostrata:material_profile_catalog":
+        fail("unexpected material profile catalog model identifier")
+    if catalog.get("runtimeStatus") != "validated_metadata_only":
+        fail("material profiles must remain explicit that JSON values are not runtime-loaded settings")
+
+    texture_sets = catalog.get("textureSets")
+    if not isinstance(texture_sets, dict) or not texture_sets:
+        fail("material profile catalog must declare textureSets")
+    for name, texture_set in texture_sets.items():
+        if not isinstance(texture_set, dict) or texture_set.get("status") not in {"placeholder", "production"}:
+            fail(f"texture set {name} must declare placeholder or production status")
+        textures = texture_set.get("textures")
+        if not isinstance(textures, list) or not textures:
+            fail(f"texture set {name} must contain textures")
+        for texture in textures:
+            if not isinstance(texture, str) or not texture.startswith("geostrata:block/"):
+                fail(f"texture set {name} contains invalid texture {texture!r}")
+            texture_path = ASSETS / "textures" / "block" / f"{texture.removeprefix('geostrata:block/')}.png"
+            if not texture_path.is_file():
+                fail(f"texture set {name} references missing {texture_path.relative_to(ROOT)}")
+
+    materials = catalog.get("materials")
+    if not isinstance(materials, list) or not materials:
+        fail("material profile catalog must contain materials")
+
+    source_profiles = source_block_profiles()
+    mineable_tags = {
+        "pickaxe": tag_values(MINECRAFT_BLOCK_TAGS / "mineable" / "pickaxe.json"),
+        "shovel": tag_values(MINECRAFT_BLOCK_TAGS / "mineable" / "shovel.json"),
+    }
+    stone_tier = tag_values(MINECRAFT_BLOCK_TAGS / "needs_stone_tool.json")
+    semantic_tags = {
+        f"geostrata:{name}": tag_values(BLOCK_TAGS / f"{name}.json")
+        for name in SEMANTIC_BLOCK_TAGS
+    }
+
+    ids: set[str] = set()
+    roles: set[str] = set()
+    catalog_blocks: set[str] = set()
+    required_fields = {
+        "id",
+        "primaryBlock",
+        "derivedBlocks",
+        "family",
+        "compatibilityRole",
+        "semanticTags",
+        "gameplay",
+        "assets",
+    }
+
+    for entry in materials:
+        if not isinstance(entry, dict):
+            fail(f"material profile must be an object: {entry!r}")
+        missing = sorted(required_fields - set(entry))
+        if missing:
+            fail(f"material profile is missing fields {missing}: {entry}")
+
+        material_id = entry["id"]
+        primary = entry["primaryBlock"]
+        derived = entry["derivedBlocks"]
+        family = entry["family"]
+        role = entry["compatibilityRole"]
+
+        if not isinstance(material_id, str):
+            fail(f"material id must be a string, found {material_id!r}")
+        if not isinstance(role, str) or not role.startswith("geostrata:"):
+            fail(f"{material_id} has invalid compatibilityRole {role!r}")
+        if material_id in ids:
+            fail(f"duplicate material id: {material_id}")
+        if role in roles:
+            fail(f"duplicate material compatibilityRole: {role}")
+        ids.add(material_id)
+        roles.add(role)
+
+        if primary != f"geostrata:{material_id}":
+            fail(f"{material_id} must use geostrata:{material_id} as its primaryBlock")
+        if not isinstance(derived, list) or any(not isinstance(block, str) for block in derived):
+            fail(f"{material_id} derivedBlocks must be an array of block IDs")
+        blocks = [primary, *derived]
+        if len(blocks) != len(set(blocks)):
+            fail(f"{material_id} lists a block more than once")
+        duplicates = catalog_blocks.intersection(blocks)
+        if duplicates:
+            fail(f"blocks occur in more than one material profile: {sorted(duplicates)}")
+        catalog_blocks.update(blocks)
+
+        if family not in ALLOWED_MATERIAL_FAMILIES:
+            fail(f"{material_id} has unsupported family {family}")
+
+        declared_tags = entry["semanticTags"]
+        if not isinstance(declared_tags, list) or any(tag not in semantic_tags for tag in declared_tags):
+            fail(f"{material_id} has unsupported semanticTags {declared_tags!r}")
+        actual_tags = {tag for tag, values in semantic_tags.items() if primary in values}
+        if set(declared_tags) != actual_tags:
+            fail(
+                f"{material_id} semanticTags do not match live tags; "
+                f"declared={sorted(declared_tags)}, actual={sorted(actual_tags)}"
+            )
+
+        gameplay = entry["gameplay"]
+        breaking = gameplay.get("breaking") if isinstance(gameplay, dict) else None
+        cultivation = gameplay.get("cultivation") if isinstance(gameplay, dict) else None
+        if not isinstance(breaking, dict):
+            fail(f"{material_id} must declare gameplay.breaking")
+        expected_cultivation = "not_applicable" if family == "rock" else "not_implemented"
+        if cultivation != {"status": expected_cultivation}:
+            fail(f"{material_id} cultivation must be marked {expected_cultivation}")
+
+        expected_tool = "pickaxe" if family == "rock" else "shovel"
+        expected_tier = "stone" if family == "rock" else "none"
+        if breaking.get("mineableWith") != expected_tool:
+            fail(f"{material_id} must be mineableWith {expected_tool}")
+        if breaking.get("minimumToolTier") != expected_tier:
+            fail(f"{material_id} minimumToolTier must be {expected_tier}")
+
+        for block in blocks:
+            source = source_profiles.get(block)
+            if source is None:
+                fail(f"material profile references unregistered block {block}")
+            expected_family = "rock" if family == "rock" else "earth"
+            if source["family"] != expected_family:
+                fail(f"{block} Java registration does not match material family {family}")
+            for trait in ("copyFrom", "hardness", "blastResistance", "requiresTool", "soundGroup"):
+                if breaking.get(trait) != source[trait]:
+                    fail(
+                        f"{block} {trait} differs from GeoStrataBlocks.java; "
+                        f"catalog={breaking.get(trait)!r}, source={source[trait]!r}"
+                    )
+            if block not in mineable_tags[expected_tool]:
+                fail(f"{block} is absent from minecraft:mineable/{expected_tool}")
+            if (block in stone_tier) != (expected_tier == "stone"):
+                fail(f"{block} does not match its declared minimumToolTier {expected_tier}")
+
+        assets = entry["assets"]
+        texture_set_name = assets.get("textureSet") if isinstance(assets, dict) else None
+        if texture_set_name not in texture_sets:
+            fail(f"{material_id} references unknown textureSet {texture_set_name!r}")
+        declared_textures = set(texture_sets[texture_set_name]["textures"])
+        actual_textures = set().union(*(block_textures(block) for block in blocks))
+        if declared_textures != actual_textures:
+            fail(
+                f"{material_id} textureSet does not match live block models; "
+                f"declared={sorted(declared_textures)}, actual={sorted(actual_textures)}"
+            )
+
+    if catalog_blocks != set(source_profiles):
+        fail(
+            "material profiles must exactly cover registered blocks; "
+            f"missing={sorted(set(source_profiles) - catalog_blocks)}, "
+            f"extra={sorted(catalog_blocks - set(source_profiles))}"
+        )
+    return len(materials)
 
 
 def main() -> None:
@@ -166,7 +435,11 @@ def main() -> None:
             f"missing={sorted(all_rocks - blocks)}, extra={sorted(blocks - all_rocks)}"
         )
 
-    print(f"geology validation OK: {len(entries)} lithologies, {len(ROCK_CLASSES)} rock classes")
+    material_count = validate_material_catalog()
+    print(
+        "geology validation OK: "
+        f"{len(entries)} lithologies, {len(ROCK_CLASSES)} rock classes, {material_count} material profiles"
+    )
 
 
 if __name__ == "__main__":

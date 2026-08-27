@@ -39,6 +39,24 @@ Place that file at `data/geostrata/tags/blocks/worldgen/base_stone_replaceables.
 
 GeoStrata also owns biome tags such as `geostrata:has_mountain_rocks`, `geostrata:has_fluvial_rocks`, and `geostrata:has_river_soils`. Integrations should extend those tags when a mod introduces biomes GeoStrata should recognize.
 
+## Material profile LUT
+
+`data/geostrata/materials/material_profiles.json` is the human-facing index of GeoStrata materials. It covers every registered block, including derived limestone shapes, and declares:
+
+| Field | Purpose |
+| --- | --- |
+| `primaryBlock` / `derivedBlocks` | Registry IDs owned by one material profile |
+| `family` | Broad rock, soil, mud or clay classification |
+| `compatibilityRole` | Stable semantic key an optional adapter can map to another mod's equivalent material |
+| `semanticTags` | Current GeoStrata tags describing the primary block |
+| `gameplay.breaking` | Live copy source, hardness, blast resistance, tool/tier and sound settings |
+| `gameplay.cultivation` | Explicit implementation status for soil-related behavior |
+| `assets.textureSet` | Current textures and whether they are placeholders or production assets |
+
+The catalog is validated metadata, not a runtime-reloadable settings file. CI checks it against `GeoStrataBlocks.java`, mining tags, block models and texture files, so a trait or asset change must update both the implementation and its profile. In particular, `cultivation.status: not_implemented` means GeoStrata does not yet alter crop growth; it is not a hidden multiplier.
+
+Compatibility artifacts should map an external block to a `compatibilityRole` or shared tag. They should not try to replace a registered GeoStrata block ID after registration. If an integration needs to adopt another mod's runtime behavior rather than merely classify equivalent blocks, that belongs in a guarded optional Java adapter because hardness and crop-growth hooks cannot be safely expressed by a core datapack alone.
+
 ## Streams Reflowing
 
 GeoStrata ships a data-only bridge for Streams Reflowing. Streams Reflowing discovers bank-style JSON from other mod namespaces and uses ordinary Minecraft tags for several ecological/geographical decisions, so the integration requires no Streams Java classes and no hard dependency.
