@@ -17,6 +17,7 @@ final class ProvinceDeformationProfilesTest {
         );
 
         assertEquals("metadata_only", snapshot.runtimeStatus());
+        assertEquals(192, snapshot.blendWidthBlocks());
         assertEquals(5, snapshot.profiles().size());
         assertEquals(160.0, snapshot.normalization().reliefScaleBlocks(), EPSILON);
         assertEquals(0.55, snapshot.profileFor(GeologyProvince.OROGENIC_BELT).baselineIntensity(), EPSILON);
@@ -68,6 +69,7 @@ final class ProvinceDeformationProfilesTest {
                   "schemaVersion": 1,
                   "model": "geostrata:province_deformation_profiles",
                   "runtimeStatus": "%s",
+                  "blendWidthBlocks": 192,
                   "morphologyNormalization": {
                     "reliefScaleBlocks": 160.0,
                     "slopeScale": 0.5,
