@@ -1,0 +1,154 @@
+{
+  "ambientocclusion": true,
+  "textures": {
+    "particle": "#host"
+  },
+  "elements": [
+    {
+      "from": [
+        0,
+        0,
+        0
+      ],
+      "to": [
+        16,
+        16,
+        16
+      ],
+      "faces": {
+        "down": {
+          "texture": "#host",
+          "cullface": "down"
+        },
+        "up": {
+          "texture": "#host",
+          "cullface": "up"
+        },
+        "north": {
+          "texture": "#host",
+          "cullface": "north"
+        },
+        "south": {
+          "texture": "#host",
+          "cullface": "south"
+        },
+        "west": {
+          "texture": "#host",
+          "cullface": "west"
+        },
+        "east": {
+          "texture": "#host",
+          "cullface": "east"
+        }
+      }
+    },
+    {
+      "from": [
+        1,
+        1,
+        -0.01
+      ],
+      "to": [
+        8,
+        8,
+        0
+      ],
+      "faces": {
+        "north": {
+          "texture": "#ore",
+          "cullface": "north"
+        }
+      }
+    },
+    {
+      "from": [
+        8,
+        8,
+        16
+      ],
+      "to": [
+        15,
+        15,
+        16.01
+      ],
+      "faces": {
+        "south": {
+          "texture": "#ore",
+          "cullface": "south"
+        }
+      }
+    },
+    {
+      "from": [
+        -0.01,
+        8,
+        1
+      ],
+      "to": [
+        0,
+        15,
+        8
+      ],
+      "faces": {
+        "west": {
+          "texture": "#ore",
+          "cullface": "west"
+        }
+      }
+    },
+    {
+      "from": [
+        16,
+        1,
+        8
+      ],
+      "to": [
+        16.01,
+        8,
+        15
+      ],
+      "faces": {
+        "east": {
+          "texture": "#ore",
+          "cullface": "east"
+        }
+      }
+    },
+    {
+      "from": [
+        8,
+        -0.01,
+        8
+      ],
+      "to": [
+        15,
+        0,
+        15
+      ],
+      "faces": {
+        "down": {
+          "texture": "#ore",
+          "cullface": "down"
+        }
+      }
+    },
+    {
+      "from": [
+        1,
+        16,
+        1
+      ],
+      "to": [
+        8,
+        16.01,
+        8
+      ],
+      "faces": {
+        "up": {
+          "texture": "#ore",
+          "cullface": "up"
+        }
+      }
+    }
+  ]
+}

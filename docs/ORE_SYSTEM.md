@@ -30,9 +30,10 @@ eligibility at the player's current 3D cell.
 
 This is candidate planning, not deposit activation. Every cell can be inspected
 without implying that every proposal will become a deposit; activation
-frequency and inter-deposit spacing remain deliberately unset. No ore blocks are registered or
-placed, grades are not assigned, and vanilla ore generation is not suppressed.
-The current baseline therefore remains unchanged.
+frequency and inter-deposit spacing remain deliberately unset. Grade blocks and
+their mining economy now exist, but no candidate places them and vanilla ore
+generation is not suppressed. The generated-world baseline therefore remains
+unchanged.
 
 ## Grade contract
 
@@ -44,10 +45,31 @@ are fixed, in ascending order:
 3. `rich`
 4. `massive`
 
-The catalog intentionally marks yield and experience behavior as
-`not_implemented`. Numeric drop and XP values should be introduced together
-with the grade block/loot implementation so metadata cannot imply gameplay that
-does not exist.
+Every phase-one material has one registered block for each economic grade.
+Grades share the same economics across materials:
+
+| Grade | Base output | Mining XP |
+| --- | ---: | ---: |
+| Poor | 1 | 0–1 |
+| Medium | 2 | 1–2 |
+| Rich | 4 | 2–4 |
+| Massive | 8 | 4–8 |
+
+The block loot tables apply Minecraft's standard `ore_drops` Fortune formula.
+Silk Touch returns the exact graded block and suppresses mining XP through the
+normal Minecraft mining path. Material still determines the canonical output
+and minimum tool tier; host rock does not alter yield or XP.
+
+These numbers are a fixed core contract at this stage, not independently
+reloadable tuning. Resource reload validates the declared values, and repository
+validation cross-checks them against every bundled loot table. Making economics
+fully datapack-driven would require a custom loot function so actual drops cannot
+drift from the catalog.
+
+The bundled models use a GeoStrata placeholder host texture plus increasingly
+large vanilla-material inclusions, making grade readable before production
+host-specific texture sets exist. This is an explicit placeholder asset
+boundary, not the final art direction.
 
 ## Ownership and compatibility
 
@@ -69,8 +91,8 @@ startup.
 1. **complete** — validate phase-one host, province, style and output contracts.
 2. **complete** — implement deterministic deposit candidates from world seed
    and geological context without mutating blocks;
-3. add Poor/Medium/Rich/Massive block, loot, yield and XP behavior with Trace as
-   non-economic evidence;
+3. **complete** — add Poor/Medium/Rich/Massive block, loot, yield and XP behavior
+   with Trace as non-economic evidence;
 4. activate deposits behind an explicit experimental boundary and evaluate
    abundance, readability and performance in fresh worlds;
 5. suppress overlapping native generation only when replacement coverage is

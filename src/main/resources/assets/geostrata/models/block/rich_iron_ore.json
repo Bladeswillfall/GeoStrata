@@ -1,0 +1,7 @@
+{
+  "parent": "geostrata:block/ore_grade/rich",
+  "textures": {
+    "host": "geostrata:block/placeholder_rock",
+    "ore": "minecraft:block/raw_iron_block"
+  }
+}

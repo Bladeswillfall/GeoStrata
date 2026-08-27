@@ -37,10 +37,18 @@ final class GeologyResourceContractTest {
                 Set.of("coal", "iron", "copper", "gold"),
                 core.oreOccurrences().byId().keySet()
         );
+        assertEquals("grade_economy_active", core.oreOccurrences().runtimeStatus());
         assertEquals(
                 List.of("poor", "medium", "rich", "massive"),
                 core.oreOccurrences().gradeModel().economicGrades()
         );
+        assertEquals(List.of(1, 2, 4, 8), core.oreOccurrences().gradeModel().economies().stream()
+                .map(OreOccurrenceCatalog.GradeEconomy::baseYield)
+                .toList());
+        assertEquals("loot_tables_active", core.oreOccurrences().gradeModel().yieldStatus());
+        assertEquals("block_runtime_active", core.oreOccurrences().gradeModel().experienceStatus());
+        assertTrue(core.oreOccurrences().occurrences().stream()
+                .allMatch(occurrence -> occurrence.gradeBlocks().size() == 4));
         assertFalse(core.oreOccurrences().gradeModel().traceEconomic());
         assertEquals("not_implemented", core.oreOccurrences().nativeGenerationSuppression());
 

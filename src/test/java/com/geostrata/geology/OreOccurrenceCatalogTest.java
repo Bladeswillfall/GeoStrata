@@ -19,6 +19,9 @@ final class OreOccurrenceCatalogTest {
         assertEquals(List.of("shale"), iron.hostLithologies());
         assertEquals(List.of(GeologyProvince.OROGENIC_BELT), iron.provinceContexts());
         assertEquals(List.of("poor", "medium", "rich", "massive"), snapshot.gradeModel().economicGrades());
+        assertEquals(4, snapshot.gradeModel().require(OreGrade.RICH).baseYield());
+        assertEquals(8, snapshot.gradeModel().require(OreGrade.MASSIVE).experienceMax());
+        assertEquals("geostrata:rich_iron_ore", iron.gradeBlocks().get(OreGrade.RICH));
     }
 
     @Test
@@ -31,6 +34,17 @@ final class OreOccurrenceCatalogTest {
                 IllegalArgumentException.class,
                 () -> OreOccurrenceCatalog.parse(lithologies(), occurrence("shale", "blob"))
         );
+    }
+
+    @Test
+    void rejectsEconomicsThatDoNotIncreaseWithGrade() {
+        JsonObject root = occurrence("shale", "vein");
+        root.getAsJsonObject("gradeModel")
+                .getAsJsonObject("economics")
+                .getAsJsonObject("rich")
+                .addProperty("baseYield", 2);
+
+        assertThrows(IllegalArgumentException.class, () -> OreOccurrenceCatalog.parse(lithologies(), root));
     }
 
     private static LithologyCatalog.Snapshot lithologies() {
@@ -51,17 +65,25 @@ final class OreOccurrenceCatalogTest {
     private static JsonObject occurrence(String host, String style) {
         return JsonParser.parseString("""
                 {
-                  "schemaVersion": 1,
+                  "schemaVersion": 2,
                   "model": "geostrata:ore_occurrence_catalog",
-                  "runtimeStatus": "metadata_only",
+                  "runtimeStatus": "grade_economy_active",
                   "generationOwner": "geostrata",
                   "nativeGenerationSuppression": "not_implemented",
                   "gradeModel": {
-                    "runtimeStatus": "names_only",
+                    "runtimeStatus": "block_loot_xp_active",
                     "economicGrades": ["poor", "medium", "rich", "massive"],
-                    "trace": {"economic": false},
-                    "yieldStatus": "not_implemented",
-                    "experienceStatus": "not_implemented"
+                    "trace": {"economic": false, "runtimeStatus": "evidence_only_not_implemented"},
+                    "yieldStatus": "loot_tables_active",
+                    "experienceStatus": "block_runtime_active",
+                    "fortuneMode": "minecraft:ore_drops",
+                    "silkTouchMode": "drops_self",
+                    "economics": {
+                      "poor": {"baseYield": 1, "experience": {"min": 0, "max": 1}},
+                      "medium": {"baseYield": 2, "experience": {"min": 1, "max": 2}},
+                      "rich": {"baseYield": 4, "experience": {"min": 2, "max": 4}},
+                      "massive": {"baseYield": 8, "experience": {"min": 4, "max": 8}}
+                    }
                   },
                   "occurrences": [{
                     "id": "iron",
@@ -69,7 +91,13 @@ final class OreOccurrenceCatalogTest {
                     "outputItem": "minecraft:raw_iron",
                     "hostLithologies": ["%s"],
                     "provinceContexts": ["orogenic_belt"],
-                    "depositStyles": ["%s"]
+                    "depositStyles": ["%s"],
+                    "gradeBlocks": {
+                      "poor": "geostrata:poor_iron_ore",
+                      "medium": "geostrata:medium_iron_ore",
+                      "rich": "geostrata:rich_iron_ore",
+                      "massive": "geostrata:massive_iron_ore"
+                    }
                   }]
                 }
                 """.formatted(host, style)).getAsJsonObject();

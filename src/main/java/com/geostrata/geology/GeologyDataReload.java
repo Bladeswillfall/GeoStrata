@@ -8,6 +8,7 @@ import com.google.gson.JsonParser;
 import net.fabricmc.fabric.api.resource.ResourceManagerHelper;
 import net.fabricmc.fabric.api.resource.SimpleSynchronousResourceReloadListener;
 import net.fabricmc.loader.api.FabricLoader;
+import net.minecraft.registry.Registries;
 import net.minecraft.resource.Resource;
 import net.minecraft.resource.ResourceManager;
 import net.minecraft.resource.ResourceType;
@@ -53,6 +54,7 @@ public final class GeologyDataReload implements SimpleSynchronousResourceReloadL
                     readObject(manager, EXPERIMENT),
                     FabricLoader.getInstance().isModLoaded(COMPANION_MOD_ID)
             );
+            validateOreRegistries(loaded.oreOccurrences());
             loaded.publish();
             GeoStrata.LOGGER.info(
                     "Loaded GeoStrata geology data: {} lithologies, {} ore occurrences, {} successions, experiment enabled={}",
@@ -63,6 +65,21 @@ public final class GeologyDataReload implements SimpleSynchronousResourceReloadL
             );
         } catch (IOException | JsonParseException | IllegalArgumentException exception) {
             throw new IllegalStateException("Failed to load GeoStrata geology data", exception);
+        }
+    }
+
+    private static void validateOreRegistries(OreOccurrenceCatalog.Snapshot occurrences) {
+        for (OreOccurrenceCatalog.Occurrence occurrence : occurrences.occurrences()) {
+            Identifier output = new Identifier(occurrence.outputItem());
+            if (!Registries.ITEM.containsId(output)) {
+                throw new IllegalArgumentException(occurrence.id() + " references unregistered output item " + output);
+            }
+            for (String blockId : occurrence.gradeBlocks().values()) {
+                Identifier block = new Identifier(blockId);
+                if (!Registries.BLOCK.containsId(block)) {
+                    throw new IllegalArgumentException(occurrence.id() + " references unregistered grade block " + block);
+                }
+            }
         }
     }
 
