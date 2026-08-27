@@ -32,7 +32,12 @@ final class ChunkGeneratorTerrainMorphologySamplerTest {
     @Test
     void rejectsMissingSourceAndNonPositiveSpacing() {
         assertThrows(IllegalArgumentException.class,
-                () -> ChunkGeneratorTerrainMorphologySampler.sample(null, 0, 0, 64));
+                () -> ChunkGeneratorTerrainMorphologySampler.sample(
+                        (ChunkGeneratorTerrainMorphologySampler.HeightSource) null,
+                        0,
+                        0,
+                        64
+                ));
         assertThrows(IllegalArgumentException.class,
                 () -> ChunkGeneratorTerrainMorphologySampler.sample((x, z) -> 64.0, 0, 0, 0));
     }
