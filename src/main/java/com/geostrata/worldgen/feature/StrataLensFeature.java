@@ -78,29 +78,55 @@ public final class StrataLensFeature extends Feature<StrataLensConfig> {
                 );
                 int minY = (int) Math.ceil(centerY - localHalfThickness);
                 int maxY = (int) Math.floor(centerY + localHalfThickness);
-
-                for (int y = minY; y <= maxY; y++) {
-                    mutable.set(origin.getX() + dx, y, origin.getZ() + dz);
-                    if (world.isOutOfHeightLimit(mutable)) {
-                        continue;
-                    }
-
-                    BlockState existing = world.getBlockState(mutable);
-                    for (OreFeatureConfig.Target target : config.targets()) {
-                        if (!target.target.test(existing, random)) {
-                            continue;
-                        }
-                        if (!shouldDiscardOnAirExposure(world, mutable, random, config.discardOnAirChance())) {
-                            world.setBlockState(mutable, target.state, Block.NOTIFY_LISTENERS);
-                            placed++;
-                        }
-                        break;
-                    }
-                }
+                placed += placeColumn(world, origin, dx, dz, minY, maxY, config, random, mutable);
             }
         }
 
         return placed > 0;
+    }
+
+    private static int placeColumn(
+            StructureWorldAccess world,
+            BlockPos origin,
+            int dx,
+            int dz,
+            int minY,
+            int maxY,
+            StrataLensConfig config,
+            Random random,
+            BlockPos.Mutable mutable
+    ) {
+        int placed = 0;
+        for (int y = minY; y <= maxY; y++) {
+            mutable.set(origin.getX() + dx, y, origin.getZ() + dz);
+            if (world.isOutOfHeightLimit(mutable)) {
+                continue;
+            }
+            if (placeAt(world, mutable, config, random)) {
+                placed++;
+            }
+        }
+        return placed;
+    }
+
+    private static boolean placeAt(
+            StructureWorldAccess world,
+            BlockPos pos,
+            StrataLensConfig config,
+            Random random
+    ) {
+        BlockState existing = world.getBlockState(pos);
+        for (OreFeatureConfig.Target target : config.targets()) {
+            if (!target.target.test(existing, random)) {
+                continue;
+            }
+            if (shouldDiscardOnAirExposure(world, pos, random, config.discardOnAirChance())) {
+                return false;
+            }
+            world.setBlockState(pos, target.state, Block.NOTIFY_LISTENERS);
+            return true;
+        }
+        return false;
     }
 
     private static boolean passesProvinceSuitability(

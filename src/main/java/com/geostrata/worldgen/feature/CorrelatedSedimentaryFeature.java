@@ -107,29 +107,60 @@ public final class CorrelatedSedimentaryFeature extends Feature<DefaultFeatureCo
             return false;
         }
 
+        return replaceChunk(world, startX, startZ, minY, maxY, hostTag, field, plan, outputStates) > 0;
+    }
+
+    private static int replaceChunk(
+            StructureWorldAccess world,
+            int startX,
+            int startZ,
+            int minY,
+            int maxY,
+            TagKey<Block> hostTag,
+            SedimentaryStratigraphicField.Field field,
+            SedimentaryContactPlanner.Plan plan,
+            Map<String, BlockState> outputStates
+    ) {
         int placed = 0;
         BlockPos.Mutable mutable = new BlockPos.Mutable();
         for (int x = startX; x < startX + CHUNK_SIZE; x++) {
             for (int z = startZ; z < startZ + CHUNK_SIZE; z++) {
-                for (int y = minY; y <= maxY; y++) {
-                    mutable.set(x, y, z);
-                    if (!world.getBlockState(mutable).isIn(hostTag)) {
-                        continue;
-                    }
-
-                    SedimentaryStratigraphicField.Sample sample = field.sample(x, y, z, plan);
-                    BlockState replacement = outputStates.get(sample.bed().lithology());
-                    if (replacement == null) {
-                        throw new IllegalStateException(
-                                "No resolved block state for correlated lithology " + sample.bed().lithology()
-                        );
-                    }
-                    world.setBlockState(mutable, replacement, Block.NOTIFY_LISTENERS);
-                    placed++;
-                }
+                placed += replaceColumn(world, x, z, minY, maxY, hostTag, field, plan, outputStates, mutable);
             }
         }
-        return placed > 0;
+        return placed;
+    }
+
+    private static int replaceColumn(
+            StructureWorldAccess world,
+            int x,
+            int z,
+            int minY,
+            int maxY,
+            TagKey<Block> hostTag,
+            SedimentaryStratigraphicField.Field field,
+            SedimentaryContactPlanner.Plan plan,
+            Map<String, BlockState> outputStates,
+            BlockPos.Mutable mutable
+    ) {
+        int placed = 0;
+        for (int y = minY; y <= maxY; y++) {
+            mutable.set(x, y, z);
+            if (!world.getBlockState(mutable).isIn(hostTag)) {
+                continue;
+            }
+
+            SedimentaryStratigraphicField.Sample sample = field.sample(x, y, z, plan);
+            BlockState replacement = outputStates.get(sample.bed().lithology());
+            if (replacement == null) {
+                throw new IllegalStateException(
+                        "No resolved block state for correlated lithology " + sample.bed().lithology()
+                );
+            }
+            world.setBlockState(mutable, replacement, Block.NOTIFY_LISTENERS);
+            placed++;
+        }
+        return placed;
     }
 
     private static TagKey<Block> hostTag(String rawIdentifier) {

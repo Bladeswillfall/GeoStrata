@@ -1,0 +1,32 @@
+<?xml version="1.0"?>
+<ruleset name="GeoStrata complexity guardrails"
+         xmlns="http://pmd.sourceforge.net/ruleset/2.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://pmd.sourceforge.net/ruleset/2.0.0 https://pmd.sourceforge.io/ruleset_2_0_0.xsd">
+    <description>
+        Production-code complexity guardrails. GeoStrata allows a maximum method complexity of 20;
+        PMD reports at-or-above its configured level, so 21 enforces "greater than 20".
+    </description>
+
+    <!--
+      Legacy parser exceptions are intentionally exact and centrally auditable.
+      Follow-up debt: #54 CorrelatedSedimentaryExperiment.parse, #55 GeologyProvinceProfiles.parse,
+      #56 SedimentaryFieldProfiles.parse, #57 SedimentarySuccessions.parse.
+    -->
+    <rule ref="category/java/design.xml/CyclomaticComplexity">
+        <properties>
+            <property name="methodReportLevel" value="21"/>
+            <property name="classReportLevel" value="1000"/>
+            <property name="violationSuppressXPath"
+                      value="./ancestor-or-self::MethodDeclaration[@Name = 'parse' and ancestor::ClassDeclaration[@SimpleName = ('CorrelatedSedimentaryExperiment', 'GeologyProvinceProfiles', 'SedimentaryFieldProfiles', 'SedimentarySuccessions')]]"/>
+        </properties>
+    </rule>
+
+    <rule ref="category/java/design.xml/CognitiveComplexity">
+        <properties>
+            <property name="reportLevel" value="21"/>
+            <property name="violationSuppressXPath"
+                      value="./ancestor-or-self::MethodDeclaration[@Name = 'parse' and ancestor::ClassDeclaration[@SimpleName = ('CorrelatedSedimentaryExperiment', 'GeologyProvinceProfiles', 'SedimentaryFieldProfiles', 'SedimentarySuccessions')]]"/>
+        </properties>
+    </rule>
+</ruleset>
