@@ -1,0 +1,48 @@
+{
+  "schemaVersion": 1,
+  "model": "geostrata:ore_occurrence_catalog",
+  "runtimeStatus": "metadata_only",
+  "generationOwner": "geostrata",
+  "nativeGenerationSuppression": "not_implemented",
+  "gradeModel": {
+    "runtimeStatus": "names_only",
+    "economicGrades": ["poor", "medium", "rich", "massive"],
+    "trace": {"economic": false},
+    "yieldStatus": "not_implemented",
+    "experienceStatus": "not_implemented"
+  },
+  "occurrences": [
+    {
+      "id": "coal",
+      "providerMod": "minecraft",
+      "outputItem": "minecraft:coal",
+      "hostLithologies": ["shale", "mudstone", "siltstone"],
+      "provinceContexts": ["sedimentary_basin", "rift_province"],
+      "depositStyles": ["coal_seam"]
+    },
+    {
+      "id": "iron",
+      "providerMod": "minecraft",
+      "outputItem": "minecraft:raw_iron",
+      "hostLithologies": ["shale", "limestone", "quartzite", "basalt", "rhyolite"],
+      "provinceContexts": ["sedimentary_basin", "cratonic_shield", "orogenic_belt", "volcanic_arc", "rift_province"],
+      "depositStyles": ["stratiform", "disseminated", "massive_lens_or_pocket"]
+    },
+    {
+      "id": "copper",
+      "providerMod": "minecraft",
+      "outputItem": "minecraft:raw_copper",
+      "hostLithologies": ["shale", "limestone", "basalt", "rhyolite"],
+      "provinceContexts": ["sedimentary_basin", "volcanic_arc", "rift_province"],
+      "depositStyles": ["vein", "stratiform", "disseminated", "massive_lens_or_pocket"]
+    },
+    {
+      "id": "gold",
+      "providerMod": "minecraft",
+      "outputItem": "minecraft:raw_gold",
+      "hostLithologies": ["slate", "marble", "quartzite", "schist", "gneiss", "basalt", "rhyolite"],
+      "provinceContexts": ["cratonic_shield", "orogenic_belt", "volcanic_arc"],
+      "depositStyles": ["vein", "disseminated"]
+    }
+  ]
+}

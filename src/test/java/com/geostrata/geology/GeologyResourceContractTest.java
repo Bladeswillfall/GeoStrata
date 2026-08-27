@@ -27,11 +27,22 @@ final class GeologyResourceContractTest {
     void bundledResourcesFormAValidRuntimeGraph() throws IOException {
         GeologyDataReload.State core = parseGeology(false);
         assertTrue(core.lithologies().loaded());
+        assertTrue(core.oreOccurrences().loaded());
         assertTrue(core.provinces().loaded());
         assertTrue(core.successions().loaded());
         assertTrue(core.fieldProfiles().loaded());
         assertFalse(core.experiment().enabled());
         assertEquals("metadata_only", core.experiment().runtimeStatus());
+        assertEquals(
+                Set.of("coal", "iron", "copper", "gold"),
+                core.oreOccurrences().byId().keySet()
+        );
+        assertEquals(
+                List.of("poor", "medium", "rich", "massive"),
+                core.oreOccurrences().gradeModel().economicGrades()
+        );
+        assertFalse(core.oreOccurrences().gradeModel().traceEconomic());
+        assertEquals("not_implemented", core.oreOccurrences().nativeGenerationSuppression());
 
         GeologyDataReload.State activated = parseGeology(true);
         assertTrue(activated.experiment().enabled());
@@ -48,6 +59,7 @@ final class GeologyResourceContractTest {
     private static GeologyDataReload.State parseGeology(boolean companionLoaded) throws IOException {
         return GeologyDataReload.parse(
                 read(GEOLOGY.resolve("lithologies.json")),
+                read(GEOLOGY.resolve("ore_occurrences.json")),
                 read(GEOLOGY.resolve("province_profiles.json")),
                 read(GEOLOGY.resolve("sedimentary_successions.json")),
                 read(GEOLOGY.resolve("sedimentary_field_profiles.json")),
