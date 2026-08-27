@@ -23,7 +23,7 @@ public final class CorrelatedExperimentDiagnostics {
                 CorrelatedExperimentChunkOwnership.ownershipForChunk(worldSeed, x, z);
         Optional<CorrelatedSedimentaryRuntime.Site> resolved = CorrelatedSedimentaryRuntime.resolve(worldSeed, x, z);
         if (resolved.isEmpty()) {
-            return Report.unresolved(experiment.enabled(), ownership);
+            return Report.unresolved(ownership);
         }
 
         CorrelatedSedimentaryRuntime.Site site = resolved.get();
@@ -91,21 +91,8 @@ public final class CorrelatedExperimentDiagnostics {
             int maxY,
             List<Layer> layers
     ) {
-        private static Report unresolved(
-                boolean enabled,
-                CorrelatedSedimentaryExperiment.Ownership ownership
-        ) {
-            String reason = enabled ? ownership.reason() : "disabled";
-            CorrelatedSedimentaryExperiment.Ownership normalized = ownership.reason().equals(reason)
-                    ? ownership
-                    : new CorrelatedSedimentaryExperiment.Ownership(
-                            false,
-                            reason,
-                            ownership.province(),
-                            ownership.boundaryDistanceBlocks(),
-                            ownership.successionId()
-                    );
-            return new Report(false, normalized, 0, 0, null, null, 0L, 0.0, 0.0, 0, -1, List.of());
+        private static Report unresolved(CorrelatedSedimentaryExperiment.Ownership ownership) {
+            return new Report(false, ownership, 0, 0, null, null, 0L, 0.0, 0.0, 0, -1, List.of());
         }
     }
 }
