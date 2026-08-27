@@ -28,15 +28,20 @@ public final class CorrelatedExperimentChunkOwnership {
         );
     }
 
+    public static boolean suppressionActiveFor(String lithology) {
+        CorrelatedSedimentaryExperiment.Snapshot experiment = CorrelatedSedimentaryExperiment.current();
+        return experiment.loaded()
+                && experiment.enabled()
+                && experiment.supersededLithologies().contains(lithology);
+    }
+
     public static boolean suppressesBaselineLithology(
             String lithology,
             long worldSeed,
             int blockX,
             int blockZ
     ) {
-        CorrelatedSedimentaryExperiment.Snapshot experiment = CorrelatedSedimentaryExperiment.current();
-        return experiment.loaded()
-                && experiment.supersededLithologies().contains(lithology)
+        return suppressionActiveFor(lithology)
                 && ownershipForChunk(worldSeed, blockX, blockZ).owned();
     }
 }
