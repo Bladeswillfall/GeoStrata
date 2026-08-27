@@ -1,6 +1,9 @@
 package com.geostrata.command;
 
 import com.geostrata.geology.ChunkGeneratorTerrainMorphologySampler;
+import com.geostrata.geology.GeologyProvinceSampler;
+import com.geostrata.geology.ProvinceDeformationProfiles;
+import com.geostrata.geology.StructuralDeformationResponse;
 import com.geostrata.geology.TerrainMorphologySample;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.minecraft.server.command.CommandManager;
@@ -18,7 +21,9 @@ public final class GeoStrataTerrainCommands {
         CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) ->
                 dispatcher.register(CommandManager.literal("geostrata")
                         .then(CommandManager.literal("terrain")
-                                .executes(context -> showTerrain(context.getSource()))))
+                                .executes(context -> showTerrain(context.getSource())))
+                        .then(CommandManager.literal("structure")
+                                .executes(context -> showStructure(context.getSource()))))
         );
     }
 
@@ -42,6 +47,46 @@ public final class GeoStrataTerrainCommands {
                 false
         );
         return 1;
+    }
+
+    private static int showStructure(ServerCommandSource source) {
+        ProvinceDeformationProfiles.Snapshot profiles = ProvinceDeformationProfiles.current();
+        if (!profiles.loaded()) {
+            source.sendError(Text.literal("GeoStrata province deformation profiles have not been loaded yet."));
+            return 0;
+        }
+
+        Vec3d position = source.getPosition();
+        int x = MathHelper.floor(position.x);
+        int z = MathHelper.floor(position.z);
+        TerrainMorphologySample terrain = ChunkGeneratorTerrainMorphologySampler.sample(source.getWorld(), x, z);
+        GeologyProvinceSampler.Sample province = GeologyProvinceSampler.sample(source.getWorld().getSeed(), x, z);
+        StructuralDeformationResponse.Result response = StructuralDeformationResponse.evaluate(
+                province,
+                profiles,
+                terrain
+        );
+        int primaryShare = percent(0.5 + 0.5 * province.interiorBlend(profiles.blendWidthBlocks()));
+
+        source.sendFeedback(
+                () -> Text.literal(
+                        "GeoStrata structure: " + province.province().displayName()
+                                + " / " + province.neighborProvince().displayName()
+                                + " | primary share " + primaryShare + "%"
+                                + " | terrain signal " + percent(response.terrainSignal()) + "%"
+                                + " | deformation " + percent(response.intensity()) + "%"
+                                + " | dip " + percent(response.dipPotential()) + "%"
+                                + ", fold " + percent(response.foldPotential()) + "%"
+                                + ", fault " + percent(response.faultPotential()) + "%"
+                                + " | normalized diagnostic only; no deformation applied"
+                ),
+                false
+        );
+        return 1;
+    }
+
+    private static int percent(double value) {
+        return (int) Math.round(value * 100.0);
     }
 
     private static double round(double value) {
