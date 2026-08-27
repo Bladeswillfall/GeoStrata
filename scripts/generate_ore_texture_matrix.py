@@ -3,8 +3,9 @@
 
 Artists edit the 16x16 host tiles, the four dense mineral master overlays and
 ore_texture_matrix.json. This script derives nested grade overlays, flat
-composites, block models and blockstates. Generated files are committed so the
-game and normal resource packs do not need Pillow at runtime.
+composites, block models, blockstates and optional Continuity variants.
+Generated files are committed so the game and normal resource packs do not
+need Pillow at runtime.
 """
 
 from __future__ import annotations
@@ -23,6 +24,8 @@ RESOURCES = ROOT / "src" / "main" / "resources"
 ASSETS = RESOURCES / "assets" / "geostrata"
 MATRIX_PATH = RESOURCES / "data" / "geostrata" / "materials" / "ore_texture_matrix.json"
 GRADES = ("poor", "medium", "rich", "massive")
+CONTINUITY_VARIANTS = 4
+CONTINUITY_EDGE_GUARD = 2
 
 
 def load_matrix() -> dict[str, object]:
@@ -40,6 +43,87 @@ def load_rgba(path: Path, size: int) -> Image.Image:
     if image.size != (size, size):
         raise SystemExit(f"{path.relative_to(ROOT)} must be exactly {size}x{size}")
     return image
+
+
+def pixel_delta(first: tuple[int, ...], second: tuple[int, ...]) -> float:
+    return sum(abs(first[channel] - second[channel]) for channel in range(3)) / 3
+
+
+def require_tile_safe(image: Image.Image, label: str) -> None:
+    """Reject a conspicuous wrap boundary while allowing vanilla-style texture."""
+    size = image.width
+    seam = [
+        pixel_delta(image.getpixel((0, offset)), image.getpixel((size - 1, offset)))
+        for offset in range(size)
+    ] + [
+        pixel_delta(image.getpixel((offset, 0)), image.getpixel((offset, size - 1)))
+        for offset in range(size)
+    ]
+    interior = [
+        pixel_delta(image.getpixel((x, y)), image.getpixel((x + 1, y)))
+        for y in range(size)
+        for x in range(size - 1)
+    ] + [
+        pixel_delta(image.getpixel((x, y)), image.getpixel((x, y + 1)))
+        for y in range(size - 1)
+        for x in range(size)
+    ]
+    seam_mean = sum(seam) / len(seam)
+    interior_mean = sum(interior) / len(interior)
+    if seam_mean > interior_mean * 1.35 + 1:
+        raise SystemExit(
+            f"{label} has a visible wrap seam ({seam_mean:.2f} vs {interior_mean:.2f} interior contrast)"
+        )
+
+
+def stable_pixel(host: str, variant: int, x: int, y: int) -> int:
+    value = sum(map(ord, host)) * 1_000_003 + variant * 97_409 + x * 7_919 + y * 15_407
+    value ^= value >> 13
+    value *= 1_274_126_177
+    return value ^ (value >> 16)
+
+
+def continuity_variant(base: Image.Image, host: str, variant: int) -> Image.Image:
+    """Vary only the interior so host and ore fallback edges remain compatible."""
+    if variant == 0:
+        return base.copy()
+    result = base.copy()
+    minimum = CONTINUITY_EDGE_GUARD
+    maximum = base.width - CONTINUITY_EDGE_GUARD
+    directions = ((-1, 0), (1, 0), (0, -1), (0, 1))
+    for y in range(minimum, maximum):
+        for x in range(minimum, maximum):
+            selection = stable_pixel(host, variant, x, y)
+            if selection % 6:
+                continue
+            dx, dy = directions[(selection // 7) % len(directions)]
+            source = base.getpixel((x + dx, y + dy))
+            target = base.getpixel((x, y))
+            if pixel_delta(source, target) <= 24:
+                result.putpixel((x, y), source)
+    return result
+
+
+def write_continuity_host(host: str, base: Image.Image) -> list[Image.Image]:
+    variants = [continuity_variant(base, host, variant) for variant in range(CONTINUITY_VARIANTS)]
+    if len({variant.tobytes() for variant in variants}) != CONTINUITY_VARIANTS:
+        raise SystemExit(f"{host} must produce {CONTINUITY_VARIANTS} distinct Continuity variants")
+
+    texture_root = ASSETS / "textures" / "optifine" / "ctm" / "host" / host
+    for index, variant in enumerate(variants):
+        texture_root.mkdir(parents=True, exist_ok=True)
+        variant.save(texture_root / f"{index}.png", optimize=True)
+
+    properties = ASSETS / "optifine" / "ctm" / "host" / f"{host}.properties"
+    properties.parent.mkdir(parents=True, exist_ok=True)
+    tiles = " ".join(f"geostrata:optifine/ctm/host/{host}/{index}" for index in range(CONTINUITY_VARIANTS))
+    properties.write_text(
+        "method=random\n"
+        f"matchTiles=geostrata:block/host/{host}\n"
+        f"tiles={tiles}\n",
+        encoding="utf-8",
+    )
+    return variants
 
 
 def ranked_pixels(master: Image.Image, material: str) -> list[tuple[int, int]]:
@@ -151,13 +235,46 @@ def write_preview(matrix: dict[str, object]) -> None:
     preview.save(path, optimize=True)
 
 
-def generate() -> tuple[int, int]:
+def write_tiling_preview(matrix: dict[str, object], variants: dict[str, list[Image.Image]]) -> None:
+    scale = 2
+    grid_size = 4
+    tile = 16 * scale
+    cell_width = 226
+    cell_height = grid_size * tile + 28
+    columns = 2
+    rows = (len(matrix["hosts"]) + columns - 1) // columns
+    preview = Image.new("RGB", (columns * cell_width, rows * cell_height), "#17191d")
+    draw = ImageDraw.Draw(preview)
+    font = ImageFont.load_default()
+    for index, host in enumerate(matrix["hosts"]):
+        column = index % columns
+        row = index // columns
+        left = column * cell_width + 6
+        top = row * cell_height + 6
+        draw.text((left, top), host.upper(), font=font, fill="#e4e4e1")
+        for y in range(grid_size):
+            for x in range(grid_size):
+                variant = variants[host][stable_pixel(host, 5, x, y) % CONTINUITY_VARIANTS]
+                enlarged = variant.convert("RGB").resize((tile, tile), Image.Resampling.NEAREST)
+                preview.paste(enlarged, (left + x * tile, top + 20 + y * tile))
+    path = ROOT / "docs" / "images" / "host-tiling-preview.png"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    preview.save(path, optimize=True)
+
+
+def generate() -> tuple[int, int, int]:
     matrix = load_matrix()
     size = matrix["resolution"]
     host_root = ASSETS / "textures" / "block" / "host"
     hosts = {
         host: load_rgba(host_root / f"{host}.png", size)
         for host in matrix["hosts"]
+    }
+    for host, texture in hosts.items():
+        require_tile_safe(texture, host)
+    continuity = {
+        host: write_continuity_host(host, texture)
+        for host, texture in hosts.items()
     }
     for host in matrix["hosts"]:
         write_json(ASSETS / "models" / "block" / f"{host}.json", {
@@ -192,9 +309,13 @@ def generate() -> tuple[int, int]:
             write_json(ASSETS / "models" / "item" / f"{block_name}.json", {"parent": default_model})
 
     write_preview(matrix)
-    return composite_count, model_count
+    write_tiling_preview(matrix, continuity)
+    return composite_count, model_count, len(continuity) * CONTINUITY_VARIANTS
 
 
 if __name__ == "__main__":
-    composites, models = generate()
-    print(f"generated {composites} host-aware ore composites and {models} block models")
+    composites, models, continuity_sprites = generate()
+    print(
+        f"generated {composites} host-aware ore composites, {models} block models "
+        f"and {continuity_sprites} Continuity sprites"
+    )
