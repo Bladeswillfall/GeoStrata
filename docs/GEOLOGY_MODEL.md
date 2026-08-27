@@ -96,8 +96,7 @@ Run:
 
 ```text
 python3 scripts/validate_geology_catalog.py
-python3 scripts/validate_province_profiles.py
-python3 scripts/validate_strata_lens_configs.py
+gradle test
 ```
 
-The catalog validator enforces that every live rock appears exactly once in the catalog and exactly once in a rock-class tag, that referenced biome tags exist, and that each baseline configured/placed feature actually generates the catalogued block. The runtime `LithologyCatalog` parser independently validates semantic IDs, ownership namespaces, unique block/feature mappings, rock classes and continuity values for datapack overrides. The province validator enforces exact coverage of all five provinces and every live lithology, positive bounded weights, a valid blend width, and at least one characteristic regional context for every rock. The strata-lens validator enforces safe geometry ranges, replacement-target presence and matching placed-feature contracts for every custom lens. CI runs all of these before the Gradle build. Province sampling, profile blending, suitability acceptance, coordinate-hash mapping, pure strata-lens geometry, normalized succession contacts and the stratigraphic spatial transform have regression coverage so regional and body-shape behavior cannot drift accidentally.
+The catalog validator enforces that every live rock appears exactly once in the catalog and exactly once in a rock-class tag, that referenced biome tags exist, and that each baseline configured/placed feature actually generates the catalogued block. `GeologyDataReload` validates the related geology resources once in dependency order. `GeologyResourceContractTest` sends the bundled files through those production parsers, then checks strata-lens resource pairing and bundled palette policy. Existing behavior tests cover province sampling, profile blending, suitability acceptance, coordinate hashing, strata-lens geometry, succession contacts and the stratigraphic field.

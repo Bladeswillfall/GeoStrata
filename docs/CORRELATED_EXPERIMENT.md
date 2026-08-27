@@ -2,17 +2,17 @@
 
 GeoStrata carries an experimental correlated sedimentary generator without making it part of standalone worldgen. The normal mod remains on the proven baseline unless the separate `experiment-companion` artifact explicitly activates and biome-registers the correlated consumer.
 
-`data/geostrata/geology/correlated_sedimentary_experiment.json` is the staging contract. Core ships it as `metadata_only` with `enabled: false`. The companion does **not** replace that resource. Instead it supplies the unique `geostrata:geology/correlated_sedimentary_activation.json` marker; core validates the marker and promotes its already-validated snapshot to `experimental_runtime`.
+`data/geostrata/geology/correlated_sedimentary_experiment.json` is the staging contract. Core ships it as `metadata_only` with `enabled: false`. The companion does **not** replace that resource. Core uses Fabric Loader's native mod-presence check for `geostrata_correlated_experiment` to promote the validated snapshot to `experimental_runtime`.
 
-Using a separate marker path is deliberate. Fabric mod-resource ordering is not a safe contract for same-path overrides, so activation must not depend on which mod resource wins load order.
+Activation therefore does not depend on resource ordering or a second JSON protocol.
 
-Parsing and cross-resource validation live in `CorrelatedSedimentaryExperimentParser`. `CorrelatedExperimentActivation` validates the optional marker. `CorrelatedSedimentaryExperiment` owns reload lifecycle and runtime ownership evaluation.
+`GeologyDataReload` parses the geology resources once in dependency order and publishes them atomically. Cross-resource validation lives in `CorrelatedSedimentaryExperimentParser`. `CorrelatedSedimentaryExperiment` owns runtime ownership evaluation.
 
 ## First experiment scope
 
 The first target is `basin_mudrock_carbonate_cycle`: limestone, shale, mudstone and siltstone. Those four rocks already use GeoStrata's `strata_lens` baseline. Chalk, conglomerate and breccia remain entirely baseline during this experiment.
 
-When activation is present, a single chunk-normalized ownership decision controls both sides of the handoff:
+When the companion is loaded, a single chunk-normalized ownership decision controls both sides of the handoff:
 
 - `CorrelatedSedimentaryFeature` mutates only experiment-owned chunks;
 - superseded `StrataLensFeature` bodies do not start inside owned chunks;
@@ -20,7 +20,7 @@ When activation is present, a single chunk-normalized ownership decision control
 
 `CorrelatedExperimentChunkOwnership` maps every X/Z coordinate, including negative coordinates, to the center of its 16x16 chunk before invoking the canonical experiment evaluator. This prevents random placed-feature origins and cross-boundary candidates from disagreeing about ownership.
 
-With the bundled disabled contract and no marker, the lens suppression fast path is inactive and ordinary core generation does not perform destination ownership checks.
+Without the companion, the lens suppression fast path is inactive and ordinary core generation does not perform destination ownership checks.
 
 ## Standalone-safe activation boundary
 
@@ -28,7 +28,7 @@ Core registers the `geostrata:correlated_sedimentary` feature type and ships con
 
 That distinction protects compatibility. Adding even a no-op feature to biome decoration can change feature ordering and decoration seeding. Merely installing standalone GeoStrata therefore does not insert the experimental consumer into another terrain mod's generation pipeline.
 
-The `experiment-companion` subproject builds a separate Fabric jar. It depends on GeoStrata, registers `geostrata:correlated_sedimentary_experiment` through `geostrata:has_common_rocks` at `UNDERGROUND_DECORATION`, and supplies the unique activation marker. Installing it is an explicit request to alter worldgen behavior; removing it leaves the base GeoStrata jar independently usable in ordinary Fabric or other modpacks.
+The `experiment-companion` subproject builds a separate Fabric jar. It depends on GeoStrata and registers `geostrata:correlated_sedimentary_experiment` through `geostrata:has_common_rocks` at `UNDERGROUND_DECORATION`. Its Fabric mod ID is the activation signal. Installing it is an explicit request to alter worldgen behavior. Removing it leaves the base GeoStrata jar independently usable in ordinary Fabric or other modpacks.
 
 The companion is intentionally **not** part of the normal development-pack dependency set. Until the generator has been evaluated in-game, use it only for fresh or disposable experiment worlds.
 
@@ -57,9 +57,9 @@ The current vertical window is 96 blocks below to 48 blocks above sea level. It 
 
 ## Validation
 
-`scripts/validate_correlated_sedimentary_experiment.py` validates the geological/data contract. `scripts/validate_correlated_core_staging.py` validates the standalone boundary. `scripts/validate_correlated_companion.py` requires the separate artifact, unique activation marker and biome registration while explicitly forbidding a same-path experiment override and confirming standalone core remains unregistered and disabled.
+`GeologyResourceContractTest` parses the shipped geology graph, checks disabled and companion-present activation states, decodes worldgen resources and validates companion metadata. Behavior tests cover the standalone boundary and ownership handoff.
 
-Java tests cover activation-marker promotion, malformed markers, suppression scope, deterministic ownership, province-boundary exclusion and positive/negative chunk-center normalization. Both core and companion production Java are subject to the repository-wide PMD cyclomatic and cognitive complexity ceiling of 20 with no grandfathered methods.
+Java tests cover native activation, suppression scope, deterministic ownership, province-boundary exclusion and positive/negative chunk-center normalization. Both core and companion production Java are subject to the repository-wide PMD cyclomatic and cognitive complexity ceiling of 20 with no grandfathered methods.
 
 ## Activation sequence
 
@@ -67,7 +67,7 @@ Java tests cover activation-marker promotion, malformed markers, suppression sco
 2. **complete** — expose deterministic ownership diagnostics.
 3. **complete** — implement/register correlated feature type and data while keeping it unreachable from standalone biome worldgen.
 4. **complete** — prepare activation-gated baseline suppression and cross-chunk clipping using shared ownership.
-5. **complete as an optional artifact** — build the separate companion that biome-registers the correlated placed feature and supplies a load-order-independent activation marker.
+5. **complete as an optional artifact**: build the separate companion whose native mod presence activates core and whose initializer registers the correlated placed feature.
 6. **next** — evaluate fresh-world abundance, contacts, cave/cliff exposure, performance and compatibility before considering wider distribution.
 
 Standalone GeoStrata remains on the baseline unless the companion is deliberately installed.

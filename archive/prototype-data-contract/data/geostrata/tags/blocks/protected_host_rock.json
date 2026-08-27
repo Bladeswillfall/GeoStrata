@@ -1,9 +1,0 @@
-{
-  "replace": false,
-  "values": [
-    "#geostrata:cr_ore_bearing_palette",
-    "#geostrata:cr_deep_basement_palette",
-    "minecraft:tuff",
-    "minecraft:deepslate"
-  ]
-}

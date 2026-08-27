@@ -1,21 +1,8 @@
 package com.geostrata.geology;
 
-import com.geostrata.GeoStrata;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonParseException;
-import com.google.gson.JsonParser;
-import net.fabricmc.fabric.api.resource.ResourceManagerHelper;
-import net.fabricmc.fabric.api.resource.SimpleSynchronousResourceReloadListener;
-import net.minecraft.resource.Resource;
-import net.minecraft.resource.ResourceManager;
-import net.minecraft.resource.ResourceType;
-import net.minecraft.util.Identifier;
-
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -24,120 +11,38 @@ import java.util.Map;
 import java.util.Set;
 
 /** Loads metadata-only tuning for the diagnostic sedimentary stratigraphic field. */
-public final class SedimentaryFieldProfiles implements SimpleSynchronousResourceReloadListener {
-    private static final SedimentaryFieldProfiles INSTANCE = new SedimentaryFieldProfiles();
-    private static final Identifier RELOAD_ID = GeoStrata.id("sedimentary_field_profiles");
-    private static final Identifier SUCCESSIONS_RESOURCE = GeoStrata.id("geology/sedimentary_successions.json");
-    private static final Identifier PROFILES_RESOURCE = GeoStrata.id("geology/sedimentary_field_profiles.json");
-
-    private volatile Snapshot snapshot = Snapshot.unloaded();
+public final class SedimentaryFieldProfiles {
+    private static volatile Snapshot snapshot = Snapshot.unloaded();
 
     private SedimentaryFieldProfiles() {
     }
 
-    public static void register() {
-        ResourceManagerHelper.get(ResourceType.SERVER_DATA).registerReloadListener(INSTANCE);
-    }
-
     public static Snapshot current() {
-        return INSTANCE.snapshot;
+        return snapshot;
     }
 
-    @Override
-    public Identifier getFabricId() {
-        return RELOAD_ID;
+    static void install(Snapshot loaded) {
+        snapshot = loaded;
     }
 
-    @Override
-    public void reload(ResourceManager manager) {
-        try {
-            Snapshot loaded = parse(
-                    readObject(manager, SUCCESSIONS_RESOURCE),
-                    readObject(manager, PROFILES_RESOURCE)
-            );
-            snapshot = loaded;
-            GeoStrata.LOGGER.info(
-                    "Loaded GeoStrata diagnostic sedimentary field profiles: {} continuity classes",
-                    loaded.parametersByContinuity().size()
-            );
-        } catch (IOException | JsonParseException | IllegalArgumentException exception) {
-            throw new IllegalStateException("Failed to load GeoStrata sedimentary field profiles", exception);
+    static Snapshot parse(SedimentarySuccessions.Snapshot successions, JsonObject profilesRoot) {
+        if (!successions.loaded()) {
+            throw new IllegalArgumentException("sedimentary successions must be loaded before field profiles");
         }
-    }
-
-    static Snapshot parse(JsonObject successionsRoot, JsonObject profilesRoot) {
-        List<SuccessionScale> scales = parseSuccessionScales(successionsRoot);
-        Set<String> continuities = continuitySet(scales);
+        Set<String> continuities = continuitySet(successions.successions());
         LinkedHashMap<String, SedimentaryStratigraphicField.Parameters> parameters = parseProfiles(
                 profilesRoot,
                 continuities
         );
         requireExactContinuityCoverage(parameters.keySet(), continuities);
-        requireMinimumBedThickness(scales, parameters);
+        requireMinimumBedThickness(successions.successions(), parameters);
         return new Snapshot("metadata_only", Collections.unmodifiableMap(parameters));
     }
 
-    private static List<SuccessionScale> parseSuccessionScales(JsonObject root) {
-        requireInt(root, "schemaVersion", 1);
-        requireString(root, "model", "geostrata:sedimentary_successions");
-        requireString(root, "runtimeStatus", "metadata_only");
-        requireString(root, "order", "lower_to_upper");
-
-        JsonArray rawSuccessions = requiredArray(root, "successions");
-        if (rawSuccessions.size() == 0) {
-            throw new IllegalArgumentException("sedimentary successions must not be empty");
-        }
-
-        List<SuccessionScale> scales = new ArrayList<>();
-        for (JsonElement element : rawSuccessions) {
-            scales.add(parseSuccessionScale(element));
-        }
-        return scales;
-    }
-
-    private static SuccessionScale parseSuccessionScale(JsonElement element) {
-        if (!element.isJsonObject()) {
-            throw new IllegalArgumentException("succession entry must be an object");
-        }
-        JsonObject succession = element.getAsJsonObject();
-        String id = requireString(succession, "id");
-        String continuity = requireContinuity(id, succession);
-        List<Double> thicknesses = parseRelativeThicknesses(id, succession);
-        return new SuccessionScale(id, continuity, List.copyOf(thicknesses));
-    }
-
-    private static String requireContinuity(String id, JsonObject succession) {
-        String continuity = requireString(succession, "continuity");
-        if (!continuity.equals("local") && !continuity.equals("regional")) {
-            throw new IllegalArgumentException(id + " continuity must be local or regional");
-        }
-        return continuity;
-    }
-
-    private static List<Double> parseRelativeThicknesses(String id, JsonObject succession) {
-        JsonArray rawBeds = requiredArray(succession, "beds");
-        if (rawBeds.size() == 0) {
-            throw new IllegalArgumentException(id + " must contain beds");
-        }
-
-        List<Double> thicknesses = new ArrayList<>(rawBeds.size());
-        for (JsonElement rawBed : rawBeds) {
-            if (!rawBed.isJsonObject()) {
-                throw new IllegalArgumentException(id + " bed must be an object");
-            }
-            double thickness = requireDouble(rawBed.getAsJsonObject(), "relativeThickness");
-            if (!(thickness > 0.0)) {
-                throw new IllegalArgumentException(id + " relative thicknesses must be positive");
-            }
-            thicknesses.add(thickness);
-        }
-        return thicknesses;
-    }
-
-    private static Set<String> continuitySet(List<SuccessionScale> scales) {
+    private static Set<String> continuitySet(List<SedimentarySuccessions.Succession> successions) {
         Set<String> continuities = new HashSet<>();
-        for (SuccessionScale scale : scales) {
-            continuities.add(scale.continuity());
+        for (SedimentarySuccessions.Succession succession : successions) {
+            continuities.add(succession.continuity());
         }
         return continuities;
     }
@@ -236,40 +141,30 @@ public final class SedimentaryFieldProfiles implements SimpleSynchronousResource
     }
 
     private static void requireMinimumBedThickness(
-            List<SuccessionScale> scales,
+            List<SedimentarySuccessions.Succession> successions,
             Map<String, SedimentaryStratigraphicField.Parameters> parameters
     ) {
-        for (SuccessionScale scale : scales) {
-            double thinnest = thinnestBedBlocks(scale, parameters.get(scale.continuity()));
+        for (SedimentarySuccessions.Succession succession : successions) {
+            double thinnest = thinnestBedBlocks(succession, parameters.get(succession.continuity()));
             if (thinnest < 2.0) {
                 throw new IllegalArgumentException(
-                        scale.id() + " would compress its thinnest diagnostic bed below two blocks: " + thinnest
+                        succession.id() + " would compress its thinnest diagnostic bed below two blocks: " + thinnest
                 );
             }
         }
     }
 
     private static double thinnestBedBlocks(
-            SuccessionScale scale,
+            SedimentarySuccessions.Succession succession,
             SedimentaryStratigraphicField.Parameters profile
     ) {
-        double total = scale.relativeThicknesses().stream().mapToDouble(Double::doubleValue).sum();
-        return scale.relativeThicknesses().stream()
-                .mapToDouble(value -> value / total * profile.cycleThicknessBlocks())
+        double total = succession.beds().stream()
+                .mapToDouble(SedimentarySuccessions.Bed::relativeThickness)
+                .sum();
+        return succession.beds().stream()
+                .mapToDouble(bed -> bed.relativeThickness() / total * profile.cycleThicknessBlocks())
                 .min()
                 .orElseThrow();
-    }
-
-    private static JsonObject readObject(ResourceManager manager, Identifier id) throws IOException {
-        Resource resource = manager.getResource(id)
-                .orElseThrow(() -> new IOException("missing server-data resource " + id));
-        try (BufferedReader reader = resource.getReader()) {
-            JsonElement root = JsonParser.parseReader(reader);
-            if (!root.isJsonObject()) {
-                throw new JsonParseException(id + " root must be a JSON object");
-            }
-            return root.getAsJsonObject();
-        }
     }
 
     private static JsonArray requiredArray(JsonObject object, String key) {
@@ -325,9 +220,6 @@ public final class SedimentaryFieldProfiles implements SimpleSynchronousResource
             throw new IllegalArgumentException(key + " must be finite");
         }
         return value;
-    }
-
-    private record SuccessionScale(String id, String continuity, List<Double> relativeThicknesses) {
     }
 
     private record ParsedProfile(

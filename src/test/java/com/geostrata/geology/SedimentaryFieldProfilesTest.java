@@ -4,6 +4,9 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import org.junit.jupiter.api.Test;
 
+import java.util.List;
+import java.util.Map;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -13,7 +16,7 @@ final class SedimentaryFieldProfilesTest {
     @Test
     void parsesCompleteContinuityProfiles() {
         SedimentaryFieldProfiles.Snapshot snapshot = SedimentaryFieldProfiles.parse(
-                successions("metadata_only", "regional", "local", 1.0, 1.0),
+                successions("regional", "local", 1.0, 1.0),
                 profiles("metadata_only", true, 48.0, 32.0)
         );
 
@@ -36,7 +39,7 @@ final class SedimentaryFieldProfilesTest {
     @Test
     void rejectsMissingContinuityCoverage() {
         assertThrows(IllegalArgumentException.class, () -> SedimentaryFieldProfiles.parse(
-                successions("metadata_only", "regional", "local", 1.0, 1.0),
+                successions("regional", "local", 1.0, 1.0),
                 profiles("metadata_only", false, 48.0, 32.0)
         ));
     }
@@ -44,11 +47,11 @@ final class SedimentaryFieldProfilesTest {
     @Test
     void rejectsRuntimeActivationAndUnknownSuccessionContinuity() {
         assertThrows(IllegalArgumentException.class, () -> SedimentaryFieldProfiles.parse(
-                successions("metadata_only", "regional", "local", 1.0, 1.0),
+                successions("regional", "local", 1.0, 1.0),
                 profiles("runtime_bias", true, 48.0, 32.0)
         ));
         assertThrows(IllegalArgumentException.class, () -> SedimentaryFieldProfiles.parse(
-                successions("metadata_only", "continental", "local", 1.0, 1.0),
+                successions("continental", "local", 1.0, 1.0),
                 profiles("metadata_only", true, 48.0, 32.0)
         ));
     }
@@ -56,7 +59,7 @@ final class SedimentaryFieldProfilesTest {
     @Test
     void rejectsProfileThatCompressesABedBelowTwoVirtualBlocks() {
         assertThrows(IllegalArgumentException.class, () -> SedimentaryFieldProfiles.parse(
-                successions("metadata_only", "regional", "local", 0.1, 4.0),
+                successions("regional", "local", 0.1, 4.0),
                 profiles("metadata_only", true, 48.0, 32.0)
         ));
     }
@@ -64,47 +67,39 @@ final class SedimentaryFieldProfilesTest {
     @Test
     void rejectsUnknownProfileLookup() {
         SedimentaryFieldProfiles.Snapshot snapshot = SedimentaryFieldProfiles.parse(
-                successions("metadata_only", "regional", "local", 1.0, 1.0),
+                successions("regional", "local", 1.0, 1.0),
                 profiles("metadata_only", true, 48.0, 32.0)
         );
         assertThrows(IllegalArgumentException.class, () -> snapshot.parametersFor("missing"));
     }
 
-    private static JsonObject successions(
-            String runtimeStatus,
+    private static SedimentarySuccessions.Snapshot successions(
             String firstContinuity,
             String secondContinuity,
             double thinBed,
             double thickBed
     ) {
-        return JsonParser.parseString("""
-                {
-                  "schemaVersion": 1,
-                  "model": "geostrata:sedimentary_successions",
-                  "runtimeStatus": "%s",
-                  "order": "lower_to_upper",
-                  "successions": [
-                    {
-                      "id": "first_cycle",
-                      "continuity": "%s",
-                      "beds": [
-                        {"relativeThickness": %s},
-                        {"relativeThickness": %s},
-                        {"relativeThickness": 1.0}
-                      ]
-                    },
-                    {
-                      "id": "second_cycle",
-                      "continuity": "%s",
-                      "beds": [
-                        {"relativeThickness": 1.0},
-                        {"relativeThickness": 1.0},
-                        {"relativeThickness": 1.0}
-                      ]
-                    }
-                  ]
-                }
-                """.formatted(runtimeStatus, firstContinuity, thinBed, thickBed, secondContinuity)).getAsJsonObject();
+        SedimentarySuccessions.Succession first = new SedimentarySuccessions.Succession(
+                "first_cycle",
+                List.of(GeologyProvince.SEDIMENTARY_BASIN),
+                firstContinuity,
+                List.of(bed(thinBed), bed(thickBed), bed(1.0))
+        );
+        SedimentarySuccessions.Succession second = new SedimentarySuccessions.Succession(
+                "second_cycle",
+                List.of(GeologyProvince.SEDIMENTARY_BASIN),
+                secondContinuity,
+                List.of(bed(1.0), bed(1.0), bed(1.0))
+        );
+        return new SedimentarySuccessions.Snapshot(
+                "metadata_only",
+                List.of(first, second),
+                Map.of(first.id(), first, second.id(), second)
+        );
+    }
+
+    private static SedimentarySuccessions.Bed bed(double relativeThickness) {
+        return new SedimentarySuccessions.Bed("test", relativeThickness);
     }
 
     private static JsonObject profiles(

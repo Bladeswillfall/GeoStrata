@@ -10,9 +10,7 @@ The mod source remains at repository root (`src/`, Gradle files and `src/main/re
 - `dependencies.json` — human-readable inventory paired to every numeric CurseForge project/file entry in the manifest.
 - `artifact-locks.json` — cryptographic identity for verified integration jars that cannot yet be represented safely in the active CurseForge manifest.
 - `overrides/config/` — intentionally maintained mod configuration.
-- `overrides/kubejs/` — intentionally maintained KubeJS integration/customization.
 - `instance.png` — development pack icon.
-- `reference/` — generated/reference exports that are useful while auditing the pack but are not runtime overrides.
 - `UPGRADE_NOTES.md` — dated dependency decisions that should not be lost inside raw file IDs.
 
 ## Validation

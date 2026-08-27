@@ -1,20 +1,8 @@
 package com.geostrata.geology;
 
-import com.geostrata.GeoStrata;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonParseException;
-import com.google.gson.JsonParser;
-import net.fabricmc.fabric.api.resource.ResourceManagerHelper;
-import net.fabricmc.fabric.api.resource.SimpleSynchronousResourceReloadListener;
-import net.minecraft.resource.Resource;
-import net.minecraft.resource.ResourceManager;
-import net.minecraft.resource.ResourceType;
-import net.minecraft.util.Identifier;
-
-import java.io.BufferedReader;
-import java.io.IOException;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -30,42 +18,23 @@ import java.util.regex.Pattern;
  * Registry lookup belongs at the eventual world-mutation boundary, keeping this
  * metadata service independently testable and safe during server-data reload.</p>
  */
-public final class LithologyCatalog implements SimpleSynchronousResourceReloadListener {
-    private static final LithologyCatalog INSTANCE = new LithologyCatalog();
-    private static final Identifier RELOAD_ID = GeoStrata.id("lithology_catalog");
-    private static final Identifier RESOURCE_ID = GeoStrata.id("geology/lithologies.json");
+public final class LithologyCatalog {
     private static final Pattern SIMPLE_ID = Pattern.compile("[a-z0-9_]+");
     private static final Pattern IDENTIFIER = Pattern.compile("[a-z0-9_.-]+:[a-z0-9/._-]+");
     private static final Set<String> ROCK_CLASSES = Set.of("sedimentary", "igneous", "metamorphic");
     private static final Set<String> CONTINUITIES = Set.of("local", "regional");
 
-    private volatile Snapshot snapshot = Snapshot.unloaded();
+    private static volatile Snapshot snapshot = Snapshot.unloaded();
 
     private LithologyCatalog() {
     }
 
-    public static void register() {
-        ResourceManagerHelper.get(ResourceType.SERVER_DATA).registerReloadListener(INSTANCE);
-    }
-
     public static Snapshot current() {
-        return INSTANCE.snapshot;
+        return snapshot;
     }
 
-    @Override
-    public Identifier getFabricId() {
-        return RELOAD_ID;
-    }
-
-    @Override
-    public void reload(ResourceManager manager) {
-        try {
-            Snapshot loaded = parse(readObject(manager, RESOURCE_ID));
-            snapshot = loaded;
-            GeoStrata.LOGGER.info("Loaded GeoStrata lithology catalog: {} lithologies", loaded.entries().size());
-        } catch (IOException | JsonParseException | IllegalArgumentException exception) {
-            throw new IllegalStateException("Failed to load GeoStrata lithology catalog", exception);
-        }
+    static void install(Snapshot loaded) {
+        snapshot = loaded;
     }
 
     static Snapshot parse(JsonObject root) {
@@ -136,18 +105,6 @@ public final class LithologyCatalog implements SimpleSynchronousResourceReloadLi
                 List.copyOf(byId.values()),
                 Collections.unmodifiableMap(byId)
         );
-    }
-
-    private static JsonObject readObject(ResourceManager manager, Identifier id) throws IOException {
-        Resource resource = manager.getResource(id)
-                .orElseThrow(() -> new IOException("missing server-data resource " + id));
-        try (BufferedReader reader = resource.getReader()) {
-            JsonElement root = JsonParser.parseReader(reader);
-            if (!root.isJsonObject()) {
-                throw new JsonParseException(id + " root must be a JSON object");
-            }
-            return root.getAsJsonObject();
-        }
     }
 
     private static JsonArray requiredArray(JsonObject object, String key) {

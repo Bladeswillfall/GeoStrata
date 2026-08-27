@@ -1,46 +1,24 @@
 package com.geostrata.geology;
 
-import com.geostrata.GeoStrata;
-import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonParseException;
-import com.google.gson.JsonParser;
-import net.fabricmc.fabric.api.resource.ResourceManagerHelper;
-import net.fabricmc.fabric.api.resource.SimpleSynchronousResourceReloadListener;
-import net.minecraft.resource.Resource;
-import net.minecraft.resource.ResourceManager;
-import net.minecraft.resource.ResourceType;
-import net.minecraft.util.Identifier;
-
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.util.Optional;
 import java.util.Set;
 
 /**
  * Loads the disabled-by-default correlated sedimentary experiment contract and
  * owns the single eligibility decision shared by diagnostics and future worldgen.
  */
-public final class CorrelatedSedimentaryExperiment implements SimpleSynchronousResourceReloadListener {
-    private static final CorrelatedSedimentaryExperiment INSTANCE = new CorrelatedSedimentaryExperiment();
-    private static final Identifier RELOAD_ID = GeoStrata.id("correlated_sedimentary_experiment");
-    private static final Identifier EXPERIMENT_RESOURCE = GeoStrata.id("geology/correlated_sedimentary_experiment.json");
-    private static final Identifier ACTIVATION_RESOURCE = GeoStrata.id("geology/correlated_sedimentary_activation.json");
-    private static final Identifier SUCCESSIONS_RESOURCE = GeoStrata.id("geology/sedimentary_successions.json");
-    private static final Identifier LITHOLOGIES_RESOURCE = GeoStrata.id("geology/lithologies.json");
-    private static final Identifier PROFILES_RESOURCE = GeoStrata.id("geology/province_profiles.json");
-
-    private volatile Snapshot snapshot = Snapshot.unloaded();
+public final class CorrelatedSedimentaryExperiment {
+    private static volatile Snapshot snapshot = Snapshot.unloaded();
 
     private CorrelatedSedimentaryExperiment() {
     }
 
-    public static void register() {
-        ResourceManagerHelper.get(ResourceType.SERVER_DATA).registerReloadListener(INSTANCE);
+    public static Snapshot current() {
+        return snapshot;
     }
 
-    public static Snapshot current() {
-        return INSTANCE.snapshot;
+    static void install(Snapshot loaded) {
+        snapshot = loaded;
     }
 
     public static Ownership ownershipAt(long worldSeed, int x, int z) {
@@ -54,54 +32,17 @@ public final class CorrelatedSedimentaryExperiment implements SimpleSynchronousR
         );
     }
 
-    public static boolean suppressesBaselineLithology(String lithology, long worldSeed, int x, int z) {
-        Snapshot experiment = current();
-        return experiment.loaded()
-                && experiment.supersededLithologies().contains(lithology)
-                && ownershipAt(worldSeed, x, z).owned();
-    }
-
-    @Override
-    public Identifier getFabricId() {
-        return RELOAD_ID;
-    }
-
-    @Override
-    public void reload(ResourceManager manager) {
-        try {
-            Snapshot loaded = parse(
-                    readObject(manager, EXPERIMENT_RESOURCE),
-                    readObject(manager, SUCCESSIONS_RESOURCE),
-                    readObject(manager, LITHOLOGIES_RESOURCE),
-                    readObject(manager, PROFILES_RESOURCE)
-            );
-            Optional<JsonObject> activation = readOptionalObject(manager, ACTIVATION_RESOURCE);
-            if (activation.isPresent()) {
-                loaded = CorrelatedExperimentActivation.apply(loaded, activation.get());
-            }
-            snapshot = loaded;
-            GeoStrata.LOGGER.info(
-                    "Loaded GeoStrata correlated sedimentary experiment: enabled={}, targets={}, superseded={}",
-                    loaded.enabled(),
-                    loaded.targetSuccessionIds(),
-                    loaded.supersededLithologies()
-            );
-        } catch (IOException | JsonParseException | IllegalArgumentException exception) {
-            throw new IllegalStateException("Failed to load GeoStrata correlated sedimentary experiment", exception);
-        }
-    }
-
     static Snapshot parse(
             JsonObject experiment,
-            JsonObject successionsRoot,
-            JsonObject lithologiesRoot,
-            JsonObject profilesRoot
+            SedimentarySuccessions.Snapshot successions,
+            LithologyCatalog.Snapshot lithologies,
+            GeologyProvinceProfiles.Snapshot profiles
     ) {
         return CorrelatedSedimentaryExperimentParser.parse(
                 experiment,
-                successionsRoot,
-                lithologiesRoot,
-                profilesRoot
+                successions,
+                lithologies,
+                profiles
         );
     }
 
@@ -145,30 +86,6 @@ public final class CorrelatedSedimentaryExperiment implements SimpleSynchronousR
         return new Ownership(true, "owned", sample.province(), boundaryDistance, successionId);
     }
 
-    private static JsonObject readObject(ResourceManager manager, Identifier id) throws IOException {
-        Resource resource = manager.getResource(id)
-                .orElseThrow(() -> new IOException("missing server-data resource " + id));
-        return readObject(resource, id);
-    }
-
-    private static Optional<JsonObject> readOptionalObject(ResourceManager manager, Identifier id) throws IOException {
-        Optional<Resource> resource = manager.getResource(id);
-        if (resource.isEmpty()) {
-            return Optional.empty();
-        }
-        return Optional.of(readObject(resource.get(), id));
-    }
-
-    private static JsonObject readObject(Resource resource, Identifier id) throws IOException {
-        try (BufferedReader reader = resource.getReader()) {
-            JsonElement root = JsonParser.parseReader(reader);
-            if (!root.isJsonObject()) {
-                throw new JsonParseException(id + " root must be a JSON object");
-            }
-            return root.getAsJsonObject();
-        }
-    }
-
     public record VerticalWindow(int minOffsetBlocks, int maxOffsetBlocks) {
     }
 
@@ -199,6 +116,23 @@ public final class CorrelatedSedimentaryExperiment implements SimpleSynchronousR
 
         public boolean loaded() {
             return !targetSuccessionIds.isEmpty();
+        }
+
+        Snapshot activated(boolean companionLoaded) {
+            if (!companionLoaded) {
+                return this;
+            }
+            return new Snapshot(
+                    "experimental_runtime",
+                    true,
+                    targetSuccessionIds,
+                    allowedProvinces,
+                    supersededLithologies,
+                    minimumBoundaryDistanceBlocks,
+                    registrationBiomeTag,
+                    hostBlockTag,
+                    verticalWindow
+            );
         }
     }
 

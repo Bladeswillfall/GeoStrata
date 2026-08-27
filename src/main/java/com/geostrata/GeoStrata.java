@@ -2,13 +2,7 @@ package com.geostrata;
 
 import com.geostrata.block.GeoStrataBlocks;
 import com.geostrata.command.GeoStrataCommands;
-import com.geostrata.command.GeoStrataTerrainCommands;
-import com.geostrata.geology.CorrelatedSedimentaryExperiment;
-import com.geostrata.geology.GeologyProvinceProfiles;
-import com.geostrata.geology.LithologyCatalog;
-import com.geostrata.geology.ProvinceDeformationProfiles;
-import com.geostrata.geology.SedimentaryFieldProfiles;
-import com.geostrata.geology.SedimentarySuccessions;
+import com.geostrata.geology.GeologyDataReload;
 import com.geostrata.item.GeoStrataItemGroups;
 import com.geostrata.worldgen.GeoStrataWorldgen;
 import com.geostrata.worldgen.feature.GeoStrataFeatures;
@@ -26,15 +20,9 @@ public final class GeoStrata implements ModInitializer {
         GeoStrataBlocks.register();
         GeoStrataItemGroups.register();
         GeoStrataFeatures.register();
-        LithologyCatalog.register();
-        GeologyProvinceProfiles.register();
-        ProvinceDeformationProfiles.register();
-        SedimentarySuccessions.register();
-        SedimentaryFieldProfiles.register();
-        CorrelatedSedimentaryExperiment.register();
+        GeologyDataReload.register();
         GeoStrataWorldgen.register();
         GeoStrataCommands.register();
-        GeoStrataTerrainCommands.register();
         LOGGER.info(
                 "GeoStrata initialized {} runtime blocks with data-driven overworld geology",
                 GeoStrataBlocks.count()

@@ -35,13 +35,4 @@ public final class CorrelatedExperimentChunkOwnership {
                 && experiment.supersededLithologies().contains(lithology);
     }
 
-    public static boolean suppressesBaselineLithology(
-            String lithology,
-            long worldSeed,
-            int blockX,
-            int blockZ
-    ) {
-        return suppressionActiveFor(lithology)
-                && ownershipForChunk(worldSeed, blockX, blockZ).owned();
-    }
 }

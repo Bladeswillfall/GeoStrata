@@ -1,20 +1,8 @@
 package com.geostrata.geology;
 
-import com.geostrata.GeoStrata;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonParseException;
-import com.google.gson.JsonParser;
-import net.fabricmc.fabric.api.resource.ResourceManagerHelper;
-import net.fabricmc.fabric.api.resource.SimpleSynchronousResourceReloadListener;
-import net.minecraft.resource.Resource;
-import net.minecraft.resource.ResourceManager;
-import net.minecraft.resource.ResourceType;
-import net.minecraft.util.Identifier;
-
-import java.io.BufferedReader;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
@@ -25,45 +13,21 @@ import java.util.Optional;
 import java.util.Set;
 
 /** Loads metadata-only sedimentary succession motifs for diagnostics and future worldgen. */
-public final class SedimentarySuccessions implements SimpleSynchronousResourceReloadListener {
-    private static final SedimentarySuccessions INSTANCE = new SedimentarySuccessions();
-    private static final Identifier RELOAD_ID = GeoStrata.id("sedimentary_successions");
-    private static final Identifier CATALOG_RESOURCE = GeoStrata.id("geology/lithologies.json");
-    private static final Identifier SUCCESSIONS_RESOURCE = GeoStrata.id("geology/sedimentary_successions.json");
-
-    private volatile Snapshot snapshot = Snapshot.unloaded();
+public final class SedimentarySuccessions {
+    private static volatile Snapshot snapshot = Snapshot.unloaded();
 
     private SedimentarySuccessions() {
     }
 
-    public static void register() {
-        ResourceManagerHelper.get(ResourceType.SERVER_DATA).registerReloadListener(INSTANCE);
-    }
-
     public static Snapshot current() {
-        return INSTANCE.snapshot;
+        return snapshot;
     }
 
-    @Override
-    public Identifier getFabricId() {
-        return RELOAD_ID;
+    static void install(Snapshot loaded) {
+        snapshot = loaded;
     }
 
-    @Override
-    public void reload(ResourceManager manager) {
-        try {
-            Snapshot loaded = parse(
-                    readObject(manager, CATALOG_RESOURCE),
-                    readObject(manager, SUCCESSIONS_RESOURCE)
-            );
-            snapshot = loaded;
-            GeoStrata.LOGGER.info("Loaded GeoStrata sedimentary succession metadata: {} motifs", loaded.successions().size());
-        } catch (IOException | JsonParseException | IllegalArgumentException exception) {
-            throw new IllegalStateException("Failed to load GeoStrata sedimentary successions", exception);
-        }
-    }
-
-    static Snapshot parse(JsonObject catalog, JsonObject root) {
+    static Snapshot parse(LithologyCatalog.Snapshot catalog, JsonObject root) {
         Set<String> sedimentary = sedimentaryLithologies(catalog);
         requireRootContract(root);
         JsonArray rawSuccessions = requiredArray(root, "successions");
@@ -201,36 +165,20 @@ public final class SedimentarySuccessions implements SimpleSynchronousResourceRe
         throw new IllegalArgumentException("succession metadata does not cover all sedimentary lithologies; missing=" + missing);
     }
 
-    private static Set<String> sedimentaryLithologies(JsonObject catalog) {
-        requireInt(catalog, "schemaVersion", 1);
-        requireString(catalog, "model", "geostrata:lithology_catalog");
-        JsonArray entries = requiredArray(catalog, "lithologies");
+    private static Set<String> sedimentaryLithologies(LithologyCatalog.Snapshot catalog) {
+        if (!catalog.loaded()) {
+            throw new IllegalArgumentException("lithology catalog must be loaded before sedimentary successions");
+        }
         Set<String> sedimentary = new HashSet<>();
-        for (JsonElement element : entries) {
-            if (!element.isJsonObject()) {
-                throw new IllegalArgumentException("lithology entry must be an object");
-            }
-            JsonObject entry = element.getAsJsonObject();
-            if ("sedimentary".equals(requireString(entry, "rockClass"))) {
-                sedimentary.add(requireString(entry, "id"));
+        for (LithologyCatalog.Entry entry : catalog.entries()) {
+            if ("sedimentary".equals(entry.rockClass())) {
+                sedimentary.add(entry.id());
             }
         }
         if (sedimentary.isEmpty()) {
             throw new IllegalArgumentException("lithology catalog contains no sedimentary rocks");
         }
         return sedimentary;
-    }
-
-    private static JsonObject readObject(ResourceManager manager, Identifier id) throws IOException {
-        Resource resource = manager.getResource(id)
-                .orElseThrow(() -> new IOException("missing server-data resource " + id));
-        try (BufferedReader reader = resource.getReader()) {
-            JsonElement root = JsonParser.parseReader(reader);
-            if (!root.isJsonObject()) {
-                throw new JsonParseException(id + " root must be a JSON object");
-            }
-            return root.getAsJsonObject();
-        }
     }
 
     private static Optional<GeologyProvince> provinceById(String id) {

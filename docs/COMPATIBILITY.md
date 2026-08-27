@@ -58,11 +58,7 @@ This arrangement is deliberately asymmetric: Streams Reflowing being absent chan
 
 ## Conquest Reforged
 
-Conquest compatibility is deliberately split from core resources. `compat/conquest/material-palettes.json` maps GeoStrata lithologies to curated Conquest 1.7 material families for future pack-level/adapted use, while `compat/conquest/reference/conquest_wp.csv` remains the registry reference used to validate those IDs.
-
-The mapping is semantic rather than one-to-one replacement. It distinguishes solid geology, weathered surface variants, loose rubble and processed construction families. Missing mappings are recorded explicitly rather than substituting geologically unrelated blocks; for example, Conquest silty soil is not treated as siltstone, and schist debris is useful rubble but not promoted into a solid schist host block.
-
-These Conquest registry IDs do **not** ship inside GeoStrata's runtime data path. CI also rejects Conquest references in core Java. A future optional pack adapter may consume the palette contract only when Conquest is present; GeoStrata's standalone jar continues to load and generate without it.
+Conquest remains optional integration content in the development pack. No Conquest adapter or palette contract currently ships in this repository. Add that data only with a distributable compatibility artifact that consumes it. GeoStrata's standalone jar must continue to load and generate without Conquest.
 
 ## Integration rule
 

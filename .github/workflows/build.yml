@@ -21,33 +21,6 @@ jobs:
       - name: Validate geology catalog
         run: python3 scripts/validate_geology_catalog.py
 
-      - name: Validate province profiles
-        run: python3 scripts/validate_province_profiles.py
-
-      - name: Validate province deformation profiles
-        run: python3 scripts/validate_province_deformation_profiles.py
-
-      - name: Validate sedimentary successions
-        run: python3 scripts/validate_sedimentary_successions.py
-
-      - name: Validate sedimentary field profiles
-        run: python3 scripts/validate_sedimentary_field_profiles.py
-
-      - name: Validate correlated sedimentary experiment
-        run: python3 scripts/validate_correlated_sedimentary_experiment.py
-
-      - name: Validate correlated core staging
-        run: python3 scripts/validate_correlated_core_staging.py
-
-      - name: Validate correlated experiment companion
-        run: python3 scripts/validate_correlated_companion.py
-
-      - name: Validate strata lens configs
-        run: python3 scripts/validate_strata_lens_configs.py
-
-      - name: Validate Conquest material palettes
-        run: python3 scripts/validate_conquest_palettes.py
-
       - name: Validate optional integration data
         run: python3 scripts/validate_optional_integrations.py
 

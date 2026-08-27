@@ -19,7 +19,7 @@ No absolute Y level, sea level, biome ID, terrain-generator ID or optional-mod I
 
 ## Runtime loading and dry-run diagnostics
 
-`SedimentaryFieldProfiles` loads the profile resource through Fabric's server-data resource manager. Datapack overrides are validated again at reload time rather than relying only on CI validation of the bundled resource. The Java parser independently enforces metadata-only status, exact `local`/`regional` continuity coverage, safe spatial limits and the two-block minimum virtual bed thickness.
+`GeologyDataReload` loads the profile after the typed succession snapshot in one ordered server-data pass. The parser enforces metadata-only status, exact `local`/`regional` continuity coverage, safe spatial limits and the two-block minimum virtual bed thickness.
 
 `/geostrata field` is the first end-to-end read-only consumer of the complete sedimentary model. At the command source's actual X/Y/Z it:
 
@@ -36,7 +36,7 @@ Together, `/geostrata succession`, `/geostrata column` and `/geostrata field` fo
 
 ## Validation rules
 
-`scripts/validate_sedimentary_field_profiles.py` cross-checks the profile resource against the live succession metadata. CI requires:
+`SedimentaryFieldProfiles` enforces these rules during resource reload, and the actual-resource JUnit smoke test exercises the bundled profile:
 
 - exact coverage of every continuity value currently used by a succession;
 - cycle thickness from 8 to 256 blocks;

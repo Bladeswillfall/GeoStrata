@@ -28,9 +28,8 @@ See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for the design rules, [`docs/
 
 - `src/` — authoritative GeoStrata mod source and resources.
 - `pack/` — curated development/integration modpack source; it is not part of the core jar.
-- `compat/` — integration-specific reference data and, over time, optional compatibility artifacts.
+- `compat/`: distributable optional compatibility artifacts.
 - `scripts/` — validation/build-support tooling.
-- `archive/` and `docs/archive/` — superseded prototypes/design snapshots retained for historical reference only.
 
 Minecraft launcher state, downloaded/processed jars, caches and player-local files do not belong in source control.
 

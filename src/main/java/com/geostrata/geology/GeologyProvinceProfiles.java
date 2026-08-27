@@ -1,20 +1,8 @@
 package com.geostrata.geology;
 
-import com.geostrata.GeoStrata;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonParseException;
-import com.google.gson.JsonParser;
-import net.fabricmc.fabric.api.resource.ResourceManagerHelper;
-import net.fabricmc.fabric.api.resource.SimpleSynchronousResourceReloadListener;
-import net.minecraft.resource.Resource;
-import net.minecraft.resource.ResourceManager;
-import net.minecraft.resource.ResourceType;
-import net.minecraft.util.Identifier;
-
-import java.io.BufferedReader;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumMap;
@@ -34,50 +22,25 @@ import java.util.Set;
  * service only exposes the data in the current stage; worldgen consumers are
  * introduced separately.</p>
  */
-public final class GeologyProvinceProfiles implements SimpleSynchronousResourceReloadListener {
-    private static final GeologyProvinceProfiles INSTANCE = new GeologyProvinceProfiles();
-    private static final Identifier RELOAD_ID = GeoStrata.id("geology_profiles");
-    private static final Identifier CATALOG_RESOURCE = GeoStrata.id("geology/lithologies.json");
-    private static final Identifier PROFILES_RESOURCE = GeoStrata.id("geology/province_profiles.json");
-
-    private volatile Snapshot snapshot = Snapshot.unloaded();
+public final class GeologyProvinceProfiles {
+    private static volatile Snapshot snapshot = Snapshot.unloaded();
 
     private GeologyProvinceProfiles() {
     }
 
-    public static void register() {
-        ResourceManagerHelper.get(ResourceType.SERVER_DATA).registerReloadListener(INSTANCE);
-    }
-
     public static Snapshot current() {
-        return INSTANCE.snapshot;
+        return snapshot;
     }
 
-    @Override
-    public Identifier getFabricId() {
-        return RELOAD_ID;
+    static void install(Snapshot loaded) {
+        snapshot = loaded;
     }
 
-    @Override
-    public void reload(ResourceManager manager) {
-        try {
-            JsonObject catalog = readObject(manager, CATALOG_RESOURCE);
-            JsonObject profiles = readObject(manager, PROFILES_RESOURCE);
-            Snapshot loaded = parse(catalog, profiles);
-            snapshot = loaded;
-            GeoStrata.LOGGER.info(
-                    "Loaded GeoStrata province profiles: {} provinces, {} lithologies, {}-block blend width",
-                    GeologyProvince.values().length,
-                    loaded.lithologyIds().size(),
-                    loaded.blendWidthBlocks()
-            );
-        } catch (IOException | JsonParseException | IllegalArgumentException exception) {
-            throw new IllegalStateException("Failed to load GeoStrata province profiles", exception);
+    static Snapshot parse(LithologyCatalog.Snapshot catalog, JsonObject profilesRoot) {
+        if (!catalog.loaded()) {
+            throw new IllegalArgumentException("lithology catalog must be loaded before province profiles");
         }
-    }
-
-    static Snapshot parse(JsonObject catalog, JsonObject profilesRoot) {
-        Set<String> lithologyIds = parseLithologyIds(catalog);
+        Set<String> lithologyIds = catalog.byId().keySet();
         ProfileHeader header = parseHeader(profilesRoot);
         EnumMap<GeologyProvince, Map<String, Double>> weights = parseProfiles(profilesRoot, lithologyIds);
         requireCompleteProvinceCoverage(weights);
@@ -93,16 +56,13 @@ public final class GeologyProvinceProfiles implements SimpleSynchronousResourceR
     private static ProfileHeader parseHeader(JsonObject profilesRoot) {
         requireInt(profilesRoot, "schemaVersion", 1);
         requireString(profilesRoot, "model", "geostrata:province_profiles");
-        String runtimeStatus = requireString(profilesRoot, "runtimeStatus");
-        if (!runtimeStatus.equals("metadata_only") && !runtimeStatus.equals("runtime_bias")) {
-            throw new IllegalArgumentException("unsupported province profile runtimeStatus: " + runtimeStatus);
-        }
+        requireString(profilesRoot, "runtimeStatus", "runtime_bias");
 
         int blendWidth = requireInt(profilesRoot, "blendWidthBlocks");
         if (blendWidth < 1 || blendWidth > GeologyProvinceSampler.CELL_SIZE / 2) {
             throw new IllegalArgumentException("blendWidthBlocks must be between 1 and half the province cell size");
         }
-        return new ProfileHeader(runtimeStatus, blendWidth);
+        return new ProfileHeader("runtime_bias", blendWidth);
     }
 
     private static EnumMap<GeologyProvince, Map<String, Double>> parseProfiles(
@@ -189,38 +149,6 @@ public final class GeologyProvinceProfiles implements SimpleSynchronousResourceR
             }
         }
         throw new IllegalArgumentException("missing geological province profiles: " + missing);
-    }
-
-    private static Set<String> parseLithologyIds(JsonObject catalog) {
-        requireInt(catalog, "schemaVersion", 1);
-        requireString(catalog, "model", "geostrata:lithology_catalog");
-        JsonArray lithologies = requiredArray(catalog, "lithologies");
-        LinkedHashMap<String, Boolean> ordered = new LinkedHashMap<>();
-        for (JsonElement element : lithologies) {
-            if (!element.isJsonObject()) {
-                throw new IllegalArgumentException("lithology entry must be an object");
-            }
-            String id = requireString(element.getAsJsonObject(), "id");
-            if (ordered.put(id, Boolean.TRUE) != null) {
-                throw new IllegalArgumentException("duplicate lithology id: " + id);
-            }
-        }
-        if (ordered.isEmpty()) {
-            throw new IllegalArgumentException("lithology catalog must not be empty");
-        }
-        return Collections.unmodifiableSet(ordered.keySet());
-    }
-
-    private static JsonObject readObject(ResourceManager manager, Identifier id) throws IOException {
-        Resource resource = manager.getResource(id)
-                .orElseThrow(() -> new IOException("missing server-data resource " + id));
-        try (BufferedReader reader = resource.getReader()) {
-            JsonElement root = JsonParser.parseReader(reader);
-            if (!root.isJsonObject()) {
-                throw new JsonParseException(id + " root must be a JSON object");
-            }
-            return root.getAsJsonObject();
-        }
     }
 
     private static Optional<GeologyProvince> provinceById(String id) {

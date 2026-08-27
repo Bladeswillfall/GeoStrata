@@ -4,6 +4,9 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import org.junit.jupiter.api.Test;
 
+import java.util.List;
+import java.util.Map;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -27,18 +30,24 @@ final class SedimentarySuccessionsTest {
                 () -> SedimentarySuccessions.parse(catalog(), successions(true)));
     }
 
-    private static JsonObject catalog() {
-        return JsonParser.parseString("""
-                {
-                  "schemaVersion": 1,
-                  "model": "geostrata:lithology_catalog",
-                  "lithologies": [
-                    {"id":"alpha","rockClass":"sedimentary"},
-                    {"id":"beta","rockClass":"sedimentary"},
-                    {"id":"basalt","rockClass":"igneous"}
-                  ]
-                }
-                """).getAsJsonObject();
+    private static LithologyCatalog.Snapshot catalog() {
+        List<LithologyCatalog.Entry> entries = List.of(
+                entry("alpha", "sedimentary"),
+                entry("beta", "sedimentary"),
+                entry("basalt", "igneous")
+        );
+        return new LithologyCatalog.Snapshot(
+                "metadata_only",
+                entries,
+                Map.of("alpha", entries.get(0), "beta", entries.get(1), "basalt", entries.get(2))
+        );
+    }
+
+    private static LithologyCatalog.Entry entry(String id, String rockClass) {
+        return new LithologyCatalog.Entry(
+                id, "geostrata:" + id, rockClass, id, "bedded", "shallow",
+                "regional", "geostrata:test", id + "_ore"
+        );
     }
 
     private static JsonObject successions(boolean includeBasalt) {

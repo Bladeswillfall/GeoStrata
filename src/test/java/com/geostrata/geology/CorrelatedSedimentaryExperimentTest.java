@@ -12,11 +12,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 final class CorrelatedSedimentaryExperimentTest {
     @Test
     void parsesDisabledCoreContract() {
-        CorrelatedSedimentaryExperiment.Snapshot snapshot = CorrelatedSedimentaryExperiment.parse(
-                experiment(false, "metadata_only", 96, "alpha", "beta"),
-                successions(),
-                catalog(),
-                profiles()
+        CorrelatedSedimentaryExperiment.Snapshot snapshot = fixture().parse(
+                experiment(false, "metadata_only", 96, "alpha", "beta")
         );
 
         assertFalse(snapshot.enabled());
@@ -27,57 +24,50 @@ final class CorrelatedSedimentaryExperimentTest {
     }
 
     @Test
-    void activeContractRequiresExplicitExperimentalRuntimeStatus() {
+    void coreContractRejectsEmbeddedActivation() {
+        Fixture fixture = fixture();
         assertThrows(
                 IllegalArgumentException.class,
-                () -> CorrelatedSedimentaryExperiment.parse(
-                        experiment(true, "metadata_only", 96, "alpha", "beta"),
-                        successions(),
-                        catalog(),
-                        profiles()
-                )
+                () -> fixture.parse(experiment(true, "metadata_only", 96, "alpha", "beta"))
         );
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> fixture.parse(experiment(true, "experimental_runtime", 96, "alpha", "beta"))
+        );
+    }
 
-        CorrelatedSedimentaryExperiment.Snapshot active = CorrelatedSedimentaryExperiment.parse(
-                experiment(true, "experimental_runtime", 96, "alpha", "beta"),
-                successions(),
-                catalog(),
-                profiles()
-        );
+    @Test
+    void companionPresenceActivatesCoreContract() {
+        CorrelatedSedimentaryExperiment.Snapshot active = fixture().parse(
+                experiment(false, "metadata_only", 96, "alpha", "beta")
+        ).activated(true);
+
         assertTrue(active.enabled());
+        assertEquals("experimental_runtime", active.runtimeStatus());
     }
 
     @Test
     void rejectsPartialBaselineSuppression() {
         assertThrows(
                 IllegalArgumentException.class,
-                () -> CorrelatedSedimentaryExperiment.parse(
-                        experiment(false, "metadata_only", 96, "alpha"),
-                        successions(),
-                        catalog(),
-                        profiles()
-                )
+                () -> fixture().parse(experiment(false, "metadata_only", 96, "alpha"))
         );
     }
 
     @Test
     void evaluatesOwnedSedimentaryBasinInteriorDeterministically() {
-        CorrelatedSedimentaryExperiment.Snapshot active = CorrelatedSedimentaryExperiment.parse(
-                experiment(true, "experimental_runtime", 96, "alpha", "beta"),
-                successions(),
-                catalog(),
-                profiles()
-        );
-        GeologyProvinceProfiles.Snapshot profileSnapshot = GeologyProvinceProfiles.parse(catalog(), profiles());
-        SedimentarySuccessions.Snapshot successionSnapshot = SedimentarySuccessions.parse(catalog(), successions());
+        Fixture fixture = fixture();
+        CorrelatedSedimentaryExperiment.Snapshot active = fixture.parse(
+                experiment(false, "metadata_only", 96, "alpha", "beta")
+        ).activated(true);
 
         CorrelatedSedimentaryExperiment.Ownership ownership = CorrelatedSedimentaryExperiment.evaluate(
                 0L,
                 -2000,
                 -1104,
                 active,
-                profileSnapshot,
-                successionSnapshot
+                fixture.profiles(),
+                fixture.successions()
         );
 
         assertTrue(ownership.owned());
@@ -88,22 +78,18 @@ final class CorrelatedSedimentaryExperimentTest {
 
     @Test
     void boundaryExclusionWinsBeforeMutationOwnership() {
-        CorrelatedSedimentaryExperiment.Snapshot active = CorrelatedSedimentaryExperiment.parse(
-                experiment(true, "experimental_runtime", 180, "alpha", "beta"),
-                successions(),
-                catalog(),
-                profiles()
-        );
-        GeologyProvinceProfiles.Snapshot profileSnapshot = GeologyProvinceProfiles.parse(catalog(), profiles());
-        SedimentarySuccessions.Snapshot successionSnapshot = SedimentarySuccessions.parse(catalog(), successions());
+        Fixture fixture = fixture();
+        CorrelatedSedimentaryExperiment.Snapshot active = fixture.parse(
+                experiment(false, "metadata_only", 180, "alpha", "beta")
+        ).activated(true);
 
         CorrelatedSedimentaryExperiment.Ownership ownership = CorrelatedSedimentaryExperiment.evaluate(
                 0L,
                 -2000,
                 -1104,
                 active,
-                profileSnapshot,
-                successionSnapshot
+                fixture.profiles(),
+                fixture.successions()
         );
 
         assertFalse(ownership.owned());
@@ -112,22 +98,18 @@ final class CorrelatedSedimentaryExperimentTest {
 
     @Test
     void disabledContractNeverOwnsWorldgen() {
-        CorrelatedSedimentaryExperiment.Snapshot disabled = CorrelatedSedimentaryExperiment.parse(
-                experiment(false, "metadata_only", 96, "alpha", "beta"),
-                successions(),
-                catalog(),
-                profiles()
+        Fixture fixture = fixture();
+        CorrelatedSedimentaryExperiment.Snapshot disabled = fixture.parse(
+                experiment(false, "metadata_only", 96, "alpha", "beta")
         );
-        GeologyProvinceProfiles.Snapshot profileSnapshot = GeologyProvinceProfiles.parse(catalog(), profiles());
-        SedimentarySuccessions.Snapshot successionSnapshot = SedimentarySuccessions.parse(catalog(), successions());
 
         CorrelatedSedimentaryExperiment.Ownership ownership = CorrelatedSedimentaryExperiment.evaluate(
                 0L,
                 -2000,
                 -1104,
                 disabled,
-                profileSnapshot,
-                successionSnapshot
+                fixture.profiles(),
+                fixture.successions()
         );
 
         assertFalse(ownership.owned());
@@ -234,5 +216,24 @@ final class CorrelatedSedimentaryExperimentTest {
 
     private static JsonObject parse(String json) {
         return JsonParser.parseString(json).getAsJsonObject();
+    }
+
+    private static Fixture fixture() {
+        LithologyCatalog.Snapshot catalog = LithologyCatalog.parse(catalog());
+        return new Fixture(
+                catalog,
+                GeologyProvinceProfiles.parse(catalog, profiles()),
+                SedimentarySuccessions.parse(catalog, successions())
+        );
+    }
+
+    private record Fixture(
+            LithologyCatalog.Snapshot catalog,
+            GeologyProvinceProfiles.Snapshot profiles,
+            SedimentarySuccessions.Snapshot successions
+    ) {
+        private CorrelatedSedimentaryExperiment.Snapshot parse(JsonObject root) {
+            return CorrelatedSedimentaryExperiment.parse(root, successions, catalog, profiles);
+        }
     }
 }

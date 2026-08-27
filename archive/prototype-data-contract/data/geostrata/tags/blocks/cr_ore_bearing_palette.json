@@ -1,9 +1,0 @@
-{
-  "replace": false,
-  "values": [
-    { "id": "conquest:gneiss", "required": false },
-    { "id": "conquest:schist", "required": false },
-    { "id": "conquest:quartzite", "required": false },
-    { "id": "conquest:dark_basalt", "required": false }
-  ]
-}

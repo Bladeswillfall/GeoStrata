@@ -34,6 +34,6 @@ This normalized plan deliberately separates **order and ownership** from **scale
 
 ## Validation
 
-`python3 scripts/validate_sedimentary_successions.py` cross-checks the succession file against the live lithology catalog and province profiles. It rejects unknown or non-sedimentary lithologies, unknown province contexts, malformed ordering, invalid thickness ratios, duplicate IDs and accidental worldgen activation. The bundled succession set must collectively cover every live sedimentary lithology, including lithologies that have not yet migrated from the ore-style compatibility baseline.
+The ordered Java reload parser cross-checks succession data against the already parsed lithology catalog. It rejects unknown or non-sedimentary lithologies, unknown province contexts, malformed ordering, invalid thickness ratios, duplicate IDs and accidental worldgen activation. The bundled set must collectively cover every live sedimentary lithology.
 
-The Java reload parser independently enforces the same safety properties for datapack overrides. JUnit tests cover parsing failures, context scoring and deterministic weighted selection before any future worldgen consumer is allowed to use the model. Additional contact-planner tests pin normalized thickness ratios, repeated-bed ordering, exact contact ownership, input rejection and deterministic site-anchored phase metadata.
+`GeologyResourceContractTest` exercises the shipped resource graph and its required basin and rift context coverage. Existing JUnit tests cover parsing failures, context scoring, deterministic weighted selection and normalized contact ownership.

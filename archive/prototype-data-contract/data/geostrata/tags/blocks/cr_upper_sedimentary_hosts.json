@@ -1,9 +1,0 @@
-{
-  "replace": false,
-  "values": [
-    { "id": "conquest:limestone", "required": false },
-    { "id": "conquest:weathered_limestone", "required": false },
-    { "id": "conquest:chalk", "required": false },
-    { "id": "conquest:siltstone", "required": false }
-  ]
-}
