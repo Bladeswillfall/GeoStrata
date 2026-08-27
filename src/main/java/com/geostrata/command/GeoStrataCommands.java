@@ -1,5 +1,6 @@
 package com.geostrata.command;
 
+import com.geostrata.geology.CorrelatedSedimentaryExperiment;
 import com.geostrata.geology.GeologyProvinceProfiles;
 import com.geostrata.geology.GeologyProvinceSampler;
 import com.geostrata.geology.GeologySurvey;
@@ -43,6 +44,8 @@ public final class GeoStrataCommands {
                                 .executes(context -> showColumn(context.getSource())))
                         .then(CommandManager.literal("field")
                                 .executes(context -> showField(context.getSource())))
+                        .then(CommandManager.literal("experiment")
+                                .executes(context -> showExperiment(context.getSource())))
                         .then(CommandManager.literal("lithology")
                                 .then(CommandManager.argument("lithology", StringArgumentType.word())
                                         .executes(context -> showLithology(
@@ -241,6 +244,53 @@ public final class GeoStrataCommands {
                                 + " | " + selection.succession().continuity() + " profile, cycle "
                                 + Math.round(parameters.cycleThicknessBlocks()) + " blocks"
                                 + " | virtual model only; no blocks placed"
+                ),
+                false
+        );
+        return 1;
+    }
+
+    private static int showExperiment(ServerCommandSource source) {
+        CorrelatedSedimentaryExperiment.Snapshot experiment = CorrelatedSedimentaryExperiment.current();
+        if (!experiment.loaded()) {
+            source.sendError(Text.literal("GeoStrata correlated experiment metadata has not been loaded yet."));
+            return 0;
+        }
+
+        if (!experiment.enabled()) {
+            source.sendFeedback(
+                    () -> Text.literal(
+                            "GeoStrata correlated experiment: disabled"
+                                    + " | targets " + String.join(",", experiment.targetSuccessionIds())
+                                    + " | supersedes " + String.join(",", experiment.supersededLithologies())
+                                    + " | core remains on baseline worldgen"
+                    ),
+                    false
+            );
+            return 1;
+        }
+
+        Vec3d position = source.getPosition();
+        int x = MathHelper.floor(position.x);
+        int z = MathHelper.floor(position.z);
+        CorrelatedSedimentaryExperiment.Ownership ownership = CorrelatedSedimentaryExperiment.ownershipAt(
+                source.getWorld().getSeed(),
+                x,
+                z
+        );
+        String province = ownership.province() == null ? "n/a" : ownership.province().displayName();
+        String succession = ownership.successionId() == null ? "n/a" : ownership.successionId();
+        String boundary = Double.isFinite(ownership.boundaryDistanceBlocks())
+                ? Long.toString(Math.round(ownership.boundaryDistanceBlocks()))
+                : "n/a";
+
+        source.sendFeedback(
+                () -> Text.literal(
+                        "GeoStrata correlated experiment: " + (ownership.owned() ? "OWNS" : "baseline")
+                                + " | reason " + ownership.reason()
+                                + " | province " + province
+                                + " | boundary ~" + boundary + " blocks"
+                                + " | succession " + succession
                 ),
                 false
         );

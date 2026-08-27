@@ -4,6 +4,8 @@ GeoStrata now has enough deterministic geology infrastructure to attempt correla
 
 `data/geostrata/geology/correlated_sedimentary_experiment.json` defines that staging contract. The core resource is deliberately `metadata_only` and `enabled: false`. A future experimental datapack may override the resource to activate the consumer; the normal GeoStrata jar must not silently switch world-generation modes.
 
+`CorrelatedSedimentaryExperiment` loads the contract as server data and independently revalidates its succession, lithology and province references for datapack overrides. Disabled data must declare `runtimeStatus: metadata_only`; an activating override must explicitly declare both `enabled: true` and `runtimeStatus: experimental_runtime`. This prevents a partial override from accidentally turning mutation on.
+
 ## First experiment scope
 
 The initial experiment targets only `basin_mudrock_carbonate_cycle`. Its unique lithologies are:
@@ -17,6 +19,8 @@ Those are exactly the four sedimentary rocks already migrated from vanilla ore b
 
 When the experiment is eventually enabled, the four named baseline features must be suppressed **only where the correlated experiment owns generation**. Outside the owned region, including province contacts and unsupported geological provinces, the current baseline remains authoritative. This creates a useful A/B testing surface and avoids globally removing proven generation while the correlated system is still experimental.
 
+The loader exposes `suppressesBaselineLithology(...)` for that future integration, but current `StrataLensFeature` generation does not call it yet. Loading/diagnostics therefore cannot alter chunks.
+
 ## Ownership envelope
 
 The first contract limits ownership to sedimentary-basin interiors and requires at least 96 blocks of distance from the nearest geological province boundary. Province-profile blending remains 192 blocks wide, so the experiment deliberately stays out of the most ambiguous half of the regional transition.
@@ -24,6 +28,8 @@ The first contract limits ownership to sedimentary-basin interiors and requires 
 The experiment registers through `geostrata:has_common_rocks`, whose standalone default is the overworld. Geological ownership is then narrowed by the deterministic province/succession model rather than by hardcoded vanilla biome IDs.
 
 The configured host material remains `geostrata:worldgen/base_stone_replaceables`. Correlated generation must therefore preserve the same terrain-mod compatibility seam as every existing GeoStrata rock body.
+
+`/geostrata experiment` reports the loaded activation state. When disabled it shows the target/superseded scope; when enabled by a future datapack it reports whether the current X/Z is owned, the ownership reason, province, approximate boundary distance and selected succession. The command does not inspect or mutate blocks.
 
 ## Vertical staging
 
@@ -51,15 +57,17 @@ The correlated experiment therefore selects its succession from province geology
 - missing GeoStrata biome/host tags;
 - malformed or excessively broad sea-level-relative vertical windows.
 
+The Java reload parser mirrors the important cross-resource safety checks for datapack overrides. Unit tests pin disabled-state behavior, explicit activation status, full suppression coverage, deterministic owned-region evaluation and province-boundary exclusion.
+
 ## Activation sequence
 
-The next implementation stages are intentionally separate:
+The implementation stages are intentionally separate:
 
-1. load and validate this contract in Java;
-2. expose a diagnostic showing whether the current position/chunk is owned by the experiment;
+1. **complete** — load and validate this contract in Java;
+2. **complete** — expose a diagnostic showing whether the current position/chunk is owned by the experiment;
 3. implement a registered-but-disabled correlated feature that performs no work unless the contract is enabled;
 4. make the existing sedimentary lens features suppress themselves only inside owned experimental regions;
-5. ship a separate experimental datapack that flips `enabled` to true;
+5. ship a separate experimental datapack that flips `enabled` and `runtimeStatus` together;
 6. evaluate fresh-world abundance, contacts, cave/cliff exposure, performance and compatibility before considering any default activation.
 
 The standalone default remains unchanged until those stages have demonstrated that the correlated generator is strictly better than the baseline.
