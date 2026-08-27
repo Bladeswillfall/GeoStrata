@@ -5,11 +5,12 @@ package com.geostrata.geology;
  *
  * <p>Terrain is sampled on a fixed world grid and bilinearly interpolated, so
  * neighboring chunks share the same boundary heights. The province site remains
- * the structural anchor and province archetypes control how strongly beds follow
- * broad terrain rather than draping one-to-one over the surface.</p>
+ * the structural anchor and province archetypes control broad drape plus
+ * prominence-amplified open folding without following every surface block.</p>
  */
 public final class TerrainAwareStructuralField {
     public static final int DEFAULT_GRID_SPACING_BLOCKS = 128;
+    public static final double MAX_FOLD_AMPLITUDE_CYCLE_FRACTION = 0.25;
 
     private TerrainAwareStructuralField() {
     }
@@ -17,7 +18,7 @@ public final class TerrainAwareStructuralField {
     public static Field apply(
             SedimentaryStratigraphicField.Field baseField,
             GeologyProvince province,
-            HeightPatch localPatch,
+            TerrainPatch localPatch,
             double anchorHeight
     ) {
         if (baseField == null) {
@@ -40,39 +41,41 @@ public final class TerrainAwareStructuralField {
             throw new IllegalArgumentException("geological province must not be null");
         }
         return switch (province) {
-            case SEDIMENTARY_BASIN -> new Response(0.18);
-            case CRATONIC_SHIELD -> new Response(0.08);
-            case OROGENIC_BELT -> new Response(0.55);
-            case VOLCANIC_ARC -> new Response(0.35);
-            case RIFT_PROVINCE -> new Response(0.45);
+            case SEDIMENTARY_BASIN -> new Response(0.18, 0.05);
+            case CRATONIC_SHIELD -> new Response(0.08, 0.02);
+            case OROGENIC_BELT -> new Response(0.55, 0.75);
+            case VOLCANIC_ARC -> new Response(0.35, 0.35);
+            case RIFT_PROVINCE -> new Response(0.45, 0.20);
         };
     }
 
-    public record Response(double terrainCoupling) {
+    public record Response(double drapeCoupling, double foldCoupling) {
         public Response {
-            if (!Double.isFinite(terrainCoupling) || terrainCoupling < 0.0 || terrainCoupling > 1.0) {
-                throw new IllegalArgumentException("terrain coupling must be finite and within 0..1");
+            if (!unitInterval(drapeCoupling) || !unitInterval(foldCoupling)) {
+                throw new IllegalArgumentException("structural couplings must be finite and within 0..1");
             }
         }
     }
 
-    public record HeightPatch(
+    public record TerrainPatch(
             int originX,
             int originZ,
             int spacingBlocks,
-            double northWestHeight,
-            double northEastHeight,
-            double southWestHeight,
-            double southEastHeight
+            TerrainMorphologySample northWest,
+            TerrainMorphologySample northEast,
+            TerrainMorphologySample southWest,
+            TerrainMorphologySample southEast
     ) {
-        public HeightPatch {
+        public TerrainPatch {
             if (spacingBlocks <= 0) {
                 throw new IllegalArgumentException("terrain patch spacing must be positive");
             }
-            requireFinite(northWestHeight, northEastHeight, southWestHeight, southEastHeight);
+            if (northWest == null || northEast == null || southWest == null || southEast == null) {
+                throw new IllegalArgumentException("terrain patch samples must not be null");
+            }
         }
 
-        static HeightPatch sample(HeightSource heights, int sampleX, int sampleZ, int spacingBlocks) {
+        static TerrainPatch sample(HeightSource heights, int sampleX, int sampleZ, int spacingBlocks) {
             if (heights == null) {
                 throw new IllegalArgumentException("terrain height source must not be null");
             }
@@ -84,18 +87,47 @@ public final class TerrainAwareStructuralField {
             int originZ = Math.floorDiv(sampleZ, spacingBlocks) * spacingBlocks;
             int eastX = Math.addExact(originX, spacingBlocks);
             int southZ = Math.addExact(originZ, spacingBlocks);
-            return new HeightPatch(
+            return new TerrainPatch(
                     originX,
                     originZ,
                     spacingBlocks,
-                    heights.heightAt(originX, originZ),
-                    heights.heightAt(eastX, originZ),
-                    heights.heightAt(originX, southZ),
-                    heights.heightAt(eastX, southZ)
+                    sampleAt(heights, originX, originZ, spacingBlocks),
+                    sampleAt(heights, eastX, originZ, spacingBlocks),
+                    sampleAt(heights, originX, southZ, spacingBlocks),
+                    sampleAt(heights, eastX, southZ, spacingBlocks)
             );
         }
 
         public double heightAt(int x, int z) {
+            return valueAt(
+                    x,
+                    z,
+                    northWest.centerHeight(),
+                    northEast.centerHeight(),
+                    southWest.centerHeight(),
+                    southEast.centerHeight()
+            );
+        }
+
+        public double prominenceAt(int x, int z) {
+            return valueAt(
+                    x,
+                    z,
+                    northWest.prominence(),
+                    northEast.prominence(),
+                    southWest.prominence(),
+                    southEast.prominence()
+            );
+        }
+
+        private double valueAt(
+                int x,
+                int z,
+                double northWestValue,
+                double northEastValue,
+                double southWestValue,
+                double southEastValue
+        ) {
             if (!contains(x, z)) {
                 throw new IllegalArgumentException(
                         "terrain patch does not cover " + x + "," + z
@@ -104,8 +136,8 @@ public final class TerrainAwareStructuralField {
             }
             double xFraction = ((double) x - originX) / spacingBlocks;
             double zFraction = ((double) z - originZ) / spacingBlocks;
-            double north = interpolate(northWestHeight, northEastHeight, xFraction);
-            double south = interpolate(southWestHeight, southEastHeight, xFraction);
+            double north = interpolate(northWestValue, northEastValue, xFraction);
+            double south = interpolate(southWestValue, southEastValue, xFraction);
             return interpolate(north, south, zFraction);
         }
 
@@ -114,12 +146,28 @@ public final class TerrainAwareStructuralField {
             long south = (long) originZ + spacingBlocks;
             return x >= originX && x <= east && z >= originZ && z <= south;
         }
+
+        private static TerrainMorphologySample sampleAt(
+                HeightSource heights,
+                int x,
+                int z,
+                int spacingBlocks
+        ) {
+            return TerrainMorphologySample.fromCardinalHeights(
+                    heights.heightAt(x, z),
+                    heights.heightAt(Math.subtractExact(x, spacingBlocks), z),
+                    heights.heightAt(Math.addExact(x, spacingBlocks), z),
+                    heights.heightAt(x, Math.subtractExact(z, spacingBlocks)),
+                    heights.heightAt(x, Math.addExact(z, spacingBlocks)),
+                    spacingBlocks
+            );
+        }
     }
 
     public record Field(
             SedimentaryStratigraphicField.Field baseField,
             Response response,
-            HeightPatch localPatch,
+            TerrainPatch localPatch,
             double anchorHeight
     ) {
         public Field {
@@ -131,8 +179,22 @@ public final class TerrainAwareStructuralField {
             }
         }
 
+        public double drapeOffset(int x, int z) {
+            return response.drapeCoupling() * (localPatch.heightAt(x, z) - anchorHeight);
+        }
+
+        public double foldAmplitude(int x, int z) {
+            double reliefAmplitude = Math.abs(localPatch.prominenceAt(x, z)) * response.foldCoupling();
+            double maximumAmplitude = baseField.cycleThicknessBlocks() * MAX_FOLD_AMPLITUDE_CYCLE_FRACTION;
+            return Math.min(reliefAmplitude, maximumAmplitude);
+        }
+
+        public double foldOffset(int x, int z) {
+            return foldAmplitude(x, z) * baseField.warpShape(x, z);
+        }
+
         public double terrainOffset(int x, int z) {
-            return response.terrainCoupling() * (localPatch.heightAt(x, z) - anchorHeight);
+            return drapeOffset(x, z) + foldOffset(x, z);
         }
 
         public double verticalOffset(int x, int z) {
@@ -158,11 +220,7 @@ public final class TerrainAwareStructuralField {
         return start + (end - start) * fraction;
     }
 
-    private static void requireFinite(double... heights) {
-        for (double height : heights) {
-            if (!Double.isFinite(height)) {
-                throw new IllegalArgumentException("terrain patch heights must be finite");
-            }
-        }
+    private static boolean unitInterval(double value) {
+        return Double.isFinite(value) && value >= 0.0 && value <= 1.0;
     }
 }

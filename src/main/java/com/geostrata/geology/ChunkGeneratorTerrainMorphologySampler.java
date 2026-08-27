@@ -6,6 +6,9 @@ import net.minecraft.world.Heightmap;
 import net.minecraft.world.gen.chunk.ChunkGenerator;
 import net.minecraft.world.gen.noise.NoiseConfig;
 
+import java.util.HashMap;
+import java.util.Map;
+
 /** Samples the active terrain generator without loading neighboring chunks. */
 public final class ChunkGeneratorTerrainMorphologySampler {
     public static final int DEFAULT_SAMPLE_SPACING_BLOCKS =
@@ -36,14 +39,14 @@ public final class ChunkGeneratorTerrainMorphologySampler {
             throw new IllegalArgumentException("base stratigraphic field must not be null");
         }
 
-        HeightSource heights = heightSource(world);
-        TerrainAwareStructuralField.HeightPatch localPatch = TerrainAwareStructuralField.HeightPatch.sample(
+        HeightSource heights = cached(heightSource(world));
+        TerrainAwareStructuralField.TerrainPatch localPatch = TerrainAwareStructuralField.TerrainPatch.sample(
                 heights::heightAt,
                 x,
                 z,
                 DEFAULT_SAMPLE_SPACING_BLOCKS
         );
-        TerrainAwareStructuralField.HeightPatch anchorPatch = TerrainAwareStructuralField.HeightPatch.sample(
+        TerrainAwareStructuralField.TerrainPatch anchorPatch = TerrainAwareStructuralField.TerrainPatch.sample(
                 heights::heightAt,
                 baseField.siteX(),
                 baseField.siteZ(),
@@ -64,6 +67,15 @@ public final class ChunkGeneratorTerrainMorphologySampler {
                 world,
                 noiseConfig
         );
+    }
+
+    private static HeightSource cached(HeightSource source) {
+        Map<Long, Double> heights = new HashMap<>();
+        return (x, z) -> heights.computeIfAbsent(coordinateKey(x, z), ignored -> source.heightAt(x, z));
+    }
+
+    private static long coordinateKey(int x, int z) {
+        return ((long) x << Integer.SIZE) ^ (z & 0xFFFFFFFFL);
     }
 
     static TerrainMorphologySample sample(HeightSource heights, int x, int z, int spacing) {

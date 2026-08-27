@@ -257,11 +257,14 @@ public final class GeoStrataCommands {
                                 + " | cycle " + fieldSample.cycleIndex()
                                 + ", position " + Math.round(fieldSample.fraction() * 100.0) + "%"
                                 + " | structural offset " + Math.round(fieldSample.verticalOffset()) + " blocks"
-                                + " (terrain " + Math.round(structuralField.terrainOffset(x, z)) + ")"
+                                + " (drape " + Math.round(structuralField.drapeOffset(x, z))
+                                + ", fold " + Math.round(structuralField.foldOffset(x, z)) + ")"
                                 + " | " + selection.succession().continuity() + " profile, cycle "
                                 + Math.round(parameters.cycleThicknessBlocks()) + " blocks"
-                                + " | terrain coupling "
-                                + Math.round(structuralField.response().terrainCoupling() * 100.0) + "%"
+                                + " | response drape "
+                                + Math.round(structuralField.response().drapeCoupling() * 100.0) + "%"
+                                + ", fold "
+                                + Math.round(structuralField.response().foldCoupling() * 100.0) + "%"
                                 + " | virtual model; active in opt-in correlated generation"
                 ),
                 false
@@ -287,7 +290,8 @@ public final class GeoStrataCommands {
                                 + " | spacing "
                                 + ChunkGeneratorTerrainMorphologySampler.DEFAULT_SAMPLE_SPACING_BLOCKS + " blocks"
                                 + " | " + province.province().displayName() + " coupling "
-                                + Math.round(response.terrainCoupling() * 100.0) + "%"
+                                + "drape " + Math.round(response.drapeCoupling() * 100.0) + "%"
+                                + ", fold " + Math.round(response.foldCoupling() * 100.0) + "%"
                                 + " | active in the field model and opt-in correlated generation"
                 ),
                 false
@@ -380,8 +384,8 @@ public final class GeoStrataCommands {
                                 + " at Y " + y + " (actual " + actualBlock + ")"
                                 + " | cycle " + sample.cycleIndex()
                                 + ", position " + Math.round(sample.fraction() * 100.0) + "%"
-                                + " | terrain offset "
-                                + Math.round(site.field().terrainOffset(x, z)) + " blocks"
+                                + " | terrain offset " + Math.round(site.field().terrainOffset(x, z))
+                                + " blocks (fold " + Math.round(site.field().foldOffset(x, z)) + ")"
                                 + " | " + windowState + " mutation window " + minY + ".." + maxY
                 ),
                 false
