@@ -58,12 +58,6 @@ public final class GeoStrataWorldgen {
         addToTag("wet_mud_patch", HAS_SWAMP_SOILS);
         addToTag("compacted_mud_patch", HAS_JUNGLE_SOILS);
         addToTag("red_clay_patch", HAS_BADLANDS_SOILS);
-
-        BiomeModifications.addFeature(
-                BiomeSelectors.tag(HAS_COMMON_ROCKS),
-                GenerationStep.Feature.UNDERGROUND_DECORATION,
-                key("correlated_sedimentary_experiment")
-        );
     }
 
     private static void addToTag(String feature, TagKey<Biome> tag) {
