@@ -4,6 +4,8 @@ import com.geostrata.geology.ChunkGeneratorTerrainMorphologySampler;
 import com.geostrata.geology.GeologyProvinceSampler;
 import com.geostrata.geology.ProvinceDeformationProfiles;
 import com.geostrata.geology.StructuralDeformationResponse;
+import com.geostrata.geology.StructuralTransformField;
+import com.geostrata.geology.StructuralTransformProfiles;
 import com.geostrata.geology.TerrainMorphologySample;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.minecraft.server.command.CommandManager;
@@ -23,7 +25,9 @@ public final class GeoStrataTerrainCommands {
                         .then(CommandManager.literal("terrain")
                                 .executes(context -> showTerrain(context.getSource())))
                         .then(CommandManager.literal("structure")
-                                .executes(context -> showStructure(context.getSource()))))
+                                .executes(context -> showStructure(context.getSource())))
+                        .then(CommandManager.literal("transform")
+                                .executes(context -> showTransform(context.getSource()))))
         );
     }
 
@@ -83,6 +87,85 @@ public final class GeoStrataTerrainCommands {
                 false
         );
         return 1;
+    }
+
+    private static int showTransform(ServerCommandSource source) {
+        ProvinceDeformationProfiles.Snapshot deformationProfiles = ProvinceDeformationProfiles.current();
+        StructuralTransformProfiles.Snapshot transformProfiles = StructuralTransformProfiles.current();
+        if (!deformationProfiles.loaded() || !transformProfiles.loaded()) {
+            source.sendError(Text.literal("GeoStrata structural transform metadata has not been loaded yet."));
+            return 0;
+        }
+
+        Vec3d position = source.getPosition();
+        int x = MathHelper.floor(position.x);
+        int z = MathHelper.floor(position.z);
+        long seed = source.getWorld().getSeed();
+        TerrainMorphologySample terrain = ChunkGeneratorTerrainMorphologySampler.sample(source.getWorld(), x, z);
+        GeologyProvinceSampler.Sample province = GeologyProvinceSampler.sample(seed, x, z);
+
+        StructuralTransformField.Field primary = fieldFor(
+                seed,
+                province.province(),
+                province.siteX(),
+                province.siteZ(),
+                terrain,
+                deformationProfiles,
+                transformProfiles
+        );
+        StructuralTransformField.Field neighbor = fieldFor(
+                seed,
+                province.neighborProvince(),
+                province.neighborSiteX(),
+                province.neighborSiteZ(),
+                terrain,
+                deformationProfiles,
+                transformProfiles
+        );
+        StructuralTransformField.Sample transform = StructuralTransformField.blend(
+                primary.sample(position.x, position.z),
+                neighbor.sample(position.x, position.z),
+                province.interiorBlend(deformationProfiles.blendWidthBlocks())
+        );
+
+        source.sendFeedback(
+                () -> Text.literal(
+                        "GeoStrata transform: total " + round(transform.totalOffset()) + " blocks"
+                                + " [dip " + round(transform.dipOffset())
+                                + ", fold " + round(transform.foldOffset())
+                                + ", fault " + round(transform.faultOffset()) + "]"
+                                + " | structural Y " + round(transform.transformY(position.y))
+                                + " from world Y " + round(position.y)
+                                + " | primary/neighbor dip ceilings now " + round(primary.dipDegrees())
+                                + "° / " + round(neighbor.dipDegrees()) + "°"
+                                + " | diagnostic vertical transform only; no blocks changed"
+                ),
+                false
+        );
+        return 1;
+    }
+
+    private static StructuralTransformField.Field fieldFor(
+            long seed,
+            com.geostrata.geology.GeologyProvince province,
+            int siteX,
+            int siteZ,
+            TerrainMorphologySample terrain,
+            ProvinceDeformationProfiles.Snapshot deformationProfiles,
+            StructuralTransformProfiles.Snapshot transformProfiles
+    ) {
+        StructuralDeformationResponse.Result response = StructuralDeformationResponse.evaluate(
+                deformationProfiles.normalization(),
+                deformationProfiles.profileFor(province),
+                terrain
+        );
+        return StructuralTransformField.forSite(
+                seed,
+                siteX,
+                siteZ,
+                transformProfiles.profileFor(province),
+                response
+        );
     }
 
     private static int percent(double value) {
