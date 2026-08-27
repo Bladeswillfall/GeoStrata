@@ -3,6 +3,7 @@
   "model": "geostrata:province_deformation_profiles",
   "runtimeStatus": "metadata_only",
   "description": "Diagnostic-only normalized deformation potential. Values do not yet alter generated blocks.",
+  "blendWidthBlocks": 192,
   "morphologyNormalization": {
     "reliefScaleBlocks": 160.0,
     "slopeScale": 0.5,
