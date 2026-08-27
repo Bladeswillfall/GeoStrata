@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "model": "geostrata:correlated_sedimentary_experiment",
+  "runtimeStatus": "metadata_only",
+  "enabled": false,
+  "description": "Disabled-by-default contract for the first correlated sedimentary worldgen experiment. Enabling is reserved for a separate experimental datapack after the runtime consumer is implemented and validated.",
+  "targetSuccessionIds": [
+    "basin_mudrock_carbonate_cycle"
+  ],
+  "allowedProvinces": [
+    "sedimentary_basin"
+  ],
+  "supersededLithologies": [
+    "limestone",
+    "shale",
+    "mudstone",
+    "siltstone"
+  ],
+  "minimumBoundaryDistanceBlocks": 96,
+  "registrationBiomeTag": "geostrata:has_common_rocks",
+  "hostBlockTag": "geostrata:worldgen/base_stone_replaceables",
+  "verticalWindow": {
+    "anchor": "sea_level",
+    "minOffsetBlocks": -96,
+    "maxOffsetBlocks": 48
+  }
+}
