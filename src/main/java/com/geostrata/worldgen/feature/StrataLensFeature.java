@@ -37,13 +37,14 @@ public final class StrataLensFeature extends Feature<StrataLensConfig> {
 
         GeologyProvinceProfiles.Snapshot profiles = GeologyProvinceProfiles.current();
         Optional<String> lithology = profiledLithology(config, profiles);
-        if (lithology.isPresent()
-                && CorrelatedExperimentChunkOwnership.suppressesBaselineLithology(
-                        lithology.get(),
+        boolean correlatedSuppressionActive = lithology.isPresent()
+                && CorrelatedExperimentChunkOwnership.suppressionActiveFor(lithology.get());
+        if (correlatedSuppressionActive
+                && CorrelatedExperimentChunkOwnership.ownershipForChunk(
                         world.getSeed(),
                         origin.getX(),
                         origin.getZ()
-                )) {
+                ).owned()) {
             return false;
         }
 
@@ -95,6 +96,14 @@ public final class StrataLensFeature extends Feature<StrataLensConfig> {
                 for (int y = minY; y <= maxY; y++) {
                     mutable.set(origin.getX() + dx, y, origin.getZ() + dz);
                     if (world.isOutOfHeightLimit(mutable)) {
+                        continue;
+                    }
+                    if (correlatedSuppressionActive
+                            && CorrelatedExperimentChunkOwnership.ownershipForChunk(
+                                    world.getSeed(),
+                                    mutable.getX(),
+                                    mutable.getZ()
+                            ).owned()) {
                         continue;
                     }
 
