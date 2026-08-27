@@ -77,6 +77,14 @@ Because the adapter talks only to Minecraft's active generator, ordinary noise-s
 
 `/geostrata terrain` reports the current raw generator height, relief, slope magnitude and X/Z gradient, prominence, and spacing. It is read-only and does not currently alter lithology ownership or generated blocks.
 
+`ProvinceDeformationProfiles` is the first data-driven structural-response contract. It maps every geological province to a baseline deformation intensity, terrain coupling, and normalized dip/fold/fault potentials. The response remains non-zero where a province declares a structural baseline, so subdued terrain does not erase geological history. Terrain can strengthen that baseline only within a bounded per-province coupling.
+
+Structural profiles blend between the primary and second-nearest geological provinces across a data-defined transition width. This mirrors the existing province-boundary philosophy used for lithology suitability and avoids replacing geological hard walls with structural hard walls.
+
+`StructuralDeformationResponse` combines the blended province context with `TerrainMorphologySample` as a pure normalized calculation. `/geostrata structure` exposes that calculation as deformation, dip, fold and fault potentials. These are diagnostic potentials, not physical angles, wavelengths or displacements.
+
+See `DEFORMATION_PROFILES.md` for the live normalized response contract.
+
 ### Surface and exposure response
 
 Surface response may inspect generated terrain much more directly because it does not own the underlying structural history. It may influence:
@@ -148,7 +156,7 @@ Core consumes generic observations available from ordinary Minecraft/Fabric worl
 
 ### Tier 1 — data-driven classification
 
-Datapacks may extend GeoStrata biome and replacement tags or later structural-response tags without adding Java dependencies.
+Datapacks may extend GeoStrata biome and replacement tags or override reviewed structural-response metadata without adding Java dependencies.
 
 ### Tier 2 — optional guarded terrain adapter
 
@@ -160,11 +168,13 @@ Deep integration that requires compile-time APIs, large data sets or terrain-mod
 
 ## Current implementation boundary
 
-`TerrainMorphologySample` and `ChunkGeneratorTerrainMorphologySampler` are staging/diagnostic infrastructure. The sampler observes the active generator but does not alter `SedimentaryStratigraphicField`, correlated experiment ownership, feature registration or current chunk output.
+`TerrainMorphologySample`, `ChunkGeneratorTerrainMorphologySampler`, `ProvinceDeformationProfiles` and `StructuralDeformationResponse` are staging/diagnostic infrastructure. They observe the active generator and calculate a province-aware structural response, but do not alter `SedimentaryStratigraphicField`, correlated experiment ownership, feature registration or current chunk output.
 
 That keeps the current correlated experiment reproducible while establishing a tested, live vocabulary for terrain-aware work.
 
 The morphology signal is intentionally not cached or consumed from production worldgen yet. Five raw height queries are appropriate for an explicit diagnostic command; a future runtime consumer must define a coarse deterministic field/cache strategy before sampling this signal at worldgen scale.
+
+The normalized deformation response also intentionally stops short of physical folds and faults. Physical scales become world-generation compatibility parameters once they own blocks, so they must be introduced and regression-tested separately.
 
 ## Implementation sequence
 
@@ -172,10 +182,11 @@ The morphology signal is intentionally not cached or consumed from production wo
 2. **complete** — introduce a pure morphology sample with regression tests;
 3. **complete** — add a deterministic `ChunkGenerator` morphology sampler using coarse spacing and no forced neighbor generation;
 4. **complete** — expose morphology through read-only `/geostrata terrain` diagnostics;
-5. define data-driven province deformation profiles and a pure deformation-response function;
-6. compose that response with the stratigraphic field in diagnostics only;
-7. add explicit fold and fault transforms with fixed regression vectors;
-8. evaluate terrain generators and fresh worlds before granting the deformation field runtime block ownership;
-9. keep local weathering/exposure behavior as a later, separate surface stage.
+5. **complete** — define data-driven province deformation profiles, province-boundary blending and a pure normalized response function;
+6. **complete** — expose the blended normalized response through read-only `/geostrata structure` diagnostics;
+7. compose the response with the stratigraphic field in diagnostics only, using explicit physical transform parameters rather than directly treating normalized potentials as angles/offsets;
+8. add explicit fold and fault transforms with fixed regression vectors;
+9. evaluate vanilla and terrain-mod worlds before granting the deformation field runtime block ownership;
+10. keep local weathering/exposure behavior as a later, separate surface stage.
 
-The next engineering step is therefore a data-driven province deformation contract and pure response calculation. It should turn province context plus `TerrainMorphologySample` into bounded structural parameters without yet changing block generation.
+The next engineering step is therefore an explicit structural-transform staging layer: deterministic physical dip/fold/fault parameters derived from reviewed data plus the normalized response, composed with stratigraphic sampling only in diagnostics. Runtime block mutation remains out of scope until that field is observed and profiled.
