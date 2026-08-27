@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "id": "geostrata_correlated_experiment",
+  "version": "${version}",
+  "name": "GeoStrata Correlated Experiment",
+  "description": "Optional companion that explicitly activates GeoStrata's experimental correlated sedimentary worldgen.",
+  "authors": [
+    "GeoStrata contributors"
+  ],
+  "license": "All-Rights-Reserved",
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      "com.geostrata.experiment.CorrelatedExperimentCompanion"
+    ]
+  },
+  "depends": {
+    "fabricloader": ">=0.15.11",
+    "minecraft": "1.20.1",
+    "java": ">=17",
+    "fabric-api": ">=0.92.2",
+    "geostrata": ">=${version}"
+  },
+  "custom": {
+    "geostrata_stage": "experimental",
+    "geostrata_role": "explicit-worldgen-activation-companion"
+  }
+}
