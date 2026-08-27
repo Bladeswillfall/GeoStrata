@@ -21,6 +21,9 @@ jobs:
       - name: Validate geology catalog
         run: python3 scripts/validate_geology_catalog.py
 
+      - name: Validate ore Continuity tilesets
+        run: python3 scripts/validate_ore_continuity_tilesets.py
+
       - name: Validate optional integration data
         run: python3 scripts/validate_optional_integrations.py
 
