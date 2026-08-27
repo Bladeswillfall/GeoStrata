@@ -1,7 +1,46 @@
 {
   "variants": {
-    "": {
-      "model": "geostrata:block/medium_iron_ore"
+    "host=limestone": {
+      "model": "geostrata:block/ore/iron/limestone/medium"
+    },
+    "host=chalk": {
+      "model": "geostrata:block/ore/iron/chalk/medium"
+    },
+    "host=shale": {
+      "model": "geostrata:block/ore/iron/shale/medium"
+    },
+    "host=slate": {
+      "model": "geostrata:block/ore/iron/slate/medium"
+    },
+    "host=mudstone": {
+      "model": "geostrata:block/ore/iron/mudstone/medium"
+    },
+    "host=siltstone": {
+      "model": "geostrata:block/ore/iron/siltstone/medium"
+    },
+    "host=marble": {
+      "model": "geostrata:block/ore/iron/marble/medium"
+    },
+    "host=quartzite": {
+      "model": "geostrata:block/ore/iron/quartzite/medium"
+    },
+    "host=schist": {
+      "model": "geostrata:block/ore/iron/schist/medium"
+    },
+    "host=gneiss": {
+      "model": "geostrata:block/ore/iron/gneiss/medium"
+    },
+    "host=basalt": {
+      "model": "geostrata:block/ore/iron/basalt/medium"
+    },
+    "host=rhyolite": {
+      "model": "geostrata:block/ore/iron/rhyolite/medium"
+    },
+    "host=conglomerate": {
+      "model": "geostrata:block/ore/iron/conglomerate/medium"
+    },
+    "host=breccia": {
+      "model": "geostrata:block/ore/iron/breccia/medium"
     }
   }
 }

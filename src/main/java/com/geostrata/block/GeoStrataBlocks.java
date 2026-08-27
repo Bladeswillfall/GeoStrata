@@ -10,6 +10,7 @@ import java.util.Map;
 import net.fabricmc.fabric.api.itemgroup.v1.ItemGroupEvents;
 import net.minecraft.block.AbstractBlock;
 import net.minecraft.block.Block;
+import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.SlabBlock;
 import net.minecraft.block.StairsBlock;
@@ -110,6 +111,14 @@ public final class GeoStrataBlocks {
         return grades.get(grade);
     }
 
+    public static BlockState oreState(String material, OreGrade grade, String host) {
+        Block block = ore(material, grade);
+        if (!(block instanceof GradedOreBlock gradedOre)) {
+            throw new IllegalStateException("graded ore registry contains non-graded block: " + material);
+        }
+        return gradedOre.withHost(host);
+    }
+
     private static AbstractBlock.Settings rock(Block base, float hardness, BlockSoundGroup soundGroup) {
         return AbstractBlock.Settings.copy(base)
                 .strength(hardness, 6.0F)
@@ -150,6 +159,7 @@ public final class GeoStrataBlocks {
         Block block = register(
                 name,
                 new GradedOreBlock(
+                        material,
                         grade,
                         AbstractBlock.Settings.copy(base)
                                 .strength(hardness, 3.0F)

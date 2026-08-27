@@ -1,1 +1,1 @@
-{"parent":"minecraft:block/inner_stairs","textures":{"bottom":"geostrata:block/placeholder_rock","side":"geostrata:block/placeholder_rock","top":"geostrata:block/placeholder_rock"}}
+{"parent":"minecraft:block/inner_stairs","textures":{"bottom":"geostrata:block/host/limestone","side":"geostrata:block/host/limestone","top":"geostrata:block/host/limestone"}}

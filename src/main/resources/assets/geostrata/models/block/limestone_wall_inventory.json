@@ -1,1 +1,1 @@
-{"parent":"minecraft:block/wall_inventory","textures":{"wall":"geostrata:block/placeholder_rock"}}
+{"parent":"minecraft:block/wall_inventory","textures":{"wall":"geostrata:block/host/limestone"}}

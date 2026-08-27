@@ -1,1 +1,6 @@
-{"parent":"minecraft:block/cube_all","textures":{"all":"geostrata:block/placeholder_rock"}}
+{
+  "parent": "minecraft:block/cube_all",
+  "textures": {
+    "all": "geostrata:block/host/quartzite"
+  }
+}

@@ -24,6 +24,15 @@
                     ]
                   }
                 }
+              ],
+              "functions": [
+                {
+                  "function": "minecraft:copy_state",
+                  "block": "geostrata:poor_coal_ore",
+                  "properties": [
+                    "host"
+                  ]
+                }
               ]
             },
             {

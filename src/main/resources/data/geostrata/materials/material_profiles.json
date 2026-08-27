@@ -3,13 +3,95 @@
   "model": "geostrata:material_profile_catalog",
   "runtimeStatus": "validated_metadata_only",
   "textureSets": {
-    "placeholder_rock": {
-      "status": "placeholder",
-      "textures": ["geostrata:block/placeholder_rock"]
-    },
     "placeholder_earth": {
       "status": "placeholder",
-      "textures": ["geostrata:block/placeholder_earth"]
+      "textures": [
+        "geostrata:block/placeholder_earth"
+      ]
+    },
+    "host_limestone": {
+      "status": "placeholder",
+      "textures": [
+        "geostrata:block/host/limestone"
+      ]
+    },
+    "host_chalk": {
+      "status": "placeholder",
+      "textures": [
+        "geostrata:block/host/chalk"
+      ]
+    },
+    "host_shale": {
+      "status": "placeholder",
+      "textures": [
+        "geostrata:block/host/shale"
+      ]
+    },
+    "host_slate": {
+      "status": "placeholder",
+      "textures": [
+        "geostrata:block/host/slate"
+      ]
+    },
+    "host_mudstone": {
+      "status": "placeholder",
+      "textures": [
+        "geostrata:block/host/mudstone"
+      ]
+    },
+    "host_siltstone": {
+      "status": "placeholder",
+      "textures": [
+        "geostrata:block/host/siltstone"
+      ]
+    },
+    "host_marble": {
+      "status": "placeholder",
+      "textures": [
+        "geostrata:block/host/marble"
+      ]
+    },
+    "host_quartzite": {
+      "status": "placeholder",
+      "textures": [
+        "geostrata:block/host/quartzite"
+      ]
+    },
+    "host_schist": {
+      "status": "placeholder",
+      "textures": [
+        "geostrata:block/host/schist"
+      ]
+    },
+    "host_gneiss": {
+      "status": "placeholder",
+      "textures": [
+        "geostrata:block/host/gneiss"
+      ]
+    },
+    "host_basalt": {
+      "status": "placeholder",
+      "textures": [
+        "geostrata:block/host/basalt"
+      ]
+    },
+    "host_rhyolite": {
+      "status": "placeholder",
+      "textures": [
+        "geostrata:block/host/rhyolite"
+      ]
+    },
+    "host_conglomerate": {
+      "status": "placeholder",
+      "textures": [
+        "geostrata:block/host/conglomerate"
+      ]
+    },
+    "host_breccia": {
+      "status": "placeholder",
+      "textures": [
+        "geostrata:block/host/breccia"
+      ]
     }
   },
   "materials": [
@@ -23,7 +105,10 @@
       ],
       "family": "rock",
       "compatibilityRole": "geostrata:rock/carbonate/limestone",
-      "semanticTags": ["geostrata:rocks", "geostrata:sedimentary_rocks"],
+      "semanticTags": [
+        "geostrata:rocks",
+        "geostrata:sedimentary_rocks"
+      ],
       "gameplay": {
         "breaking": {
           "copyFrom": "minecraft:stone",
@@ -34,9 +119,13 @@
           "minimumToolTier": "stone",
           "soundGroup": "stone"
         },
-        "cultivation": {"status": "not_applicable"}
+        "cultivation": {
+          "status": "not_applicable"
+        }
       },
-      "assets": {"textureSet": "placeholder_rock"}
+      "assets": {
+        "textureSet": "host_limestone"
+      }
     },
     {
       "id": "chalk",
@@ -44,7 +133,10 @@
       "derivedBlocks": [],
       "family": "rock",
       "compatibilityRole": "geostrata:rock/carbonate/chalk",
-      "semanticTags": ["geostrata:rocks", "geostrata:sedimentary_rocks"],
+      "semanticTags": [
+        "geostrata:rocks",
+        "geostrata:sedimentary_rocks"
+      ],
       "gameplay": {
         "breaking": {
           "copyFrom": "minecraft:calcite",
@@ -55,9 +147,13 @@
           "minimumToolTier": "stone",
           "soundGroup": "calcite"
         },
-        "cultivation": {"status": "not_applicable"}
+        "cultivation": {
+          "status": "not_applicable"
+        }
       },
-      "assets": {"textureSet": "placeholder_rock"}
+      "assets": {
+        "textureSet": "host_chalk"
+      }
     },
     {
       "id": "shale",
@@ -65,7 +161,10 @@
       "derivedBlocks": [],
       "family": "rock",
       "compatibilityRole": "geostrata:rock/clastic/shale",
-      "semanticTags": ["geostrata:rocks", "geostrata:sedimentary_rocks"],
+      "semanticTags": [
+        "geostrata:rocks",
+        "geostrata:sedimentary_rocks"
+      ],
       "gameplay": {
         "breaking": {
           "copyFrom": "minecraft:tuff",
@@ -76,9 +175,13 @@
           "minimumToolTier": "stone",
           "soundGroup": "tuff"
         },
-        "cultivation": {"status": "not_applicable"}
+        "cultivation": {
+          "status": "not_applicable"
+        }
       },
-      "assets": {"textureSet": "placeholder_rock"}
+      "assets": {
+        "textureSet": "host_shale"
+      }
     },
     {
       "id": "slate",
@@ -86,7 +189,10 @@
       "derivedBlocks": [],
       "family": "rock",
       "compatibilityRole": "geostrata:rock/metamorphic/slate",
-      "semanticTags": ["geostrata:rocks", "geostrata:metamorphic_rocks"],
+      "semanticTags": [
+        "geostrata:rocks",
+        "geostrata:metamorphic_rocks"
+      ],
       "gameplay": {
         "breaking": {
           "copyFrom": "minecraft:deepslate",
@@ -97,9 +203,13 @@
           "minimumToolTier": "stone",
           "soundGroup": "deepslate"
         },
-        "cultivation": {"status": "not_applicable"}
+        "cultivation": {
+          "status": "not_applicable"
+        }
       },
-      "assets": {"textureSet": "placeholder_rock"}
+      "assets": {
+        "textureSet": "host_slate"
+      }
     },
     {
       "id": "mudstone",
@@ -107,7 +217,10 @@
       "derivedBlocks": [],
       "family": "rock",
       "compatibilityRole": "geostrata:rock/clastic/mudstone",
-      "semanticTags": ["geostrata:rocks", "geostrata:sedimentary_rocks"],
+      "semanticTags": [
+        "geostrata:rocks",
+        "geostrata:sedimentary_rocks"
+      ],
       "gameplay": {
         "breaking": {
           "copyFrom": "minecraft:stone",
@@ -118,9 +231,13 @@
           "minimumToolTier": "stone",
           "soundGroup": "stone"
         },
-        "cultivation": {"status": "not_applicable"}
+        "cultivation": {
+          "status": "not_applicable"
+        }
       },
-      "assets": {"textureSet": "placeholder_rock"}
+      "assets": {
+        "textureSet": "host_mudstone"
+      }
     },
     {
       "id": "siltstone",
@@ -128,7 +245,10 @@
       "derivedBlocks": [],
       "family": "rock",
       "compatibilityRole": "geostrata:rock/clastic/siltstone",
-      "semanticTags": ["geostrata:rocks", "geostrata:sedimentary_rocks"],
+      "semanticTags": [
+        "geostrata:rocks",
+        "geostrata:sedimentary_rocks"
+      ],
       "gameplay": {
         "breaking": {
           "copyFrom": "minecraft:sandstone",
@@ -139,9 +259,13 @@
           "minimumToolTier": "stone",
           "soundGroup": "stone"
         },
-        "cultivation": {"status": "not_applicable"}
+        "cultivation": {
+          "status": "not_applicable"
+        }
       },
-      "assets": {"textureSet": "placeholder_rock"}
+      "assets": {
+        "textureSet": "host_siltstone"
+      }
     },
     {
       "id": "marble",
@@ -149,7 +273,10 @@
       "derivedBlocks": [],
       "family": "rock",
       "compatibilityRole": "geostrata:rock/metamorphic/marble",
-      "semanticTags": ["geostrata:rocks", "geostrata:metamorphic_rocks"],
+      "semanticTags": [
+        "geostrata:rocks",
+        "geostrata:metamorphic_rocks"
+      ],
       "gameplay": {
         "breaking": {
           "copyFrom": "minecraft:calcite",
@@ -160,9 +287,13 @@
           "minimumToolTier": "stone",
           "soundGroup": "calcite"
         },
-        "cultivation": {"status": "not_applicable"}
+        "cultivation": {
+          "status": "not_applicable"
+        }
       },
-      "assets": {"textureSet": "placeholder_rock"}
+      "assets": {
+        "textureSet": "host_marble"
+      }
     },
     {
       "id": "quartzite",
@@ -170,7 +301,10 @@
       "derivedBlocks": [],
       "family": "rock",
       "compatibilityRole": "geostrata:rock/metamorphic/quartzite",
-      "semanticTags": ["geostrata:rocks", "geostrata:metamorphic_rocks"],
+      "semanticTags": [
+        "geostrata:rocks",
+        "geostrata:metamorphic_rocks"
+      ],
       "gameplay": {
         "breaking": {
           "copyFrom": "minecraft:smooth_quartz",
@@ -181,9 +315,13 @@
           "minimumToolTier": "stone",
           "soundGroup": "stone"
         },
-        "cultivation": {"status": "not_applicable"}
+        "cultivation": {
+          "status": "not_applicable"
+        }
       },
-      "assets": {"textureSet": "placeholder_rock"}
+      "assets": {
+        "textureSet": "host_quartzite"
+      }
     },
     {
       "id": "schist",
@@ -191,7 +329,10 @@
       "derivedBlocks": [],
       "family": "rock",
       "compatibilityRole": "geostrata:rock/metamorphic/schist",
-      "semanticTags": ["geostrata:rocks", "geostrata:metamorphic_rocks"],
+      "semanticTags": [
+        "geostrata:rocks",
+        "geostrata:metamorphic_rocks"
+      ],
       "gameplay": {
         "breaking": {
           "copyFrom": "minecraft:tuff",
@@ -202,9 +343,13 @@
           "minimumToolTier": "stone",
           "soundGroup": "tuff"
         },
-        "cultivation": {"status": "not_applicable"}
+        "cultivation": {
+          "status": "not_applicable"
+        }
       },
-      "assets": {"textureSet": "placeholder_rock"}
+      "assets": {
+        "textureSet": "host_schist"
+      }
     },
     {
       "id": "gneiss",
@@ -212,7 +357,10 @@
       "derivedBlocks": [],
       "family": "rock",
       "compatibilityRole": "geostrata:rock/metamorphic/gneiss",
-      "semanticTags": ["geostrata:rocks", "geostrata:metamorphic_rocks"],
+      "semanticTags": [
+        "geostrata:rocks",
+        "geostrata:metamorphic_rocks"
+      ],
       "gameplay": {
         "breaking": {
           "copyFrom": "minecraft:granite",
@@ -223,9 +371,13 @@
           "minimumToolTier": "stone",
           "soundGroup": "stone"
         },
-        "cultivation": {"status": "not_applicable"}
+        "cultivation": {
+          "status": "not_applicable"
+        }
       },
-      "assets": {"textureSet": "placeholder_rock"}
+      "assets": {
+        "textureSet": "host_gneiss"
+      }
     },
     {
       "id": "basalt",
@@ -233,7 +385,10 @@
       "derivedBlocks": [],
       "family": "rock",
       "compatibilityRole": "geostrata:rock/igneous/basalt",
-      "semanticTags": ["geostrata:rocks", "geostrata:igneous_rocks"],
+      "semanticTags": [
+        "geostrata:rocks",
+        "geostrata:igneous_rocks"
+      ],
       "gameplay": {
         "breaking": {
           "copyFrom": "minecraft:basalt",
@@ -244,9 +399,13 @@
           "minimumToolTier": "stone",
           "soundGroup": "basalt"
         },
-        "cultivation": {"status": "not_applicable"}
+        "cultivation": {
+          "status": "not_applicable"
+        }
       },
-      "assets": {"textureSet": "placeholder_rock"}
+      "assets": {
+        "textureSet": "host_basalt"
+      }
     },
     {
       "id": "rhyolite",
@@ -254,7 +413,10 @@
       "derivedBlocks": [],
       "family": "rock",
       "compatibilityRole": "geostrata:rock/igneous/rhyolite",
-      "semanticTags": ["geostrata:rocks", "geostrata:igneous_rocks"],
+      "semanticTags": [
+        "geostrata:rocks",
+        "geostrata:igneous_rocks"
+      ],
       "gameplay": {
         "breaking": {
           "copyFrom": "minecraft:granite",
@@ -265,9 +427,13 @@
           "minimumToolTier": "stone",
           "soundGroup": "stone"
         },
-        "cultivation": {"status": "not_applicable"}
+        "cultivation": {
+          "status": "not_applicable"
+        }
       },
-      "assets": {"textureSet": "placeholder_rock"}
+      "assets": {
+        "textureSet": "host_rhyolite"
+      }
     },
     {
       "id": "conglomerate",
@@ -275,7 +441,10 @@
       "derivedBlocks": [],
       "family": "rock",
       "compatibilityRole": "geostrata:rock/clastic/conglomerate",
-      "semanticTags": ["geostrata:rocks", "geostrata:sedimentary_rocks"],
+      "semanticTags": [
+        "geostrata:rocks",
+        "geostrata:sedimentary_rocks"
+      ],
       "gameplay": {
         "breaking": {
           "copyFrom": "minecraft:cobblestone",
@@ -286,9 +455,13 @@
           "minimumToolTier": "stone",
           "soundGroup": "stone"
         },
-        "cultivation": {"status": "not_applicable"}
+        "cultivation": {
+          "status": "not_applicable"
+        }
       },
-      "assets": {"textureSet": "placeholder_rock"}
+      "assets": {
+        "textureSet": "host_conglomerate"
+      }
     },
     {
       "id": "breccia",
@@ -296,7 +469,10 @@
       "derivedBlocks": [],
       "family": "rock",
       "compatibilityRole": "geostrata:rock/clastic/breccia",
-      "semanticTags": ["geostrata:rocks", "geostrata:sedimentary_rocks"],
+      "semanticTags": [
+        "geostrata:rocks",
+        "geostrata:sedimentary_rocks"
+      ],
       "gameplay": {
         "breaking": {
           "copyFrom": "minecraft:cobblestone",
@@ -307,9 +483,13 @@
           "minimumToolTier": "stone",
           "soundGroup": "stone"
         },
-        "cultivation": {"status": "not_applicable"}
+        "cultivation": {
+          "status": "not_applicable"
+        }
       },
-      "assets": {"textureSet": "placeholder_rock"}
+      "assets": {
+        "textureSet": "host_breccia"
+      }
     },
     {
       "id": "clay_loam",
@@ -317,7 +497,10 @@
       "derivedBlocks": [],
       "family": "soil",
       "compatibilityRole": "geostrata:soil/loam/clay",
-      "semanticTags": ["geostrata:soft_earth", "geostrata:clays"],
+      "semanticTags": [
+        "geostrata:soft_earth",
+        "geostrata:clays"
+      ],
       "gameplay": {
         "breaking": {
           "copyFrom": "minecraft:dirt",
@@ -328,9 +511,13 @@
           "minimumToolTier": "none",
           "soundGroup": "rooted_dirt"
         },
-        "cultivation": {"status": "not_implemented"}
+        "cultivation": {
+          "status": "not_implemented"
+        }
       },
-      "assets": {"textureSet": "placeholder_earth"}
+      "assets": {
+        "textureSet": "placeholder_earth"
+      }
     },
     {
       "id": "sandy_loam",
@@ -338,7 +525,9 @@
       "derivedBlocks": [],
       "family": "soil",
       "compatibilityRole": "geostrata:soil/loam/sandy",
-      "semanticTags": ["geostrata:soft_earth"],
+      "semanticTags": [
+        "geostrata:soft_earth"
+      ],
       "gameplay": {
         "breaking": {
           "copyFrom": "minecraft:coarse_dirt",
@@ -349,9 +538,13 @@
           "minimumToolTier": "none",
           "soundGroup": "gravel"
         },
-        "cultivation": {"status": "not_implemented"}
+        "cultivation": {
+          "status": "not_implemented"
+        }
       },
-      "assets": {"textureSet": "placeholder_earth"}
+      "assets": {
+        "textureSet": "placeholder_earth"
+      }
     },
     {
       "id": "silty_loam",
@@ -359,7 +552,9 @@
       "derivedBlocks": [],
       "family": "soil",
       "compatibilityRole": "geostrata:soil/loam/silty",
-      "semanticTags": ["geostrata:soft_earth"],
+      "semanticTags": [
+        "geostrata:soft_earth"
+      ],
       "gameplay": {
         "breaking": {
           "copyFrom": "minecraft:dirt",
@@ -370,9 +565,13 @@
           "minimumToolTier": "none",
           "soundGroup": "rooted_dirt"
         },
-        "cultivation": {"status": "not_implemented"}
+        "cultivation": {
+          "status": "not_implemented"
+        }
       },
-      "assets": {"textureSet": "placeholder_earth"}
+      "assets": {
+        "textureSet": "placeholder_earth"
+      }
     },
     {
       "id": "peat_soil",
@@ -380,7 +579,9 @@
       "derivedBlocks": [],
       "family": "soil",
       "compatibilityRole": "geostrata:soil/organic/peat",
-      "semanticTags": ["geostrata:soft_earth"],
+      "semanticTags": [
+        "geostrata:soft_earth"
+      ],
       "gameplay": {
         "breaking": {
           "copyFrom": "minecraft:podzol",
@@ -391,9 +592,13 @@
           "minimumToolTier": "none",
           "soundGroup": "rooted_dirt"
         },
-        "cultivation": {"status": "not_implemented"}
+        "cultivation": {
+          "status": "not_implemented"
+        }
       },
-      "assets": {"textureSet": "placeholder_earth"}
+      "assets": {
+        "textureSet": "placeholder_earth"
+      }
     },
     {
       "id": "wet_mud",
@@ -401,7 +606,9 @@
       "derivedBlocks": [],
       "family": "mud",
       "compatibilityRole": "geostrata:mud/wet",
-      "semanticTags": ["geostrata:soft_earth"],
+      "semanticTags": [
+        "geostrata:soft_earth"
+      ],
       "gameplay": {
         "breaking": {
           "copyFrom": "minecraft:mud",
@@ -412,9 +619,13 @@
           "minimumToolTier": "none",
           "soundGroup": "mud"
         },
-        "cultivation": {"status": "not_implemented"}
+        "cultivation": {
+          "status": "not_implemented"
+        }
       },
-      "assets": {"textureSet": "placeholder_earth"}
+      "assets": {
+        "textureSet": "placeholder_earth"
+      }
     },
     {
       "id": "compacted_mud",
@@ -422,7 +633,9 @@
       "derivedBlocks": [],
       "family": "mud",
       "compatibilityRole": "geostrata:mud/compacted",
-      "semanticTags": ["geostrata:soft_earth"],
+      "semanticTags": [
+        "geostrata:soft_earth"
+      ],
       "gameplay": {
         "breaking": {
           "copyFrom": "minecraft:mud",
@@ -433,9 +646,13 @@
           "minimumToolTier": "none",
           "soundGroup": "mud"
         },
-        "cultivation": {"status": "not_implemented"}
+        "cultivation": {
+          "status": "not_implemented"
+        }
       },
-      "assets": {"textureSet": "placeholder_earth"}
+      "assets": {
+        "textureSet": "placeholder_earth"
+      }
     },
     {
       "id": "blue_clay",
@@ -443,7 +660,10 @@
       "derivedBlocks": [],
       "family": "clay",
       "compatibilityRole": "geostrata:clay/blue",
-      "semanticTags": ["geostrata:soft_earth", "geostrata:clays"],
+      "semanticTags": [
+        "geostrata:soft_earth",
+        "geostrata:clays"
+      ],
       "gameplay": {
         "breaking": {
           "copyFrom": "minecraft:clay",
@@ -454,9 +674,13 @@
           "minimumToolTier": "none",
           "soundGroup": "gravel"
         },
-        "cultivation": {"status": "not_implemented"}
+        "cultivation": {
+          "status": "not_implemented"
+        }
       },
-      "assets": {"textureSet": "placeholder_earth"}
+      "assets": {
+        "textureSet": "placeholder_earth"
+      }
     },
     {
       "id": "red_clay",
@@ -464,7 +688,10 @@
       "derivedBlocks": [],
       "family": "clay",
       "compatibilityRole": "geostrata:clay/red",
-      "semanticTags": ["geostrata:soft_earth", "geostrata:clays"],
+      "semanticTags": [
+        "geostrata:soft_earth",
+        "geostrata:clays"
+      ],
       "gameplay": {
         "breaking": {
           "copyFrom": "minecraft:clay",
@@ -475,9 +702,13 @@
           "minimumToolTier": "none",
           "soundGroup": "gravel"
         },
-        "cultivation": {"status": "not_implemented"}
+        "cultivation": {
+          "status": "not_implemented"
+        }
       },
-      "assets": {"textureSet": "placeholder_earth"}
+      "assets": {
+        "textureSet": "placeholder_earth"
+      }
     },
     {
       "id": "coal_ore",
@@ -489,7 +720,9 @@
       ],
       "family": "ore",
       "compatibilityRole": "geostrata:ore/coal",
-      "semanticTags": ["geostrata:ores"],
+      "semanticTags": [
+        "geostrata:ores"
+      ],
       "gameplay": {
         "breaking": {
           "copyFrom": "minecraft:coal_ore",
@@ -500,15 +733,25 @@
           "minimumToolTier": "none",
           "soundGroup": "stone"
         },
-        "cultivation": {"status": "not_applicable"},
+        "cultivation": {
+          "status": "not_applicable"
+        },
         "oreEconomy": {
           "material": "coal",
           "outputItem": "minecraft:coal",
-          "gradeOrder": ["poor", "medium", "rich", "massive"],
+          "gradeOrder": [
+            "poor",
+            "medium",
+            "rich",
+            "massive"
+          ],
           "source": "geostrata:geology/ore_occurrences"
         }
       },
-      "assets": {"textureSet": "placeholder_rock"}
+      "assets": {
+        "textureMatrix": "geostrata:materials/ore_texture_matrix",
+        "material": "coal"
+      }
     },
     {
       "id": "iron_ore",
@@ -520,7 +763,9 @@
       ],
       "family": "ore",
       "compatibilityRole": "geostrata:ore/iron",
-      "semanticTags": ["geostrata:ores"],
+      "semanticTags": [
+        "geostrata:ores"
+      ],
       "gameplay": {
         "breaking": {
           "copyFrom": "minecraft:iron_ore",
@@ -531,15 +776,25 @@
           "minimumToolTier": "stone",
           "soundGroup": "stone"
         },
-        "cultivation": {"status": "not_applicable"},
+        "cultivation": {
+          "status": "not_applicable"
+        },
         "oreEconomy": {
           "material": "iron",
           "outputItem": "minecraft:raw_iron",
-          "gradeOrder": ["poor", "medium", "rich", "massive"],
+          "gradeOrder": [
+            "poor",
+            "medium",
+            "rich",
+            "massive"
+          ],
           "source": "geostrata:geology/ore_occurrences"
         }
       },
-      "assets": {"textureSet": "placeholder_rock"}
+      "assets": {
+        "textureMatrix": "geostrata:materials/ore_texture_matrix",
+        "material": "iron"
+      }
     },
     {
       "id": "copper_ore",
@@ -551,7 +806,9 @@
       ],
       "family": "ore",
       "compatibilityRole": "geostrata:ore/copper",
-      "semanticTags": ["geostrata:ores"],
+      "semanticTags": [
+        "geostrata:ores"
+      ],
       "gameplay": {
         "breaking": {
           "copyFrom": "minecraft:copper_ore",
@@ -562,15 +819,25 @@
           "minimumToolTier": "stone",
           "soundGroup": "stone"
         },
-        "cultivation": {"status": "not_applicable"},
+        "cultivation": {
+          "status": "not_applicable"
+        },
         "oreEconomy": {
           "material": "copper",
           "outputItem": "minecraft:raw_copper",
-          "gradeOrder": ["poor", "medium", "rich", "massive"],
+          "gradeOrder": [
+            "poor",
+            "medium",
+            "rich",
+            "massive"
+          ],
           "source": "geostrata:geology/ore_occurrences"
         }
       },
-      "assets": {"textureSet": "placeholder_rock"}
+      "assets": {
+        "textureMatrix": "geostrata:materials/ore_texture_matrix",
+        "material": "copper"
+      }
     },
     {
       "id": "gold_ore",
@@ -582,7 +849,9 @@
       ],
       "family": "ore",
       "compatibilityRole": "geostrata:ore/gold",
-      "semanticTags": ["geostrata:ores"],
+      "semanticTags": [
+        "geostrata:ores"
+      ],
       "gameplay": {
         "breaking": {
           "copyFrom": "minecraft:gold_ore",
@@ -593,15 +862,25 @@
           "minimumToolTier": "iron",
           "soundGroup": "stone"
         },
-        "cultivation": {"status": "not_applicable"},
+        "cultivation": {
+          "status": "not_applicable"
+        },
         "oreEconomy": {
           "material": "gold",
           "outputItem": "minecraft:raw_gold",
-          "gradeOrder": ["poor", "medium", "rich", "massive"],
+          "gradeOrder": [
+            "poor",
+            "medium",
+            "rich",
+            "massive"
+          ],
           "source": "geostrata:geology/ore_occurrences"
         }
       },
-      "assets": {"textureSet": "placeholder_rock"}
+      "assets": {
+        "textureMatrix": "geostrata:materials/ore_texture_matrix",
+        "material": "gold"
+      }
     }
   ]
 }

@@ -79,10 +79,39 @@ validation cross-checks them against every bundled loot table. Making economics
 fully datapack-driven would require a custom loot function so actual drops cannot
 drift from the catalog.
 
-The bundled models use a GeoStrata placeholder host texture plus increasingly
-large vanilla-material inclusions, making grade readable before production
-host-specific texture sets exist. This is an explicit placeholder asset
-boundary, not the final art direction.
+Every graded ore block stores a stable `host` block-state property. Its model
+selects one flat 16x16 composite texture for that host, material and grade; the
+renderer does not stack raised ore panels over a generic rock. Silk Touch copies
+the host property into the dropped block item so replacing it preserves the
+correct host appearance.
+
+`data/geostrata/materials/ore_texture_matrix.json` is the artist-facing source
+of truth. It declares all rock hosts, the four ordered density targets, each
+material's default item-model host and the subset of hosts that geology may
+actually generate. `scripts/generate_ore_texture_matrix.py` combines:
+
+1. one native 16x16 host tile in `textures/block/host`;
+2. one native 16x16 dense mineral source in `ore_source/master`;
+3. nested Poor, Medium, Rich and Massive masks; and
+4. a restrained one-pixel integration rim derived from the host.
+
+The script writes the transparent grade overlays, all host/material/grade
+composites, block models, blockstates and item-model defaults. Generated PNG and
+JSON assets are committed; Pillow is an authoring dependency only and is not
+required by Minecraft or a resource pack. Repository validation requires exact
+16x16 dimensions, complete model coverage, increasing density and agreement
+between `validHosts` and the runtime ore-occurrence catalog.
+
+The bundled host and mineral tiles are placeholder art in a restrained vanilla
+Minecraft visual language. They are deliberately separated from generated
+composites so an artist can replace a host or mineral source and regenerate the
+whole matrix without editing hundreds of final textures by hand.
+
+![Host, mineral and grade authoring matrix](images/ore-texture-matrix-preview.png)
+
+Full-bright cells are currently permitted by geological occurrence rules. Dim
+cells are generated and asset-ready but will not occur naturally unless the
+occurrence catalog is expanded later.
 
 ## Ownership and compatibility
 
