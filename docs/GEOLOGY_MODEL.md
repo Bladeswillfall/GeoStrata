@@ -56,6 +56,12 @@ Province archetypes apply two deliberately partial responses. Terrain drape lets
 
 Both `/geostrata field` and the opt-in correlated generator construct this transform through `ChunkGeneratorTerrainMorphologySampler.structuralField`. The standalone independent-feature baseline remains unchanged. Use `/geostrata terrain` to inspect relief, slope, ridge/valley prominence and the active province drape/fold response; `/geostrata field` reports the resulting drape and fold offsets separately. The response values are experimental world-generation tuning and must be evaluated in fresh companion worlds before broader activation.
 
+## Ore host-rock occurrence
+
+`data/geostrata/geology/ore_occurrences.json` is the first implemented ore-system contract. It defines phase-one coal, iron, copper and gold by canonical output item, valid host lithologies, province contexts and supported deposit styles. `OreOccurrenceCatalog` loads it after the lithology catalog and rejects unknown hosts, provinces or styles. `/geostrata ore <material>` exposes the loaded contract.
+
+The catalog is metadata-only: it does not place deposits or suppress native ores. It fixes Trace as non-economic evidence and reserves Poor, Medium, Rich and Massive as the ordered economic grades, while leaving their yield and XP behavior explicitly unimplemented until matching blocks and loot behavior exist. See `docs/ORE_SYSTEM.md` for the staged activation and compatibility boundary.
+
 ## Sedimentary succession and spatial-field staging
 
 GeoStrata now has a metadata-only sedimentary succession model plus a deterministic selector and normalized contact planner. Those components establish lower-to-upper bed order, relative thickness and exact contact ownership without changing generated blocks. The contact planner assigns internal boundaries to the overlying bed, replacing feature-registration order with an explicit future ownership rule.

@@ -23,6 +23,7 @@ public final class GeologyDataReload implements SimpleSynchronousResourceReloadL
     private static final GeologyDataReload INSTANCE = new GeologyDataReload();
     private static final Identifier RELOAD_ID = GeoStrata.id("geology_data");
     private static final Identifier LITHOLOGIES = GeoStrata.id("geology/lithologies.json");
+    private static final Identifier ORE_OCCURRENCES = GeoStrata.id("geology/ore_occurrences.json");
     private static final Identifier PROVINCES = GeoStrata.id("geology/province_profiles.json");
     private static final Identifier SUCCESSIONS = GeoStrata.id("geology/sedimentary_successions.json");
     private static final Identifier FIELD_PROFILES = GeoStrata.id("geology/sedimentary_field_profiles.json");
@@ -45,6 +46,7 @@ public final class GeologyDataReload implements SimpleSynchronousResourceReloadL
         try {
             State loaded = parse(
                     readObject(manager, LITHOLOGIES),
+                    readObject(manager, ORE_OCCURRENCES),
                     readObject(manager, PROVINCES),
                     readObject(manager, SUCCESSIONS),
                     readObject(manager, FIELD_PROFILES),
@@ -53,8 +55,9 @@ public final class GeologyDataReload implements SimpleSynchronousResourceReloadL
             );
             loaded.publish();
             GeoStrata.LOGGER.info(
-                    "Loaded GeoStrata geology data: {} lithologies, {} successions, experiment enabled={}",
+                    "Loaded GeoStrata geology data: {} lithologies, {} ore occurrences, {} successions, experiment enabled={}",
                     loaded.lithologies().entries().size(),
+                    loaded.oreOccurrences().occurrences().size(),
                     loaded.successions().successions().size(),
                     loaded.experiment().enabled()
             );
@@ -65,6 +68,7 @@ public final class GeologyDataReload implements SimpleSynchronousResourceReloadL
 
     static State parse(
             JsonObject lithologiesRoot,
+            JsonObject oreOccurrencesRoot,
             JsonObject provincesRoot,
             JsonObject successionsRoot,
             JsonObject fieldProfilesRoot,
@@ -72,6 +76,10 @@ public final class GeologyDataReload implements SimpleSynchronousResourceReloadL
             boolean companionLoaded
     ) {
         LithologyCatalog.Snapshot lithologies = LithologyCatalog.parse(lithologiesRoot);
+        OreOccurrenceCatalog.Snapshot oreOccurrences = OreOccurrenceCatalog.parse(
+                lithologies,
+                oreOccurrencesRoot
+        );
         GeologyProvinceProfiles.Snapshot provinces = GeologyProvinceProfiles.parse(lithologies, provincesRoot);
         SedimentarySuccessions.Snapshot successions = SedimentarySuccessions.parse(lithologies, successionsRoot);
         SedimentaryFieldProfiles.Snapshot fieldProfiles = SedimentaryFieldProfiles.parse(
@@ -84,7 +92,7 @@ public final class GeologyDataReload implements SimpleSynchronousResourceReloadL
                 lithologies,
                 provinces
         ).activated(companionLoaded);
-        return new State(lithologies, provinces, successions, fieldProfiles, experiment);
+        return new State(lithologies, oreOccurrences, provinces, successions, fieldProfiles, experiment);
     }
 
     private static JsonObject readObject(ResourceManager manager, Identifier id) throws IOException {
@@ -101,6 +109,7 @@ public final class GeologyDataReload implements SimpleSynchronousResourceReloadL
 
     record State(
             LithologyCatalog.Snapshot lithologies,
+            OreOccurrenceCatalog.Snapshot oreOccurrences,
             GeologyProvinceProfiles.Snapshot provinces,
             SedimentarySuccessions.Snapshot successions,
             SedimentaryFieldProfiles.Snapshot fieldProfiles,
@@ -108,6 +117,7 @@ public final class GeologyDataReload implements SimpleSynchronousResourceReloadL
     ) {
         private void publish() {
             LithologyCatalog.install(lithologies);
+            OreOccurrenceCatalog.install(oreOccurrences);
             GeologyProvinceProfiles.install(provinces);
             SedimentarySuccessions.install(successions);
             SedimentaryFieldProfiles.install(fieldProfiles);
@@ -115,4 +125,3 @@ public final class GeologyDataReload implements SimpleSynchronousResourceReloadL
         }
     }
 }
-

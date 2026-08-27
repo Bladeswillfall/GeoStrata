@@ -8,6 +8,7 @@ import com.geostrata.geology.GeologyProvinceProfiles;
 import com.geostrata.geology.GeologyProvinceSampler;
 import com.geostrata.geology.GeologySurvey;
 import com.geostrata.geology.LithologyCatalog;
+import com.geostrata.geology.OreOccurrenceCatalog;
 import com.geostrata.geology.SedimentaryContactPlanner;
 import com.geostrata.geology.SedimentaryFieldProfiles;
 import com.geostrata.geology.SedimentaryStratigraphicField;
@@ -60,6 +61,12 @@ public final class GeoStrataCommands {
                                         .executes(context -> showLithology(
                                                 context.getSource(),
                                                 StringArgumentType.getString(context, "lithology")
+                                        ))))
+                        .then(CommandManager.literal("ore")
+                                .then(CommandManager.argument("material", StringArgumentType.word())
+                                        .executes(context -> showOre(
+                                                context.getSource(),
+                                                StringArgumentType.getString(context, "material")
                                         ))))
                         .then(CommandManager.literal("survey")
                                 .then(CommandManager.argument("lithology", StringArgumentType.word())
@@ -418,6 +425,37 @@ public final class GeoStrataCommands {
                                 + " | block " + entry.block()
                                 + " | biome tag #" + entry.biomeTag()
                                 + " | baseline " + entry.baselineFeature()
+                ),
+                false
+        );
+        return 1;
+    }
+
+    private static int showOre(ServerCommandSource source, String material) {
+        OreOccurrenceCatalog.Snapshot catalog = OreOccurrenceCatalog.current();
+        if (!catalog.loaded()) {
+            source.sendError(Text.literal("GeoStrata ore occurrence catalog has not been loaded yet."));
+            return 0;
+        }
+
+        OreOccurrenceCatalog.Occurrence occurrence;
+        try {
+            occurrence = catalog.require(material);
+        } catch (IllegalArgumentException exception) {
+            source.sendError(Text.literal(exception.getMessage()));
+            return 0;
+        }
+
+        source.sendFeedback(
+                () -> Text.literal(
+                        "GeoStrata ore " + occurrence.id()
+                                + ": output " + occurrence.outputItem()
+                                + " | hosts " + String.join(",", occurrence.hostLithologies())
+                                + " | provinces " + occurrence.provinceContexts().stream()
+                                .map(province -> province.id())
+                                .collect(Collectors.joining(","))
+                                + " | deposit styles " + String.join(",", occurrence.depositStyles())
+                                + " | host contract only; deposits, grade yields/XP and native suppression inactive"
                 ),
                 false
         );
