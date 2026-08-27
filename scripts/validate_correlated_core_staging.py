@@ -56,10 +56,13 @@ require("correlated_sedimentary_experiment" not in worldgen_source,
 
 require("CorrelatedExperimentChunkOwnership.suppressionActiveFor" in lens_source,
         "baseline strata lenses must have an activation-gated suppression fast path")
-require(lens_source.count("CorrelatedExperimentChunkOwnership.ownershipForChunk") >= 2,
-        "baseline strata lenses must check both origin and destination chunk ownership")
-require("mutable.getX()" in lens_source and "mutable.getZ()" in lens_source,
+require("suppression.suppresses(origin)" in lens_source,
+        "baseline strata lenses must reject origins in experiment-owned chunks")
+require("suppression.suppresses(mutable)" in lens_source,
         "cross-chunk lens placement must clip candidate blocks entering owned chunks")
+require("private record SuppressionContext" in lens_source
+        and "CorrelatedExperimentChunkOwnership.ownershipForChunk" in lens_source,
+        "lens suppression context must delegate chunk decisions to the shared ownership adapter")
 
 require("Math.floorDiv" in ownership_source and "CHUNK_CENTER_OFFSET" in ownership_source,
         "chunk ownership adapter must normalize coordinates with floor division")
