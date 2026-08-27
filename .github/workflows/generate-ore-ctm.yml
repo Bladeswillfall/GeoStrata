@@ -1,0 +1,40 @@
+name: Generate ore CTM assets
+
+on:
+  push:
+    branches: [ feature/continuity-ore-tilesets ]
+
+permissions:
+  contents: write
+
+jobs:
+  generate:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout feature branch
+        uses: actions/checkout@v4
+        with:
+          ref: feature/continuity-ore-tilesets
+
+      - name: Install authoring dependency
+        run: python3 -m pip install --disable-pip-version-check Pillow
+
+      - name: Generate compact ore tilesets
+        run: python3 scripts/generate_ore_continuity_tilesets.py
+
+      - name: Commit generated assets
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/main/resources/assets/geostrata/optifine/ctm/ore \
+                  src/main/resources/assets/geostrata/textures/optifine/ctm/ore \
+                  src/main/resources/assets/geostrata/textures/block/ore_source/tileset \
+                  src/main/resources/data/geostrata/materials/ore_ctm_manifest.json \
+                  docs/images/ore-ctm-tileset-preview.png
+          if git diff --cached --quiet; then
+            echo "Generated CTM assets are already current."
+            exit 0
+          fi
+          git commit -m "Generate compact ore CTM assets"
+          git push origin HEAD:feature/continuity-ore-tilesets
