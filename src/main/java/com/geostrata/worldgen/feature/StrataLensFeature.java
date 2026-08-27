@@ -1,6 +1,7 @@
 package com.geostrata.worldgen.feature;
 
 import com.geostrata.GeoStrata;
+import com.geostrata.geology.CorrelatedExperimentChunkOwnership;
 import com.geostrata.geology.GeologyDeterminism;
 import com.geostrata.geology.GeologyProvinceProfiles;
 import com.geostrata.geology.GeologyProvinceSampler;
@@ -34,7 +35,19 @@ public final class StrataLensFeature extends Feature<StrataLensConfig> {
         Random random = context.getRandom();
         StrataLensConfig config = context.getConfig();
 
-        if (!passesProvinceSuitability(world, origin, config)) {
+        GeologyProvinceProfiles.Snapshot profiles = GeologyProvinceProfiles.current();
+        Optional<String> lithology = profiledLithology(config, profiles);
+        if (lithology.isPresent()
+                && CorrelatedExperimentChunkOwnership.suppressesBaselineLithology(
+                        lithology.get(),
+                        world.getSeed(),
+                        origin.getX(),
+                        origin.getZ()
+                )) {
+            return false;
+        }
+
+        if (!passesProvinceSuitability(world, origin, lithology, profiles)) {
             return false;
         }
 
@@ -106,15 +119,10 @@ public final class StrataLensFeature extends Feature<StrataLensConfig> {
     private static boolean passesProvinceSuitability(
             StructureWorldAccess world,
             BlockPos origin,
-            StrataLensConfig config
+            Optional<String> lithology,
+            GeologyProvinceProfiles.Snapshot profiles
     ) {
-        GeologyProvinceProfiles.Snapshot profiles = GeologyProvinceProfiles.current();
-        if (!profiles.loaded()) {
-            return true;
-        }
-
-        Optional<String> lithology = profiledLithology(config, profiles);
-        if (lithology.isEmpty()) {
+        if (!profiles.loaded() || lithology.isEmpty()) {
             return true;
         }
 
@@ -135,7 +143,7 @@ public final class StrataLensFeature extends Feature<StrataLensConfig> {
             StrataLensConfig config,
             GeologyProvinceProfiles.Snapshot profiles
     ) {
-        if (config.targets().isEmpty()) {
+        if (!profiles.loaded() || config.targets().isEmpty()) {
             return Optional.empty();
         }
 
