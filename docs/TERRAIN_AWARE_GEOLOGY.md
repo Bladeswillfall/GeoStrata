@@ -69,9 +69,13 @@ Structural response operates at low spatial frequency and may influence:
 - fault displacement or fault-block expression;
 - where strongly deformed structures are most visible.
 
-It should use coarse, deterministic terrain observations over tens to hundreds of blocks rather than reacting to individual blocks. The first core data seam is `TerrainMorphologySample`, which summarizes center elevation, X/Z gradient, local relief and ridge/valley prominence from caller-supplied height observations. It contains no Minecraft classes and does not decide how those heights are obtained.
+It should use coarse, deterministic terrain observations over tens to hundreds of blocks rather than reacting to individual blocks. `TerrainMorphologySample` summarizes center elevation, X/Z gradient, local relief and ridge/valley prominence from caller-supplied height observations. It contains no Minecraft classes and does not decide how those heights are obtained.
 
-A future vanilla adapter may obtain observations through ordinary `ChunkGenerator` height queries. Optional integrations may provide richer signals when another terrain generator exposes them, but the standalone path must remain sufficient.
+`ChunkGeneratorTerrainMorphologySampler` is the standalone Minecraft adapter. It queries the active `ChunkGenerator` for raw `OCEAN_FLOOR_WG` height at the center plus four cardinal observations using a default spacing of 128 blocks. Those raw generator queries do not require neighboring chunks to be loaded, so the diagnostic remains independent of exploration/generation order. Using ocean-floor worldgen height retains broad submarine relief instead of flattening every ocean observation to sea level.
+
+Because the adapter talks only to Minecraft's active generator, ordinary noise-setting/datapack changes and terrain mods that participate through that generator can influence the same GeoStrata morphology contract without their APIs leaking into geological mathematics. Optional integrations may still provide richer signals when a terrain generator exposes useful deterministic fields that generic heights cannot represent.
+
+`/geostrata terrain` reports the current raw generator height, relief, slope magnitude and X/Z gradient, prominence, and spacing. It is read-only and does not currently alter lithology ownership or generated blocks.
 
 ### Surface and exposure response
 
@@ -156,20 +160,22 @@ Deep integration that requires compile-time APIs, large data sets or terrain-mod
 
 ## Current implementation boundary
 
-`TerrainMorphologySample` is intentionally pure staging. It does not query a world, alter `SedimentaryStratigraphicField`, activate new worldgen, or change existing chunk output.
+`TerrainMorphologySample` and `ChunkGeneratorTerrainMorphologySampler` are staging/diagnostic infrastructure. The sampler observes the active generator but does not alter `SedimentaryStratigraphicField`, correlated experiment ownership, feature registration or current chunk output.
 
-That keeps the current correlated experiment reproducible while establishing a tested vocabulary for terrain-aware work.
+That keeps the current correlated experiment reproducible while establishing a tested, live vocabulary for terrain-aware work.
+
+The morphology signal is intentionally not cached or consumed from production worldgen yet. Five raw height queries are appropriate for an explicit diagnostic command; a future runtime consumer must define a coarse deterministic field/cache strategy before sampling this signal at worldgen scale.
 
 ## Implementation sequence
 
 1. **complete** — record the terrain-aware deformation architecture and compatibility rule;
 2. **complete** — introduce a pure morphology sample with regression tests;
-3. add a deterministic vanilla `ChunkGenerator` morphology sampler using coarse spacing and no forced neighbor generation;
-4. expose morphology through a read-only `/geostrata terrain` or structural diagnostic;
+3. **complete** — add a deterministic `ChunkGenerator` morphology sampler using coarse spacing and no forced neighbor generation;
+4. **complete** — expose morphology through read-only `/geostrata terrain` diagnostics;
 5. define data-driven province deformation profiles and a pure deformation-response function;
 6. compose that response with the stratigraphic field in diagnostics only;
 7. add explicit fold and fault transforms with fixed regression vectors;
 8. evaluate terrain generators and fresh worlds before granting the deformation field runtime block ownership;
 9. keep local weathering/exposure behavior as a later, separate surface stage.
 
-The next engineering step is therefore the deterministic vanilla morphology adapter and diagnostic, not immediate modification of production geology.
+The next engineering step is therefore a data-driven province deformation contract and pure response calculation. It should turn province context plus `TerrainMorphologySample` into bounded structural parameters without yet changing block generation.
