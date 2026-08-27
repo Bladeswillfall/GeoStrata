@@ -1,11 +1,9 @@
 package com.geostrata.worldgen.feature;
 
-import com.geostrata.geology.CorrelatedExperimentChunkOwnership;
 import com.geostrata.geology.CorrelatedSedimentaryExperiment;
-import com.geostrata.geology.GeologyProvinceSampler;
+import com.geostrata.geology.CorrelatedSedimentaryRuntime;
 import com.geostrata.geology.LithologyCatalog;
 import com.geostrata.geology.SedimentaryContactPlanner;
-import com.geostrata.geology.SedimentaryFieldProfiles;
 import com.geostrata.geology.SedimentaryStratigraphicField;
 import com.geostrata.geology.SedimentarySuccessions;
 import net.minecraft.block.Block;
@@ -23,6 +21,7 @@ import net.minecraft.world.gen.feature.util.FeatureContext;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 /**
@@ -41,56 +40,29 @@ public final class CorrelatedSedimentaryFeature extends Feature<DefaultFeatureCo
 
     @Override
     public boolean generate(FeatureContext<DefaultFeatureConfig> context) {
-        CorrelatedSedimentaryExperiment.Snapshot experiment = CorrelatedSedimentaryExperiment.current();
-        if (!experiment.loaded() || !experiment.enabled()) {
-            return false;
-        }
-
         StructureWorldAccess world = context.getWorld();
         BlockPos origin = context.getOrigin();
         int startX = Math.floorDiv(origin.getX(), CHUNK_SIZE) * CHUNK_SIZE;
         int startZ = Math.floorDiv(origin.getZ(), CHUNK_SIZE) * CHUNK_SIZE;
-        int centerX = CorrelatedExperimentChunkOwnership.centerCoordinate(origin.getX());
-        int centerZ = CorrelatedExperimentChunkOwnership.centerCoordinate(origin.getZ());
         long worldSeed = world.getSeed();
-
-        CorrelatedSedimentaryExperiment.Ownership ownership =
-                CorrelatedExperimentChunkOwnership.ownershipForChunk(worldSeed, origin.getX(), origin.getZ());
-        if (!ownership.owned() || ownership.successionId() == null) {
+        Optional<CorrelatedSedimentaryRuntime.Site> resolved = CorrelatedSedimentaryRuntime.resolve(
+                worldSeed,
+                origin.getX(),
+                origin.getZ()
+        );
+        if (resolved.isEmpty()) {
             return false;
         }
 
-        SedimentarySuccessions.Snapshot successions = SedimentarySuccessions.current();
-        SedimentaryFieldProfiles.Snapshot fieldProfiles = SedimentaryFieldProfiles.current();
+        CorrelatedSedimentaryExperiment.Snapshot experiment = CorrelatedSedimentaryExperiment.current();
         LithologyCatalog.Snapshot catalog = LithologyCatalog.current();
-        if (!successions.loaded() || !fieldProfiles.loaded() || !catalog.loaded()) {
+        if (!catalog.loaded()) {
             return false;
         }
 
-        SedimentarySuccessions.Succession succession = successions.byId().get(ownership.successionId());
-        if (succession == null) {
-            throw new IllegalStateException("Owned correlated succession is not loaded: " + ownership.successionId());
-        }
-
-        GeologyProvinceSampler.Sample province = GeologyProvinceSampler.sample(worldSeed, centerX, centerZ);
-        SedimentaryContactPlanner.Plan plan = SedimentaryContactPlanner.plan(
-                worldSeed,
-                province.siteX(),
-                province.siteZ(),
-                succession
-        );
-        SedimentaryStratigraphicField.Parameters fieldParameters = fieldProfiles.parametersFor(
-                succession.continuity()
-        );
-        SedimentaryStratigraphicField.Field field = SedimentaryStratigraphicField.forSite(
-                worldSeed,
-                province.siteX(),
-                province.siteZ(),
-                fieldParameters
-        );
-
+        CorrelatedSedimentaryRuntime.Site site = resolved.get();
         TagKey<Block> hostTag = hostTag(experiment.hostBlockTag());
-        Map<String, BlockState> outputStates = outputStates(succession, catalog);
+        Map<String, BlockState> outputStates = outputStates(site.succession(), catalog);
 
         int seaLevel = world.getSeaLevel();
         int minY = Math.max(
@@ -105,7 +77,17 @@ public final class CorrelatedSedimentaryFeature extends Feature<DefaultFeatureCo
             return false;
         }
 
-        return replaceChunk(world, startX, startZ, minY, maxY, hostTag, field, plan, outputStates) > 0;
+        return replaceChunk(
+                world,
+                startX,
+                startZ,
+                minY,
+                maxY,
+                hostTag,
+                site.field(),
+                site.plan(),
+                outputStates
+        ) > 0;
     }
 
     private static int replaceChunk(

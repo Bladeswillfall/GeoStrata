@@ -116,6 +116,54 @@ final class CorrelatedSedimentaryExperimentTest {
         assertEquals("disabled", ownership.reason());
     }
 
+    @Test
+    void runtimeResolutionUsesOneFieldForTheWholeChunk() {
+        Fixture fixture = fixture();
+        CorrelatedSedimentaryExperiment.Snapshot active = fixture.parse(
+                experiment(false, "metadata_only", 96, "alpha", "beta")
+        ).activated(true);
+
+        var first = CorrelatedSedimentaryRuntime.resolve(
+                0L,
+                -2000,
+                -1104,
+                active,
+                fixture.profiles(),
+                fixture.successions(),
+                fixture.fieldProfiles()
+        );
+        var second = CorrelatedSedimentaryRuntime.resolve(
+                0L,
+                -1993,
+                -1097,
+                active,
+                fixture.profiles(),
+                fixture.successions(),
+                fixture.fieldProfiles()
+        );
+
+        assertTrue(first.isPresent());
+        assertTrue(second.isPresent());
+        assertEquals(-1992, first.orElseThrow().chunkCenterX());
+        assertEquals(-1096, first.orElseThrow().chunkCenterZ());
+        assertEquals(first.orElseThrow().plan(), second.orElseThrow().plan());
+        assertEquals(first.orElseThrow().field(), second.orElseThrow().field());
+    }
+
+    @Test
+    void runtimeResolutionRejectsDisabledExperiment() {
+        Fixture fixture = fixture();
+        assertTrue(CorrelatedSedimentaryRuntime.resolve(
+                0L,
+                -2000,
+                -1104,
+                fixture.parse(experiment(false, "metadata_only", 96, "alpha", "beta")),
+                fixture.profiles(),
+                fixture.successions(),
+                fixture.fieldProfiles()
+        ).isEmpty());
+    }
+
     private static JsonObject experiment(
             boolean enabled,
             String runtimeStatus,
@@ -214,23 +262,45 @@ final class CorrelatedSedimentaryExperimentTest {
                 """.formatted(weights, weights, weights, weights, weights));
     }
 
+    private static JsonObject fieldProfiles() {
+        return parse("""
+                {
+                  "schemaVersion": 1,
+                  "model": "geostrata:sedimentary_field_profiles",
+                  "runtimeStatus": "metadata_only",
+                  "profiles": [
+                    {
+                      "continuity": "regional",
+                      "cycleThicknessBlocks": 48.0,
+                      "maxDip": 0.08,
+                      "warpAmplitudeBlocks": 4.0,
+                      "warpWavelengthBlocks": 192.0
+                    }
+                  ]
+                }
+                """);
+    }
+
     private static JsonObject parse(String json) {
         return JsonParser.parseString(json).getAsJsonObject();
     }
 
     private static Fixture fixture() {
         LithologyCatalog.Snapshot catalog = LithologyCatalog.parse(catalog());
+        SedimentarySuccessions.Snapshot successions = SedimentarySuccessions.parse(catalog, successions());
         return new Fixture(
                 catalog,
                 GeologyProvinceProfiles.parse(catalog, profiles()),
-                SedimentarySuccessions.parse(catalog, successions())
+                successions,
+                SedimentaryFieldProfiles.parse(successions, fieldProfiles())
         );
     }
 
     private record Fixture(
             LithologyCatalog.Snapshot catalog,
             GeologyProvinceProfiles.Snapshot profiles,
-            SedimentarySuccessions.Snapshot successions
+            SedimentarySuccessions.Snapshot successions,
+            SedimentaryFieldProfiles.Snapshot fieldProfiles
     ) {
         private CorrelatedSedimentaryExperiment.Snapshot parse(JsonObject root) {
             return CorrelatedSedimentaryExperiment.parse(root, successions, catalog, profiles);

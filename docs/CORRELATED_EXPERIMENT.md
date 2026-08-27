@@ -55,6 +55,12 @@ The companion registers at `UNDERGROUND_DECORATION`, after vanilla underground o
 
 The current vertical window is 96 blocks below to 48 blocks above sea level. It is a bounded experimental mutation envelope, not a permanent geological law; lithology `depthAffinity` remains qualitative and terrain-agnostic.
 
+## Exact runtime inspection
+
+`CorrelatedSedimentaryRuntime` is the single resolver for both experimental worldgen and diagnostics. It normalizes the requested position to the owning chunk center, evaluates ownership, selects the succession, plans its contacts and constructs the site-anchored field once. This prevents diagnostics from sampling a point that the chunk-level generator did not own or from rebuilding a different field.
+
+With the companion installed, `/geostrata experiment` now reports the exact field lithology at the command source, the actual block at that position, cycle position and whether the position is inside the active mutation window. The actual block is intentionally not required to match the field: caves, ores and all other non-host material are preserved by design. The command is an inspection aid for fresh experiment worlds, not a repair or replacement pass.
+
 ## Validation
 
 `GeologyResourceContractTest` parses the shipped geology graph, checks disabled and companion-present activation states, decodes worldgen resources and validates companion metadata. Behavior tests cover the standalone boundary and ownership handoff.
@@ -68,6 +74,6 @@ Java tests cover native activation, suppression scope, deterministic ownership, 
 3. **complete** — implement/register correlated feature type and data while keeping it unreachable from standalone biome worldgen.
 4. **complete** — prepare activation-gated baseline suppression and cross-chunk clipping using shared ownership.
 5. **complete as an optional artifact**: build the separate companion whose native mod presence activates core and whose initializer registers the correlated placed feature.
-6. **next** — evaluate fresh-world abundance, contacts, cave/cliff exposure, performance and compatibility before considering wider distribution.
+6. **in progress** — exact runtime-field inspection is available; fresh-world abundance, contacts, cave/cliff exposure, performance and compatibility still need evaluation before considering wider distribution.
 
 Standalone GeoStrata remains on the baseline unless the companion is deliberately installed.
