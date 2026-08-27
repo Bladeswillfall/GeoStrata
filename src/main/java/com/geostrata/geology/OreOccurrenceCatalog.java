@@ -6,6 +6,7 @@ import com.google.gson.JsonObject;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.EnumMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -25,7 +26,7 @@ public final class OreOccurrenceCatalog {
             "disseminated",
             "massive_lens_or_pocket"
     );
-    private static final List<String> ECONOMIC_GRADES = List.of("poor", "medium", "rich", "massive");
+    private static final List<OreGrade> ECONOMIC_GRADES = List.of(OreGrade.values());
 
     private static volatile Snapshot snapshot = Snapshot.unloaded();
 
@@ -44,9 +45,9 @@ public final class OreOccurrenceCatalog {
         if (!lithologies.loaded()) {
             throw new IllegalArgumentException("lithology catalog must be loaded before ore occurrences");
         }
-        requireInt(root, "schemaVersion", 1);
+        requireInt(root, "schemaVersion", 2);
         requireString(root, "model", "geostrata:ore_occurrence_catalog");
-        requireString(root, "runtimeStatus", "metadata_only");
+        requireString(root, "runtimeStatus", "grade_economy_active");
         requireString(root, "generationOwner", "geostrata");
         requireString(root, "nativeGenerationSuppression", "not_implemented");
 
@@ -57,14 +58,20 @@ public final class OreOccurrenceCatalog {
         }
 
         LinkedHashMap<String, Occurrence> byId = new LinkedHashMap<>();
+        Set<String> claimedGradeBlocks = new HashSet<>();
         for (JsonElement rawOccurrence : rawOccurrences) {
             Occurrence occurrence = parseOccurrence(rawOccurrence, lithologies.byId().keySet());
             if (byId.put(occurrence.id(), occurrence) != null) {
                 throw new IllegalArgumentException("duplicate ore occurrence id: " + occurrence.id());
             }
+            for (String block : occurrence.gradeBlocks().values()) {
+                if (!claimedGradeBlocks.add(block)) {
+                    throw new IllegalArgumentException("graded ore block is claimed more than once: " + block);
+                }
+            }
         }
         return new Snapshot(
-                "metadata_only",
+                "grade_economy_active",
                 "geostrata",
                 "not_implemented",
                 gradeModel,
@@ -74,18 +81,70 @@ public final class OreOccurrenceCatalog {
     }
 
     private static GradeModel parseGradeModel(JsonObject object) {
-        requireString(object, "runtimeStatus", "names_only");
+        requireString(object, "runtimeStatus", "block_loot_xp_active");
         List<String> grades = stringList(requiredArray(object, "economicGrades"), "economicGrades");
-        if (!grades.equals(ECONOMIC_GRADES)) {
+        List<String> expectedGrades = ECONOMIC_GRADES.stream().map(OreGrade::id).toList();
+        if (!grades.equals(expectedGrades)) {
             throw new IllegalArgumentException("economicGrades must be poor, medium, rich, massive in order");
         }
         JsonObject trace = requiredObject(object, "trace");
         if (requireBoolean(trace, "economic")) {
             throw new IllegalArgumentException("trace evidence must remain non-economic");
         }
-        requireString(object, "yieldStatus", "not_implemented");
-        requireString(object, "experienceStatus", "not_implemented");
-        return new GradeModel(grades, false, "not_implemented", "not_implemented");
+        requireString(trace, "runtimeStatus", "evidence_only_not_implemented");
+        requireString(object, "yieldStatus", "loot_tables_active");
+        requireString(object, "experienceStatus", "block_runtime_active");
+        requireString(object, "fortuneMode", "minecraft:ore_drops");
+        requireString(object, "silkTouchMode", "drops_self");
+        List<GradeEconomy> economies = parseEconomies(requiredObject(object, "economics"));
+        return new GradeModel(
+                economies,
+                false,
+                "loot_tables_active",
+                "block_runtime_active",
+                "minecraft:ore_drops",
+                "drops_self"
+        );
+    }
+
+    private static List<GradeEconomy> parseEconomies(JsonObject object) {
+        Set<String> expected = ECONOMIC_GRADES.stream().map(OreGrade::id).collect(java.util.stream.Collectors.toSet());
+        if (!object.keySet().equals(expected)) {
+            throw new IllegalArgumentException("economics must define exactly poor, medium, rich and massive");
+        }
+        List<GradeEconomy> economies = ECONOMIC_GRADES.stream()
+                .map(grade -> parseEconomy(grade, requiredObject(object, grade.id())))
+                .toList();
+        requireAscendingEconomics(economies);
+        return economies;
+    }
+
+    private static GradeEconomy parseEconomy(OreGrade grade, JsonObject object) {
+        int baseYield = requireInt(object, "baseYield");
+        JsonObject experience = requiredObject(object, "experience");
+        int experienceMin = requireInt(experience, "min");
+        int experienceMax = requireInt(experience, "max");
+        if (baseYield < 1 || experienceMin < 0 || experienceMax < experienceMin) {
+            throw new IllegalArgumentException(grade.id() + " has invalid yield or experience range");
+        }
+        if (baseYield != grade.baseYield()
+                || experienceMin != grade.experienceMin()
+                || experienceMax != grade.experienceMax()) {
+            throw new IllegalArgumentException(grade.id() + " economics do not match the fixed core grade contract");
+        }
+        return new GradeEconomy(grade, baseYield, experienceMin, experienceMax);
+    }
+
+    private static void requireAscendingEconomics(List<GradeEconomy> economies) {
+        for (int index = 1; index < economies.size(); index++) {
+            GradeEconomy previous = economies.get(index - 1);
+            GradeEconomy current = economies.get(index);
+            if (current.baseYield() <= previous.baseYield()
+                    || current.experienceMin() < previous.experienceMin()
+                    || current.experienceMax() <= previous.experienceMax()) {
+                throw new IllegalArgumentException("ore grade yield and XP must increase with concentration");
+            }
+        }
     }
 
     private static Occurrence parseOccurrence(JsonElement element, Set<String> knownLithologies) {
@@ -101,7 +160,20 @@ public final class OreOccurrenceCatalog {
         List<GeologyProvince> contexts = parseContexts(id, requiredArray(object, "provinceContexts"));
         List<String> styles = stringList(requiredArray(object, "depositStyles"), id + " depositStyles");
         requireDepositStyles(id, styles);
-        return new Occurrence(id, providerMod, outputItem, hosts, contexts, styles);
+        Map<OreGrade, String> gradeBlocks = parseGradeBlocks(id, requiredObject(object, "gradeBlocks"));
+        return new Occurrence(id, providerMod, outputItem, hosts, contexts, styles, gradeBlocks);
+    }
+
+    private static Map<OreGrade, String> parseGradeBlocks(String material, JsonObject object) {
+        Set<String> expected = ECONOMIC_GRADES.stream().map(OreGrade::id).collect(java.util.stream.Collectors.toSet());
+        if (!object.keySet().equals(expected)) {
+            throw new IllegalArgumentException(material + " gradeBlocks must define every economic grade exactly once");
+        }
+        EnumMap<OreGrade, String> blocks = new EnumMap<>(OreGrade.class);
+        for (OreGrade grade : ECONOMIC_GRADES) {
+            blocks.put(grade, identifier(object, grade.id()));
+        }
+        return Collections.unmodifiableMap(blocks);
     }
 
     private static void requireKnownHosts(String id, List<String> hosts, Set<String> knownLithologies) {
@@ -242,14 +314,36 @@ public final class OreOccurrenceCatalog {
         return element.getAsBoolean();
     }
 
+    public record GradeEconomy(
+            OreGrade grade,
+            int baseYield,
+            int experienceMin,
+            int experienceMax
+    ) {
+    }
+
     public record GradeModel(
-            List<String> economicGrades,
+            List<GradeEconomy> economies,
             boolean traceEconomic,
             String yieldStatus,
-            String experienceStatus
+            String experienceStatus,
+            String fortuneMode,
+            String silkTouchMode
     ) {
         public GradeModel {
-            economicGrades = List.copyOf(economicGrades);
+            economies = List.copyOf(economies);
+        }
+
+        public List<String> economicGrades() {
+            return economies.stream().map(economy -> economy.grade().id()).toList();
+        }
+
+        public Optional<GradeEconomy> find(OreGrade grade) {
+            return economies.stream().filter(economy -> economy.grade() == grade).findFirst();
+        }
+
+        public GradeEconomy require(OreGrade grade) {
+            return find(grade).orElseThrow(() -> new IllegalArgumentException("missing ore grade economy: " + grade.id()));
         }
     }
 
@@ -259,12 +353,16 @@ public final class OreOccurrenceCatalog {
             String outputItem,
             List<String> hostLithologies,
             List<GeologyProvince> provinceContexts,
-            List<String> depositStyles
+            List<String> depositStyles,
+            Map<OreGrade, String> gradeBlocks
     ) {
         public Occurrence {
             hostLithologies = List.copyOf(hostLithologies);
             provinceContexts = List.copyOf(provinceContexts);
             depositStyles = List.copyOf(depositStyles);
+            EnumMap<OreGrade, String> copiedBlocks = new EnumMap<>(OreGrade.class);
+            copiedBlocks.putAll(gradeBlocks);
+            gradeBlocks = Collections.unmodifiableMap(copiedBlocks);
         }
     }
 
@@ -281,7 +379,14 @@ public final class OreOccurrenceCatalog {
                     "unloaded",
                     "none",
                     "not_implemented",
-                    new GradeModel(List.of(), false, "not_implemented", "not_implemented"),
+                    new GradeModel(
+                            List.of(),
+                            false,
+                            "not_implemented",
+                            "not_implemented",
+                            "not_implemented",
+                            "not_implemented"
+                    ),
                     List.of(),
                     Map.of()
             );

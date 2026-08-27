@@ -12,6 +12,7 @@ ROOT = Path(__file__).resolve().parents[1]
 DATA = ROOT / "src" / "main" / "resources" / "data" / "geostrata"
 CATALOG = DATA / "geology" / "lithologies.json"
 MATERIAL_CATALOG = DATA / "materials" / "material_profiles.json"
+ORE_CATALOG = DATA / "geology" / "ore_occurrences.json"
 BLOCK_TAGS = DATA / "tags" / "blocks"
 BIOME_TAGS = DATA / "tags" / "worldgen" / "biome"
 CONFIGURED = DATA / "worldgen" / "configured_feature"
@@ -40,7 +41,7 @@ ALLOWED_DEPTH_AFFINITIES = {
     "broad",
 }
 ALLOWED_CONTINUITY = {"local", "regional"}
-ALLOWED_MATERIAL_FAMILIES = {"rock", "soil", "mud", "clay"}
+ALLOWED_MATERIAL_FAMILIES = {"rock", "soil", "mud", "clay", "ore"}
 SEMANTIC_BLOCK_TAGS = (
     "rocks",
     "sedimentary_rocks",
@@ -48,11 +49,17 @@ SEMANTIC_BLOCK_TAGS = (
     "metamorphic_rocks",
     "soft_earth",
     "clays",
+    "ores",
 )
 
 BLOCK_REGISTRATION = re.compile(
     r'register(?P<registration>Rock|Earth|RockVariant)\("(?P<name>[a-z0-9_]+)"'
     r'.*?(?P<builder>rock|earth)\(Blocks\.(?P<copy_from>[A-Z0-9_]+), '
+    r'(?P<hardness>[0-9.]+)F, BlockSoundGroup\.(?P<sound_group>[A-Z0-9_]+)\)'
+)
+ORE_BLOCK_REGISTRATION = re.compile(
+    r'registerOre\("(?P<name>[a-z0-9_]+)", "(?P<material>[a-z0-9_]+)", '
+    r'OreGrade\.(?P<grade>[A-Z_]+), Blocks\.(?P<copy_from>[A-Z0-9_]+), '
     r'(?P<hardness>[0-9.]+)F, BlockSoundGroup\.(?P<sound_group>[A-Z0-9_]+)\)'
 )
 
@@ -90,23 +97,37 @@ def source_block_profiles() -> dict[str, dict[str, object]]:
     profiles: dict[str, dict[str, object]] = {}
     for line in source.splitlines():
         match = BLOCK_REGISTRATION.search(line)
-        if not match:
-            continue
+        if match:
+            block = f"geostrata:{match.group('name')}"
+            is_rock = match.group("builder") == "rock"
+            hardness = float(match.group("hardness"))
+            profile = {
+                "family": "rock" if is_rock else "earth",
+                "copyFrom": f"minecraft:{match.group('copy_from').lower()}",
+                "hardness": hardness,
+                "blastResistance": 6.0 if is_rock else hardness,
+                "requiresTool": is_rock,
+                "soundGroup": match.group("sound_group").lower(),
+            }
+        else:
+            match = ORE_BLOCK_REGISTRATION.search(line)
+            if not match:
+                continue
+            block = f"geostrata:{match.group('name')}"
+            profile = {
+                "family": "ore",
+                "material": match.group("material"),
+                "grade": match.group("grade").lower(),
+                "copyFrom": f"minecraft:{match.group('copy_from').lower()}",
+                "hardness": float(match.group("hardness")),
+                "blastResistance": 3.0,
+                "requiresTool": True,
+                "soundGroup": match.group("sound_group").lower(),
+            }
 
-        block = f"geostrata:{match.group('name')}"
         if block in profiles:
             fail(f"duplicate Java block registration: {block}")
-
-        is_rock = match.group("builder") == "rock"
-        hardness = float(match.group("hardness"))
-        profiles[block] = {
-            "family": "rock" if is_rock else "earth",
-            "copyFrom": f"minecraft:{match.group('copy_from').lower()}",
-            "hardness": hardness,
-            "blastResistance": 6.0 if is_rock else hardness,
-            "requiresTool": is_rock,
-            "soundGroup": match.group("sound_group").lower(),
-        }
+        profiles[block] = profile
 
     declared_blocks = {
         f"geostrata:{name.lower()}"
@@ -172,14 +193,121 @@ def block_textures(block: str) -> set[str]:
     return textures
 
 
+def validate_ore_loot(block: str, output_item: str, base_yield: int) -> None:
+    block_path = block.split(":", 1)[1]
+    path = DATA / "loot_tables" / "blocks" / f"{block_path}.json"
+    expected = {
+        "type": "minecraft:block",
+        "pools": [{
+            "rolls": 1,
+            "entries": [{
+                "type": "minecraft:alternatives",
+                "children": [
+                    {
+                        "type": "minecraft:item",
+                        "name": block,
+                        "conditions": [{
+                            "condition": "minecraft:match_tool",
+                            "predicate": {"enchantments": [{
+                                "enchantment": "minecraft:silk_touch",
+                                "levels": {"min": 1},
+                            }]},
+                        }],
+                    },
+                    {
+                        "type": "minecraft:item",
+                        "name": output_item,
+                        "functions": [
+                            {"function": "minecraft:set_count", "count": base_yield},
+                            {
+                                "function": "minecraft:apply_bonus",
+                                "enchantment": "minecraft:fortune",
+                                "formula": "minecraft:ore_drops",
+                            },
+                            {"function": "minecraft:explosion_decay"},
+                        ],
+                    },
+                ],
+            }],
+        }],
+    }
+    if load_json(path) != expected:
+        fail(
+            f"{path.relative_to(ROOT)} must drop itself with Silk Touch or "
+            f"{base_yield}x {output_item} with the standard Fortune ore formula"
+        )
+
+
+def validate_ore_material(
+    material_id: str,
+    blocks: list[str],
+    gameplay: dict[str, object],
+    source_profiles: dict[str, dict[str, object]],
+    occurrences: dict[str, dict[str, object]],
+    grade_order: list[str],
+    economics: dict[str, dict[str, object]],
+) -> None:
+    ore = gameplay.get("oreEconomy")
+    if not isinstance(ore, dict):
+        fail(f"{material_id} must declare gameplay.oreEconomy")
+    material = ore.get("material")
+    if material_id != f"{material}_ore":
+        fail(f"ore material profile {material_id} must be named {material}_ore")
+    occurrence = occurrences.get(material)
+    if occurrence is None:
+        fail(f"{material_id} has no matching ore occurrence")
+    if ore.get("source") != "geostrata:geology/ore_occurrences":
+        fail(f"{material_id} must use the ore occurrence catalog as its economy source")
+    if ore.get("gradeOrder") != grade_order:
+        fail(f"{material_id} gradeOrder does not match the ore catalog")
+    if ore.get("outputItem") != occurrence.get("outputItem"):
+        fail(f"{material_id} outputItem does not match its ore occurrence")
+
+    grade_blocks = occurrence.get("gradeBlocks")
+    if not isinstance(grade_blocks, dict):
+        fail(f"{material_id} occurrence is missing gradeBlocks")
+    expected_blocks = [grade_blocks.get(grade) for grade in grade_order]
+    if blocks != expected_blocks:
+        fail(f"{material_id} blocks do not match its ordered occurrence gradeBlocks")
+
+    for grade, block in zip(grade_order, blocks, strict=True):
+        profile = source_profiles[block]
+        if profile.get("material") != material or profile.get("grade") != grade:
+            fail(f"{block} Java registration does not match {material} {grade}")
+        economy = economics.get(grade)
+        if not isinstance(economy, dict) or not isinstance(economy.get("baseYield"), int):
+            fail(f"ore catalog has invalid {grade} economics")
+        validate_ore_loot(block, occurrence["outputItem"], economy["baseYield"])
+
+
 def validate_material_catalog() -> int:
     catalog = load_json(MATERIAL_CATALOG)
+    ore_catalog = load_json(ORE_CATALOG)
     if catalog.get("schemaVersion") != 1:
         fail("material profile catalog schemaVersion must be 1")
     if catalog.get("model") != "geostrata:material_profile_catalog":
         fail("unexpected material profile catalog model identifier")
     if catalog.get("runtimeStatus") != "validated_metadata_only":
         fail("material profiles must remain explicit that JSON values are not runtime-loaded settings")
+    if ore_catalog.get("schemaVersion") != 2 or ore_catalog.get("runtimeStatus") != "grade_economy_active":
+        fail("ore occurrence catalog must expose the active schema-2 grade economy")
+    grade_model = ore_catalog.get("gradeModel")
+    if not isinstance(grade_model, dict):
+        fail("ore occurrence catalog must declare gradeModel")
+    grade_order = grade_model.get("economicGrades")
+    economics = grade_model.get("economics")
+    if grade_order != ["poor", "medium", "rich", "massive"] or not isinstance(economics, dict):
+        fail("ore grade model must define ordered grade economics")
+    raw_occurrences = ore_catalog.get("occurrences")
+    if not isinstance(raw_occurrences, list):
+        fail("ore occurrence catalog must contain occurrences")
+    occurrences = {
+        occurrence.get("id"): occurrence
+        for occurrence in raw_occurrences
+        if isinstance(occurrence, dict) and isinstance(occurrence.get("id"), str)
+    }
+    if len(occurrences) != len(raw_occurrences):
+        fail("ore occurrences must have unique string ids")
 
     texture_sets = catalog.get("textureSets")
     if not isinstance(texture_sets, dict) or not texture_sets:
@@ -206,7 +334,10 @@ def validate_material_catalog() -> int:
         "pickaxe": tag_values(MINECRAFT_BLOCK_TAGS / "mineable" / "pickaxe.json"),
         "shovel": tag_values(MINECRAFT_BLOCK_TAGS / "mineable" / "shovel.json"),
     }
-    stone_tier = tag_values(MINECRAFT_BLOCK_TAGS / "needs_stone_tool.json")
+    tier_tags = {
+        "stone": tag_values(MINECRAFT_BLOCK_TAGS / "needs_stone_tool.json"),
+        "iron": tag_values(MINECRAFT_BLOCK_TAGS / "needs_iron_tool.json"),
+    }
     semantic_tags = {
         f"geostrata:{name}": tag_values(BLOCK_TAGS / f"{name}.json")
         for name in SEMANTIC_BLOCK_TAGS
@@ -250,7 +381,7 @@ def validate_material_catalog() -> int:
         ids.add(material_id)
         roles.add(role)
 
-        if primary != f"geostrata:{material_id}":
+        if family != "ore" and primary != f"geostrata:{material_id}":
             fail(f"{material_id} must use geostrata:{material_id} as its primaryBlock")
         if not isinstance(derived, list) or any(not isinstance(block, str) for block in derived):
             fail(f"{material_id} derivedBlocks must be an array of block IDs")
@@ -264,6 +395,8 @@ def validate_material_catalog() -> int:
 
         if family not in ALLOWED_MATERIAL_FAMILIES:
             fail(f"{material_id} has unsupported family {family}")
+        if family == "ore" and any(block not in semantic_tags["geostrata:ores"] for block in blocks):
+            fail(f"every {material_id} grade block must be present in geostrata:ores")
 
         declared_tags = entry["semanticTags"]
         if not isinstance(declared_tags, list) or any(tag not in semantic_tags for tag in declared_tags):
@@ -280,12 +413,16 @@ def validate_material_catalog() -> int:
         cultivation = gameplay.get("cultivation") if isinstance(gameplay, dict) else None
         if not isinstance(breaking, dict):
             fail(f"{material_id} must declare gameplay.breaking")
-        expected_cultivation = "not_applicable" if family == "rock" else "not_implemented"
+        expected_cultivation = "not_applicable" if family in {"rock", "ore"} else "not_implemented"
         if cultivation != {"status": expected_cultivation}:
             fail(f"{material_id} cultivation must be marked {expected_cultivation}")
 
-        expected_tool = "pickaxe" if family == "rock" else "shovel"
-        expected_tier = "stone" if family == "rock" else "none"
+        expected_tool = "pickaxe" if family in {"rock", "ore"} else "shovel"
+        expected_tier = breaking.get("minimumToolTier") if family == "ore" else (
+            "stone" if family == "rock" else "none"
+        )
+        if expected_tier not in {"none", "stone", "iron"}:
+            fail(f"{material_id} has unsupported minimumToolTier {expected_tier}")
         if breaking.get("mineableWith") != expected_tool:
             fail(f"{material_id} must be mineableWith {expected_tool}")
         if breaking.get("minimumToolTier") != expected_tier:
@@ -295,7 +432,7 @@ def validate_material_catalog() -> int:
             source = source_profiles.get(block)
             if source is None:
                 fail(f"material profile references unregistered block {block}")
-            expected_family = "rock" if family == "rock" else "earth"
+            expected_family = family if family in {"rock", "ore"} else "earth"
             if source["family"] != expected_family:
                 fail(f"{block} Java registration does not match material family {family}")
             for trait in ("copyFrom", "hardness", "blastResistance", "requiresTool", "soundGroup"):
@@ -306,8 +443,20 @@ def validate_material_catalog() -> int:
                     )
             if block not in mineable_tags[expected_tool]:
                 fail(f"{block} is absent from minecraft:mineable/{expected_tool}")
-            if (block in stone_tier) != (expected_tier == "stone"):
-                fail(f"{block} does not match its declared minimumToolTier {expected_tier}")
+            for tier, tagged_blocks in tier_tags.items():
+                if (block in tagged_blocks) != (expected_tier == tier):
+                    fail(f"{block} does not match its declared minimumToolTier {expected_tier}")
+
+        if family == "ore":
+            validate_ore_material(
+                material_id,
+                blocks,
+                gameplay,
+                source_profiles,
+                occurrences,
+                grade_order,
+                economics,
+            )
 
         assets = entry["assets"]
         texture_set_name = assets.get("textureSet") if isinstance(assets, dict) else None

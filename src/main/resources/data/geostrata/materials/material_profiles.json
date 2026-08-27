@@ -478,6 +478,130 @@
         "cultivation": {"status": "not_implemented"}
       },
       "assets": {"textureSet": "placeholder_earth"}
+    },
+    {
+      "id": "coal_ore",
+      "primaryBlock": "geostrata:poor_coal_ore",
+      "derivedBlocks": [
+        "geostrata:medium_coal_ore",
+        "geostrata:rich_coal_ore",
+        "geostrata:massive_coal_ore"
+      ],
+      "family": "ore",
+      "compatibilityRole": "geostrata:ore/coal",
+      "semanticTags": ["geostrata:ores"],
+      "gameplay": {
+        "breaking": {
+          "copyFrom": "minecraft:coal_ore",
+          "hardness": 3.0,
+          "blastResistance": 3.0,
+          "requiresTool": true,
+          "mineableWith": "pickaxe",
+          "minimumToolTier": "none",
+          "soundGroup": "stone"
+        },
+        "cultivation": {"status": "not_applicable"},
+        "oreEconomy": {
+          "material": "coal",
+          "outputItem": "minecraft:coal",
+          "gradeOrder": ["poor", "medium", "rich", "massive"],
+          "source": "geostrata:geology/ore_occurrences"
+        }
+      },
+      "assets": {"textureSet": "placeholder_rock"}
+    },
+    {
+      "id": "iron_ore",
+      "primaryBlock": "geostrata:poor_iron_ore",
+      "derivedBlocks": [
+        "geostrata:medium_iron_ore",
+        "geostrata:rich_iron_ore",
+        "geostrata:massive_iron_ore"
+      ],
+      "family": "ore",
+      "compatibilityRole": "geostrata:ore/iron",
+      "semanticTags": ["geostrata:ores"],
+      "gameplay": {
+        "breaking": {
+          "copyFrom": "minecraft:iron_ore",
+          "hardness": 3.0,
+          "blastResistance": 3.0,
+          "requiresTool": true,
+          "mineableWith": "pickaxe",
+          "minimumToolTier": "stone",
+          "soundGroup": "stone"
+        },
+        "cultivation": {"status": "not_applicable"},
+        "oreEconomy": {
+          "material": "iron",
+          "outputItem": "minecraft:raw_iron",
+          "gradeOrder": ["poor", "medium", "rich", "massive"],
+          "source": "geostrata:geology/ore_occurrences"
+        }
+      },
+      "assets": {"textureSet": "placeholder_rock"}
+    },
+    {
+      "id": "copper_ore",
+      "primaryBlock": "geostrata:poor_copper_ore",
+      "derivedBlocks": [
+        "geostrata:medium_copper_ore",
+        "geostrata:rich_copper_ore",
+        "geostrata:massive_copper_ore"
+      ],
+      "family": "ore",
+      "compatibilityRole": "geostrata:ore/copper",
+      "semanticTags": ["geostrata:ores"],
+      "gameplay": {
+        "breaking": {
+          "copyFrom": "minecraft:copper_ore",
+          "hardness": 3.0,
+          "blastResistance": 3.0,
+          "requiresTool": true,
+          "mineableWith": "pickaxe",
+          "minimumToolTier": "stone",
+          "soundGroup": "stone"
+        },
+        "cultivation": {"status": "not_applicable"},
+        "oreEconomy": {
+          "material": "copper",
+          "outputItem": "minecraft:raw_copper",
+          "gradeOrder": ["poor", "medium", "rich", "massive"],
+          "source": "geostrata:geology/ore_occurrences"
+        }
+      },
+      "assets": {"textureSet": "placeholder_rock"}
+    },
+    {
+      "id": "gold_ore",
+      "primaryBlock": "geostrata:poor_gold_ore",
+      "derivedBlocks": [
+        "geostrata:medium_gold_ore",
+        "geostrata:rich_gold_ore",
+        "geostrata:massive_gold_ore"
+      ],
+      "family": "ore",
+      "compatibilityRole": "geostrata:ore/gold",
+      "semanticTags": ["geostrata:ores"],
+      "gameplay": {
+        "breaking": {
+          "copyFrom": "minecraft:gold_ore",
+          "hardness": 3.0,
+          "blastResistance": 3.0,
+          "requiresTool": true,
+          "mineableWith": "pickaxe",
+          "minimumToolTier": "iron",
+          "soundGroup": "stone"
+        },
+        "cultivation": {"status": "not_applicable"},
+        "oreEconomy": {
+          "material": "gold",
+          "outputItem": "minecraft:raw_gold",
+          "gradeOrder": ["poor", "medium", "rich", "massive"],
+          "source": "geostrata:geology/ore_occurrences"
+        }
+      },
+      "assets": {"textureSet": "placeholder_rock"}
     }
   ]
 }

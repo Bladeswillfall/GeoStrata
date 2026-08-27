@@ -60,7 +60,7 @@ Both `/geostrata field` and the opt-in correlated generator construct this trans
 
 `data/geostrata/geology/ore_occurrences.json` is the first implemented ore-system contract. It defines phase-one coal, iron, copper and gold by canonical output item, valid host lithologies, province contexts and supported deposit styles. `OreOccurrenceCatalog` loads it after the lithology catalog and rejects unknown hosts, provinces or styles. `/geostrata ore <material>` exposes the loaded contract.
 
-The catalog is metadata-only: it does not place deposits or suppress native ores. It fixes Trace as non-economic evidence and reserves Poor, Medium, Rich and Massive as the ordered economic grades, while leaving their yield and XP behavior explicitly unimplemented until matching blocks and loot behavior exist. See `docs/ORE_SYSTEM.md` for the staged activation and compatibility boundary.
+The catalog does not yet place deposits or suppress native ores. It fixes Trace as non-economic evidence and defines Poor, Medium, Rich and Massive as ordered economic grades. Phase-one coal, iron, copper and gold now have explicit graded block IDs, validated base yields, mining-XP ranges, Fortune-aware loot and Silk Touch self-drops. Those blocks are available to the creative inventory and future deposit activation, but the candidate planner still performs no world mutation. See `docs/ORE_SYSTEM.md` for the values, staged activation and compatibility boundary.
 
 ## Sedimentary succession and spatial-field staging
 

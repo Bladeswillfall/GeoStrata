@@ -69,7 +69,7 @@ The meaning of each rock is recorded in:
 data/geostrata/geology/lithologies.json
 ```
 
-The material profiles for rocks, soils, mud, and clay are recorded in:
+The material profiles for rocks, soils, mud, clay, and graded ores are recorded in:
 
 ```text
 data/geostrata/materials/material_profiles.json

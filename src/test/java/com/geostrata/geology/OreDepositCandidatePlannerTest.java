@@ -3,6 +3,7 @@ package com.geostrata.geology;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -122,7 +123,8 @@ final class OreDepositCandidatePlannerTest {
                 "minecraft:raw_iron",
                 List.of("shale"),
                 List.of(GeologyProvince.OROGENIC_BELT),
-                List.of("vein", "stratiform", "massive_lens_or_pocket")
+                List.of("vein", "stratiform", "massive_lens_or_pocket"),
+                gradeBlocks("iron")
         );
     }
 
@@ -133,7 +135,17 @@ final class OreDepositCandidatePlannerTest {
                 "minecraft:raw_gold",
                 List.of("slate"),
                 List.of(GeologyProvince.OROGENIC_BELT),
-                List.of("vein", "disseminated")
+                List.of("vein", "disseminated"),
+                gradeBlocks("gold")
+        );
+    }
+
+    private static Map<OreGrade, String> gradeBlocks(String material) {
+        return Map.of(
+                OreGrade.POOR, "geostrata:poor_" + material + "_ore",
+                OreGrade.MEDIUM, "geostrata:medium_" + material + "_ore",
+                OreGrade.RICH, "geostrata:rich_" + material + "_ore",
+                OreGrade.MASSIVE, "geostrata:massive_" + material + "_ore"
         );
     }
 }

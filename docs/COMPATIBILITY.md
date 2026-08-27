@@ -46,14 +46,15 @@ GeoStrata also owns biome tags such as `geostrata:has_mountain_rocks`, `geostrat
 | Field | Purpose |
 | --- | --- |
 | `primaryBlock` / `derivedBlocks` | Registry IDs owned by one material profile |
-| `family` | Broad rock, soil, mud or clay classification |
+| `family` | Broad rock, soil, mud, clay or ore classification |
 | `compatibilityRole` | Stable semantic key an optional adapter can map to another mod's equivalent material |
 | `semanticTags` | Current GeoStrata tags describing the primary block |
 | `gameplay.breaking` | Live copy source, hardness, blast resistance, tool/tier and sound settings |
 | `gameplay.cultivation` | Explicit implementation status for soil-related behavior |
+| `gameplay.oreEconomy` | Ore material/output identity, grade order and authoritative occurrence source |
 | `assets.textureSet` | Current textures and whether they are placeholders or production assets |
 
-The catalog is validated metadata, not a runtime-reloadable settings file. CI checks it against `GeoStrataBlocks.java`, mining tags, block models and texture files, so a trait or asset change must update both the implementation and its profile. In particular, `cultivation.status: not_implemented` means GeoStrata does not yet alter crop growth; it is not a hidden multiplier.
+The catalog is validated metadata, not a runtime-reloadable settings file. CI checks it against `GeoStrataBlocks.java`, mining tags, block models and texture files, so a trait or asset change must update both the implementation and its profile. Graded ore profiles are additionally checked against the runtime occurrence catalog and every block loot table, including fixed core base yield, output item, Fortune and Silk Touch behavior. In particular, `cultivation.status: not_implemented` means GeoStrata does not yet alter crop growth; it is not a hidden multiplier.
 
 Compatibility artifacts should map an external block to a `compatibilityRole` or shared tag. They should not try to replace a registered GeoStrata block ID after registration. If an integration needs to adopt another mod's runtime behavior rather than merely classify equivalent blocks, that belongs in a guarded optional Java adapter because hardness and crop-growth hooks cannot be safely expressed by a core datapack alone.
 

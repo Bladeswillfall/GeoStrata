@@ -462,7 +462,8 @@ public final class GeoStrataCommands {
                                 .map(province -> province.id())
                                 .collect(Collectors.joining(","))
                                 + " | deposit styles " + String.join(",", occurrence.depositStyles())
-                                + " | host contract only; deposits, grade yields/XP and native suppression inactive"
+                                + " | grades " + gradeEconomy(catalog.gradeModel(), occurrence)
+                                + " | grade blocks/drops active; deposit placement and native suppression inactive"
                 ),
                 false
         );
@@ -522,11 +523,23 @@ public final class GeoStrataCommands {
                                 + " | province " + province.province().id()
                                 + " | host " + (host == null ? "unresolved" : host)
                                 + " | " + status
-                                + " | no blocks, grades, yields or suppression active"
+                                + " | grade economy active; no deposit placement or native suppression"
                 ),
                 false
         );
         return 1;
+    }
+
+    private static String gradeEconomy(
+            OreOccurrenceCatalog.GradeModel model,
+            OreOccurrenceCatalog.Occurrence occurrence
+    ) {
+        return model.economies().stream()
+                .map(economy -> economy.grade().id()
+                        + "=" + occurrence.gradeBlocks().get(economy.grade())
+                        + " x" + economy.baseYield()
+                        + " xp" + economy.experienceMin() + "-" + economy.experienceMax())
+                .collect(Collectors.joining(","));
     }
 
     private static String candidateHost(

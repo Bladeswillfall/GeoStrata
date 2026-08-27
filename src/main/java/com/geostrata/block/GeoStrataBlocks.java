@@ -1,8 +1,12 @@
 package com.geostrata.block;
 
 import com.geostrata.GeoStrata;
+import com.geostrata.geology.OreGrade;
 import java.util.ArrayList;
+import java.util.EnumMap;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import net.fabricmc.fabric.api.itemgroup.v1.ItemGroupEvents;
 import net.minecraft.block.AbstractBlock;
 import net.minecraft.block.Block;
@@ -20,6 +24,8 @@ import net.minecraft.sound.BlockSoundGroup;
 public final class GeoStrataBlocks {
     private static final List<Block> ROCK_BLOCKS = new ArrayList<>();
     private static final List<Block> EARTH_BLOCKS = new ArrayList<>();
+    private static final List<Block> ORE_BLOCKS_LIST = new ArrayList<>();
+    private static final Map<String, EnumMap<OreGrade, Block>> ORE_BLOCKS = new LinkedHashMap<>();
 
     public static final Block LIMESTONE = registerRock("limestone", rock(Blocks.STONE, 1.5F, BlockSoundGroup.STONE));
     public static final Block CHALK = registerRock("chalk", rock(Blocks.CALCITE, 1.0F, BlockSoundGroup.CALCITE));
@@ -49,6 +55,23 @@ public final class GeoStrataBlocks {
     public static final Block BLUE_CLAY = registerEarth("blue_clay", earth(Blocks.CLAY, 0.6F, BlockSoundGroup.GRAVEL));
     public static final Block RED_CLAY = registerEarth("red_clay", earth(Blocks.CLAY, 0.6F, BlockSoundGroup.GRAVEL));
 
+    public static final Block POOR_COAL_ORE = registerOre("poor_coal_ore", "coal", OreGrade.POOR, Blocks.COAL_ORE, 3.0F, BlockSoundGroup.STONE);
+    public static final Block MEDIUM_COAL_ORE = registerOre("medium_coal_ore", "coal", OreGrade.MEDIUM, Blocks.COAL_ORE, 3.0F, BlockSoundGroup.STONE);
+    public static final Block RICH_COAL_ORE = registerOre("rich_coal_ore", "coal", OreGrade.RICH, Blocks.COAL_ORE, 3.0F, BlockSoundGroup.STONE);
+    public static final Block MASSIVE_COAL_ORE = registerOre("massive_coal_ore", "coal", OreGrade.MASSIVE, Blocks.COAL_ORE, 3.0F, BlockSoundGroup.STONE);
+    public static final Block POOR_IRON_ORE = registerOre("poor_iron_ore", "iron", OreGrade.POOR, Blocks.IRON_ORE, 3.0F, BlockSoundGroup.STONE);
+    public static final Block MEDIUM_IRON_ORE = registerOre("medium_iron_ore", "iron", OreGrade.MEDIUM, Blocks.IRON_ORE, 3.0F, BlockSoundGroup.STONE);
+    public static final Block RICH_IRON_ORE = registerOre("rich_iron_ore", "iron", OreGrade.RICH, Blocks.IRON_ORE, 3.0F, BlockSoundGroup.STONE);
+    public static final Block MASSIVE_IRON_ORE = registerOre("massive_iron_ore", "iron", OreGrade.MASSIVE, Blocks.IRON_ORE, 3.0F, BlockSoundGroup.STONE);
+    public static final Block POOR_COPPER_ORE = registerOre("poor_copper_ore", "copper", OreGrade.POOR, Blocks.COPPER_ORE, 3.0F, BlockSoundGroup.STONE);
+    public static final Block MEDIUM_COPPER_ORE = registerOre("medium_copper_ore", "copper", OreGrade.MEDIUM, Blocks.COPPER_ORE, 3.0F, BlockSoundGroup.STONE);
+    public static final Block RICH_COPPER_ORE = registerOre("rich_copper_ore", "copper", OreGrade.RICH, Blocks.COPPER_ORE, 3.0F, BlockSoundGroup.STONE);
+    public static final Block MASSIVE_COPPER_ORE = registerOre("massive_copper_ore", "copper", OreGrade.MASSIVE, Blocks.COPPER_ORE, 3.0F, BlockSoundGroup.STONE);
+    public static final Block POOR_GOLD_ORE = registerOre("poor_gold_ore", "gold", OreGrade.POOR, Blocks.GOLD_ORE, 3.0F, BlockSoundGroup.STONE);
+    public static final Block MEDIUM_GOLD_ORE = registerOre("medium_gold_ore", "gold", OreGrade.MEDIUM, Blocks.GOLD_ORE, 3.0F, BlockSoundGroup.STONE);
+    public static final Block RICH_GOLD_ORE = registerOre("rich_gold_ore", "gold", OreGrade.RICH, Blocks.GOLD_ORE, 3.0F, BlockSoundGroup.STONE);
+    public static final Block MASSIVE_GOLD_ORE = registerOre("massive_gold_ore", "gold", OreGrade.MASSIVE, Blocks.GOLD_ORE, 3.0F, BlockSoundGroup.STONE);
+
     private GeoStrataBlocks() {
     }
 
@@ -57,23 +80,34 @@ public final class GeoStrataBlocks {
         ItemGroupEvents.modifyEntriesEvent(ItemGroups.NATURAL).register(entries -> {
             ROCK_BLOCKS.forEach(entries::add);
             EARTH_BLOCKS.forEach(entries::add);
+            ORE_BLOCKS_LIST.forEach(entries::add);
         });
         GeoStrata.LOGGER.info(
-                "Registered {} rock blocks and {} earth blocks for the normal Fabric Loom runtime catalog",
+                "Registered {} rock, {} earth and {} graded ore blocks for the normal Fabric Loom runtime catalog",
                 ROCK_BLOCKS.size(),
-                EARTH_BLOCKS.size()
+                EARTH_BLOCKS.size(),
+                ORE_BLOCKS_LIST.size()
         );
     }
 
     public static int count() {
-        return ROCK_BLOCKS.size() + EARTH_BLOCKS.size();
+        return ROCK_BLOCKS.size() + EARTH_BLOCKS.size() + ORE_BLOCKS_LIST.size();
     }
 
     public static List<Block> allBlocks() {
-        List<Block> blocks = new ArrayList<>(ROCK_BLOCKS.size() + EARTH_BLOCKS.size());
+        List<Block> blocks = new ArrayList<>(ROCK_BLOCKS.size() + EARTH_BLOCKS.size() + ORE_BLOCKS_LIST.size());
         blocks.addAll(ROCK_BLOCKS);
         blocks.addAll(EARTH_BLOCKS);
+        blocks.addAll(ORE_BLOCKS_LIST);
         return List.copyOf(blocks);
+    }
+
+    public static Block ore(String material, OreGrade grade) {
+        Map<OreGrade, Block> grades = ORE_BLOCKS.get(material);
+        if (grades == null || !grades.containsKey(grade)) {
+            throw new IllegalArgumentException("unknown graded ore block: " + grade.id() + " " + material);
+        }
+        return grades.get(grade);
     }
 
     private static AbstractBlock.Settings rock(Block base, float hardness, BlockSoundGroup soundGroup) {
@@ -102,6 +136,34 @@ public final class GeoStrataBlocks {
     private static Block registerEarth(String name, AbstractBlock.Settings settings) {
         Block block = register(name, settings);
         EARTH_BLOCKS.add(block);
+        return block;
+    }
+
+    private static Block registerOre(
+            String name,
+            String material,
+            OreGrade grade,
+            Block base,
+            float hardness,
+            BlockSoundGroup soundGroup
+    ) {
+        Block block = register(
+                name,
+                new GradedOreBlock(
+                        grade,
+                        AbstractBlock.Settings.copy(base)
+                                .strength(hardness, 3.0F)
+                                .sounds(soundGroup)
+                                .requiresTool()
+                )
+        );
+        Block previous = ORE_BLOCKS
+                .computeIfAbsent(material, ignored -> new EnumMap<>(OreGrade.class))
+                .put(grade, block);
+        if (previous != null) {
+            throw new IllegalStateException("duplicate graded ore registration: " + grade.id() + " " + material);
+        }
+        ORE_BLOCKS_LIST.add(block);
         return block;
     }
 
