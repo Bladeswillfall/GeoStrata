@@ -9,6 +9,7 @@ import com.geostrata.geology.GeologyProvinceSampler;
 import com.geostrata.geology.GeologySurvey;
 import com.geostrata.geology.LithologyCatalog;
 import com.geostrata.geology.OreDepositCandidatePlanner;
+import com.geostrata.geology.OreDepositGeometry;
 import com.geostrata.geology.OreOccurrenceCatalog;
 import com.geostrata.geology.SedimentaryContactPlanner;
 import com.geostrata.geology.SedimentaryFieldProfiles;
@@ -504,15 +505,18 @@ public final class GeoStrataCommands {
                 proposal.anchorZ()
         );
         String host = candidateHost(source, proposal, lithologies);
-        boolean eligible = OreDepositCandidatePlanner.accept(
+        Optional<OreDepositCandidatePlanner.Candidate> candidate = OreDepositCandidatePlanner.accept(
                 proposal,
                 occurrence,
                 province.province(),
                 host
-        ).isPresent();
-        String status = eligible
-                ? "ELIGIBLE metadata candidate"
+        );
+        String status = candidate.isPresent()
+                ? "ELIGIBLE geometry preview"
                 : "ineligible: " + candidateRejection(source, proposal, occurrence, province, host);
+        String geometry = candidate
+                .map(value -> bodySummary(seed, value, x, y, z))
+                .orElse("body unavailable until host and province qualify");
 
         source.sendFeedback(
                 () -> Text.literal(
@@ -523,11 +527,30 @@ public final class GeoStrataCommands {
                                 + " | province " + province.province().id()
                                 + " | host " + (host == null ? "unresolved" : host)
                                 + " | " + status
-                                + " | grade economy active; no deposit placement or native suppression"
+                                + " | " + geometry
+                                + " | preview only; no deposit placement or native suppression"
                 ),
                 false
         );
         return 1;
+    }
+
+    private static String bodySummary(
+            long worldSeed,
+            OreDepositCandidatePlanner.Candidate candidate,
+            int x,
+            int y,
+            int z
+    ) {
+        OreDepositGeometry.Body body = OreDepositGeometry.forCandidate(worldSeed, candidate);
+        OreDepositGeometry.Sample sample = body.sample(x, y, z);
+        return "body " + Math.round(body.lengthRadius() * 2.0)
+                + "x" + Math.round(body.widthRadius() * 2.0)
+                + "x" + Math.round(body.thicknessRadius() * 2.0)
+                + " blocks, dip " + Math.round(Math.toDegrees(body.dipRadians())) + "deg"
+                + ", branches " + body.branches().size()
+                + " | here " + sample.zone()
+                + " at " + Math.round(sample.concentration() * 100.0) + "% concentration";
     }
 
     private static String gradeEconomy(

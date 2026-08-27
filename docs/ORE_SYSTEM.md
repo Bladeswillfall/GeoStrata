@@ -30,8 +30,21 @@ eligibility at the player's current 3D cell.
 
 This is candidate planning, not deposit activation. Every cell can be inspected
 without implying that every proposal will become a deposit; activation
-frequency and inter-deposit spacing remain deliberately unset. Grade blocks and
-their mining economy now exist, but no candidate places them and vanilla ore
+frequency and inter-deposit spacing remain deliberately unset.
+
+Eligible candidates now construct a deterministic, non-mutating body preview.
+`OreDepositGeometry` gives each declared style a distinct base form: low-dip
+coal sheets, branched tubular veins, broad stratiform lenses, sparse
+disseminated envelopes and compact massive lenses/pockets. The seed derives
+orientation, scale, warp and the two restrained side branches used by veins.
+The body sampler grades economic blocks from edge to core, applies stable
+block-coordinate dithering at grade boundaries and represents the surrounding
+halo or disseminated host gaps as non-economic Trace. `/geostrata ore
+<material> candidate` reports the exact body dimensions, dip, branch count and
+the sample zone at the command source.
+
+This remains geometry staging rather than world mutation. Grade blocks and
+their mining economy exist, but no candidate places them and vanilla ore
 generation is not suppressed. The generated-world baseline therefore remains
 unchanged.
 
@@ -93,9 +106,11 @@ startup.
    and geological context without mutating blocks;
 3. **complete** — add Poor/Medium/Rich/Massive block, loot, yield and XP behavior
    with Trace as non-economic evidence;
-4. activate deposits behind an explicit experimental boundary and evaluate
+4. **complete** — construct and sample deterministic style-specific bodies,
+   concentration, dithered grades and non-economic Trace without mutating blocks;
+5. activate deposits behind an explicit experimental boundary and evaluate
    abundance, readability and performance in fresh worlds;
-5. suppress overlapping native generation only when replacement coverage is
+6. suppress overlapping native generation only when replacement coverage is
    proven; and
-6. add guarded provider-mod occurrences without transferring ownership of their
+7. add guarded provider-mod occurrences without transferring ownership of their
    item economies into core GeoStrata.
