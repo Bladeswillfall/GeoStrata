@@ -10,7 +10,7 @@
 
     <!--
       Legacy parser exceptions are intentionally exact and centrally auditable.
-      Follow-up debt: #54 CorrelatedSedimentaryExperiment.parse, #55 GeologyProvinceProfiles.parse,
+      Follow-up debt: #54 CorrelatedSedimentaryExperiment.parse,
       #56 SedimentaryFieldProfiles.parse, #57 SedimentarySuccessions.parse.
     -->
     <rule ref="category/java/design.xml/CyclomaticComplexity">
@@ -18,7 +18,7 @@
             <property name="methodReportLevel" value="21"/>
             <property name="classReportLevel" value="1000"/>
             <property name="violationSuppressXPath"
-                      value="./ancestor-or-self::MethodDeclaration[@Name = 'parse' and ancestor::ClassDeclaration[@SimpleName = ('CorrelatedSedimentaryExperiment', 'GeologyProvinceProfiles', 'SedimentaryFieldProfiles', 'SedimentarySuccessions')]]"/>
+                      value="./ancestor-or-self::MethodDeclaration[@Name = 'parse' and ancestor::ClassDeclaration[@SimpleName = ('CorrelatedSedimentaryExperiment', 'SedimentaryFieldProfiles', 'SedimentarySuccessions')]]"/>
         </properties>
     </rule>
 
@@ -26,7 +26,7 @@
         <properties>
             <property name="reportLevel" value="21"/>
             <property name="violationSuppressXPath"
-                      value="./ancestor-or-self::MethodDeclaration[@Name = 'parse' and ancestor::ClassDeclaration[@SimpleName = ('CorrelatedSedimentaryExperiment', 'GeologyProvinceProfiles', 'SedimentaryFieldProfiles', 'SedimentarySuccessions')]]"/>
+                      value="./ancestor-or-self::MethodDeclaration[@Name = 'parse' and ancestor::ClassDeclaration[@SimpleName = ('CorrelatedSedimentaryExperiment', 'SedimentaryFieldProfiles', 'SedimentarySuccessions')]]"/>
         </properties>
     </rule>
 </ruleset>
