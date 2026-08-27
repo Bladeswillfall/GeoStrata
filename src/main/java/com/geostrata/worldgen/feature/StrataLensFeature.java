@@ -1,6 +1,7 @@
 package com.geostrata.worldgen.feature;
 
 import com.geostrata.GeoStrata;
+import com.geostrata.geology.CorrelatedExperimentChunkOwnership;
 import com.geostrata.geology.GeologyDeterminism;
 import com.geostrata.geology.GeologyProvinceProfiles;
 import com.geostrata.geology.GeologyProvinceSampler;
@@ -34,7 +35,13 @@ public final class StrataLensFeature extends Feature<StrataLensConfig> {
         Random random = context.getRandom();
         StrataLensConfig config = context.getConfig();
 
-        if (!passesProvinceSuitability(world, origin, config)) {
+        GeologyProvinceProfiles.Snapshot profiles = GeologyProvinceProfiles.current();
+        Optional<String> lithology = profiledLithology(config, profiles);
+        SuppressionContext suppression = suppressionContext(lithology, world.getSeed());
+        if (suppression.suppresses(origin)) {
+            return false;
+        }
+        if (!passesProvinceSuitability(world, origin, lithology, profiles)) {
             return false;
         }
 
@@ -78,7 +85,18 @@ public final class StrataLensFeature extends Feature<StrataLensConfig> {
                 );
                 int minY = (int) Math.ceil(centerY - localHalfThickness);
                 int maxY = (int) Math.floor(centerY + localHalfThickness);
-                placed += placeColumn(world, origin, dx, dz, minY, maxY, config, random, mutable);
+                placed += placeColumn(
+                        world,
+                        origin,
+                        dx,
+                        dz,
+                        minY,
+                        maxY,
+                        config,
+                        random,
+                        mutable,
+                        suppression
+                );
             }
         }
 
@@ -94,12 +112,13 @@ public final class StrataLensFeature extends Feature<StrataLensConfig> {
             int maxY,
             StrataLensConfig config,
             Random random,
-            BlockPos.Mutable mutable
+            BlockPos.Mutable mutable,
+            SuppressionContext suppression
     ) {
         int placed = 0;
         for (int y = minY; y <= maxY; y++) {
             mutable.set(origin.getX() + dx, y, origin.getZ() + dz);
-            if (world.isOutOfHeightLimit(mutable)) {
+            if (world.isOutOfHeightLimit(mutable) || suppression.suppresses(mutable)) {
                 continue;
             }
             if (placeAt(world, mutable, config, random)) {
@@ -129,18 +148,23 @@ public final class StrataLensFeature extends Feature<StrataLensConfig> {
         return false;
     }
 
+    private static SuppressionContext suppressionContext(Optional<String> lithology, long worldSeed) {
+        if (lithology.isEmpty()) {
+            return new SuppressionContext(false, worldSeed);
+        }
+        return new SuppressionContext(
+                CorrelatedExperimentChunkOwnership.suppressionActiveFor(lithology.get()),
+                worldSeed
+        );
+    }
+
     private static boolean passesProvinceSuitability(
             StructureWorldAccess world,
             BlockPos origin,
-            StrataLensConfig config
+            Optional<String> lithology,
+            GeologyProvinceProfiles.Snapshot profiles
     ) {
-        GeologyProvinceProfiles.Snapshot profiles = GeologyProvinceProfiles.current();
-        if (!profiles.loaded()) {
-            return true;
-        }
-
-        Optional<String> lithology = profiledLithology(config, profiles);
-        if (lithology.isEmpty()) {
+        if (!profiles.loaded() || lithology.isEmpty()) {
             return true;
         }
 
@@ -161,7 +185,7 @@ public final class StrataLensFeature extends Feature<StrataLensConfig> {
             StrataLensConfig config,
             GeologyProvinceProfiles.Snapshot profiles
     ) {
-        if (config.targets().isEmpty()) {
+        if (!profiles.loaded() || config.targets().isEmpty()) {
             return Optional.empty();
         }
 
@@ -195,5 +219,15 @@ public final class StrataLensFeature extends Feature<StrataLensConfig> {
             }
         }
         return false;
+    }
+
+    private record SuppressionContext(boolean active, long worldSeed) {
+        boolean suppresses(BlockPos pos) {
+            return active && CorrelatedExperimentChunkOwnership.ownershipForChunk(
+                    worldSeed,
+                    pos.getX(),
+                    pos.getZ()
+            ).owned();
+        }
     }
 }

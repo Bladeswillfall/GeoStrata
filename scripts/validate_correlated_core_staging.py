@@ -10,6 +10,7 @@ FEATURES_JAVA = ROOT / "src/main/java/com/geostrata/worldgen/feature/GeoStrataFe
 FEATURE_JAVA = ROOT / "src/main/java/com/geostrata/worldgen/feature/CorrelatedSedimentaryFeature.java"
 WORLDGEN_JAVA = ROOT / "src/main/java/com/geostrata/worldgen/GeoStrataWorldgen.java"
 LENS_JAVA = ROOT / "src/main/java/com/geostrata/worldgen/feature/StrataLensFeature.java"
+OWNERSHIP_JAVA = ROOT / "src/main/java/com/geostrata/geology/CorrelatedExperimentChunkOwnership.java"
 
 
 def load(path: Path):
@@ -29,22 +30,48 @@ features_source = FEATURES_JAVA.read_text(encoding="utf-8")
 feature_source = FEATURE_JAVA.read_text(encoding="utf-8")
 worldgen_source = WORLDGEN_JAVA.read_text(encoding="utf-8")
 lens_source = LENS_JAVA.read_text(encoding="utf-8")
+ownership_source = OWNERSHIP_JAVA.read_text(encoding="utf-8")
 
 require(configured == {"type": "geostrata:correlated_sedimentary", "config": {}},
         "correlated configured feature must remain the default-config GeoStrata feature")
 require(placed.get("feature") == "geostrata:correlated_sedimentary_experiment",
         "correlated placed feature must point to its configured feature")
 require(placed.get("placement") == [],
-        "dormant correlated placed feature must not add random placement modifiers")
+        "correlated placed feature must not hide random placement semantics")
+
 require(experiment.get("enabled") is False,
-        "core correlated experiment must remain disabled while the feature is dormant")
+        "core correlated experiment must remain disabled")
+require(experiment.get("runtimeStatus") == "metadata_only",
+        "core correlated experiment must remain metadata_only")
+
 require("GeoStrata.id(\"correlated_sedimentary\")" in features_source,
         "GeoStrataFeatures must register the correlated feature type")
 require("!experiment.enabled()" in feature_source,
         "correlated feature must fail closed when the experiment is disabled")
-require("correlated_sedimentary_experiment" not in worldgen_source,
-        "dormant correlated placed feature must not be registered into biome worldgen yet")
-require("suppressesBaselineLithology" not in lens_source,
-        "baseline strata lenses must not be suppressed before correlated biome registration is atomic")
+require("CorrelatedExperimentChunkOwnership.ownershipForChunk" in feature_source,
+        "correlated feature must use shared chunk-normalized ownership")
 
-print("Validated dormant correlated sedimentary feature: type/data present, biome registration and suppression absent")
+require("correlated_sedimentary_experiment" not in worldgen_source,
+        "standalone core must not register the experimental placed feature into biome worldgen")
+
+require("CorrelatedExperimentChunkOwnership.suppressionActiveFor" in lens_source,
+        "baseline strata lenses must have an activation-gated suppression fast path")
+require("suppression.suppresses(origin)" in lens_source,
+        "baseline strata lenses must reject origins in experiment-owned chunks")
+require("suppression.suppresses(mutable)" in lens_source,
+        "cross-chunk lens placement must clip candidate blocks entering owned chunks")
+require("private record SuppressionContext" in lens_source
+        and "CorrelatedExperimentChunkOwnership.ownershipForChunk" in lens_source,
+        "lens suppression context must delegate chunk decisions to the shared ownership adapter")
+
+require("Math.floorDiv" in ownership_source and "CHUNK_CENTER_OFFSET" in ownership_source,
+        "chunk ownership adapter must normalize coordinates with floor division")
+require("experiment.enabled()" in ownership_source,
+        "suppression fast path must require explicit experiment activation")
+require("ownershipAt(" in ownership_source,
+        "chunk ownership adapter must delegate to the canonical experiment ownership evaluator")
+
+print(
+    "Validated correlated core staging: feature type and chunk-normalized suppression are prepared, "
+    "while standalone biome registration and activation remain absent"
+)

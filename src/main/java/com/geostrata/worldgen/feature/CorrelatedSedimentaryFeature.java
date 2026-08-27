@@ -1,5 +1,6 @@
 package com.geostrata.worldgen.feature;
 
+import com.geostrata.geology.CorrelatedExperimentChunkOwnership;
 import com.geostrata.geology.CorrelatedSedimentaryExperiment;
 import com.geostrata.geology.GeologyProvinceSampler;
 import com.geostrata.geology.LithologyCatalog;
@@ -49,15 +50,12 @@ public final class CorrelatedSedimentaryFeature extends Feature<DefaultFeatureCo
         BlockPos origin = context.getOrigin();
         int startX = Math.floorDiv(origin.getX(), CHUNK_SIZE) * CHUNK_SIZE;
         int startZ = Math.floorDiv(origin.getZ(), CHUNK_SIZE) * CHUNK_SIZE;
-        int centerX = startX + CHUNK_SIZE / 2;
-        int centerZ = startZ + CHUNK_SIZE / 2;
+        int centerX = CorrelatedExperimentChunkOwnership.centerCoordinate(origin.getX());
+        int centerZ = CorrelatedExperimentChunkOwnership.centerCoordinate(origin.getZ());
         long worldSeed = world.getSeed();
 
-        CorrelatedSedimentaryExperiment.Ownership ownership = CorrelatedSedimentaryExperiment.ownershipAt(
-                worldSeed,
-                centerX,
-                centerZ
-        );
+        CorrelatedSedimentaryExperiment.Ownership ownership =
+                CorrelatedExperimentChunkOwnership.ownershipForChunk(worldSeed, origin.getX(), origin.getZ());
         if (!ownership.owned() || ownership.successionId() == null) {
             return false;
         }
