@@ -6,26 +6,19 @@
     <description>
         Production-code complexity guardrails. GeoStrata allows a maximum method complexity of 20;
         PMD reports at-or-above its configured level, so 21 enforces "greater than 20".
+        There are no grandfathered production methods: every method is checked uniformly.
     </description>
 
-    <!--
-      Legacy parser exception is intentionally exact and centrally auditable.
-      Follow-up debt: #54 CorrelatedSedimentaryExperiment.parse.
-    -->
     <rule ref="category/java/design.xml/CyclomaticComplexity">
         <properties>
             <property name="methodReportLevel" value="21"/>
             <property name="classReportLevel" value="1000"/>
-            <property name="violationSuppressXPath"
-                      value="./ancestor-or-self::MethodDeclaration[@Name = 'parse' and ancestor::ClassDeclaration[@SimpleName = 'CorrelatedSedimentaryExperiment']]"/>
         </properties>
     </rule>
 
     <rule ref="category/java/design.xml/CognitiveComplexity">
         <properties>
             <property name="reportLevel" value="21"/>
-            <property name="violationSuppressXPath"
-                      value="./ancestor-or-self::MethodDeclaration[@Name = 'parse' and ancestor::ClassDeclaration[@SimpleName = 'CorrelatedSedimentaryExperiment']]"/>
         </properties>
     </rule>
 </ruleset>
