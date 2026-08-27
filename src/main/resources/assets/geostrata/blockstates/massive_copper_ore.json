@@ -1,7 +1,46 @@
 {
   "variants": {
-    "": {
-      "model": "geostrata:block/massive_copper_ore"
+    "host=limestone": {
+      "model": "geostrata:block/ore/copper/limestone/massive"
+    },
+    "host=chalk": {
+      "model": "geostrata:block/ore/copper/chalk/massive"
+    },
+    "host=shale": {
+      "model": "geostrata:block/ore/copper/shale/massive"
+    },
+    "host=slate": {
+      "model": "geostrata:block/ore/copper/slate/massive"
+    },
+    "host=mudstone": {
+      "model": "geostrata:block/ore/copper/mudstone/massive"
+    },
+    "host=siltstone": {
+      "model": "geostrata:block/ore/copper/siltstone/massive"
+    },
+    "host=marble": {
+      "model": "geostrata:block/ore/copper/marble/massive"
+    },
+    "host=quartzite": {
+      "model": "geostrata:block/ore/copper/quartzite/massive"
+    },
+    "host=schist": {
+      "model": "geostrata:block/ore/copper/schist/massive"
+    },
+    "host=gneiss": {
+      "model": "geostrata:block/ore/copper/gneiss/massive"
+    },
+    "host=basalt": {
+      "model": "geostrata:block/ore/copper/basalt/massive"
+    },
+    "host=rhyolite": {
+      "model": "geostrata:block/ore/copper/rhyolite/massive"
+    },
+    "host=conglomerate": {
+      "model": "geostrata:block/ore/copper/conglomerate/massive"
+    },
+    "host=breccia": {
+      "model": "geostrata:block/ore/copper/breccia/massive"
     }
   }
 }

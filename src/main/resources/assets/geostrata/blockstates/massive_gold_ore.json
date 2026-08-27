@@ -1,7 +1,46 @@
 {
   "variants": {
-    "": {
-      "model": "geostrata:block/massive_gold_ore"
+    "host=limestone": {
+      "model": "geostrata:block/ore/gold/limestone/massive"
+    },
+    "host=chalk": {
+      "model": "geostrata:block/ore/gold/chalk/massive"
+    },
+    "host=shale": {
+      "model": "geostrata:block/ore/gold/shale/massive"
+    },
+    "host=slate": {
+      "model": "geostrata:block/ore/gold/slate/massive"
+    },
+    "host=mudstone": {
+      "model": "geostrata:block/ore/gold/mudstone/massive"
+    },
+    "host=siltstone": {
+      "model": "geostrata:block/ore/gold/siltstone/massive"
+    },
+    "host=marble": {
+      "model": "geostrata:block/ore/gold/marble/massive"
+    },
+    "host=quartzite": {
+      "model": "geostrata:block/ore/gold/quartzite/massive"
+    },
+    "host=schist": {
+      "model": "geostrata:block/ore/gold/schist/massive"
+    },
+    "host=gneiss": {
+      "model": "geostrata:block/ore/gold/gneiss/massive"
+    },
+    "host=basalt": {
+      "model": "geostrata:block/ore/gold/basalt/massive"
+    },
+    "host=rhyolite": {
+      "model": "geostrata:block/ore/gold/rhyolite/massive"
+    },
+    "host=conglomerate": {
+      "model": "geostrata:block/ore/gold/conglomerate/massive"
+    },
+    "host=breccia": {
+      "model": "geostrata:block/ore/gold/breccia/massive"
     }
   }
 }

@@ -1,7 +1,46 @@
 {
   "variants": {
-    "": {
-      "model": "geostrata:block/rich_coal_ore"
+    "host=limestone": {
+      "model": "geostrata:block/ore/coal/limestone/rich"
+    },
+    "host=chalk": {
+      "model": "geostrata:block/ore/coal/chalk/rich"
+    },
+    "host=shale": {
+      "model": "geostrata:block/ore/coal/shale/rich"
+    },
+    "host=slate": {
+      "model": "geostrata:block/ore/coal/slate/rich"
+    },
+    "host=mudstone": {
+      "model": "geostrata:block/ore/coal/mudstone/rich"
+    },
+    "host=siltstone": {
+      "model": "geostrata:block/ore/coal/siltstone/rich"
+    },
+    "host=marble": {
+      "model": "geostrata:block/ore/coal/marble/rich"
+    },
+    "host=quartzite": {
+      "model": "geostrata:block/ore/coal/quartzite/rich"
+    },
+    "host=schist": {
+      "model": "geostrata:block/ore/coal/schist/rich"
+    },
+    "host=gneiss": {
+      "model": "geostrata:block/ore/coal/gneiss/rich"
+    },
+    "host=basalt": {
+      "model": "geostrata:block/ore/coal/basalt/rich"
+    },
+    "host=rhyolite": {
+      "model": "geostrata:block/ore/coal/rhyolite/rich"
+    },
+    "host=conglomerate": {
+      "model": "geostrata:block/ore/coal/conglomerate/rich"
+    },
+    "host=breccia": {
+      "model": "geostrata:block/ore/coal/breccia/rich"
     }
   }
 }

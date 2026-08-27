@@ -6,6 +6,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 import re
+import struct
 import sys
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -13,6 +14,7 @@ DATA = ROOT / "src" / "main" / "resources" / "data" / "geostrata"
 CATALOG = DATA / "geology" / "lithologies.json"
 MATERIAL_CATALOG = DATA / "materials" / "material_profiles.json"
 ORE_CATALOG = DATA / "geology" / "ore_occurrences.json"
+ORE_TEXTURE_MATRIX = DATA / "materials" / "ore_texture_matrix.json"
 BLOCK_TAGS = DATA / "tags" / "blocks"
 BIOME_TAGS = DATA / "tags" / "worldgen" / "biome"
 CONFIGURED = DATA / "worldgen" / "configured_feature"
@@ -20,6 +22,7 @@ PLACED = DATA / "worldgen" / "placed_feature"
 MINECRAFT_BLOCK_TAGS = ROOT / "src" / "main" / "resources" / "data" / "minecraft" / "tags" / "blocks"
 ASSETS = ROOT / "src" / "main" / "resources" / "assets" / "geostrata"
 BLOCKS_SOURCE = ROOT / "src" / "main" / "java" / "com" / "geostrata" / "block" / "GeoStrataBlocks.java"
+ORE_HOST_SOURCE = ROOT / "src" / "main" / "java" / "com" / "geostrata" / "block" / "OreHost.java"
 
 ROCK_CLASSES = ("sedimentary", "igneous", "metamorphic")
 ALLOWED_BODY_STYLES = {
@@ -75,6 +78,17 @@ def load_json(path: Path):
             return json.load(handle)
     except (OSError, json.JSONDecodeError) as exc:
         fail(f"cannot read {path.relative_to(ROOT)}: {exc}")
+
+
+def png_size(path: Path) -> tuple[int, int]:
+    try:
+        with path.open("rb") as handle:
+            header = handle.read(24)
+    except OSError as exc:
+        fail(f"cannot read {path.relative_to(ROOT)}: {exc}")
+    if len(header) != 24 or header[:8] != b"\x89PNG\r\n\x1a\n" or header[12:16] != b"IHDR":
+        fail(f"{path.relative_to(ROOT)} must be a PNG image")
+    return struct.unpack(">II", header[16:24])
 
 
 def tag_values(path: Path) -> set[str]:
@@ -213,6 +227,11 @@ def validate_ore_loot(block: str, output_item: str, base_yield: int) -> None:
                                 "levels": {"min": 1},
                             }]},
                         }],
+                        "functions": [{
+                            "function": "minecraft:copy_state",
+                            "block": block,
+                            "properties": ["host"],
+                        }],
                     },
                     {
                         "type": "minecraft:item",
@@ -283,6 +302,7 @@ def validate_ore_material(
 def validate_material_catalog() -> int:
     catalog = load_json(MATERIAL_CATALOG)
     ore_catalog = load_json(ORE_CATALOG)
+    texture_matrix = load_json(ORE_TEXTURE_MATRIX)
     if catalog.get("schemaVersion") != 1:
         fail("material profile catalog schemaVersion must be 1")
     if catalog.get("model") != "geostrata:material_profile_catalog":
@@ -291,6 +311,8 @@ def validate_material_catalog() -> int:
         fail("material profiles must remain explicit that JSON values are not runtime-loaded settings")
     if ore_catalog.get("schemaVersion") != 2 or ore_catalog.get("runtimeStatus") != "grade_economy_active":
         fail("ore occurrence catalog must expose the active schema-2 grade economy")
+    if texture_matrix.get("schemaVersion") != 1 or texture_matrix.get("resolution") != 16:
+        fail("ore texture matrix must use schema 1 and native 16x16 textures")
     grade_model = ore_catalog.get("gradeModel")
     if not isinstance(grade_model, dict):
         fail("ore occurrence catalog must declare gradeModel")
@@ -308,6 +330,26 @@ def validate_material_catalog() -> int:
     }
     if len(occurrences) != len(raw_occurrences):
         fail("ore occurrences must have unique string ids")
+    matrix_hosts = texture_matrix.get("hosts")
+    matrix_ores = texture_matrix.get("ores")
+    matrix_grades = texture_matrix.get("grades")
+    if not isinstance(matrix_hosts, list) or len(matrix_hosts) != len(set(matrix_hosts)):
+        fail("ore texture matrix hosts must be a unique array")
+    if not isinstance(matrix_ores, dict) or set(matrix_ores) != set(occurrences):
+        fail("ore texture matrix materials must exactly match ore occurrences")
+    if not isinstance(matrix_grades, dict) or list(matrix_grades) != grade_order:
+        fail("ore texture matrix grades must match the economic grade order")
+    grade_pixels = [matrix_grades[grade].get("targetPixels") for grade in grade_order]
+    if any(not isinstance(value, int) for value in grade_pixels) or grade_pixels != sorted(set(grade_pixels)):
+        fail("ore texture matrix targetPixels must increase strictly by grade")
+    for material, occurrence in occurrences.items():
+        matrix_ore = matrix_ores[material]
+        if not isinstance(matrix_ore, dict):
+            fail(f"ore texture matrix entry {material} must be an object")
+        if matrix_ore.get("validHosts") != occurrence.get("hostLithologies"):
+            fail(f"ore texture matrix validHosts for {material} must match its occurrence")
+        if matrix_ore.get("defaultHost") not in matrix_ore["validHosts"]:
+            fail(f"ore texture matrix defaultHost for {material} must be geologically valid")
 
     texture_sets = catalog.get("textureSets")
     if not isinstance(texture_sets, dict) or not texture_sets:
@@ -324,6 +366,8 @@ def validate_material_catalog() -> int:
             texture_path = ASSETS / "textures" / "block" / f"{texture.removeprefix('geostrata:block/')}.png"
             if not texture_path.is_file():
                 fail(f"texture set {name} references missing {texture_path.relative_to(ROOT)}")
+            if png_size(texture_path) != (16, 16):
+                fail(f"{texture_path.relative_to(ROOT)} must be exactly 16x16")
 
     materials = catalog.get("materials")
     if not isinstance(materials, list) or not materials:
@@ -459,16 +503,37 @@ def validate_material_catalog() -> int:
             )
 
         assets = entry["assets"]
-        texture_set_name = assets.get("textureSet") if isinstance(assets, dict) else None
-        if texture_set_name not in texture_sets:
-            fail(f"{material_id} references unknown textureSet {texture_set_name!r}")
-        declared_textures = set(texture_sets[texture_set_name]["textures"])
-        actual_textures = set().union(*(block_textures(block) for block in blocks))
-        if declared_textures != actual_textures:
-            fail(
-                f"{material_id} textureSet does not match live block models; "
-                f"declared={sorted(declared_textures)}, actual={sorted(actual_textures)}"
-            )
+        if family == "ore":
+            ore_material = gameplay["oreEconomy"]["material"]
+            expected_assets = {
+                "textureMatrix": "geostrata:materials/ore_texture_matrix",
+                "material": ore_material,
+            }
+            if assets != expected_assets:
+                fail(f"{material_id} must reference its ore texture matrix material")
+            for grade, block in zip(grade_order, blocks, strict=True):
+                expected_textures = {
+                    f"geostrata:block/ore/{ore_material}/{host}/{grade}"
+                    for host in matrix_hosts
+                }
+                actual_textures = block_textures(block)
+                if actual_textures != expected_textures:
+                    fail(f"{block} host-aware model matrix is incomplete or contains drift")
+                for texture in expected_textures:
+                    texture_path = ASSETS / "textures" / "block" / f"{texture.removeprefix('geostrata:block/')}.png"
+                    if png_size(texture_path) != (16, 16):
+                        fail(f"{texture_path.relative_to(ROOT)} must be exactly 16x16")
+        else:
+            texture_set_name = assets.get("textureSet") if isinstance(assets, dict) else None
+            if texture_set_name not in texture_sets:
+                fail(f"{material_id} references unknown textureSet {texture_set_name!r}")
+            declared_textures = set(texture_sets[texture_set_name]["textures"])
+            actual_textures = set().union(*(block_textures(block) for block in blocks))
+            if declared_textures != actual_textures:
+                fail(
+                    f"{material_id} textureSet does not match live block models; "
+                    f"declared={sorted(declared_textures)}, actual={sorted(actual_textures)}"
+                )
 
     if catalog_blocks != set(source_profiles):
         fail(
@@ -476,6 +541,16 @@ def validate_material_catalog() -> int:
             f"missing={sorted(set(source_profiles) - catalog_blocks)}, "
             f"extra={sorted(catalog_blocks - set(source_profiles))}"
         )
+    rock_materials = {entry["id"] for entry in materials if entry["family"] == "rock"}
+    if set(matrix_hosts) != rock_materials:
+        fail("ore texture matrix hosts must exactly cover registered rock materials")
+    try:
+        host_source = ORE_HOST_SOURCE.read_text(encoding="utf-8")
+    except OSError as exc:
+        fail(f"cannot read {ORE_HOST_SOURCE.relative_to(ROOT)}: {exc}")
+    source_hosts = set(re.findall(r'\b[A-Z_]+\("([a-z_]+)"\)', host_source))
+    if source_hosts != set(matrix_hosts):
+        fail("OreHost.java must exactly match the artist texture-matrix hosts")
     return len(materials)
 
 

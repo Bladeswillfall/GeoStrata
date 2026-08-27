@@ -1,7 +1,46 @@
 {
   "variants": {
-    "": {
-      "model": "geostrata:block/poor_coal_ore"
+    "host=limestone": {
+      "model": "geostrata:block/ore/coal/limestone/poor"
+    },
+    "host=chalk": {
+      "model": "geostrata:block/ore/coal/chalk/poor"
+    },
+    "host=shale": {
+      "model": "geostrata:block/ore/coal/shale/poor"
+    },
+    "host=slate": {
+      "model": "geostrata:block/ore/coal/slate/poor"
+    },
+    "host=mudstone": {
+      "model": "geostrata:block/ore/coal/mudstone/poor"
+    },
+    "host=siltstone": {
+      "model": "geostrata:block/ore/coal/siltstone/poor"
+    },
+    "host=marble": {
+      "model": "geostrata:block/ore/coal/marble/poor"
+    },
+    "host=quartzite": {
+      "model": "geostrata:block/ore/coal/quartzite/poor"
+    },
+    "host=schist": {
+      "model": "geostrata:block/ore/coal/schist/poor"
+    },
+    "host=gneiss": {
+      "model": "geostrata:block/ore/coal/gneiss/poor"
+    },
+    "host=basalt": {
+      "model": "geostrata:block/ore/coal/basalt/poor"
+    },
+    "host=rhyolite": {
+      "model": "geostrata:block/ore/coal/rhyolite/poor"
+    },
+    "host=conglomerate": {
+      "model": "geostrata:block/ore/coal/conglomerate/poor"
+    },
+    "host=breccia": {
+      "model": "geostrata:block/ore/coal/breccia/poor"
     }
   }
 }

@@ -24,6 +24,15 @@
                     ]
                   }
                 }
+              ],
+              "functions": [
+                {
+                  "function": "minecraft:copy_state",
+                  "block": "geostrata:massive_gold_ore",
+                  "properties": [
+                    "host"
+                  ]
+                }
               ]
             },
             {
