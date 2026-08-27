@@ -1,94 +1,69 @@
 # Correlated sedimentary experiment
 
-GeoStrata now has enough deterministic geology infrastructure to attempt correlated sedimentary worldgen, but the standalone generator remains on the proven baseline until an experimental consumer is explicitly enabled.
+GeoStrata now has enough deterministic geology infrastructure to attempt correlated sedimentary worldgen, but the standalone generator remains on the proven baseline until an optional experiment companion is deliberately installed.
 
-`data/geostrata/geology/correlated_sedimentary_experiment.json` defines that staging contract. The core resource is deliberately `metadata_only` and `enabled: false`. A future experimental datapack may override the resource to activate the consumer; the normal GeoStrata jar must not silently switch world-generation modes.
-
-`CorrelatedSedimentaryExperiment` loads the contract as server data and independently revalidates its succession, lithology and province references for datapack overrides. Disabled data must declare `runtimeStatus: metadata_only`; an activating override must explicitly declare both `enabled: true` and `runtimeStatus: experimental_runtime`. This prevents a partial override from accidentally turning mutation on.
+`data/geostrata/geology/correlated_sedimentary_experiment.json` defines the core staging contract. The bundled resource remains `metadata_only` and `enabled: false`. `CorrelatedSedimentaryExperiment` loads and validates that contract as server data; an activating overlay must explicitly pair `enabled: true` with `runtimeStatus: experimental_runtime`.
 
 ## First experiment scope
 
-The initial experiment targets only `basin_mudrock_carbonate_cycle`. Its unique lithologies are:
+The initial experiment targets only `basin_mudrock_carbonate_cycle`: limestone, shale, mudstone and siltstone. Those are exactly the four sedimentary rocks already migrated to the tested `strata_lens` implementation. Chalk, conglomerate and breccia stay on their baseline features.
 
-- limestone;
-- shale;
-- mudstone;
-- siltstone.
+When activation is present, the four superseded lens lithologies are suppressed only in chunks owned by the correlated experiment. Outside that ownership envelope the baseline remains authoritative.
 
-Those are exactly the four sedimentary rocks already migrated from vanilla ore blobs to GeoStrata's tested `strata_lens` implementation. Chalk, conglomerate and breccia stay on their baseline features during this experiment.
+## Standalone-safe activation boundary
 
-When the experiment is enabled, the four named baseline features are suppressed only where the correlated experiment owns generation. Outside the owned region, including province contacts and unsupported geological provinces, the current baseline remains authoritative. This creates a useful A/B testing surface and avoids globally removing proven generation while the correlated system is still experimental.
+The core jar registers the `correlated_sedimentary` **feature type** and ships its configured/placed feature data, but `GeoStrataWorldgen` deliberately does not add that placed feature to any biome. This distinction protects standalone world determinism: Minecraft seeds decoration using a feature's generation step and index, so inserting even a no-op placed feature can perturb the decoration seeds of later features.
 
-## Atomic ownership handoff
+Instead, core prepares the other half of the handoff. `CorrelatedExperimentChunkOwnership` maps every X/Z coordinate to the center of its 16×16 chunk before consulting the canonical experiment evaluator. `StrataLensFeature` uses this adapter only when the experiment is both enabled and the lithology is in the superseded set.
 
-The correlated placed feature is now registered into `geostrata:has_common_rocks` at `UNDERGROUND_DECORATION`, while the superseded `strata_lens` features remain registered at `UNDERGROUND_ORES`. Both paths use `CorrelatedExperimentChunkOwnership`, which normalizes any block coordinate to the center of its 16×16 chunk before consulting the canonical experiment ownership evaluator.
+If an owned chunk is active, a superseded lens whose origin lies there returns without generating. A lens originating in a neighboring baseline chunk also clips candidate blocks that would cross into the owned chunk. That destination-chunk check prevents old-style lenses leaking across ownership boundaries. With bundled core data (`enabled: false`), the suppression fast path is false and no per-block ownership checks run.
 
-This registration/suppression handoff is intentionally atomic. If the experiment owns a chunk, a superseded lens whose origin is in that chunk returns without generating. A lens originating in a neighboring baseline chunk also clips individual candidate blocks when they cross into an owned chunk. This prevents old-style lenses from leaking across a chunk boundary and surviving inside the correlated region simply because their origin was outside it.
-
-The helper has an explicit activation fast path. With the bundled core resource (`enabled: false`), superseded lenses do not perform per-block ownership checks and the correlated feature itself immediately returns. Therefore the reachable feature registration does not change default chunk output.
-
-The later `UNDERGROUND_DECORATION` stage is deliberate: vanilla ores have already generated, and those ore blocks are not members of `geostrata:worldgen/base_stone_replaceables`. The correlated pass therefore replaces natural host stone while preserving caves, ores and other non-host blocks.
+The eventual biome registration and activation therefore belong to a separate experimental companion artifact, not to standalone core. Installing that companion is an explicit request to alter worldgen ordering and generation behavior.
 
 ## Ownership envelope
 
-The first contract limits ownership to sedimentary-basin interiors and requires at least 96 blocks of distance from the nearest geological province boundary. Province-profile blending remains 192 blocks wide, so the experiment deliberately stays out of the most ambiguous half of the regional transition.
+The first contract limits ownership to sedimentary-basin interiors and requires at least 96 blocks from the nearest geological province boundary. Province-profile blending remains 192 blocks wide, so the experiment stays out of the most ambiguous half of the regional transition.
 
-The experiment registers through `geostrata:has_common_rocks`, whose standalone default is the overworld. Geological ownership is then narrowed by the deterministic province/succession model rather than by hardcoded vanilla biome IDs.
+The future companion registers through `geostrata:has_common_rocks`, whose standalone default is the overworld. The actual ownership decision is then narrowed by deterministic province and succession selection rather than vanilla biome IDs.
 
-The configured host material remains `geostrata:worldgen/base_stone_replaceables`. Correlated generation therefore preserves the same terrain-mod compatibility seam as every existing GeoStrata rock body.
-
-`/geostrata experiment` reports the loaded activation state. When disabled it shows the target/superseded scope; when enabled by a future datapack it reports whether the current X/Z is owned, the ownership reason, province, approximate boundary distance and selected succession. The command does not inspect or mutate blocks.
+The mutation host remains `geostrata:worldgen/base_stone_replaceables`, preserving GeoStrata's terrain-mod compatibility seam. `/geostrata experiment` reports the loaded activation/ownership state without inspecting or changing blocks.
 
 ## Correlated feature implementation
 
-`CorrelatedSedimentaryFeature` is the chunk-local mutation consumer. When enabled and owned, it:
+`CorrelatedSedimentaryFeature` is the chunk-local mutation consumer. If it becomes reachable through the optional companion and the experiment owns the current chunk, it:
 
-- evaluates ownership through the shared chunk-center adapter;
-- reuses the selected succession, contact plan and deterministic stratigraphic field;
-- resolves output blocks only at the world-mutation boundary from the runtime lithology catalog;
-- scans only the experiment's bounded sea-level-relative vertical window;
-- replaces only blocks in `hostBlockTag`, preserving caves, ores and any material outside GeoStrata's host-stone contract;
-- uses one coherent field for the whole chunk rather than independent random deposits.
+- uses the shared chunk-center ownership adapter;
+- reuses the selected succession, normalized contacts and deterministic stratigraphic field;
+- resolves GeoStrata output blocks only at the mutation boundary through the runtime lithology catalog;
+- scans only the bounded sea-level-relative vertical window;
+- replaces only `hostBlockTag` members, preserving caves, ores and other non-host blocks;
+- uses one coherent stratigraphic field for the whole chunk.
 
-`scripts/validate_correlated_handoff.py` enforces the complete staging boundary. CI requires the later-stage registration, shared chunk ownership, destination-chunk clipping and baseline suppression to exist together while also requiring the bundled experiment to remain disabled and metadata-only.
+The companion will register this placed feature at `UNDERGROUND_DECORATION`, after vanilla's underground-ore stage. Vanilla ore blocks are not members of `base_stone_replaceables`, so the correlated pass preserves them.
+
+`scripts/validate_correlated_core_staging.py` enforces the standalone boundary: the feature type/data and chunk-normalized suppression preparation must exist, but core biome registration and core activation must remain absent.
 
 ## Vertical staging
 
-The initial experimental window is expressed relative to sea level, from 96 blocks below to 48 blocks above. This is intentionally not a permanent geological rule. It is a bounded mutation envelope for the first test consumer so the generator does not scan or replace an entire dimension column.
-
-The vertical window belongs to the experiment contract rather than the lithology catalog. Lithology `depthAffinity` remains qualitative and terrain-agnostic; a later geological model may replace this temporary bounded window with a richer crust/exposure system.
+The first experimental mutation window is sea-level-relative, from 96 blocks below to 48 blocks above. This is a bounded test envelope, not a permanent geological law. `depthAffinity` remains qualitative and terrain-agnostic.
 
 ## Biome affinity is not stratigraphic permission
 
-A lithology catalog entry's `biomeTag` records the current baseline feature affinity. It is useful for compatibility and legacy placement, but it must not be interpreted as a universal subsurface law. For example, siltstone is not geologically forbidden beneath non-river biomes merely because the baseline feature is targeted through `geostrata:has_fluvial_rocks`.
-
-The correlated experiment therefore selects its succession from province geology and uses the succession's ordered beds as subsurface ownership. Surface/biome affinity can remain a separate exposure, weathering or deposition concern in later stages.
+A lithology catalog entry's `biomeTag` records baseline feature affinity, not a universal subsurface rule. Siltstone, for example, is not forbidden below non-river biomes merely because its current baseline feature is fluvial. Correlated subsurface ownership comes from the geological succession; biome affinity can remain a separate exposure, weathering or deposition concern.
 
 ## Validation
 
-`scripts/validate_correlated_sedimentary_experiment.py` cross-checks the experiment against the live succession, lithology and province-profile resources. CI rejects:
+`scripts/validate_correlated_sedimentary_experiment.py` cross-checks the core experiment against succession, lithology and province-profile resources. It rejects core runtime activation, invalid targets/contexts/suppression sets, non-sedimentary targets, invalid boundary distances, missing GeoStrata extension tags and malformed vertical windows.
 
-- runtime activation in the core resource;
-- unknown or multiple first-stage succession targets;
-- non-regional first-stage targets;
-- allowed provinces not declared by the target succession;
-- a superseded lithology set that differs from the target succession's beds;
-- non-sedimentary superseded rocks;
-- boundary exclusion wider than the province blend width;
-- missing GeoStrata biome/host tags;
-- malformed or excessively broad sea-level-relative vertical windows.
-
-The Java reload parser mirrors the important cross-resource safety checks for datapack overrides. Unit tests pin disabled-state behavior, explicit activation status, full suppression coverage, deterministic owned-region evaluation, province-boundary exclusion and chunk-center normalization.
+The Java reload parser mirrors cross-resource safety checks for data overlays. Unit tests cover disabled state, explicit activation status, full suppression scope, deterministic owned-region evaluation, province-boundary exclusion and chunk-center normalization.
 
 ## Activation sequence
 
-The implementation stages are intentionally separate:
+1. **complete** — load and validate the experiment contract;
+2. **complete** — expose ownership diagnostics;
+3. **complete** — implement/register the correlated feature type and data while keeping it unreachable from standalone biome worldgen;
+4. **complete in core staging** — prepare activation-gated lens suppression and cross-chunk clipping using shared ownership;
+5. build a separate resource/marker companion that conditionally causes biome registration and provides the explicit activation overlay;
+6. evaluate fresh-world abundance, contacts, cave/cliff exposure, performance and compatibility before considering any broader distribution.
 
-1. **complete** — load and validate this contract in Java;
-2. **complete** — expose a diagnostic showing whether the current position/chunk is owned by the experiment;
-3. **complete** — implement/register the correlated feature type and data;
-4. **complete while default-disabled** — register the correlated placed feature at `UNDERGROUND_DECORATION` and atomically suppress/clip superseded lenses in the same owned chunks;
-5. ship a separate experimental datapack that flips `enabled` and `runtimeStatus` together;
-6. evaluate fresh-world abundance, contacts, cave/cliff exposure, performance and compatibility before considering any default activation.
-
-The standalone default remains unchanged until those stages have demonstrated that the correlated generator is strictly better than the baseline.
+Standalone GeoStrata remains on the baseline unless the experimental companion is installed.
