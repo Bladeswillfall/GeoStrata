@@ -27,6 +27,9 @@ jobs:
       - name: Validate province deformation profiles
         run: python3 scripts/validate_province_deformation_profiles.py
 
+      - name: Validate structural transform profiles
+        run: python3 scripts/validate_structural_transform_profiles.py
+
       - name: Validate sedimentary successions
         run: python3 scripts/validate_sedimentary_successions.py
 
