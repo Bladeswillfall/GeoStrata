@@ -26,6 +26,12 @@ This should build on GeoStrata's existing sedimentary successions, province cont
 
 Thermal maturity should be an explicit geological input capable of distinguishing immature organic-rich material, an oil-generating window and gas-prone/overmature material. Gas-specific manifestations, including damp, belong to the separate geological-gas proposal rather than being implemented here.
 
+## Reservoir geometry
+
+A petroleum reservoir should **follow the actual geometry of its porous host strata and geological trap**, including folding, faulting, dip and stratigraphic boundaries. Do not generate an unrelated ellipsoid/blob and merely treat suitable blocks inside it as petroleum-bearing.
+
+Most reservoir volume remains solid porous host rock. Where the local geology makes free space plausible, worldgen may add bounded cavities/voids within or immediately connected to the reservoir host and populate those spaces with physical crude. Suitable causes include fractures, fault damage, dissolution/karst-style voids, existing cave intersections or other trap geometry that can plausibly hold free liquid. These voids are manifestations of the reservoir, not a second independent oil generator, and should inherit the same finite reservoir accounting.
+
 ## Natural manifestations
 
 Possible world features include:
