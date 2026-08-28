@@ -65,7 +65,8 @@ def worldgenTargetContracts = [
         ],
         'geostrata:worldgen/soil_replaceables': ['sandy_loam_patch', 'silty_loam_patch', 'peat_soil_patch'],
         'geostrata:worldgen/mud_replaceables': ['wet_mud_patch', 'compacted_mud_patch'],
-        'geostrata:worldgen/clay_replaceables': ['clay_loam_patch', 'blue_clay_patch', 'red_clay_patch']
+        'geostrata:worldgen/clay_replaceables': ['clay_loam_patch'],
+        'geostrata:worldgen/hydric_sediment_replaceables': ['blue_clay_patch', 'red_clay_patch']
 ]
 
 tasks.register('validateWorldgenCompatibilityContracts') {
@@ -82,14 +83,20 @@ tasks.register('validateWorldgenCompatibilityContracts') {
 
                 def json = new groovy.json.JsonSlurper().parse(featureFile)
                 def targets = json?.config?.targets
-                if (!(targets instanceof List) || targets.isEmpty()) {
-                    throw new GradleException("Configured feature ${feature} has no targets")
+                if (targets instanceof List && !targets.isEmpty()) {
+                    def invalidTargets = targets.findAll { entry ->
+                        entry?.target?.get('predicate_type') != 'minecraft:tag_match' || entry?.target?.tag != expectedTag
+                    }
+                    if (!invalidTargets.isEmpty()) {
+                        throw new GradleException("Configured feature ${feature} must target ${expectedTag}")
+                    }
+                    return
                 }
 
-                def invalidTargets = targets.findAll { entry ->
-                    entry?.target?.get('predicate_type') != 'minecraft:tag_match' || entry?.target?.tag != expectedTag
-                }
-                if (!invalidTargets.isEmpty()) {
+                def target = json?.config?.target
+                if (json?.type != 'minecraft:disk'
+                        || target?.type != 'minecraft:matching_block_tag'
+                        || target?.tag != expectedTag) {
                     throw new GradleException("Configured feature ${feature} must target ${expectedTag}")
                 }
             }
