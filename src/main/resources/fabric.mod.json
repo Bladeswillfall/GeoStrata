@@ -3,7 +3,7 @@
   "id": "geostrata",
   "version": "${version}",
   "name": "GeoStrata",
-  "description": "Data-driven geology and building materials for Fabric 1.20.1. Runs standalone and exposes compatibility hooks that modpacks can extend with terrain and content mods.",
+  "description": "Data-driven geology and building materials. This artifact targets Fabric 1.20.1; shared mod logic is kept loader-neutral for future Forge and NeoForge adapters.",
   "authors": [
     "GeoStrata contributors"
   ],
@@ -11,7 +11,7 @@
   "environment": "*",
   "entrypoints": {
     "main": [
-      "com.geostrata.GeoStrata"
+      "com.geostrata.platform.fabric.FabricGeoStrata"
     ]
   },
   "depends": {
@@ -22,6 +22,6 @@
   },
   "custom": {
     "geostrata_stage": "pre-alpha",
-    "geostrata_compatibility_model": "standalone-core-plus-optional-integrations"
+    "geostrata_compatibility_model": "shared-core-plus-loader-adapters"
   }
 }
