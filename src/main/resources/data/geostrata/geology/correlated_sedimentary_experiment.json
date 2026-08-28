@@ -3,18 +3,22 @@
   "model": "geostrata:correlated_sedimentary_experiment",
   "runtimeStatus": "metadata_only",
   "enabled": false,
-  "description": "Disabled-by-default contract for the first correlated sedimentary worldgen experiment. The separate experimental companion mod activates the validated contract.",
+  "description": "Disabled-by-default contract for correlated sedimentary worldgen experiments. The separate experimental companion mod activates the validated contract.",
   "targetSuccessionIds": [
-    "basin_mudrock_carbonate_cycle"
+    "basin_mudrock_carbonate_cycle",
+    "orogenic_fan_fining_upward"
   ],
   "allowedProvinces": [
-    "sedimentary_basin"
+    "sedimentary_basin",
+    "orogenic_belt"
   ],
   "supersededLithologies": [
     "limestone",
     "shale",
     "mudstone",
-    "siltstone"
+    "siltstone",
+    "breccia",
+    "conglomerate"
   ],
   "minimumBoundaryDistanceBlocks": 96,
   "registrationBiomeTag": "geostrata:has_common_rocks",
