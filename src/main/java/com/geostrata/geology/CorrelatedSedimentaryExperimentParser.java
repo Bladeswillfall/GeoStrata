@@ -33,20 +33,9 @@ final class CorrelatedSedimentaryExperimentParser {
         }
 
         Set<String> targetIds = stringSet(requiredArray(experiment, "targetSuccessionIds"), "targetSuccessionIds");
-        if (targetIds.size() != 1) {
-            throw new IllegalArgumentException("first correlated experiment must target exactly one succession");
-        }
-        String targetId = targetIds.iterator().next();
-        SedimentarySuccessions.Succession target = successions.byId().get(targetId);
-        if (target == null) {
-            throw new IllegalArgumentException("unknown target succession: " + targetId);
-        }
-        if (!"regional".equals(target.continuity())) {
-            throw new IllegalArgumentException("initial correlated experiment target must be regional: " + targetId);
-        }
-
-        Set<GeologyProvince> allowedProvinces = parseAllowedProvinces(experiment, target, profiles);
-        Set<String> supersededLithologies = parseSuperseded(experiment, target, lithologies);
+        Set<SedimentarySuccessions.Succession> targets = resolveTargets(targetIds, successions);
+        Set<GeologyProvince> allowedProvinces = parseAllowedProvinces(experiment, targets, profiles);
+        Set<String> supersededLithologies = parseSuperseded(experiment, targets, lithologies);
         int minimumBoundaryDistance = requireInt(experiment, "minimumBoundaryDistanceBlocks");
         if (minimumBoundaryDistance < 0 || minimumBoundaryDistance > profiles.blendWidthBlocks()) {
             throw new IllegalArgumentException(
@@ -67,9 +56,24 @@ final class CorrelatedSedimentaryExperimentParser {
         );
     }
 
+    private static Set<SedimentarySuccessions.Succession> resolveTargets(
+            Set<String> targetIds,
+            SedimentarySuccessions.Snapshot successions
+    ) {
+        Set<SedimentarySuccessions.Succession> targets = new LinkedHashSet<>();
+        for (String targetId : targetIds) {
+            SedimentarySuccessions.Succession target = successions.byId().get(targetId);
+            if (target == null) {
+                throw new IllegalArgumentException("unknown target succession: " + targetId);
+            }
+            targets.add(target);
+        }
+        return targets;
+    }
+
     private static Set<GeologyProvince> parseAllowedProvinces(
             JsonObject experiment,
-            SedimentarySuccessions.Succession target,
+            Set<SedimentarySuccessions.Succession> targets,
             GeologyProvinceProfiles.Snapshot profiles
     ) {
         Set<GeologyProvince> allowed = new LinkedHashSet<>();
@@ -79,7 +83,7 @@ final class CorrelatedSedimentaryExperimentParser {
             if (!profiles.weights().containsKey(province)) {
                 throw new IllegalArgumentException("allowed province has no live profile: " + provinceId);
             }
-            if (!target.contexts().contains(province)) {
+            if (targets.stream().noneMatch(target -> target.contexts().contains(province))) {
                 throw new IllegalArgumentException("allowed province is not a target succession context: " + provinceId);
             }
             allowed.add(province);
@@ -89,12 +93,14 @@ final class CorrelatedSedimentaryExperimentParser {
 
     private static Set<String> parseSuperseded(
             JsonObject experiment,
-            SedimentarySuccessions.Succession target,
+            Set<SedimentarySuccessions.Succession> targets,
             LithologyCatalog.Snapshot lithologies
     ) {
         Set<String> expected = new LinkedHashSet<>();
-        for (SedimentarySuccessions.Bed bed : target.beds()) {
-            expected.add(bed.lithology());
+        for (SedimentarySuccessions.Succession target : targets) {
+            for (SedimentarySuccessions.Bed bed : target.beds()) {
+                expected.add(bed.lithology());
+            }
         }
 
         Set<String> superseded = stringSet(
