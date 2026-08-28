@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "model": "geostrata:ore_deposit_experiment",
+  "runtimeStatus": "experimental_opt_in",
+  "enabled": false,
+  "description": "Disabled by default. Override this server-data resource with enabled=true to evaluate real geology-qualified GeoStrata ore deposits while vanilla ore generation remains active.",
+  "placementMode": "chunk_local_valid_host_clipping",
+  "nativeGenerationSuppression": "not_implemented",
+  "activationChancePerCandidate": {
+    "coal": 0.04,
+    "iron": 0.025,
+    "copper": 0.018,
+    "gold": 0.008
+  }
+}
