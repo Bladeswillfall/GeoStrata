@@ -15,6 +15,8 @@ import java.io.IOException;
 
 /** Loads and publishes the shared geology resource graph in dependency order. */
 public final class GeologyDataReload {
+    public static final String COMPANION_MOD_ID = "geostrata_correlated_experiment";
+
     private static final Identifier LITHOLOGIES = GeoStrata.id("geology/lithologies.json");
     private static final Identifier ORE_OCCURRENCES = GeoStrata.id("geology/ore_occurrences.json");
     private static final Identifier ORE_DEPOSIT_EXPERIMENT = GeoStrata.id("geology/ore_deposit_experiment.json");
