@@ -6,7 +6,6 @@ import com.geostrata.worldgen.feature.GeoStrataFeatures;
 import com.geostrata.worldgen.placement.GeoStrataPlacementModifiers;
 import net.fabricmc.fabric.api.itemgroup.v1.FabricItemGroup;
 import net.fabricmc.fabric.api.itemgroup.v1.ItemGroupEvents;
-import net.minecraft.item.ItemGroup;
 import net.minecraft.item.ItemGroups;
 import net.minecraft.item.ItemStack;
 import net.minecraft.registry.Registries;
