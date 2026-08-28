@@ -35,6 +35,15 @@ final class OreDepositGeometryTest {
     }
 
     @Test
+    void proposalGeometryMatchesTheLegacyQualifiedCandidatePath() {
+        OreDepositCandidatePlanner.Candidate candidate = candidate("stratiform");
+        assertEquals(
+                OreDepositGeometry.forCandidate(12345L, candidate),
+                OreDepositGeometry.forProposal(12345L, candidate.proposal())
+        );
+    }
+
+    @Test
     void geometryIsStableForSeedAndCandidateIncludingNegativeCoordinates() {
         OreDepositCandidatePlanner.Candidate candidate = candidate("vein");
         OreDepositGeometry.Body first = OreDepositGeometry.forCandidate(42L, candidate);
@@ -53,6 +62,35 @@ final class OreDepositGeometryTest {
                 first.sample(first.anchorX() - 7, first.anchorY() + 3, first.anchorZ() + 5),
                 repeated.sample(repeated.anchorX() - 7, repeated.anchorY() + 3, repeated.anchorZ() + 5)
         );
+    }
+
+    @Test
+    void conservativeBoundsContainEconomicSamplesWithinTheFeatureSearchRadius() {
+        for (String style : STYLES) {
+            for (long seed = 0; seed < 64; seed++) {
+                OreDepositGeometry.Body body = OreDepositGeometry.forCandidate(seed, candidate(style));
+                OreDepositGeometry.Bounds bounds = body.bounds();
+                assertTrue(bounds.contains(body.anchorX(), body.anchorY(), body.anchorZ()));
+                assertTrue(bounds.minX() >= body.anchorX() - 128, style + " minX");
+                assertTrue(bounds.maxX() <= body.anchorX() + 128, style + " maxX");
+                assertTrue(bounds.minY() >= body.anchorY() - 128, style + " minY");
+                assertTrue(bounds.maxY() <= body.anchorY() + 128, style + " maxY");
+                assertTrue(bounds.minZ() >= body.anchorZ() - 128, style + " minZ");
+                assertTrue(bounds.maxZ() <= body.anchorZ() + 128, style + " maxZ");
+            }
+        }
+
+        OreDepositGeometry.Body body = OreDepositGeometry.forCandidate(8675309L, candidate("coal_seam"));
+        OreDepositGeometry.Bounds bounds = body.bounds();
+        for (int x = body.anchorX() - 96; x <= body.anchorX() + 96; x += 8) {
+            for (int y = body.anchorY() - 96; y <= body.anchorY() + 96; y += 8) {
+                for (int z = body.anchorZ() - 96; z <= body.anchorZ() + 96; z += 8) {
+                    if (body.sample(x, y, z).economic()) {
+                        assertTrue(bounds.contains(x, y, z));
+                    }
+                }
+            }
+        }
     }
 
     @Test
@@ -92,8 +130,9 @@ final class OreDepositGeometryTest {
     }
 
     @Test
-    void rejectsUnsupportedStyleAndMissingCandidate() {
+    void rejectsUnsupportedStyleAndMissingInputs() {
         assertThrows(IllegalArgumentException.class, () -> OreDepositGeometry.forCandidate(1L, null));
+        assertThrows(IllegalArgumentException.class, () -> OreDepositGeometry.forProposal(1L, null));
         assertThrows(
                 IllegalArgumentException.class,
                 () -> OreDepositGeometry.forCandidate(1L, candidate("unsupported"))
