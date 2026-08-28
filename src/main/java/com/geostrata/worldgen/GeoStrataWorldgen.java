@@ -53,12 +53,18 @@ public final class GeoStrataWorldgen {
         addToTag("clay_loam_patch", HAS_RIVER_SOILS);
         addToTag("sandy_loam_patch", HAS_COASTAL_ROCKS);
         addToTag("silty_loam_patch", HAS_RIVER_SOILS);
-        addToTag("blue_clay_patch", HAS_RIVER_SOILS);
+
+        // Clay uses actual water-floor evidence first, with rare shallow background deposits
+        // so it remains discoverable away from obvious rivers, lakes and coasts.
+        addToTag("blue_clay_patch", HAS_COMMON_ROCKS);
+        addToTag("blue_clay_background_patch", HAS_COMMON_ROCKS);
+        addToTag("red_clay_patch", HAS_COMMON_ROCKS);
+        addToTag("red_clay_background_patch", HAS_COMMON_ROCKS);
+        addToTag("red_clay_badlands_patch", HAS_BADLANDS_SOILS);
 
         addToTag("peat_soil_patch", HAS_SWAMP_SOILS);
         addToTag("wet_mud_patch", HAS_SWAMP_SOILS);
         addToTag("compacted_mud_patch", HAS_JUNGLE_SOILS);
-        addToTag("red_clay_patch", HAS_BADLANDS_SOILS);
 
         // Registered in core but dormant until the server-data experiment explicitly opts in.
         // Decoration runs after ordinary ore-stage host geology has been written.
