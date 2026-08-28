@@ -81,6 +81,25 @@ The terrain contribution is sampled through the same `ChunkGeneratorTerrainMorph
 
 The command is intentionally read-only. It is there to tune and falsify the field before metamorphic worldgen depends on it.
 
+## Structural band staging
+
+`MetamorphicBandPlanner` now stages grade ownership without placing blocks or inventing another fold system.
+
+The caller supplies the existing structural field's vertical offset, a structural site anchor and an explicit band thickness. The planner converts world Y into a structure-adjusted band index:
+
+```text
+band = floor((Y - existing structural vertical offset) / band thickness)
+```
+
+Each site/band pair receives one stable `GeologyDeterminism` roll. The local slate/schist/gneiss suitability values then act as weights for that band. This has two useful properties:
+
+- nearby blocks in the same folded/draped structural band do not independently roll into salt-and-pepper metamorphic blocks;
+- broad metamorphic intensity still controls the geological outcome, so a structural band cannot create gneiss where gneiss suitability is zero.
+
+Band thickness is deliberately caller-owned. This staging step does not freeze a gameplay/worldgen tuning value before a runtime consumer exists.
+
+The planner accepts the existing structural offset rather than deriving dip, fold or terrain response itself. The future runtime consumer should therefore reuse `TerrainAwareStructuralField.verticalOffset(x,z)` (or the equivalent shared structural seam) instead of creating metamorphism-specific geometry.
+
 ## Why marble and quartzite are not included
 
 Metamorphic intensity alone is not enough to choose every metamorphic lithology.
@@ -99,12 +118,13 @@ For the first migration, slate, schist and gneiss are the useful grade sequence 
 
 ## Current runtime boundary
 
-This milestone remains observational:
+This milestone remains non-mutating:
 
 - `/geostrata metamorphism` exposes the live field for tuning;
+- `MetamorphicBandPlanner` can deterministically assign a grade to caller-defined structural bands;
 - no baseline slate/schist/gneiss feature is suppressed;
-- no chunk blocks are changed by the intensity field;
+- no chunk blocks are changed by the intensity field or band planner;
 - no new worldgen feature type is registered;
 - no datapack tuning contract is introduced before a runtime consumer needs one.
 
-The next safe step is to use the diagnostic across representative vanilla and modded terrain, tune only if the evidence demands it, then connect a coherent metamorphic-band generator to the field in a separate migration. That generator should consume the same province, structural and host-ownership machinery rather than inventing another independent rock-placement system.
+The next runtime migration should feed the planner the existing terrain-aware structural offset and a deliberately scoped host-ownership rule, then replace only that chunk's eligible hosts. It should remain experimental until representative vanilla and modded terrain checks show that the intensity and band scale are sensible.
