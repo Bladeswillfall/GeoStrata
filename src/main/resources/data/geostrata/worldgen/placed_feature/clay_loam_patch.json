@@ -1,1 +1,25 @@
-{"feature":"geostrata:clay_loam_patch","placement":[{"type":"minecraft:count","count":1},{"type":"minecraft:in_square"},{"type":"minecraft:height_range","height":{"type":"minecraft:uniform","min_inclusive":{"absolute":48},"max_inclusive":{"absolute":128}}},{"type":"minecraft:biome"}]}
+{
+  "feature": "geostrata:clay_loam_patch",
+  "placement": [
+    {
+      "type": "minecraft:in_square"
+    },
+    {
+      "type": "minecraft:heightmap",
+      "heightmap": "OCEAN_FLOOR_WG"
+    },
+    {
+      "type": "geostrata:sediment_suitability",
+      "id": "clay_loam",
+      "base_chance": 0.04,
+      "flatness_weight": 0.08,
+      "valley_weight": 0.12,
+      "submerged_weight": 0.22,
+      "preferred_biome_bonus": 0.30,
+      "preferred_biome_tag": "geostrata:has_river_soils"
+    },
+    {
+      "type": "minecraft:biome"
+    }
+  ]
+}
