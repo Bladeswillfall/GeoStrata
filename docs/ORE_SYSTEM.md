@@ -1,8 +1,10 @@
 # Ore and mineral system
 
-GeoStrata is now staging a geology-driven ore system. The first live contract is
-`data/geostrata/geology/ore_occurrences.json`, loaded and validated with the rest
-of the server-data geology graph.
+GeoStrata is staging a geology-driven ore system. The stable occurrence contract
+is `data/geostrata/geology/ore_occurrences.json`, loaded and validated with the
+rest of the server-data geology graph. Real deposit placement now exists behind
+a separate disabled-by-default experiment; ordinary GeoStrata worlds remain on
+the pre-deposit baseline unless a datapack explicitly opts in.
 
 ## Current implemented boundary
 
@@ -20,33 +22,70 @@ The supported styles are deliberately limited to `coal_seam`, `vein`,
 an occurrence references an unknown lithology, province or style. Use
 `/geostrata ore <material>` to inspect the loaded occurrence contract.
 
-`OreDepositCandidatePlanner` now divides the world into deterministic
-256×256×64 candidate cells. For each material and cell it derives one jittered
-anchor and one style from the occurrence's allowed styles, without consuming
-Minecraft feature RNG state. The proposal becomes eligible only when the
-anchor's geological province and host lithology both match the occurrence
-contract. `/geostrata ore <material> candidate` exposes the proposal and its
-eligibility at the player's current 3D cell.
+`OreDepositCandidatePlanner` divides the world into deterministic 256×256×64
+candidate cells. For each material and cell it derives one jittered anchor and
+one style from the occurrence's allowed styles without consuming Minecraft
+feature RNG state. The candidate cell is therefore stable regardless of chunk
+generation order.
 
-This is candidate planning, not deposit activation. Every cell can be inspected
-without implying that every proposal will become a deposit; activation
-frequency and inter-deposit spacing remain deliberately unset.
+`OreDepositGeometry` gives each declared style a distinct body: low-dip coal
+sheets, branched tubular veins, broad stratiform lenses, sparse disseminated
+envelopes and compact massive lenses/pockets. The seed derives orientation,
+scale, warp and the two restrained side branches used by veins. The body sampler
+grades economic blocks from edge to core, applies stable block-coordinate
+dithering at grade boundaries and represents the surrounding halo or
+disseminated host gaps as non-economic Trace.
 
-Eligible candidates now construct a deterministic, non-mutating body preview.
-`OreDepositGeometry` gives each declared style a distinct base form: low-dip
-coal sheets, branched tubular veins, broad stratiform lenses, sparse
-disseminated envelopes and compact massive lenses/pockets. The seed derives
-orientation, scale, warp and the two restrained side branches used by veins.
-The body sampler grades economic blocks from edge to core, applies stable
-block-coordinate dithering at grade boundaries and represents the surrounding
-halo or disseminated host gaps as non-economic Trace. `/geostrata ore
-<material> candidate` reports the exact body dimensions, dip, branch count and
-the sample zone at the command source.
+The older anchor-host qualification path remains useful to diagnostics, but
+runtime placement deliberately does not read a remote candidate anchor block
+from another chunk. Active placement first checks the candidate's geological
+province, then clips each economic voxel to a locally present host lithology
+allowed by that material. This avoids chunk-loading/order hazards and lets a
+single body cross a geological contact while preserving the correct host state
+on each placed ore block.
 
-This remains geometry staging rather than world mutation. Grade blocks and
-their mining economy exist, but no candidate places them and vanilla ore
-generation is not suppressed. The generated-world baseline therefore remains
-unchanged.
+### Experimental deposit placement
+
+`data/geostrata/geology/ore_deposit_experiment.json` is the explicit activation
+boundary. The bundled resource has `enabled=false`. A test datapack may replace
+that resource with `enabled=true`; no code or client resource pack is required.
+The feature is registered across the overworld but returns immediately while the
+contract is disabled, so the normal generated-world baseline is unchanged.
+
+The initial activation probability is intentionally conservative and applies to
+each material's deterministic 256×256×64 candidate cell before province and
+host clipping:
+
+| Material | Candidate activation |
+| --- | ---: |
+| Coal | 4.0% |
+| Iron | 2.5% |
+| Copper | 1.8% |
+| Gold | 0.8% |
+
+These are experiment values, not a promised economy. The bodies are much larger
+than vanilla single-feature ore blobs, so high candidate frequency would swamp
+the graded yield model before abundance has been measured in fresh worlds.
+
+Placement is chunk-local. Every generated chunk re-evaluates the nearby stable
+candidate cells, builds any active body whose conservative bounds intersect the
+chunk, samples only the clipped local volume, and writes only that chunk's
+valid-host economic voxels. It never reaches into a neighboring chunk to finish
+a body. The neighboring chunk independently reaches the same deterministic
+answer when it generates, which removes cross-chunk mutation ordering from the
+shape.
+
+Direct GeoStrata rock blocks resolve their lithology from the loaded catalog. If
+the separate correlated sedimentary experiment owns a chunk, ore placement can
+also resolve the correlated field against its vanilla host-replacement tag. That
+allows an ore voxel to acquire the correct future host identity even when ore
+placement runs before the companion sedimentary replacement feature; the later
+sedimentary pass will not overwrite the graded ore block.
+
+Trace remains evidence-only and does not place a block. Vanilla/provider-native
+ore generation is still **not suppressed**. This experiment exists to measure
+body abundance, readability, performance and economic coverage before GeoStrata
+is allowed to become the exclusive generation owner.
 
 ## Grade contract
 
@@ -203,11 +242,11 @@ provider-backed entry such as Create zinc should remain dormant unless its
 provider is installed, then generate through GeoStrata while dropping the
 provider-compatible material.
 
-Provider-native ore generation must only be suppressed after GeoStrata's
-replacement deposits are active and validated. Suppressing first would create
-worlds with missing resources. External host-rock compatibility should extend a
-stable host/semantic contract rather than replace registered block IDs after
-startup.
+Provider-native ore generation must only be suppressed after the experimental
+replacement deposits have demonstrated acceptable availability and economy.
+Suppressing first would create worlds with missing resources. External host-rock
+compatibility should extend a stable host/semantic contract rather than replace
+registered block IDs after startup.
 
 ## Staged implementation path
 
@@ -218,9 +257,10 @@ startup.
    with Trace as non-economic evidence;
 4. **complete** — construct and sample deterministic style-specific bodies,
    concentration, dithered grades and non-economic Trace without mutating blocks;
-5. activate deposits behind an explicit experimental boundary and evaluate
-   abundance, readability and performance in fresh worlds;
+5. **complete, experimental opt-in** — place deterministic bodies chunk-locally,
+   clip them to valid host lithologies and expose conservative abundance tuning
+   while leaving the default world and native ore generation unchanged;
 6. suppress overlapping native generation only when replacement coverage is
-   proven; and
+   proven by fresh-world abundance/economy tests; and
 7. add guarded provider-mod occurrences without transferring ownership of their
    item economies into core GeoStrata.
