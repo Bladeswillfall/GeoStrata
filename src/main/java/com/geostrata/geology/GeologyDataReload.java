@@ -25,6 +25,7 @@ public final class GeologyDataReload implements SimpleSynchronousResourceReloadL
     private static final Identifier RELOAD_ID = GeoStrata.id("geology_data");
     private static final Identifier LITHOLOGIES = GeoStrata.id("geology/lithologies.json");
     private static final Identifier ORE_OCCURRENCES = GeoStrata.id("geology/ore_occurrences.json");
+    private static final Identifier ORE_DEPOSIT_EXPERIMENT = GeoStrata.id("geology/ore_deposit_experiment.json");
     private static final Identifier PROVINCES = GeoStrata.id("geology/province_profiles.json");
     private static final Identifier SUCCESSIONS = GeoStrata.id("geology/sedimentary_successions.json");
     private static final Identifier FIELD_PROFILES = GeoStrata.id("geology/sedimentary_field_profiles.json");
@@ -48,6 +49,7 @@ public final class GeologyDataReload implements SimpleSynchronousResourceReloadL
             State loaded = parse(
                     readObject(manager, LITHOLOGIES),
                     readObject(manager, ORE_OCCURRENCES),
+                    readObject(manager, ORE_DEPOSIT_EXPERIMENT),
                     readObject(manager, PROVINCES),
                     readObject(manager, SUCCESSIONS),
                     readObject(manager, FIELD_PROFILES),
@@ -57,9 +59,10 @@ public final class GeologyDataReload implements SimpleSynchronousResourceReloadL
             validateOreRegistries(loaded.oreOccurrences());
             loaded.publish();
             GeoStrata.LOGGER.info(
-                    "Loaded GeoStrata geology data: {} lithologies, {} ore occurrences, {} successions, experiment enabled={}",
+                    "Loaded GeoStrata geology data: {} lithologies, {} ore occurrences, ore placement experiment enabled={}, {} successions, correlated experiment enabled={}",
                     loaded.lithologies().entries().size(),
                     loaded.oreOccurrences().occurrences().size(),
+                    loaded.oreExperiment().enabled(),
                     loaded.successions().successions().size(),
                     loaded.experiment().enabled()
             );
@@ -86,6 +89,7 @@ public final class GeologyDataReload implements SimpleSynchronousResourceReloadL
     static State parse(
             JsonObject lithologiesRoot,
             JsonObject oreOccurrencesRoot,
+            JsonObject oreDepositExperimentRoot,
             JsonObject provincesRoot,
             JsonObject successionsRoot,
             JsonObject fieldProfilesRoot,
@@ -96,6 +100,10 @@ public final class GeologyDataReload implements SimpleSynchronousResourceReloadL
         OreOccurrenceCatalog.Snapshot oreOccurrences = OreOccurrenceCatalog.parse(
                 lithologies,
                 oreOccurrencesRoot
+        );
+        OreDepositExperiment.Snapshot oreExperiment = OreDepositExperiment.parse(
+                oreDepositExperimentRoot,
+                oreOccurrences
         );
         GeologyProvinceProfiles.Snapshot provinces = GeologyProvinceProfiles.parse(lithologies, provincesRoot);
         SedimentarySuccessions.Snapshot successions = SedimentarySuccessions.parse(lithologies, successionsRoot);
@@ -109,7 +117,15 @@ public final class GeologyDataReload implements SimpleSynchronousResourceReloadL
                 lithologies,
                 provinces
         ).activated(companionLoaded);
-        return new State(lithologies, oreOccurrences, provinces, successions, fieldProfiles, experiment);
+        return new State(
+                lithologies,
+                oreOccurrences,
+                oreExperiment,
+                provinces,
+                successions,
+                fieldProfiles,
+                experiment
+        );
     }
 
     private static JsonObject readObject(ResourceManager manager, Identifier id) throws IOException {
@@ -127,6 +143,7 @@ public final class GeologyDataReload implements SimpleSynchronousResourceReloadL
     record State(
             LithologyCatalog.Snapshot lithologies,
             OreOccurrenceCatalog.Snapshot oreOccurrences,
+            OreDepositExperiment.Snapshot oreExperiment,
             GeologyProvinceProfiles.Snapshot provinces,
             SedimentarySuccessions.Snapshot successions,
             SedimentaryFieldProfiles.Snapshot fieldProfiles,
@@ -135,6 +152,7 @@ public final class GeologyDataReload implements SimpleSynchronousResourceReloadL
         private void publish() {
             LithologyCatalog.install(lithologies);
             OreOccurrenceCatalog.install(oreOccurrences);
+            OreDepositExperiment.install(oreExperiment);
             GeologyProvinceProfiles.install(provinces);
             SedimentarySuccessions.install(successions);
             SedimentaryFieldProfiles.install(fieldProfiles);
