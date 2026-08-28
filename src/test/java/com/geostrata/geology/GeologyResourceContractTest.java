@@ -28,11 +28,24 @@ final class GeologyResourceContractTest {
         GeologyDataReload.State core = parseGeology(false);
         assertTrue(core.lithologies().loaded());
         assertTrue(core.oreOccurrences().loaded());
+        assertTrue(core.oreExperiment().loaded());
         assertTrue(core.provinces().loaded());
         assertTrue(core.successions().loaded());
         assertTrue(core.fieldProfiles().loaded());
         assertFalse(core.experiment().enabled());
         assertEquals("metadata_only", core.experiment().runtimeStatus());
+        assertFalse(core.oreExperiment().enabled());
+        assertEquals("experimental_opt_in", core.oreExperiment().runtimeStatus());
+        assertEquals("chunk_local_valid_host_clipping", core.oreExperiment().placementMode());
+        assertEquals("not_implemented", core.oreExperiment().nativeGenerationSuppression());
+        assertEquals(
+                Set.of("coal", "iron", "copper", "gold"),
+                core.oreExperiment().activationChancePerCandidate().keySet()
+        );
+        assertEquals(0.04, core.oreExperiment().activationChance("coal"), 1.0e-12);
+        assertEquals(0.025, core.oreExperiment().activationChance("iron"), 1.0e-12);
+        assertEquals(0.018, core.oreExperiment().activationChance("copper"), 1.0e-12);
+        assertEquals(0.008, core.oreExperiment().activationChance("gold"), 1.0e-12);
         assertEquals(
                 Set.of("coal", "iron", "copper", "gold"),
                 core.oreOccurrences().byId().keySet()
@@ -55,12 +68,14 @@ final class GeologyResourceContractTest {
         GeologyDataReload.State activated = parseGeology(true);
         assertTrue(activated.experiment().enabled());
         assertEquals("experimental_runtime", activated.experiment().runtimeStatus());
+        assertFalse(activated.oreExperiment().enabled());
 
         assertCharacteristicProvincePalettes(core);
         assertSuccessionContextCoverage(core.successions());
         assertExperimentTagsExist(core.experiment());
         assertStrataLensResourcesArePaired();
         assertCorrelatedWorldgenStaging();
+        assertOreDepositWorldgenStaging();
         assertCompanionMetadata();
     }
 
@@ -68,6 +83,7 @@ final class GeologyResourceContractTest {
         return GeologyDataReload.parse(
                 read(GEOLOGY.resolve("lithologies.json")),
                 read(GEOLOGY.resolve("ore_occurrences.json")),
+                read(GEOLOGY.resolve("ore_deposit_experiment.json")),
                 read(GEOLOGY.resolve("province_profiles.json")),
                 read(GEOLOGY.resolve("sedimentary_successions.json")),
                 read(GEOLOGY.resolve("sedimentary_field_profiles.json")),
@@ -100,6 +116,9 @@ final class GeologyResourceContractTest {
     private static void assertExperimentTagsExist(CorrelatedSedimentaryExperiment.Snapshot experiment) {
         assertTrue(tagPath("tags/worldgen/biome", experiment.registrationBiomeTag()).toFile().isFile());
         assertTrue(tagPath("tags/blocks", experiment.hostBlockTag()).toFile().isFile());
+        assertTrue(RESOURCES.resolve(
+                "data/geostrata/tags/worldgen/biome/has_experimental_ore_deposits.json"
+        ).toFile().isFile());
     }
 
     private static Path tagPath(String directory, String identifier) {
@@ -171,6 +190,16 @@ final class GeologyResourceContractTest {
 
         JsonObject placed = read(PLACED.resolve("correlated_sedimentary_experiment.json"));
         assertEquals("geostrata:correlated_sedimentary_experiment", string(placed, "feature"));
+        assertTrue(placed.getAsJsonArray("placement").isEmpty());
+    }
+
+    private static void assertOreDepositWorldgenStaging() throws IOException {
+        JsonObject configured = read(CONFIGURED.resolve("ore_deposit_experiment.json"));
+        assertEquals("geostrata:ore_deposit", string(configured, "type"));
+        assertEquals(0, configured.getAsJsonObject("config").size());
+
+        JsonObject placed = read(PLACED.resolve("ore_deposit_experiment.json"));
+        assertEquals("geostrata:ore_deposit_experiment", string(placed, "feature"));
         assertTrue(placed.getAsJsonArray("placement").isEmpty());
     }
 

@@ -9,6 +9,7 @@ import com.geostrata.geology.GeologyProvinceSampler;
 import com.geostrata.geology.GeologySurvey;
 import com.geostrata.geology.LithologyCatalog;
 import com.geostrata.geology.OreDepositCandidatePlanner;
+import com.geostrata.geology.OreDepositExperiment;
 import com.geostrata.geology.OreDepositGeometry;
 import com.geostrata.geology.OreOccurrenceCatalog;
 import com.geostrata.geology.SedimentaryContactPlanner;
@@ -464,7 +465,9 @@ public final class GeoStrataCommands {
                                 .collect(Collectors.joining(","))
                                 + " | deposit styles " + String.join(",", occurrence.depositStyles())
                                 + " | grades " + gradeEconomy(catalog.gradeModel(), occurrence)
-                                + " | grade blocks/drops active; deposit placement and native suppression inactive"
+                                + (OreDepositExperiment.current().enabled()
+                                        ? " | EXPERIMENTAL deposit placement enabled; native suppression inactive"
+                                        : " | deposit experiment disabled; native suppression inactive")
                 ),
                 false
         );
@@ -512,11 +515,11 @@ public final class GeoStrataCommands {
                 host
         );
         String status = candidate.isPresent()
-                ? "ELIGIBLE geometry preview"
-                : "ineligible: " + candidateRejection(source, proposal, occurrence, province, host);
+                ? "anchor-qualified geometry preview"
+                : "anchor diagnostic: " + candidateRejection(source, proposal, occurrence, province, host);
         String geometry = candidate
                 .map(value -> bodySummary(seed, value, x, y, z))
-                .orElse("body unavailable until host and province qualify");
+                .orElse("anchor-preview unavailable until host and province qualify");
 
         source.sendFeedback(
                 () -> Text.literal(
@@ -528,7 +531,9 @@ public final class GeoStrataCommands {
                                 + " | host " + (host == null ? "unresolved" : host)
                                 + " | " + status
                                 + " | " + geometry
-                                + " | preview only; no deposit placement or native suppression"
+                                + (OreDepositExperiment.current().enabled()
+                                        ? " | experiment enabled; runtime placement uses province + local-host clipping; native suppression inactive"
+                                        : " | preview only; deposit experiment disabled; native suppression inactive")
                 ),
                 false
         );
