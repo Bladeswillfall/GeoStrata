@@ -1,8 +1,6 @@
 {
-  "type": "minecraft:ore",
+  "type": "geostrata:strata_lens",
   "config": {
-    "size": 24,
-    "discard_chance_on_air_exposure": 0.0,
     "targets": [
       {
         "target": {
@@ -13,6 +11,16 @@
           "Name": "geostrata:breccia"
         }
       }
-    ]
+    ],
+    "discard_chance_on_air_exposure": 0.0,
+    "long_radius": 6,
+    "short_radius_ratio": 0.68,
+    "short_radius_variation": 0.12,
+    "half_thickness": 1.9,
+    "edge_half_thickness": 0.65,
+    "max_slope": 0.16,
+    "warp_amplitude": 0.45,
+    "warp_variation": 0.2,
+    "warp_wavelength": 6.0
   }
 }
