@@ -52,9 +52,10 @@ Host type decides whether the geology can act as a reservoir; it does not carry 
 
 Keep natural petroleum materials readable through ordinary Minecraft conventions rather than adding petroleum-specific tool tiers or hand-extraction mechanics.
 
-- **Bitumen / tar layers:** use 1–8 snow-style layers. They can be broken by hand but hand-breaking yields nothing. A shovel is the harvesting tool and a wooden shovel is sufficient. Harvesting drops one bitumen item per layer, so a 1-layer patch yields 1 item and an 8-layer stack yields 8. Placing one bitumen item onto an existing bitumen layer adds one layer, up to 8.
-- **Layer stack versus solid block:** an 8-layer surface stack remains the layered environmental form and must not automatically convert into the solid storage block. Keep the two forms distinct so changing shape cannot create or destroy material.
-- **Solid / compacted bitumen:** use a reversible 9:1 storage recipe: 9 bitumen items craft into 1 solid bitumen block, and 1 solid bitumen block crafts back into 9 bitumen items.
+- **Bitumen / tar layers:** use 1–8 snow-style layers. They can be broken by hand but hand-breaking yields nothing. A shovel is the harvesting tool and a wooden shovel is sufficient.
+- **Snow-style layer economy:** mirror vanilla snow-layer behaviour in base-item terms rather than conserving material. Each added/crafted layer costs the equivalent of **2 bitumen items**, while shovel-harvesting returns **1 bitumen item per layer**. Therefore 1–8 layers cost 2/4/6/8/10/12/14/16 bitumen items respectively and drop 1/2/3/4/5/6/7/8 bitumen items when broken. Rebuilding and then harvesting layers intentionally loses half of the invested bitumen, just as placed snow layers lose half of their snowball-equivalent crafting cost when broken.
+- **Layer height:** 1–8 layers occupy 1/8, 1/4, 3/8, 1/2, 5/8, 3/4, 7/8 and one full block of visual/collision height respectively. The 8-layer form is still the layered environmental blockstate, not the compacted storage block.
+- **Solid / compacted bitumen:** keep the separate reversible 9:1 storage recipe: 9 bitumen items craft into 1 solid bitumen block, and 1 solid bitumen block crafts back into 9 bitumen items. This storage block is distinct from the 8-layer environmental form.
 - **Oil sands:** follow ordinary sand-family interaction. Shovels are the natural fast tool, no minimum tool tier is required, and hand mining can still recover the material.
 - **Oil shale:** follow ordinary stone-family interaction. A pickaxe is required for proper drops; wooden tier is sufficient.
 - **Petroleum-stained reservoir hosts:** inherit the underlying host block's tool and harvest tier. Petroleum presence never raises the mining tier.
