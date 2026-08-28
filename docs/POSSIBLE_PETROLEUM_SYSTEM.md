@@ -52,17 +52,20 @@ Host type decides whether the geology can act as a reservoir; it does not carry 
 
 Keep natural petroleum materials readable through ordinary Minecraft conventions rather than adding petroleum-specific tool tiers or hand-extraction mechanics.
 
-- **Bitumen / tar layers:** use 1–8 snow-style layers. They can be broken by hand but hand-breaking yields nothing. A shovel is the harvesting tool and a wooden shovel is sufficient.
+- **Bitumen / tar layers:** use 1–8 snow-style layers. They can be broken by hand but hand-breaking yields nothing. A shovel is the harvesting tool and a wooden shovel is sufficient. Use **0.3 hardness and 0.2 blast resistance**: still easy to clear, but tougher and denser than snow.
 - **Snow-style layer economy:** mirror vanilla snow-layer behaviour in base-item terms rather than conserving material. Each added/crafted layer costs the equivalent of **2 bitumen items**, while shovel-harvesting returns **1 bitumen item per layer**. Therefore 1–8 layers cost 2/4/6/8/10/12/14/16 bitumen items respectively and drop 1/2/3/4/5/6/7/8 bitumen items when broken. Rebuilding and then harvesting layers intentionally loses half of the invested bitumen, just as placed snow layers lose half of their snowball-equivalent crafting cost when broken.
 - **Layer height / full block:** 1–8 layers occupy 1/8, 1/4, 3/8, 1/2, 5/8, 3/4, 7/8 and one full block of visual/collision height respectively. **Eight layers are the full bitumen block.** There is no separate compacted/storage bitumen block and no separate 9:1 storage recipe.
-- **Oil sands:** follow ordinary sand-family interaction. Shovels are the natural fast tool, no minimum tool tier is required, and hand mining can still recover the material.
-- **Oil shale:** follow ordinary stone-family interaction. A pickaxe is required for proper drops; wooden tier is sufficient.
-- **Petroleum-stained reservoir hosts:** inherit the underlying host block's tool and harvest tier. Petroleum presence never raises the mining tier.
+- **Bitumen piston / fire / enchantment behaviour:** pistons break bitumen layers rather than moving them as a mass; bitumen is sticky to entities but is **not** a slime/honey-style piston-adhesion block. Placed bitumen does not ignite/spread from ordinary fire. **Silk Touch preserves the placed layer stack**, avoiding the normal recovery loss; **Fortune has no effect**.
+- **Oil sands:** follow ordinary sand-family interaction: 0.5 hardness / 0.5 blast resistance, gravity-affected, normally piston-movable, shovels are the natural fast tool, no minimum tool tier is required, and hand mining can still recover the material. Silk Touch and Fortune add no special petroleum drops.
+- **Oil shale:** follow the existing GeoStrata shale profile: **1.4 hardness / 6.0 blast resistance**, ordinary movable stone-like block behaviour, a pickaxe is required for proper drops, and wooden tier is sufficient. Silk Touch and Fortune add no special petroleum drops.
+- **Petroleum-stained reservoir hosts:** inherit the underlying host block's hardness, blast resistance, piston behaviour, flammability, tool, harvest tier and enchantment behaviour. Petroleum presence changes appearance/evidence, not the host's base mechanics.
 - **Crude oil:** ordinary player interaction is through actual free-fluid source blocks and buckets. Petroleum-bearing solids do not become hand-extractable crude through mining or crafting.
 
 Bitumen should also act as an early-game **adhesive alternative** where a vanilla recipe uses slimeballs as glue. Add explicit alternative recipes rather than placing bitumen in a generic slimeball tag. Initial candidates are Sticky Pistons and Leads. Do not substitute bitumen where slime itself is materially important, such as Slime Blocks or Magma Cream.
 
-Avoid inventing extra waterproofing, fuel, dye or processing systems until a concrete gameplay need justifies them.
+Do **not** copy petroleum-ore precedents where Fortune multiplies bitumen or mining petroleum-bearing rock produces crude. Those mechanics conflict with the finite geological-reservoir model: enchantments should not change how much petroleum existed underground.
+
+Avoid inventing extra waterproofing, fuel, dye or processing systems until a concrete gameplay need justifies them. A modest bitumen furnace-fuel value may be considered later as a separate balance decision, but natural placed bitumen should not become a propagating fire hazard.
 
 ## Natural manifestations
 
