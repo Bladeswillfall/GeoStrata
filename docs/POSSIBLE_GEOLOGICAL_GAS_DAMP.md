@@ -46,7 +46,7 @@ Do not build gas blocks, voxel volumes, cave flood-fill, sealed-space simulation
 
 Open flame should provide a simple, intuitive way to clear the visible firedamp clue without introducing gas-combustion simulation.
 
-- a nearby **lit campfire/bonfire** suppresses mist spawning in its local area;
+- a nearby **lit campfire or equivalent bonfire-style block** suppresses mist spawning in its local area;
 - a nearby ordinary **fire block**, such as one created by Flint & Steel on a flammable block, does the same;
 - mist already visible in that local area should fade/despawn rather than continue accumulating;
 - firedamp mist should not spawn near **exposed lava**.
