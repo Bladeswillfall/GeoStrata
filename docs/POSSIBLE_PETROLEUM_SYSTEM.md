@@ -32,6 +32,14 @@ A petroleum reservoir should **follow the actual geometry of its porous host str
 
 Most reservoir volume remains solid porous host rock. Where the local geology makes free space plausible, worldgen may add bounded cavities/voids within or immediately connected to the reservoir host and populate those spaces with physical crude. Suitable causes include fractures, fault damage, dissolution/karst-style voids, existing cave intersections or other trap geometry that can plausibly hold free liquid. These voids are manifestations of the reservoir, not a second independent oil generator, and should inherit the same finite reservoir accounting.
 
+## Deterministic identity and chunk boundaries
+
+Reservoir identity and immutable geometry should be derived deterministically from the world seed, dimension and a stable coarse reservoir anchor rather than from first-visited chunk order or a runtime-random UUID.
+
+Given the same reservoir identity, GeoStrata should be able to reconstruct the same candidate extent and intersect it with the same host strata, trap, seal and maturity fields. Each chunk generates only its own local slice of that reservoir and must not depend on neighbouring chunks being generated first.
+
+Do not persist a voxel map or block list for the reservoir. Persist only mutable state that cannot be reconstructed from seed and geology, initially the reservoir's **remaining recoverable petroleum in mB**. Immutable geometry, original placement and local manifestations should remain deterministic. In a Fabric 1.20.1 implementation, Minecraft's world-level persistent-state facility is the preferred place for that mutable depletion record unless a narrower native mechanism already exists.
+
 ## Natural manifestations
 
 Possible world features include:
@@ -93,7 +101,6 @@ Any compatibility API or data contract should be added only when a real integrat
 - How should reservoir porosity/permeability be represented without adding excessive block-state or worldgen cost?
 - How much free liquid should be generated versus represented by saturated host rock?
 - Can existing structural-field data identify useful trap geometries cheaply enough during chunk generation?
-- How should finite reservoir volume be represented for optional extractors while remaining deterministic across chunk-generation order?
 - Which natural hydrocarbon blocks/fluids justify existing in the base mod versus remaining purely environmental evidence?
 
 ## Non-goals for now
