@@ -1,18 +1,19 @@
 {
-  "type": "minecraft:ore",
+  "type": "geostrata:strata_lens",
   "config": {
-    "size": 24,
+    "targets": [{
+      "target": {"predicate_type": "minecraft:tag_match", "tag": "geostrata:worldgen/base_stone_replaceables"},
+      "state": {"Name": "geostrata:quartzite"}
+    }],
     "discard_chance_on_air_exposure": 0.0,
-    "targets": [
-      {
-        "target": {
-          "predicate_type": "minecraft:tag_match",
-          "tag": "geostrata:worldgen/base_stone_replaceables"
-        },
-        "state": {
-          "Name": "geostrata:quartzite"
-        }
-      }
-    ]
+    "long_radius": 9,
+    "short_radius_ratio": 0.72,
+    "short_radius_variation": 0.08,
+    "half_thickness": 1.6,
+    "edge_half_thickness": 0.55,
+    "max_slope": 0.18,
+    "warp_amplitude": 0.45,
+    "warp_variation": 0.2,
+    "warp_wavelength": 7.5
   }
 }

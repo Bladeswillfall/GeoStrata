@@ -150,8 +150,12 @@ public final class CorrelatedSedimentaryRuntime {
                 LithologyCatalog.Snapshot catalog
         ) {
             String parent = sample(x, y, z).bed().lithology();
-            if (ownership().province() != GeologyProvince.OROGENIC_BELT
-                    || !"mudrock".equals(catalog.require(parent).genesis())) {
+            if (ownership().province() != GeologyProvince.OROGENIC_BELT) {
+                return parent;
+            }
+
+            String genesis = catalog.require(parent).genesis();
+            if (!"mudrock".equals(genesis) && !"carbonate".equals(genesis)) {
                 return parent;
             }
 
@@ -162,7 +166,7 @@ public final class CorrelatedSedimentaryRuntime {
                     MetamorphicIntensityField.DEFAULT_PROVINCE_BLEND_WIDTH_BLOCKS,
                     field.localPatch().morphologyAt(x, z)
             ).suitability();
-            return MetamorphicBandPlanner.select(
+            Optional<MetamorphicBandPlanner.Selection> selection = MetamorphicBandPlanner.select(
                     worldSeed,
                     field.baseField().siteX(),
                     field.baseField().siteZ(),
@@ -170,7 +174,11 @@ public final class CorrelatedSedimentaryRuntime {
                     field.verticalOffset(x, z),
                     field.baseField().cycleThicknessBlocks(),
                     suitability
-            ).map(MetamorphicBandPlanner.Selection::lithology).orElse(parent);
+            );
+            if (selection.isEmpty()) {
+                return parent;
+            }
+            return "carbonate".equals(genesis) ? "marble" : selection.get().lithology();
         }
     }
 }

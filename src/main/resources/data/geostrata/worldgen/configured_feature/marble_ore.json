@@ -1,18 +1,19 @@
 {
-  "type": "minecraft:ore",
+  "type": "geostrata:strata_lens",
   "config": {
-    "size": 24,
+    "targets": [{
+      "target": {"predicate_type": "minecraft:tag_match", "tag": "geostrata:worldgen/base_stone_replaceables"},
+      "state": {"Name": "geostrata:marble"}
+    }],
     "discard_chance_on_air_exposure": 0.0,
-    "targets": [
-      {
-        "target": {
-          "predicate_type": "minecraft:tag_match",
-          "tag": "geostrata:worldgen/base_stone_replaceables"
-        },
-        "state": {
-          "Name": "geostrata:marble"
-        }
-      }
-    ]
+    "long_radius": 6,
+    "short_radius_ratio": 0.7,
+    "short_radius_variation": 0.1,
+    "half_thickness": 2.1,
+    "edge_half_thickness": 0.7,
+    "max_slope": 0.14,
+    "warp_amplitude": 0.35,
+    "warp_variation": 0.15,
+    "warp_wavelength": 7.0
   }
 }

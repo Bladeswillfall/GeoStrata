@@ -6,14 +6,18 @@
   "description": "Disabled-by-default contract for correlated sedimentary worldgen experiments. The separate experimental companion mod activates the validated contract.",
   "targetSuccessionIds": [
     "basin_mudrock_carbonate_cycle",
+    "shelf_chalk_carbonate_cycle",
+    "rift_fining_upward_clastics",
     "orogenic_fan_fining_upward"
   ],
   "allowedProvinces": [
     "sedimentary_basin",
+    "rift_province",
     "orogenic_belt"
   ],
   "supersededLithologies": [
     "limestone",
+    "chalk",
     "shale",
     "mudstone",
     "siltstone",

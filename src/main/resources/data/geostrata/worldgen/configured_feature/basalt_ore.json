@@ -1,18 +1,19 @@
 {
-  "type": "minecraft:ore",
+  "type": "geostrata:strata_lens",
   "config": {
-    "size": 24,
+    "targets": [{
+      "target": {"predicate_type": "minecraft:tag_match", "tag": "geostrata:worldgen/base_stone_replaceables"},
+      "state": {"Name": "geostrata:basalt"}
+    }],
     "discard_chance_on_air_exposure": 0.0,
-    "targets": [
-      {
-        "target": {
-          "predicate_type": "minecraft:tag_match",
-          "tag": "geostrata:worldgen/base_stone_replaceables"
-        },
-        "state": {
-          "Name": "geostrata:basalt"
-        }
-      }
-    ]
+    "long_radius": 14,
+    "short_radius_ratio": 0.86,
+    "short_radius_variation": 0.06,
+    "half_thickness": 1.25,
+    "edge_half_thickness": 0.4,
+    "max_slope": 0.05,
+    "warp_amplitude": 0.15,
+    "warp_variation": 0.08,
+    "warp_wavelength": 10.0
   }
 }

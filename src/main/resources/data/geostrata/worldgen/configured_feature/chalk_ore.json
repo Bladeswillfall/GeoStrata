@@ -1,18 +1,19 @@
 {
-  "type": "minecraft:ore",
+  "type": "geostrata:strata_lens",
   "config": {
-    "size": 24,
+    "targets": [{
+      "target": {"predicate_type": "minecraft:tag_match", "tag": "geostrata:worldgen/base_stone_replaceables"},
+      "state": {"Name": "geostrata:chalk"}
+    }],
     "discard_chance_on_air_exposure": 0.0,
-    "targets": [
-      {
-        "target": {
-          "predicate_type": "minecraft:tag_match",
-          "tag": "geostrata:worldgen/base_stone_replaceables"
-        },
-        "state": {
-          "Name": "geostrata:chalk"
-        }
-      }
-    ]
+    "long_radius": 10,
+    "short_radius_ratio": 0.78,
+    "short_radius_variation": 0.06,
+    "half_thickness": 1.4,
+    "edge_half_thickness": 0.45,
+    "max_slope": 0.06,
+    "warp_amplitude": 0.25,
+    "warp_variation": 0.1,
+    "warp_wavelength": 7.5
   }
 }
