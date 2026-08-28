@@ -237,14 +237,15 @@ public final class OreDepositGeometry {
         }
 
         private LocalBounds localBounds() {
-            double minAlong = -lengthRadius;
-            double maxAlong = lengthRadius;
+            boolean vein = "vein".equals(style);
+            double minAlong = -lengthRadius - (vein ? thicknessRadius : 0.0);
+            double maxAlong = lengthRadius + (vein ? thicknessRadius : 0.0);
             double minAcross = -widthRadius;
             double maxAcross = widthRadius;
             double minNormal = -thicknessRadius;
             double maxNormal = thicknessRadius;
 
-            if ("vein".equals(style)) {
+            if (vein) {
                 for (Branch branch : branches) {
                     double normalRadius = thicknessRadius * branch.radiusScale();
                     double acrossRadius = widthRadius * branch.radiusScale();

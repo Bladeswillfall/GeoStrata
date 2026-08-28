@@ -94,6 +94,23 @@ final class OreDepositGeometryTest {
     }
 
     @Test
+    void conservativeBoundsContainEverySampledVeinCapVoxel() {
+        OreDepositGeometry.Body body = OreDepositGeometry.forCandidate(42L, candidate("vein"));
+        OreDepositGeometry.Bounds bounds = body.bounds();
+        int margin = 4;
+
+        for (int x = bounds.minX() - margin; x <= bounds.maxX() + margin; x++) {
+            for (int y = bounds.minY() - margin; y <= bounds.maxY() + margin; y++) {
+                for (int z = bounds.minZ() - margin; z <= bounds.maxZ() + margin; z++) {
+                    if (body.sample(x, y, z).economic()) {
+                        assertTrue(bounds.contains(x, y, z), "economic vein voxel escaped conservative bounds");
+                    }
+                }
+            }
+        }
+    }
+
+    @Test
     void economicBodyFadesIntoNonEconomicTraceThenOutside() {
         OreDepositGeometry.Body body = OreDepositGeometry.forCandidate(1234L, candidate("massive_lens_or_pocket"));
         boolean foundTrace = false;
