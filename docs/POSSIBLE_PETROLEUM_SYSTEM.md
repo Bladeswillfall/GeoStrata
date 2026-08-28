@@ -48,6 +48,22 @@ If the host geology and trap are suitable, the result is a reservoir with one fi
 
 Host type decides whether the geology can act as a reservoir; it does not carry a per-block oil efficiency, yield or permeability value. Technology mods remain responsible for extraction rate and machine behaviour.
 
+## Base vanilla gameplay interactions
+
+Keep natural petroleum materials readable through ordinary Minecraft conventions rather than adding petroleum-specific tool tiers or hand-extraction mechanics.
+
+- **Bitumen / tar layers:** use 1–8 snow-style layers. They can be broken by hand but hand-breaking yields nothing. A shovel is the harvesting tool and a wooden shovel is sufficient. Harvesting drops one bitumen item per layer, so a 1-layer patch yields 1 item and an 8-layer stack yields 8. Placing one bitumen item onto an existing bitumen layer adds one layer, up to 8.
+- **Layer stack versus solid block:** an 8-layer surface stack remains the layered environmental form and must not automatically convert into the solid storage block. Keep the two forms distinct so changing shape cannot create or destroy material.
+- **Solid / compacted bitumen:** use a reversible 9:1 storage recipe: 9 bitumen items craft into 1 solid bitumen block, and 1 solid bitumen block crafts back into 9 bitumen items.
+- **Oil sands:** follow ordinary sand-family interaction. Shovels are the natural fast tool, no minimum tool tier is required, and hand mining can still recover the material.
+- **Oil shale:** follow ordinary stone-family interaction. A pickaxe is required for proper drops; wooden tier is sufficient.
+- **Petroleum-stained reservoir hosts:** inherit the underlying host block's tool and harvest tier. Petroleum presence never raises the mining tier.
+- **Crude oil:** ordinary player interaction is through actual free-fluid source blocks and buckets. Petroleum-bearing solids do not become hand-extractable crude through mining or crafting.
+
+Bitumen should also act as an early-game **adhesive alternative** where a vanilla recipe uses slimeballs as glue. Add explicit alternative recipes rather than placing bitumen in a generic slimeball tag. Initial candidates are Sticky Pistons and Leads. Do not substitute bitumen where slime itself is materially important, such as Slime Blocks or Magma Cream.
+
+Avoid inventing extra waterproofing, fuel, dye or processing systems until a concrete gameplay need justifies them.
+
 ## Natural manifestations
 
 Possible world features include:
