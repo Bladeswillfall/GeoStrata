@@ -64,6 +64,23 @@ The overlap is intentional. Natural geological contacts are transitional, and fu
 
 At very low intensity all three suitability values may be zero. That represents unmetamorphosed or weakly altered parent material rather than forcing a metamorphic rock everywhere.
 
+## Live diagnostic
+
+Use `/geostrata metamorphism` in a server world to inspect the staged field at the command source's current X/Z position.
+
+The diagnostic reports:
+
+- final metamorphic intensity;
+- the currently dominant slate/schist/gneiss suitability;
+- all three suitability weights;
+- the seed-derived regional adjustment;
+- the active terrain generator's adjustment;
+- the primary and neighboring geological provinces.
+
+The terrain contribution is sampled through the same `ChunkGeneratorTerrainMorphologySampler` seam used by the structural field, so vanilla and compatible terrain generators are observed through the active chunk generator rather than through a hard-coded biome or height assumption.
+
+The command is intentionally read-only. It is there to tune and falsify the field before metamorphic worldgen depends on it.
+
 ## Why marble and quartzite are not included
 
 Metamorphic intensity alone is not enough to choose every metamorphic lithology.
@@ -82,11 +99,12 @@ For the first migration, slate, schist and gneiss are the useful grade sequence 
 
 ## Current runtime boundary
 
-This milestone is machinery only:
+This milestone remains observational:
 
+- `/geostrata metamorphism` exposes the live field for tuning;
 - no baseline slate/schist/gneiss feature is suppressed;
 - no chunk blocks are changed by the intensity field;
 - no new worldgen feature type is registered;
 - no datapack tuning contract is introduced before a runtime consumer needs one.
 
-The next safe step is to observe/tune this field, then connect a coherent metamorphic-band generator to it in a separate migration. That generator should consume the same province, structural and host-ownership machinery rather than inventing another independent rock-placement system.
+The next safe step is to use the diagnostic across representative vanilla and modded terrain, tune only if the evidence demands it, then connect a coherent metamorphic-band generator to the field in a separate migration. That generator should consume the same province, structural and host-ownership machinery rather than inventing another independent rock-placement system.
