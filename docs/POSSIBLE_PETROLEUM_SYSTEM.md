@@ -40,6 +40,14 @@ Given the same reservoir identity, GeoStrata should be able to reconstruct the s
 
 Do not persist a voxel map or block list for the reservoir. Persist only mutable state that cannot be reconstructed from seed and geology, initially the reservoir's **remaining recoverable petroleum in mB**. Immutable geometry, original placement and local manifestations should remain deterministic. In a Fabric 1.20.1 implementation, Minecraft's world-level persistent-state facility is the preferred place for that mutable depletion record unless a narrower native mechanism already exists.
 
+## Reservoir capacity: K.I.S.S.
+
+Do **not** model porosity, permeability or a hidden reservoir-quality score. GeoStrata is building a readable gameplay geology system, not a reservoir-engineering simulation.
+
+If the host geology and trap are suitable, the result is a reservoir with one finite petroleum capacity. Use a simple deterministic capacity rule, such as small / medium / large reservoir classes, informed by the reservoir's geological extent rather than additional hidden simulation statistics.
+
+Host type decides whether the geology can act as a reservoir; it does not carry a per-block oil efficiency, yield or permeability value. Technology mods remain responsible for extraction rate and machine behaviour.
+
 ## Natural manifestations
 
 Possible world features include:
@@ -98,7 +106,6 @@ Any compatibility API or data contract should be added only when a real integrat
 
 ## Open questions
 
-- How should reservoir porosity/permeability be represented without adding excessive block-state or worldgen cost?
 - How much free liquid should be generated versus represented by saturated host rock?
 - Can existing structural-field data identify useful trap geometries cheaply enough during chunk generation?
 - Which natural hydrocarbon blocks/fluids justify existing in the base mod versus remaining purely environmental evidence?
@@ -109,6 +116,7 @@ Any compatibility API or data contract should be added only when a real integrat
 - no new crude-oil fluid or blocks yet;
 - no refinery, fuel or power progression;
 - no dedicated petroleum prospecting tool;
+- no porosity/permeability or reservoir-quality simulation;
 - no GeoStrata-defined pump/depletion/productivity model;
 - no dependency on Create: Diesel Generators or another technology mod;
 - no gas/damp implementation in this feature;
