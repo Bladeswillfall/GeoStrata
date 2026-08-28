@@ -24,6 +24,8 @@ A future petroleum system should be able to reason about:
 
 This should build on GeoStrata's existing sedimentary successions, province context and structural field rather than introducing an independent random oil-chunk generator.
 
+Thermal maturity should be an explicit geological input capable of distinguishing immature organic-rich material, an oil-generating window and gas-prone/overmature material. Gas-specific manifestations, including damp, belong to the separate geological-gas proposal rather than being implemented here.
+
 ## Natural manifestations
 
 Possible world features include:
@@ -51,13 +53,17 @@ Petroleum-bearing reservoir rock is separate from that free-fluid cap. A later i
 
 **Petroleum-bearing solids are geological storage, not fluid containers.** Oil-bearing reservoir rock, oil sands, oil shale and stained host rock do not release crude when broken and cannot be bucketed. Their petroleum content remains part of the finite reservoir model. Converting that stored petroleum into crude fluid requires an appropriate extractor supplied by a scoped technology-mod integration, which then withdraws the produced mB from the same reservoir.
 
-## Surface evidence
+GeoStrata should expose geological placement and finite remaining petroleum quantity, but it should **not** define pump rate, depletion curves, pressure decline, productivity, machine yield or late-field behaviour. Those are gameplay/economy decisions owned by the industrial mod doing the extraction. Add a generic GeoStrata pressure/productivity model only if a real integration later proves it necessary.
+
+## Surface evidence and discovery
 
 Surface occurrences should be clues to subsurface geology rather than isolated decoration. A seep, bituminous ground or tar accumulation should imply that a plausible petroleum system exists below or nearby.
 
 Potential controls include sedimentary-basin context, source/reservoir/seal relationships, structural traps, faults or fractures, erosion/exposure and appropriate coastal settings.
 
 Biome alone should not decide petroleum occurrence.
+
+GeoStrata should add **no dedicated oil detector, scanner or prospecting tool**. Base-mod discovery comes from geological/environmental clues; technology mods may provide their own surveying or prospecting mechanics.
 
 ## Gameplay boundary
 
@@ -71,14 +77,13 @@ Optional integrations may consume the same geological system. For example, Creat
 
 The desired ownership boundary is:
 
-- **GeoStrata:** determines where petroleum exists, what geological evidence is visible, and how deposits relate to host rock and structure.
-- **Technology mods:** determine extraction machinery, refining, fuels and downstream processing.
+- **GeoStrata:** determines where petroleum exists, finite geological quantity, visible evidence, and how deposits relate to host rock and structure.
+- **Technology mods:** determine extraction machinery, extraction rate, depletion behaviour, refining, fuels and downstream processing.
 
 Any compatibility API or data contract should be added only when a real integration needs it.
 
 ## Open questions
 
-- What source-rock maturity approximation is useful without simulating geological time?
 - How should reservoir porosity/permeability be represented without adding excessive block-state or worldgen cost?
 - How much free liquid should be generated versus represented by saturated host rock?
 - Can existing structural-field data identify useful trap geometries cheaply enough during chunk generation?
@@ -90,7 +95,10 @@ Any compatibility API or data contract should be added only when a real integrat
 - no petroleum worldgen implementation;
 - no new crude-oil fluid or blocks yet;
 - no refinery, fuel or power progression;
+- no dedicated petroleum prospecting tool;
+- no GeoStrata-defined pump/depletion/productivity model;
 - no dependency on Create: Diesel Generators or another technology mod;
+- no gas/damp implementation in this feature;
 - no attempt to replace another mod's oil system until an explicit compatibility design is agreed.
 
 This document exists to preserve the design direction so it can be expanded or rejected deliberately later rather than implemented piecemeal.
