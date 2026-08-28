@@ -2,7 +2,7 @@ package com.geostrata.geology;
 
 import java.util.List;
 
-/** Pure, non-mutating geometry and grade preview for geology-qualified ore candidates. */
+/** Pure geometry and grade sampling for deterministic ore-deposit proposals. */
 public final class OreDepositGeometry {
     private static final double TWO_PI = Math.PI * 2.0;
     private static final double TRACE_LIMIT = 1.25;
@@ -26,8 +26,15 @@ public final class OreDepositGeometry {
         if (candidate == null) {
             throw new IllegalArgumentException("ore candidate must not be null");
         }
+        return forProposal(worldSeed, candidate.proposal());
+    }
 
-        OreDepositCandidatePlanner.Proposal proposal = candidate.proposal();
+    /** Builds geometry before local host clipping; the host does not alter deposit shape. */
+    public static Body forProposal(long worldSeed, OreDepositCandidatePlanner.Proposal proposal) {
+        if (proposal == null) {
+            throw new IllegalArgumentException("ore proposal must not be null");
+        }
+
         Profile profile = profile(proposal.depositStyle());
         double azimuth = TWO_PI * roll(worldSeed, proposal, AZIMUTH_SALT);
         double dip = profile.maximumDipRadians() * (roll(worldSeed, proposal, DIP_SALT) * 2.0 - 1.0);
@@ -183,6 +190,103 @@ public final class OreDepositGeometry {
             return new Sample(0.0, null, false);
         }
 
+        /** Conservative inclusive AABB for every economic voxel in this body. */
+        public Bounds bounds() {
+            LocalBounds local = localBounds();
+            double minX = Double.POSITIVE_INFINITY;
+            double minY = Double.POSITIVE_INFINITY;
+            double minZ = Double.POSITIVE_INFINITY;
+            double maxX = Double.NEGATIVE_INFINITY;
+            double maxY = Double.NEGATIVE_INFINITY;
+            double maxZ = Double.NEGATIVE_INFINITY;
+
+            double cosAzimuth = Math.cos(azimuthRadians);
+            double sinAzimuth = Math.sin(azimuthRadians);
+            double cosDip = Math.cos(dipRadians);
+            double sinDip = Math.sin(dipRadians);
+            for (int alongSide = 0; alongSide < 2; alongSide++) {
+                double along = alongSide == 0 ? local.minAlong() : local.maxAlong();
+                for (int acrossSide = 0; acrossSide < 2; acrossSide++) {
+                    double across = acrossSide == 0 ? local.minAcross() : local.maxAcross();
+                    for (int normalSide = 0; normalSide < 2; normalSide++) {
+                        double normal = normalSide == 0 ? local.minNormal() : local.maxNormal();
+                        double x = along * cosAzimuth * cosDip
+                                - across * sinAzimuth
+                                - normal * cosAzimuth * sinDip;
+                        double y = along * sinDip + normal * cosDip;
+                        double z = along * sinAzimuth * cosDip
+                                + across * cosAzimuth
+                                - normal * sinAzimuth * sinDip;
+                        minX = Math.min(minX, x);
+                        minY = Math.min(minY, y);
+                        minZ = Math.min(minZ, z);
+                        maxX = Math.max(maxX, x);
+                        maxY = Math.max(maxY, y);
+                        maxZ = Math.max(maxZ, z);
+                    }
+                }
+            }
+            return new Bounds(
+                    anchorX + (int) Math.floor(minX),
+                    anchorY + (int) Math.floor(minY),
+                    anchorZ + (int) Math.floor(minZ),
+                    anchorX + (int) Math.ceil(maxX),
+                    anchorY + (int) Math.ceil(maxY),
+                    anchorZ + (int) Math.ceil(maxZ)
+            );
+        }
+
+        private LocalBounds localBounds() {
+            double minAlong = -lengthRadius;
+            double maxAlong = lengthRadius;
+            double minAcross = -widthRadius;
+            double maxAcross = widthRadius;
+            double minNormal = -thicknessRadius;
+            double maxNormal = thicknessRadius;
+
+            if ("vein".equals(style)) {
+                for (Branch branch : branches) {
+                    double normalRadius = thicknessRadius * branch.radiusScale();
+                    double acrossRadius = widthRadius * branch.radiusScale();
+                    minAlong = Math.min(
+                            minAlong,
+                            Math.min(branch.startAlong(), branch.endAlong()) - normalRadius
+                    );
+                    maxAlong = Math.max(
+                            maxAlong,
+                            Math.max(branch.startAlong(), branch.endAlong()) + normalRadius
+                    );
+                    minAcross = Math.min(
+                            minAcross,
+                            Math.min(branch.startAcross(), branch.endAcross()) - acrossRadius
+                    );
+                    maxAcross = Math.max(
+                            maxAcross,
+                            Math.max(branch.startAcross(), branch.endAcross()) + acrossRadius
+                    );
+                    minNormal = Math.min(
+                            minNormal,
+                            Math.min(branch.startNormal(), branch.endNormal()) - normalRadius
+                    );
+                    maxNormal = Math.max(
+                            maxNormal,
+                            Math.max(branch.startNormal(), branch.endNormal()) + normalRadius
+                    );
+                }
+            }
+
+            // The warp equations are differences of sine/cosine terms. Across can shift by
+            // two amplitudes and normal by one amplitude relative to the unwarped local body.
+            return new LocalBounds(
+                    minAlong,
+                    maxAlong,
+                    minAcross - warpAmplitude * 2.0,
+                    maxAcross + warpAmplitude * 2.0,
+                    minNormal - warpAmplitude,
+                    maxNormal + warpAmplitude
+            );
+        }
+
         private Sample economicSample(int x, int y, int z, double normalizedDistance) {
             double concentration = clamp(1.0 - normalizedDistance);
             if ("disseminated".equals(style)) {
@@ -253,6 +357,14 @@ public final class OreDepositGeometry {
         }
     }
 
+    public record Bounds(int minX, int minY, int minZ, int maxX, int maxY, int maxZ) {
+        public boolean contains(int x, int y, int z) {
+            return x >= minX && x <= maxX
+                    && y >= minY && y <= maxY
+                    && z >= minZ && z <= maxZ;
+        }
+    }
+
     public record Sample(double concentration, OreGrade grade, boolean trace) {
         public boolean economic() {
             return grade != null;
@@ -267,6 +379,16 @@ public final class OreDepositGeometry {
     }
 
     private record LocalPoint(double along, double across, double normal) {
+    }
+
+    private record LocalBounds(
+            double minAlong,
+            double maxAlong,
+            double minAcross,
+            double maxAcross,
+            double minNormal,
+            double maxNormal
+    ) {
     }
 
     private static double distanceToSegment(LocalPoint point, Branch segment, double acrossScale) {
