@@ -1,9 +1,9 @@
 {
-  "feature": "geostrata:red_clay_patch",
+  "feature": "geostrata:blue_clay_patch",
   "placement": [
     {
       "type": "minecraft:rarity_filter",
-      "chance": 10
+      "chance": 24
     },
     {
       "type": "minecraft:in_square"
@@ -11,13 +11,6 @@
     {
       "type": "minecraft:heightmap",
       "heightmap": "OCEAN_FLOOR_WG"
-    },
-    {
-      "type": "minecraft:block_predicate_filter",
-      "predicate": {
-        "type": "minecraft:matching_fluids",
-        "fluids": "minecraft:water"
-      }
     },
     {
       "type": "minecraft:biome"

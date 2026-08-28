@@ -12,8 +12,11 @@ Core configured features target GeoStrata-owned block tags rather than third-par
 | `geostrata:worldgen/soil_replaceables` | Ordinary soil host material for loam/peat patches | `minecraft:dirt` |
 | `geostrata:worldgen/mud_replaceables` | Mud-like host material | `minecraft:mud` |
 | `geostrata:worldgen/clay_replaceables` | Clay-like host material | `minecraft:clay` |
+| `geostrata:worldgen/hydric_sediment_replaceables` | Natural shallow sediment that may receive transported clay deposits | dirt, clay, sand, red sand, gravel, mud |
 
 These tags are deliberately conservative. Core should not add blocks from optional mods to them.
+
+`hydric_sediment_replaceables` is intentionally broader than `clay_replaceables`. Blue/red clay disks use it because transported clay can replace ordinary shallow sediment under water or in the rare background-placement lane. The older `clay_replaceables` contract remains material-equivalence data for the existing clay-loam baseline; integrations should not merge the two concepts just because both mention clay.
 
 The core `base_stone_replaceables` definition has an additional geological-ownership invariant: it contains only the two vanilla ore-replaceable host-stone tags and never GeoStrata rock blocks or `#geostrata:rocks`. Once a GeoStrata body has claimed a block, a later independent body therefore cannot overwrite it through the common replacement target. The current compatibility baseline is consequently first-writer-wins at intersecting bodies; feature registration order is **not** a geological contact API and will be replaced by an explicit succession/contact planner before correlated strata become authoritative.
 
@@ -38,6 +41,8 @@ Place that file at `data/geostrata/tags/blocks/worldgen/base_stone_replaceables.
 ## Biome targeting
 
 GeoStrata also owns biome tags such as `geostrata:has_mountain_rocks`, `geostrata:has_fluvial_rocks`, and `geostrata:has_river_soils`. Integrations should extend those tags when a mod introduces biomes GeoStrata should recognize.
+
+Clay's new primary placement path deliberately does not rely on a river biome tag. It is registered broadly and then requires an actual water column at `OCEAN_FLOOR_WG`, so terrain/biome mods can contribute lakes, rivers and coasts through Minecraft's normal generated terrain without a GeoStrata Java adapter. Red clay keeps an additional badlands-biome boost, while both clays retain rare broad background placement for gameplay availability.
 
 ## Material profile LUT
 
