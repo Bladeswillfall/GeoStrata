@@ -120,6 +120,16 @@ public final class TerrainAwareStructuralField {
             );
         }
 
+        public TerrainMorphologySample morphologyAt(int x, int z) {
+            return new TerrainMorphologySample(
+                    heightAt(x, z),
+                    valueAt(x, z, northWest.gradientX(), northEast.gradientX(), southWest.gradientX(), southEast.gradientX()),
+                    valueAt(x, z, northWest.gradientZ(), northEast.gradientZ(), southWest.gradientZ(), southEast.gradientZ()),
+                    valueAt(x, z, northWest.relief(), northEast.relief(), southWest.relief(), southEast.relief()),
+                    prominenceAt(x, z)
+            );
+        }
+
         private double valueAt(
                 int x,
                 int z,
