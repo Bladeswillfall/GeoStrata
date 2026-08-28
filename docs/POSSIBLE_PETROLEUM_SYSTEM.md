@@ -47,6 +47,10 @@ For the initial balance target, cap a single reservoir's **free-fluid crude comp
 
 Petroleum-bearing reservoir rock is separate from that free-fluid cap. A later integration may count surrounding saturated/bituminous host rock toward a larger **recoverable reserve** exposed to an extractor such as Create: Diesel Generators. This lets geology contribute additional petroleum capacity without requiring GeoStrata to generate millions of millibuckets as physical liquid blocks, and gives balancing room above or below the initial 5,000,000 mB free-fluid ceiling.
 
+**Free crude follows vanilla fluid accounting:** one full crude-oil source block is one bucket, i.e. **1,000 mB**. Buckets interact only with actual free-fluid source blocks; flowing crude and petroleum-bearing solid blocks are not alternate bucket sources.
+
+**Petroleum-bearing solids are geological storage, not fluid containers.** Oil-bearing reservoir rock, oil sands, oil shale and stained host rock do not release crude when broken and cannot be bucketed. Their petroleum content remains part of the finite reservoir model. Converting that stored petroleum into crude fluid requires an appropriate extractor supplied by a scoped technology-mod integration, which then withdraws the produced mB from the same reservoir.
+
 ## Surface evidence
 
 Surface occurrences should be clues to subsurface geology rather than isolated decoration. A seep, bituminous ground or tar accumulation should imply that a plausible petroleum system exists below or nearby.
