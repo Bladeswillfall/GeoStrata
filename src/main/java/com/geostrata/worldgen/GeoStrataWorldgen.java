@@ -23,9 +23,7 @@ public final class GeoStrataWorldgen {
     private static final TagKey<Biome> HAS_MOUNTAIN_ROCKS = biomeTag("has_mountain_rocks");
     private static final TagKey<Biome> HAS_FLUVIAL_ROCKS = biomeTag("has_fluvial_rocks");
     private static final TagKey<Biome> HAS_COASTAL_ROCKS = biomeTag("has_coastal_rocks");
-    private static final TagKey<Biome> HAS_RIVER_SOILS = biomeTag("has_river_soils");
-    private static final TagKey<Biome> HAS_SWAMP_SOILS = biomeTag("has_swamp_soils");
-    private static final TagKey<Biome> HAS_JUNGLE_SOILS = biomeTag("has_jungle_soils");
+    private static final TagKey<Biome> HAS_SURFACE_SEDIMENTS = biomeTag("has_surface_sediments");
     private static final TagKey<Biome> HAS_BADLANDS_SOILS = biomeTag("has_badlands_soils");
     private static final TagKey<Biome> HAS_EXPERIMENTAL_ORE_DEPOSITS = biomeTag("has_experimental_ore_deposits");
 
@@ -50,9 +48,16 @@ public final class GeoStrataWorldgen {
         addToTag("rhyolite_ore", HAS_MOUNTAIN_ROCKS);
         addToTag("breccia_ore", HAS_MOUNTAIN_ROCKS);
 
-        addToTag("clay_loam_patch", HAS_RIVER_SOILS);
+        // These sediments are registered broadly; their placement modifier treats biome tags
+        // as bonuses alongside terrain shape and actual water rather than hard permissions.
+        addToTag("clay_loam_patch", HAS_SURFACE_SEDIMENTS);
+        addToTag("silty_loam_patch", HAS_SURFACE_SEDIMENTS);
+        addToTag("peat_soil_patch", HAS_SURFACE_SEDIMENTS);
+        addToTag("wet_mud_patch", HAS_SURFACE_SEDIMENTS);
+        addToTag("compacted_mud_patch", HAS_SURFACE_SEDIMENTS);
+
+        // Sandy loam remains on the coastal baseline until coastal evidence is migrated separately.
         addToTag("sandy_loam_patch", HAS_COASTAL_ROCKS);
-        addToTag("silty_loam_patch", HAS_RIVER_SOILS);
 
         // Clay uses actual water-floor evidence first, with rare shallow background deposits
         // so it remains discoverable away from obvious rivers, lakes and coasts.
@@ -61,10 +66,6 @@ public final class GeoStrataWorldgen {
         addToTag("red_clay_patch", HAS_COMMON_ROCKS);
         addToTag("red_clay_background_patch", HAS_COMMON_ROCKS);
         addToTag("red_clay_badlands_patch", HAS_BADLANDS_SOILS);
-
-        addToTag("peat_soil_patch", HAS_SWAMP_SOILS);
-        addToTag("wet_mud_patch", HAS_SWAMP_SOILS);
-        addToTag("compacted_mud_patch", HAS_JUNGLE_SOILS);
 
         // Registered in core but dormant until the server-data experiment explicitly opts in.
         // Decoration runs after ordinary ore-stage host geology has been written.

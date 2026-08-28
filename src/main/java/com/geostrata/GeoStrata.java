@@ -6,6 +6,7 @@ import com.geostrata.geology.GeologyDataReload;
 import com.geostrata.item.GeoStrataItemGroups;
 import com.geostrata.worldgen.GeoStrataWorldgen;
 import com.geostrata.worldgen.feature.GeoStrataFeatures;
+import com.geostrata.worldgen.placement.GeoStrataPlacementModifiers;
 import net.fabricmc.api.ModInitializer;
 import net.minecraft.util.Identifier;
 import org.slf4j.Logger;
@@ -20,6 +21,7 @@ public final class GeoStrata implements ModInitializer {
         GeoStrataBlocks.register();
         GeoStrataItemGroups.register();
         GeoStrataFeatures.register();
+        GeoStrataPlacementModifiers.register();
         GeologyDataReload.register();
         GeoStrataWorldgen.register();
         GeoStrataCommands.register();

@@ -10,13 +10,13 @@ Core configured features target GeoStrata-owned block tags rather than third-par
 | --- | --- | --- |
 | `geostrata:worldgen/base_stone_replaceables` | Blocks that may be replaced by GeoStrata rock bodies | `#minecraft:stone_ore_replaceables`, `#minecraft:deepslate_ore_replaceables` |
 | `geostrata:worldgen/soil_replaceables` | Ordinary soil host material for loam/peat patches | `minecraft:dirt` |
-| `geostrata:worldgen/mud_replaceables` | Mud-like host material | `minecraft:mud` |
-| `geostrata:worldgen/clay_replaceables` | Clay-like host material | `minecraft:clay` |
-| `geostrata:worldgen/hydric_sediment_replaceables` | Natural shallow sediment that may receive transported clay deposits | dirt, clay, sand, red sand, gravel, mud |
+| `geostrata:worldgen/mud_replaceables` | Mud-like material-equivalence host | `minecraft:mud` |
+| `geostrata:worldgen/clay_replaceables` | Clay-like material-equivalence host | `minecraft:clay` |
+| `geostrata:worldgen/hydric_sediment_replaceables` | Natural shallow sediment that may receive transported/reworked wet deposits | dirt, clay, sand, red sand, gravel, mud |
 
 These tags are deliberately conservative. Core should not add blocks from optional mods to them.
 
-`hydric_sediment_replaceables` is intentionally broader than `clay_replaceables`. Blue/red clay disks use it because transported clay can replace ordinary shallow sediment under water or in the rare background-placement lane. The older `clay_replaceables` contract remains material-equivalence data for the existing clay-loam baseline; integrations should not merge the two concepts just because both mention clay.
+`hydric_sediment_replaceables` is intentionally broader than the material-equivalence tags. Blue/red clay, wet mud and compacted mud use it because transported or reworked hydric material can occupy several kinds of shallow natural sediment. Clay loam, silty loam and peat currently use the narrower `soil_replaceables` contract. `clay_replaceables` and `mud_replaceables` remain useful semantic compatibility roles even when a particular live worldgen feature no longer uses them as its placement target.
 
 The core `base_stone_replaceables` definition has an additional geological-ownership invariant: it contains only the two vanilla ore-replaceable host-stone tags and never GeoStrata rock blocks or `#geostrata:rocks`. Once a GeoStrata body has claimed a block, a later independent body therefore cannot overwrite it through the common replacement target. The current compatibility baseline is consequently first-writer-wins at intersecting bodies; feature registration order is **not** a geological contact API and will be replaced by an explicit succession/contact planner before correlated strata become authoritative.
 
@@ -38,11 +38,15 @@ A terrain compatibility datapack can add its own base stone without changing Geo
 
 Place that file at `data/geostrata/tags/blocks/worldgen/base_stone_replaceables.json` in the compatibility datapack.
 
-## Biome targeting
+## Biome targeting and evidence
 
-GeoStrata also owns biome tags such as `geostrata:has_mountain_rocks`, `geostrata:has_fluvial_rocks`, and `geostrata:has_river_soils`. Integrations should extend those tags when a mod introduces biomes GeoStrata should recognize.
+GeoStrata owns biome tags such as `geostrata:has_mountain_rocks`, `geostrata:has_fluvial_rocks`, `geostrata:has_river_soils`, `geostrata:has_swamp_soils` and `geostrata:has_jungle_soils`. Integrations should extend those tags when a mod introduces biomes GeoStrata should recognize.
 
-Clay's new primary placement path deliberately does not rely on a river biome tag. It is registered broadly and then requires an actual water column at `OCEAN_FLOOR_WG`, so terrain/biome mods can contribute lakes, rivers and coasts through Minecraft's normal generated terrain without a GeoStrata Java adapter. Red clay keeps an additional badlands-biome boost, while both clays retain rare broad background placement for gameplay availability.
+`geostrata:has_surface_sediments` is the broad registration boundary for evidence-driven shallow sediments and defaults to `#minecraft:is_overworld`. Clay loam, silty loam, peat, wet mud and compacted mud are registered through it. Their narrower river/swamp/jungle tags are read by `geostrata:sediment_suitability` as probability bonuses alongside terrain flatness, valley shape and actual water; they are not hard permission gates.
+
+Blue/red clay use a separate strong-water path: the primary placement is registered broadly and requires an actual water column at `OCEAN_FLOOR_WG`. Red clay keeps an additional badlands boost, while both clays retain rare broad background placement for gameplay availability.
+
+This distinction is intentional. A compatibility biome tag should describe useful environmental context, while generated terrain evidence remains able to influence placement even when a biome mod does not perfectly mirror vanilla categories.
 
 ## Material profile LUT
 
