@@ -1,6 +1,6 @@
-# Metamorphic intensity staging
+# Metamorphic intensity and experimental runtime
 
-GeoStrata now has a pure deterministic metamorphic-intensity field for staging the future slate → schist → gneiss migration. It does not place or replace blocks yet.
+GeoStrata has a deterministic metamorphic-intensity field and an opt-in runtime consumer for the first slate → schist → gneiss migration.
 
 The field answers a deliberately narrow question: **how strongly has this broad area been metamorphosed?** It does not try to decide every metamorphic rock from intensity alone.
 
@@ -52,6 +52,8 @@ The maximum coupling is intentionally restrained:
 
 This means terrain can help expose or reinforce a plausible mountain-belt core, but present-day topography cannot overwrite the seed-derived geological history. A huge mountain in a sedimentary basin does not automatically become a gneiss massif.
 
+The correlated runtime reuses the terrain patch already sampled for `TerrainAwareStructuralField`. `TerrainPatch.morphologyAt(x,z)` bilinearly interpolates height, gradients, relief and prominence from that same fixed 128-block grid. Metamorphism therefore does not perform a second set of chunk-generator height queries and inherits the structural field's continuous cross-chunk terrain evidence.
+
 ## Slate, schist and gneiss suitability
 
 The intensity value is converted into overlapping suitability curves rather than hard thresholds.
@@ -60,13 +62,13 @@ The intensity value is converted into overlapping suitability curves rather than
 - **Schist** begins overlapping slate around 0.36, dominates the middle grades, and fades by about 0.82.
 - **Gneiss** begins appearing around 0.64 and reaches full high-grade suitability around 0.84.
 
-The overlap is intentional. Natural geological contacts are transitional, and future body ownership should not create a perfectly straight invisible line where every slate block suddenly becomes schist.
+The overlap is intentional. Natural geological contacts are transitional, and body ownership should not create a perfectly straight invisible line where every slate block suddenly becomes schist.
 
 At very low intensity all three suitability values may be zero. That represents unmetamorphosed or weakly altered parent material rather than forcing a metamorphic rock everywhere.
 
 ## Live diagnostic
 
-Use `/geostrata metamorphism` in a server world to inspect the staged field at the command source's current X/Z position.
+Use `/geostrata metamorphism` in a server world to inspect the field at the command source's current X/Z position.
 
 The diagnostic reports:
 
@@ -77,15 +79,13 @@ The diagnostic reports:
 - the active terrain generator's adjustment;
 - the primary and neighboring geological provinces.
 
-The terrain contribution is sampled through the same `ChunkGeneratorTerrainMorphologySampler` seam used by the structural field, so vanilla and compatible terrain generators are observed through the active chunk generator rather than through a hard-coded biome or height assumption.
+The command is read-only. It remains useful for tuning the broad field independently of whether the correlated experiment companion is installed.
 
-The command is intentionally read-only. It is there to tune and falsify the field before metamorphic worldgen depends on it.
+## Structural band ownership
 
-## Structural band staging
+`MetamorphicBandPlanner` assigns grade ownership without inventing another fold system.
 
-`MetamorphicBandPlanner` now stages grade ownership without placing blocks or inventing another fold system.
-
-The caller supplies the existing structural field's vertical offset, a structural site anchor and an explicit band thickness. The planner converts world Y into a structure-adjusted band index:
+The caller supplies the existing structural field's vertical offset, a structural site anchor and a band thickness. The planner converts world Y into a structure-adjusted band index:
 
 ```text
 band = floor((Y - existing structural vertical offset) / band thickness)
@@ -96,17 +96,49 @@ Each site/band pair receives one stable `GeologyDeterminism` roll. The local sla
 - nearby blocks in the same folded/draped structural band do not independently roll into salt-and-pepper metamorphic blocks;
 - broad metamorphic intensity still controls the geological outcome, so a structural band cannot create gneiss where gneiss suitability is zero.
 
-Band thickness is deliberately caller-owned. This staging step does not freeze a gameplay/worldgen tuning value before a runtime consumer exists.
+The experimental runtime introduces no second band-scale tuning value. It reuses the active correlated succession's existing cycle thickness as the band thickness. If playtesting later proves that grade zones need a different scale, that should become an explicit tuning decision rather than an accidental constant now.
 
-The planner accepts the existing structural offset rather than deriving dip, fold or terrain response itself. The future runtime consumer should therefore reuse `TerrainAwareStructuralField.verticalOffset(x,z)` (or the equivalent shared structural seam) instead of creating metamorphism-specific geometry.
+## Parent rock controls the product
 
-## Why marble and quartzite are not included
+The first runtime transformation is deliberately limited to the pelitic/mudrock lineage.
+
+`CorrelatedSedimentaryRuntime.TerrainAwareSite.outputLithology(...)` first resolves the exact virtual parent bed from the correlated structural field. Only a parent whose lithology-catalog `genesis` is `mudrock` can enter the slate/schist/gneiss selector, and only in an experiment-owned **orogenic belt** chunk.
+
+In the current catalog that means shale and mudstone are eligible parent rocks. Breccia, conglomerate, siltstone, limestone and other non-mudrock beds remain their parent lithology even when the regional metamorphic intensity is high.
+
+This is more important than the grade number itself: high intensity is not permission to turn arbitrary rock into gneiss.
+
+## Experimental world mutation
+
+Runtime metamorphism is part of the existing correlated feature rather than a second registered feature.
+
+When the optional correlated experiment companion is installed and the experiment owns an orogenic chunk:
+
+1. the correlated structural field resolves the virtual sedimentary parent bed;
+2. the same terrain-aware structural offset determines the metamorphic band;
+3. the metamorphic intensity field supplies slate/schist/gneiss suitability;
+4. mudrock parents emit the selected metamorphic output directly;
+5. non-mudrock parents emit their ordinary correlated lithology.
+
+This avoids a second worldgen pass, a second ownership system and feature-order dependence between sedimentary generation and metamorphism.
+
+The correlated feature still runs at `UNDERGROUND_DECORATION` and preserves ordinary ore blocks because they are not members of `geostrata:worldgen/base_stone_replaceables`.
+
+### Legacy metamorphic cleanup inside owned chunks
+
+Standalone GeoStrata still has old independent baseline features for slate, marble, quartzite, schist and gneiss. Those may already have run before the correlated experiment's decoration pass.
+
+Inside an experiment-owned orogenic chunk only, the correlated pass therefore also treats an existing GeoStrata lithology-catalog block with `rockClass=metamorphic` as replaceable legacy placeholder material. The position is then rewritten from the authoritative correlated parent/output model.
+
+This keeps the experimental geology readable without globally suppressing those baseline features. It does **not** match graded ore blocks, because ore blocks are not lithology-catalog rock entries.
+
+Marble and quartzite are currently removed when encountered in those owned experimental chunks but are not regenerated by the new model yet. That is intentional: marble requires an appropriate carbonate parent, and quartzite requires an appropriate quartz-rich parent. Leaving their old random blobs in place would be worse than omitting them from the narrowly scoped experiment until their parent-rock rules exist.
+
+## Why marble and quartzite are still separate
 
 Metamorphic intensity alone is not enough to choose every metamorphic lithology.
 
-Marble requires an appropriate carbonate-rich parent rock. Quartzite requires quartz-rich parent material. Their future generation should therefore combine this intensity field with the correlated host/succession model rather than treating high grade as sufficient evidence.
-
-That keeps the model compositional:
+Marble requires an appropriate carbonate-rich parent rock. Quartzite requires quartz-rich parent material. Their future generation should therefore combine the same intensity field with the correlated parent lithology rather than treating high grade as sufficient evidence.
 
 ```text
 regional history + metamorphic intensity + parent lithology
@@ -114,17 +146,18 @@ regional history + metamorphic intensity + parent lithology
               plausible metamorphic product
 ```
 
-For the first migration, slate, schist and gneiss are the useful grade sequence because their relative suitability can be staged without prematurely pretending the parent-rock problem is solved.
+The slate/schist/gneiss migration is the useful first chain because the existing mudrock semantic already provides a defensible parent boundary.
 
-## Current runtime boundary
+## Runtime boundary
 
-This milestone remains non-mutating:
+Standalone GeoStrata remains unchanged: installing only the core mod does not add the correlated feature to biome generation and does not activate the metamorphic replacement path.
 
-- `/geostrata metamorphism` exposes the live field for tuning;
-- `MetamorphicBandPlanner` can deterministically assign a grade to caller-defined structural bands;
-- no baseline slate/schist/gneiss feature is suppressed;
-- no chunk blocks are changed by the intensity field or band planner;
-- no new worldgen feature type is registered;
-- no datapack tuning contract is introduced before a runtime consumer needs one.
+With the optional experiment companion installed:
 
-The next runtime migration should feed the planner the existing terrain-aware structural offset and a deliberately scoped host-ownership rule, then replace only that chunk's eligible hosts. It should remain experimental until representative vanilla and modded terrain checks show that the intensity and band scale are sensible.
+- sedimentary-basin correlated chunks continue to emit their correlated sedimentary succession without this metamorphic transformation;
+- orogenic correlated chunks may transform mudrock parents into slate/schist/gneiss;
+- the transformation is deterministic from world seed, coordinates/site identity, structural field, terrain-generator evidence and loaded geology data;
+- no runtime UUID, first-visited state or process-local random source participates;
+- no new feature type or second metamorphic worldgen registration is introduced.
+
+This remains experimental worldgen and should be evaluated in fresh/disposable worlds before the baseline metamorphic generators are retired more broadly.

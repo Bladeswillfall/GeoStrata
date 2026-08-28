@@ -1,9 +1,10 @@
 package com.geostrata.worldgen.feature;
 
+import com.geostrata.GeoStrata;
 import com.geostrata.geology.CorrelatedSedimentaryExperiment;
 import com.geostrata.geology.CorrelatedSedimentaryRuntime;
+import com.geostrata.geology.GeologyProvince;
 import com.geostrata.geology.LithologyCatalog;
-import com.geostrata.geology.SedimentaryStratigraphicField;
 import com.geostrata.geology.SedimentarySuccessions;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
@@ -83,6 +84,7 @@ public final class CorrelatedSedimentaryFeature extends Feature<DefaultFeatureCo
                 maxY,
                 hostTag,
                 site,
+                catalog,
                 outputStates
         ) > 0;
     }
@@ -95,13 +97,25 @@ public final class CorrelatedSedimentaryFeature extends Feature<DefaultFeatureCo
             int maxY,
             TagKey<Block> hostTag,
             CorrelatedSedimentaryRuntime.TerrainAwareSite site,
+            LithologyCatalog.Snapshot catalog,
             Map<String, BlockState> outputStates
     ) {
         int placed = 0;
         BlockPos.Mutable mutable = new BlockPos.Mutable();
         for (int x = startX; x < startX + CHUNK_SIZE; x++) {
             for (int z = startZ; z < startZ + CHUNK_SIZE; z++) {
-                placed += replaceColumn(world, x, z, minY, maxY, hostTag, site, outputStates, mutable);
+                placed += replaceColumn(
+                        world,
+                        x,
+                        z,
+                        minY,
+                        maxY,
+                        hostTag,
+                        site,
+                        catalog,
+                        outputStates,
+                        mutable
+                );
             }
         }
         return placed;
@@ -115,27 +129,48 @@ public final class CorrelatedSedimentaryFeature extends Feature<DefaultFeatureCo
             int maxY,
             TagKey<Block> hostTag,
             CorrelatedSedimentaryRuntime.TerrainAwareSite site,
+            LithologyCatalog.Snapshot catalog,
             Map<String, BlockState> outputStates,
             BlockPos.Mutable mutable
     ) {
         int placed = 0;
         for (int y = minY; y <= maxY; y++) {
             mutable.set(x, y, z);
-            if (!world.getBlockState(mutable).isIn(hostTag)) {
+            BlockState existing = world.getBlockState(mutable);
+            if (!replaceable(existing, hostTag, site, catalog)) {
                 continue;
             }
 
-            SedimentaryStratigraphicField.Sample sample = site.sample(x, y, z);
-            BlockState replacement = outputStates.get(sample.bed().lithology());
-            if (replacement == null) {
-                throw new IllegalStateException(
-                        "No resolved block state for correlated lithology " + sample.bed().lithology()
-                );
-            }
+            String lithology = site.outputLithology(world.getSeed(), x, y, z, catalog);
+            BlockState replacement = outputStates.computeIfAbsent(
+                    lithology,
+                    ignored -> outputState(lithology, catalog)
+            );
             world.setBlockState(mutable, replacement, Block.NOTIFY_LISTENERS);
             placed++;
         }
         return placed;
+    }
+
+    private static boolean replaceable(
+            BlockState existing,
+            TagKey<Block> hostTag,
+            CorrelatedSedimentaryRuntime.TerrainAwareSite site,
+            LithologyCatalog.Snapshot catalog
+    ) {
+        if (existing.isIn(hostTag)) {
+            return true;
+        }
+        if (site.ownership().province() != GeologyProvince.OROGENIC_BELT) {
+            return false;
+        }
+
+        Identifier id = Registries.BLOCK.getId(existing.getBlock());
+        if (!GeoStrata.MOD_ID.equals(id.getNamespace())) {
+            return false;
+        }
+        LithologyCatalog.Entry entry = catalog.byId().get(id.getPath());
+        return entry != null && "metamorphic".equals(entry.rockClass());
     }
 
     private static TagKey<Block> hostTag(String rawIdentifier) {
@@ -157,15 +192,19 @@ public final class CorrelatedSedimentaryFeature extends Feature<DefaultFeatureCo
 
         Map<String, BlockState> states = new HashMap<>();
         for (String lithology : lithologies) {
-            LithologyCatalog.Entry entry = catalog.require(lithology);
-            Identifier blockId = Identifier.tryParse(entry.block());
-            if (blockId == null) {
-                throw new IllegalStateException("Invalid correlated lithology block id: " + entry.block());
-            }
-            Block block = Registries.BLOCK.getOrEmpty(blockId)
-                    .orElseThrow(() -> new IllegalStateException("Missing correlated lithology block: " + blockId));
-            states.put(lithology, block.getDefaultState());
+            states.put(lithology, outputState(lithology, catalog));
         }
         return states;
+    }
+
+    private static BlockState outputState(String lithology, LithologyCatalog.Snapshot catalog) {
+        LithologyCatalog.Entry entry = catalog.require(lithology);
+        Identifier blockId = Identifier.tryParse(entry.block());
+        if (blockId == null) {
+            throw new IllegalStateException("Invalid correlated lithology block id: " + entry.block());
+        }
+        Block block = Registries.BLOCK.getOrEmpty(blockId)
+                .orElseThrow(() -> new IllegalStateException("Missing correlated lithology block: " + blockId));
+        return block.getDefaultState();
     }
 }
