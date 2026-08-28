@@ -1,18 +1,19 @@
 {
-  "type": "minecraft:ore",
+  "type": "geostrata:strata_lens",
   "config": {
-    "size": 24,
+    "targets": [{
+      "target": {"predicate_type": "minecraft:tag_match", "tag": "geostrata:worldgen/base_stone_replaceables"},
+      "state": {"Name": "geostrata:rhyolite"}
+    }],
     "discard_chance_on_air_exposure": 0.0,
-    "targets": [
-      {
-        "target": {
-          "predicate_type": "minecraft:tag_match",
-          "tag": "geostrata:worldgen/base_stone_replaceables"
-        },
-        "state": {
-          "Name": "geostrata:rhyolite"
-        }
-      }
-    ]
+    "long_radius": 7,
+    "short_radius_ratio": 0.75,
+    "short_radius_variation": 0.1,
+    "half_thickness": 2.8,
+    "edge_half_thickness": 0.8,
+    "max_slope": 0.12,
+    "warp_amplitude": 0.55,
+    "warp_variation": 0.2,
+    "warp_wavelength": 7.0
   }
 }

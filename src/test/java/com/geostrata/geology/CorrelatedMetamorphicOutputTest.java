@@ -24,7 +24,14 @@ final class CorrelatedMetamorphicOutputTest {
     }
 
     @Test
-    void nonMudrockParentIsPreserved() {
+    void orogenicCarbonateResolvesToMarble() {
+        CorrelatedSedimentaryRuntime.TerrainAwareSite site = site(GeologyProvince.OROGENIC_BELT, "limestone");
+
+        assertEquals("marble", site.outputLithology(SEED, X, 0, Z, catalog()));
+    }
+
+    @Test
+    void nonMetamorphicParentIsPreserved() {
         CorrelatedSedimentaryRuntime.TerrainAwareSite site = site(GeologyProvince.OROGENIC_BELT, "siltstone");
 
         assertEquals("siltstone", site.outputLithology(SEED, X, 0, Z, catalog()));
@@ -98,10 +105,11 @@ final class CorrelatedMetamorphicOutputTest {
     private static LithologyCatalog.Snapshot catalog() {
         LithologyCatalog.Entry shale = entry("shale", "mudrock");
         LithologyCatalog.Entry siltstone = entry("siltstone", "silt_clastic");
+        LithologyCatalog.Entry limestone = entry("limestone", "carbonate");
         return new LithologyCatalog.Snapshot(
                 "metadata_only",
-                List.of(shale, siltstone),
-                Map.of("shale", shale, "siltstone", siltstone)
+                List.of(shale, siltstone, limestone),
+                Map.of("shale", shale, "siltstone", siltstone, "limestone", limestone)
         );
     }
 

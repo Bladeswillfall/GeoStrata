@@ -48,15 +48,14 @@ public final class GeoStrataWorldgen {
         addToTag("rhyolite_ore", HAS_MOUNTAIN_ROCKS);
         addToTag("breccia_ore", HAS_MOUNTAIN_ROCKS);
 
-        // These sediments are registered broadly; their placement modifier treats biome tags
-        // as bonuses alongside terrain shape and actual water rather than hard permissions.
+        // These sediments use actual surface/terrain evidence in their placement modifiers.
         addToTag("clay_loam_patch", HAS_SURFACE_SEDIMENTS);
         addToTag("silty_loam_patch", HAS_SURFACE_SEDIMENTS);
         addToTag("peat_soil_patch", HAS_SURFACE_SEDIMENTS);
         addToTag("wet_mud_patch", HAS_SURFACE_SEDIMENTS);
         addToTag("compacted_mud_patch", HAS_SURFACE_SEDIMENTS);
 
-        // Sandy loam remains on the coastal baseline until coastal evidence is migrated separately.
+        // Sandy loam is surface-aware but remains coastally scoped by its registration tag.
         addToTag("sandy_loam_patch", HAS_COASTAL_ROCKS);
 
         // Clay uses actual water-floor evidence first, with rare shallow background deposits
