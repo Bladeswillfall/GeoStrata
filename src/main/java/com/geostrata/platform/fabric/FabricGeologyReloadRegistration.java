@@ -11,7 +11,6 @@ import net.minecraft.util.Identifier;
 
 /** Bridges Fabric's server-data reload event into the shared geology loader. */
 public final class FabricGeologyReloadRegistration implements SimpleSynchronousResourceReloadListener {
-    private static final String COMPANION_MOD_ID = "geostrata_correlated_experiment";
     private static final FabricGeologyReloadRegistration INSTANCE = new FabricGeologyReloadRegistration();
     private static final Identifier RELOAD_ID = GeoStrata.id("geology_data");
 
@@ -29,6 +28,9 @@ public final class FabricGeologyReloadRegistration implements SimpleSynchronousR
 
     @Override
     public void reload(ResourceManager manager) {
-        GeologyDataReload.reload(manager, FabricLoader.getInstance().isModLoaded(COMPANION_MOD_ID));
+        GeologyDataReload.reload(
+                manager,
+                FabricLoader.getInstance().isModLoaded(GeologyDataReload.COMPANION_MOD_ID)
+        );
     }
 }
