@@ -5,24 +5,18 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
 import com.google.gson.JsonParser;
-import net.fabricmc.fabric.api.resource.ResourceManagerHelper;
-import net.fabricmc.fabric.api.resource.SimpleSynchronousResourceReloadListener;
-import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.registry.Registries;
 import net.minecraft.resource.Resource;
 import net.minecraft.resource.ResourceManager;
-import net.minecraft.resource.ResourceType;
 import net.minecraft.util.Identifier;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 
-/** Loads and publishes the geology resource graph in dependency order. */
-public final class GeologyDataReload implements SimpleSynchronousResourceReloadListener {
-    static final String COMPANION_MOD_ID = "geostrata_correlated_experiment";
+/** Loads and publishes the shared geology resource graph in dependency order. */
+public final class GeologyDataReload {
+    public static final String COMPANION_MOD_ID = "geostrata_correlated_experiment";
 
-    private static final GeologyDataReload INSTANCE = new GeologyDataReload();
-    private static final Identifier RELOAD_ID = GeoStrata.id("geology_data");
     private static final Identifier LITHOLOGIES = GeoStrata.id("geology/lithologies.json");
     private static final Identifier ORE_OCCURRENCES = GeoStrata.id("geology/ore_occurrences.json");
     private static final Identifier ORE_DEPOSIT_EXPERIMENT = GeoStrata.id("geology/ore_deposit_experiment.json");
@@ -34,17 +28,7 @@ public final class GeologyDataReload implements SimpleSynchronousResourceReloadL
     private GeologyDataReload() {
     }
 
-    public static void register() {
-        ResourceManagerHelper.get(ResourceType.SERVER_DATA).registerReloadListener(INSTANCE);
-    }
-
-    @Override
-    public Identifier getFabricId() {
-        return RELOAD_ID;
-    }
-
-    @Override
-    public void reload(ResourceManager manager) {
+    public static void reload(ResourceManager manager, boolean companionLoaded) {
         try {
             State loaded = parse(
                     readObject(manager, LITHOLOGIES),
@@ -54,7 +38,7 @@ public final class GeologyDataReload implements SimpleSynchronousResourceReloadL
                     readObject(manager, SUCCESSIONS),
                     readObject(manager, FIELD_PROFILES),
                     readObject(manager, EXPERIMENT),
-                    FabricLoader.getInstance().isModLoaded(COMPANION_MOD_ID)
+                    companionLoaded
             );
             validateOreRegistries(loaded.oreOccurrences());
             loaded.publish();

@@ -1,4 +1,4 @@
-package com.geostrata.worldgen;
+package com.geostrata.platform.fabric;
 
 import com.geostrata.GeoStrata;
 import net.fabricmc.fabric.api.biome.v1.BiomeModifications;
@@ -10,15 +10,8 @@ import net.minecraft.world.biome.Biome;
 import net.minecraft.world.gen.GenerationStep;
 import net.minecraft.world.gen.feature.PlacedFeature;
 
-/**
- * Registers GeoStrata's baseline world-generation features.
- *
- * <p>Biome targeting is intentionally driven through GeoStrata-owned biome
- * tags. Vanilla supplies the default values for those tags, while modpacks
- * and compatibility data packs can extend them without adding a Java
- * dependency on GeoStrata.</p>
- */
-public final class GeoStrataWorldgen {
+/** Fabric biome-modification adapter for GeoStrata's shared data-driven placed features. */
+public final class FabricWorldgenRegistration {
     private static final TagKey<Biome> HAS_COMMON_ROCKS = biomeTag("has_common_rocks");
     private static final TagKey<Biome> HAS_MOUNTAIN_ROCKS = biomeTag("has_mountain_rocks");
     private static final TagKey<Biome> HAS_FLUVIAL_ROCKS = biomeTag("has_fluvial_rocks");
@@ -27,7 +20,7 @@ public final class GeoStrataWorldgen {
     private static final TagKey<Biome> HAS_BADLANDS_SOILS = biomeTag("has_badlands_soils");
     private static final TagKey<Biome> HAS_EXPERIMENTAL_ORE_DEPOSITS = biomeTag("has_experimental_ore_deposits");
 
-    private GeoStrataWorldgen() {
+    private FabricWorldgenRegistration() {
     }
 
     public static void register() {
@@ -48,26 +41,19 @@ public final class GeoStrataWorldgen {
         addToTag("rhyolite_ore", HAS_MOUNTAIN_ROCKS);
         addToTag("breccia_ore", HAS_MOUNTAIN_ROCKS);
 
-        // These sediments use actual surface/terrain evidence in their placement modifiers.
         addToTag("clay_loam_patch", HAS_SURFACE_SEDIMENTS);
         addToTag("silty_loam_patch", HAS_SURFACE_SEDIMENTS);
         addToTag("peat_soil_patch", HAS_SURFACE_SEDIMENTS);
         addToTag("wet_mud_patch", HAS_SURFACE_SEDIMENTS);
         addToTag("compacted_mud_patch", HAS_SURFACE_SEDIMENTS);
-
-        // Sandy loam is surface-aware but remains coastally scoped by its registration tag.
         addToTag("sandy_loam_patch", HAS_COASTAL_ROCKS);
 
-        // Clay uses actual water-floor evidence first, with rare shallow background deposits
-        // so it remains discoverable away from obvious rivers, lakes and coasts.
         addToTag("blue_clay_patch", HAS_COMMON_ROCKS);
         addToTag("blue_clay_background_patch", HAS_COMMON_ROCKS);
         addToTag("red_clay_patch", HAS_COMMON_ROCKS);
         addToTag("red_clay_background_patch", HAS_COMMON_ROCKS);
         addToTag("red_clay_badlands_patch", HAS_BADLANDS_SOILS);
 
-        // Registered in core but dormant until the server-data experiment explicitly opts in.
-        // Decoration runs after ordinary ore-stage host geology has been written.
         addToTag(
                 "ore_deposit_experiment",
                 HAS_EXPERIMENTAL_ORE_DEPOSITS,

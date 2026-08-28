@@ -1,0 +1,23 @@
+package com.geostrata.platform.fabric;
+
+import com.geostrata.GeoStrata;
+import com.geostrata.block.GeoStrataBlocks;
+import com.geostrata.command.GeoStrataCommands;
+import com.geostrata.command.MetamorphismCommands;
+import net.fabricmc.api.ModInitializer;
+
+/** Fabric entrypoint. Shared geology/content code must not depend on this class. */
+public final class FabricGeoStrata implements ModInitializer {
+    @Override
+    public void onInitialize() {
+        FabricContentRegistration.register();
+        FabricGeologyReloadRegistration.register();
+        FabricWorldgenRegistration.register();
+        GeoStrataCommands.register();
+        MetamorphismCommands.register();
+        GeoStrata.LOGGER.info(
+                "GeoStrata initialized {} runtime blocks through the Fabric adapter",
+                GeoStrataBlocks.count()
+        );
+    }
+}
