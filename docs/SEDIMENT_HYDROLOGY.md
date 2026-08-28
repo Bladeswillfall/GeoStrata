@@ -1,43 +1,76 @@
 # Sediment hydrology
 
-GeoStrata treats water as geological evidence rather than a hard permission gate. Fine sediments such as clay should strongly prefer places where water can transport and settle them, while gameplay still benefits from occasional deposits away from an obvious river or lake.
+GeoStrata treats water and terrain shape as geological evidence rather than hard permission gates. Fine sediments should strongly prefer places where water can transport, settle or saturate them, while gameplay still benefits from occasional deposits away from the textbook-perfect location.
 
-## Current clay contract
+## Clay water-floor contract
 
-Blue and red clay now use Minecraft's native `disk` feature instead of ore-shaped blobs. The primary placement path samples `OCEAN_FLOOR_WG` and requires actual water at the selected column, so a deposit is tied to the generated terrain rather than inferred only from a biome name.
+Blue and red clay use Minecraft's native `disk` feature instead of ore-shaped blobs. Their strongest placement path samples `OCEAN_FLOOR_WG` and requires actual water at the selected column, so a deposit is tied to generated terrain rather than inferred only from a biome name.
 
-The default strong-water attempts are deliberately different:
+| Material | Strong water-floor attempt | Background attempt |
+| --- | ---: | ---: |
+| Blue clay | 1 in 3 chunks | 1 in 24 chunks |
+| Red clay | 1 in 10 chunks | 1 in 40 chunks |
 
-| Material | Strong water-floor attempt |
-| --- | ---: |
-| Blue clay | 1 in 3 chunks |
-| Red clay | 1 in 10 chunks |
+Red clay also receives an additional water-floor attempt in badlands. These are gamified-realism starting values, not claims about real-world abundance.
 
-Red clay receives an additional unrestricted water-floor attempt in badlands, preserving its previous regional identity without making badlands the only place it can exist.
+## Shared sediment suitability
 
-Both materials also have a shallow background lane with no water requirement:
+Clay loam, silty loam, peat soil, wet mud and compacted mud now share `geostrata:sediment_suitability`, a placement modifier that gates native Minecraft disk geometry. The modifier does not place blocks itself.
 
-| Material | Background attempt |
-| --- | ---: |
-| Blue clay | 1 in 24 chunks |
-| Red clay | 1 in 40 chunks |
+For one candidate position it samples the active terrain through `OCEAN_FLOOR_WG` at the center and four cardinal points 16 blocks away. The observations reuse `TerrainMorphologySample` to derive two normalized signals:
 
-These are gamified-realism weights, not claims about real-world clay abundance. Their purpose is to make waterways the obvious place to search while preventing a world seed or settlement location from making clay effectively unavailable.
+- `flatness` — high where local relief and slope are small;
+- `valley` — high where the candidate lies below its cardinal neighbors.
 
-## Replacement boundary
+Two direct contextual signals are added:
 
-The disk target is `geostrata:worldgen/hydric_sediment_replaceables`. Core currently includes dirt, vanilla clay, sand, red sand, gravel and mud. Compatibility datapacks may extend that tag with natural sediment blocks from terrain mods.
+- `submerged` — whether the candidate position currently contains water;
+- `preferredBiome` — whether the current biome belongs to the profile's GeoStrata-owned preferred biome tag.
 
-The older `geostrata:worldgen/clay_replaceables` tag remains the conservative clay-like replacement contract used by the existing clay-loam baseline. The two tags should not be merged simply because their names are similar: one describes material equivalence, while the hydric tag describes terrain that may reasonably receive a transported shallow sediment deposit.
+The acceptance chance is intentionally simple and data-driven:
 
-## Why use vanilla machinery?
+```text
+base
++ flatnessWeight * flatness
++ valleyWeight * valley
++ submergedWeight * submerged
++ preferredBiomeBonus * preferredBiome
+```
 
-Minecraft already has the exact primitives needed for this stage: disk geometry, ocean-floor height placement, water predicates, rarity filters and biome checks. GeoStrata therefore does not add a custom Java hydrology feature just to duplicate them.
+The result is clamped to `0..1` and compared with GeoStrata's stable coordinate hash rather than consuming Minecraft's feature RNG stream. A negative weight is allowed; compacted mud uses this to prefer exposed damp ground over a fully submerged riverbed.
 
-This is the intended pattern for the wider geology brain: first identify useful environmental evidence exposed by the active terrain generator or vanilla worldgen system; only add custom code when the native primitives cannot express the geological rule safely.
+The bundled starting profiles are:
+
+| Sediment | Base | Flatness | Valley | Submerged | Preferred biome bonus |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Clay loam | 0.040 | 0.080 | 0.120 | 0.220 | river soils +0.300 |
+| Silty loam | 0.025 | 0.100 | 0.180 | 0.250 | river soils +0.320 |
+| Peat soil | 0.005 | 0.030 | 0.040 | 0.150 | swamp soils +0.550 |
+| Wet mud | 0.010 | 0.050 | 0.060 | 0.350 | swamp soils +0.400 |
+| Compacted mud | 0.020 | 0.050 | 0.060 | -0.120 | jungle soils +0.350 |
+
+These values deliberately make the preferred environment a strong clue rather than a requirement. For example, a flat non-swamp peat candidate still has a small non-zero chance, while a flat wet swamp candidate is dramatically more likely.
+
+Sandy loam remains on the existing coastal-biome baseline. Coastal evidence is a separate problem and should be migrated deliberately rather than hidden inside the first fluvial/wetland model.
+
+## Replacement boundaries
+
+`geostrata:worldgen/hydric_sediment_replaceables` describes natural shallow sediment that may receive transported or reworked hydric deposits. Core includes dirt, vanilla clay, sand, red sand, gravel and mud. Blue/red clay, wet mud and compacted mud use this boundary.
+
+Clay loam, silty loam and peat currently target `geostrata:worldgen/soil_replaceables`, whose conservative vanilla default is dirt. This keeps soil-forming patches from freely painting across every sandy or gravelly bed.
+
+`geostrata:worldgen/clay_replaceables` remains a conservative clay-material compatibility role. It is no longer the live clay-loam generation target; material equivalence and a terrain that may receive transported sediment are separate concepts.
+
+Compatibility datapacks may extend these tags with natural terrain blocks from other generators without adding Java dependencies.
+
+## Why the custom modifier exists now
+
+The initial blue/red clay migration could be expressed entirely with Minecraft's existing disk, heightmap, water-predicate and rarity machinery, so no custom hydrology code was justified.
+
+There are now several different sediment materials that need the same combination of terrain morphology, water state and soft biome preference. That repeated consumer is the reason the small shared suitability modifier now exists. Native Minecraft still owns the disk geometry; GeoStrata only supplies the geological acceptance decision that native placement primitives cannot express together.
 
 ## Direction of travel
 
-Hydrology should eventually become one input alongside province, terrain morphology, host lithology and structural fields. Likely future consumers include silty loam, peat, wet mud, floodplain sediments and some sedimentary rock/ore occurrence rules.
+Surface sediment evidence is now one reusable input alongside geological province, terrain morphology, host lithology and structural fields. Likely later consumers include sandy/coastal soils, floodplain sediment packages and selected sedimentary rock or mineral occurrence rules.
 
-Those migrations should happen individually. This clay change does not automatically move every earth block to the same distribution, and it does not introduce a new universal moisture score before another runtime consumer actually needs one.
+The same rule remains in force: migrate one family at a time, measure it in fresh worlds, and only generalize the machinery when another real consumer needs it.
