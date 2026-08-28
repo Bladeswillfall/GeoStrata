@@ -1,18 +1,26 @@
 {
-  "type": "minecraft:ore",
+  "type": "minecraft:disk",
   "config": {
-    "size": 18,
-    "discard_chance_on_air_exposure": 0.0,
-    "targets": [
-      {
-        "target": {
-          "predicate_type": "minecraft:tag_match",
-          "tag": "geostrata:worldgen/mud_replaceables"
-        },
+    "half_height": 1,
+    "radius": {
+      "type": "minecraft:uniform",
+      "value": {
+        "min_inclusive": 2,
+        "max_inclusive": 3
+      }
+    },
+    "state_provider": {
+      "fallback": {
+        "type": "minecraft:simple_state_provider",
         "state": {
           "Name": "geostrata:compacted_mud"
         }
-      }
-    ]
+      },
+      "rules": []
+    },
+    "target": {
+      "type": "minecraft:matching_block_tag",
+      "tag": "geostrata:worldgen/hydric_sediment_replaceables"
+    }
   }
 }
