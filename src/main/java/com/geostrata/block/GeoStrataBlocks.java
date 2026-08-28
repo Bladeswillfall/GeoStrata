@@ -1,13 +1,11 @@
 package com.geostrata.block;
 
-import com.geostrata.GeoStrata;
 import com.geostrata.geology.OreGrade;
 import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import net.fabricmc.fabric.api.itemgroup.v1.ItemGroupEvents;
 import net.minecraft.block.AbstractBlock;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
@@ -17,16 +15,16 @@ import net.minecraft.block.StairsBlock;
 import net.minecraft.block.WallBlock;
 import net.minecraft.item.BlockItem;
 import net.minecraft.item.Item;
-import net.minecraft.item.ItemGroups;
-import net.minecraft.registry.Registries;
-import net.minecraft.registry.Registry;
 import net.minecraft.sound.BlockSoundGroup;
 
+/** Defines GeoStrata block and block-item instances without owning loader registration timing. */
 public final class GeoStrataBlocks {
     private static final List<Block> ROCK_BLOCKS = new ArrayList<>();
     private static final List<Block> EARTH_BLOCKS = new ArrayList<>();
     private static final List<Block> ORE_BLOCKS_LIST = new ArrayList<>();
     private static final Map<String, EnumMap<OreGrade, Block>> ORE_BLOCKS = new LinkedHashMap<>();
+    private static final Map<String, Block> BLOCKS_BY_NAME = new LinkedHashMap<>();
+    private static final Map<String, Item> ITEMS_BY_NAME = new LinkedHashMap<>();
 
     public static final Block LIMESTONE = registerRock("limestone", rock(Blocks.STONE, 1.5F, BlockSoundGroup.STONE));
     public static final Block CHALK = registerRock("chalk", rock(Blocks.CALCITE, 1.0F, BlockSoundGroup.CALCITE));
@@ -76,23 +74,12 @@ public final class GeoStrataBlocks {
     private GeoStrataBlocks() {
     }
 
-    public static void register() {
-        ItemGroupEvents.modifyEntriesEvent(ItemGroups.BUILDING_BLOCKS).register(entries -> ROCK_BLOCKS.forEach(entries::add));
-        ItemGroupEvents.modifyEntriesEvent(ItemGroups.NATURAL).register(entries -> {
-            ROCK_BLOCKS.forEach(entries::add);
-            EARTH_BLOCKS.forEach(entries::add);
-            ORE_BLOCKS_LIST.forEach(entries::add);
-        });
-        GeoStrata.LOGGER.info(
-                "Registered {} rock, {} earth and {} graded ore blocks for the normal Fabric Loom runtime catalog",
-                ROCK_BLOCKS.size(),
-                EARTH_BLOCKS.size(),
-                ORE_BLOCKS_LIST.size()
-        );
-    }
-
     public static int count() {
         return ROCK_BLOCKS.size() + EARTH_BLOCKS.size() + ORE_BLOCKS_LIST.size();
+    }
+
+    public static List<Block> rockBlocks() {
+        return List.copyOf(ROCK_BLOCKS);
     }
 
     public static List<Block> allBlocks() {
@@ -101,6 +88,14 @@ public final class GeoStrataBlocks {
         blocks.addAll(EARTH_BLOCKS);
         blocks.addAll(ORE_BLOCKS_LIST);
         return List.copyOf(blocks);
+    }
+
+    public static Map<String, Block> blocksByName() {
+        return Map.copyOf(BLOCKS_BY_NAME);
+    }
+
+    public static Map<String, Item> itemsByName() {
+        return Map.copyOf(ITEMS_BY_NAME);
     }
 
     public static Block ore(String material, OreGrade grade) {
@@ -182,8 +177,12 @@ public final class GeoStrataBlocks {
     }
 
     private static Block register(String name, Block block) {
-        block = Registry.register(Registries.BLOCK, GeoStrata.id(name), block);
-        Registry.register(Registries.ITEM, GeoStrata.id(name), new BlockItem(block, new Item.Settings()));
+        if (BLOCKS_BY_NAME.putIfAbsent(name, block) != null) {
+            throw new IllegalStateException("duplicate block definition: " + name);
+        }
+        if (ITEMS_BY_NAME.putIfAbsent(name, new BlockItem(block, new Item.Settings())) != null) {
+            throw new IllegalStateException("duplicate block item definition: " + name);
+        }
         return block;
     }
 }
