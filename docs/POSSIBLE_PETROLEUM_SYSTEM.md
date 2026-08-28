@@ -57,12 +57,14 @@ Keep natural petroleum materials readable through ordinary Minecraft conventions
 - **Layer height / full block:** 1–8 layers occupy 1/8, 1/4, 3/8, 1/2, 5/8, 3/4, 7/8 and one full block of visual/collision height respectively. **Eight layers are the full bitumen block.** There is no separate compacted/storage bitumen block and no separate 9:1 storage recipe.
 - **Bitumen piston / fire / enchantment behaviour:** pistons break bitumen layers rather than moving them as a mass; bitumen is sticky to entities but is **not** a slime/honey-style piston-adhesion block. Placed bitumen does not ignite/spread from ordinary fire. **Silk Touch preserves the placed layer stack**, avoiding the normal recovery loss; **Fortune has no effect**.
 - **Bitumen furnace fuel:** a bitumen item burns for **200 furnace ticks (20 seconds), smelting 2 items**. This is intentionally a weak secondary fuel: coal and charcoal remain the obvious vanilla fuel at 8 smelts each. The value acknowledges historical use of natural bitumen as fuel without making surface petroleum a replacement for coal mining or charcoal production. Placed bitumen remains non-propagating under ordinary fire rules.
-- **Oil sands:** follow ordinary sand-family interaction: 0.5 hardness / 0.5 blast resistance, gravity-affected, normally piston-movable, shovels are the natural fast tool, no minimum tool tier is required, and hand mining can still recover the material. Silk Touch and Fortune add no special petroleum drops.
-- **Oil shale:** follow the existing GeoStrata shale profile: **1.4 hardness / 6.0 blast resistance**, ordinary movable stone-like block behaviour, a pickaxe is required for proper drops, and wooden tier is sufficient. Silk Touch and Fortune add no special petroleum drops.
+- **Oil sands:** follow ordinary sand-family interaction: 0.5 hardness / 0.5 blast resistance, gravity-affected, normally piston-movable, shovels are the natural fast tool, no minimum tool tier is required, and hand mining can still recover the material. Silk Touch and Fortune add no special petroleum drops. Oil sands are **geological/environmental only** in base GeoStrata: no direct crafting, smelting, fuel or crude-yield recipe.
+- **Oil shale:** follow the existing GeoStrata shale profile: **1.4 hardness / 6.0 blast resistance**, ordinary movable stone-like block behaviour, a pickaxe is required for proper drops, and wooden tier is sufficient. Silk Touch and Fortune add no special petroleum drops. Oil shale is **geological/environmental only** in base GeoStrata: no direct crafting, smelting, fuel or crude-yield recipe.
 - **Petroleum-stained reservoir hosts:** inherit the underlying host block's hardness, blast resistance, piston behaviour, flammability, tool, harvest tier and enchantment behaviour. Petroleum presence changes appearance/evidence, not the host's base mechanics.
 - **Crude oil:** ordinary player interaction is through actual free-fluid source blocks and buckets. Petroleum-bearing solids do not become hand-extractable crude through mining or crafting.
 
 Bitumen should also act as an early-game **adhesive alternative** where a vanilla recipe uses slimeballs as glue. Add explicit alternative recipes rather than placing bitumen in a generic slimeball tag. Initial candidates are Sticky Pistons and Leads. Do not substitute bitumen where slime itself is materially important, such as Slime Blocks or Magma Cream.
+
+Oil sands and oil shale intentionally stop at geological/environmental interaction in the base mod. They exist to communicate petroleum geology and host/source relationships, not to form a second hand-processing progression. Any industrial recovery from such formations belongs to a scoped technology-mod integration reading the same finite reservoir system.
 
 Do **not** copy petroleum-ore precedents where Fortune multiplies bitumen or mining petroleum-bearing rock produces crude. Those mechanics conflict with the finite geological-reservoir model: enchantments should not change how much petroleum existed underground.
 
@@ -138,6 +140,7 @@ Any compatibility API or data contract should be added only when a real integrat
 - no dedicated petroleum prospecting tool;
 - no porosity/permeability or reservoir-quality simulation;
 - no GeoStrata-defined pump/depletion/productivity model;
+- no base-mod oil-sand/oil-shale crafting or smelting progression;
 - no dependency on Create: Diesel Generators or another technology mod;
 - no gas/damp implementation in this feature;
 - no attempt to replace another mod's oil system until an explicit compatibility design is agreed.
