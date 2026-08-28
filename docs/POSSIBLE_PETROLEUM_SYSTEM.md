@@ -39,6 +39,14 @@ Possible world features include:
 
 Most petroleum should remain in porous rock. Large hollow underground lakes of crude should be exceptional rather than the default, preserving the exploration appeal of old BuildCraft-style discoveries without making them the geological model.
 
+## Reservoir accounting
+
+Use millibuckets directly as the common petroleum quantity: one mB extracted is one mB depleted. Do not introduce per-mod petroleum units or depletion multipliers unless playtesting demonstrates a real need.
+
+For the initial balance target, cap a single reservoir's **free-fluid crude component at 5,000,000 mB (5,000 buckets)**. This is a provisional maximum, not a promise that large reservoirs commonly reach it.
+
+Petroleum-bearing reservoir rock is separate from that free-fluid cap. A later integration may count surrounding saturated/bituminous host rock toward a larger **recoverable reserve** exposed to an extractor such as Create: Diesel Generators. This lets geology contribute additional petroleum capacity without requiring GeoStrata to generate millions of millibuckets as physical liquid blocks, and gives balancing room above or below the initial 5,000,000 mB free-fluid ceiling.
+
 ## Surface evidence
 
 Surface occurrences should be clues to subsurface geology rather than isolated decoration. A seep, bituminous ground or tar accumulation should imply that a plausible petroleum system exists below or nearby.
