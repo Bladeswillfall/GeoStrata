@@ -2,6 +2,7 @@ package com.geostrata;
 
 import com.geostrata.block.GeoStrataBlocks;
 import com.geostrata.command.GeoStrataCommands;
+import com.geostrata.command.MetamorphismCommands;
 import com.geostrata.geology.GeologyDataReload;
 import com.geostrata.item.GeoStrataItemGroups;
 import com.geostrata.worldgen.GeoStrataWorldgen;
@@ -25,6 +26,7 @@ public final class GeoStrata implements ModInitializer {
         GeologyDataReload.register();
         GeoStrataWorldgen.register();
         GeoStrataCommands.register();
+        MetamorphismCommands.register();
         LOGGER.info(
                 "GeoStrata initialized {} runtime blocks with data-driven overworld geology",
                 GeoStrataBlocks.count()
