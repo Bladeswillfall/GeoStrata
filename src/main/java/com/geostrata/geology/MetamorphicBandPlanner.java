@@ -34,6 +34,9 @@ public final class MetamorphicBandPlanner {
         if (suitability == null) {
             throw new IllegalArgumentException("metamorphic suitability must not be null");
         }
+        validateWeight(suitability.slate());
+        validateWeight(suitability.schist());
+        validateWeight(suitability.gneiss());
 
         double total = suitability.slate() + suitability.schist() + suitability.gneiss();
         if (total <= 0.0) {
@@ -67,6 +70,12 @@ public final class MetamorphicBandPlanner {
         }
 
         return Optional.of(new Selection(lithology, bandIndex, roll, suitability));
+    }
+
+    private static void validateWeight(double weight) {
+        if (!Double.isFinite(weight) || weight < 0.0) {
+            throw new IllegalArgumentException("metamorphic suitability weights must be finite and non-negative");
+        }
     }
 
     public record Selection(
