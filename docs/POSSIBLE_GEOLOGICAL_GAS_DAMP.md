@@ -42,6 +42,19 @@ The mist is visual shorthand for an otherwise invisible gas accumulation; it is 
 
 Do not build gas blocks, voxel volumes, cave flood-fill, sealed-space simulation or a custom volumetric renderer to support this effect. A deterministic local firedamp region plus client-side presentation is sufficient for the initial concept.
 
+### Fire and lava suppression
+
+Open flame should provide a simple, intuitive way to clear the visible firedamp clue without introducing gas-combustion simulation.
+
+- a nearby **lit campfire/bonfire** suppresses mist spawning in its local area;
+- a nearby ordinary **fire block**, such as one created by Flint & Steel on a flammable block, does the same;
+- mist already visible in that local area should fade/despawn rather than continue accumulating;
+- firedamp mist should not spawn near **exposed lava**.
+
+Treat these as presentation/suppression rules, not as a simulated ignition front. They do not imply explosions, damage, finite gas consumption, pressure changes or a propagating fire system. Prefer a small proximity check around candidate mist positions over modelling airflow or tracing connected cave volumes.
+
+The exact suppression radius is tuning, not geological state, and should remain small enough that placing one fire does not clear an entire cave system.
+
 ## Ownership boundary
 
 - **GeoStrata:** determines where gas-prone geology and rare firedamp evidence occur.
@@ -57,7 +70,8 @@ Do not build a GeoStrata gas-extraction API until a real integration demonstrate
 - no gas tanks or processing;
 - no dedicated gas detector;
 - no poisoning or suffocation mechanics;
-- no gas ignition or explosion system;
+- no gas explosion system;
+- no propagating gas-fire or combustion simulation;
 - no ventilation or mine-atmosphere simulation;
 - no multiple historical damp types;
 - no custom volumetric renderer;
