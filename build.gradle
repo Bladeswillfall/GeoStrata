@@ -133,9 +133,39 @@ tasks.register('validateGeologyContactOwnership') {
     }
 }
 
+// Shared geology/content/worldgen code must not acquire a loader API dependency. Loader event
+// and registry timing belongs in platform adapters; diagnostic commands remain loader-facing for now.
+def loaderNeutralRoots = [
+        file('src/main/java/com/geostrata/block'),
+        file('src/main/java/com/geostrata/geology'),
+        file('src/main/java/com/geostrata/worldgen/feature'),
+        file('src/main/java/com/geostrata/worldgen/placement')
+]
+def forbiddenLoaderImports = ['net.fabricmc.', 'net.minecraftforge.', 'net.neoforged.']
+
+tasks.register('validateLoaderBoundaries') {
+    group = 'verification'
+    description = 'Prevents Fabric/Forge/NeoForge APIs from leaking into shared GeoStrata code.'
+
+    doLast {
+        loaderNeutralRoots.findAll { it.exists() }.each { root ->
+            fileTree(root).matching { include '**/*.java' }.each { source ->
+                def text = source.getText('UTF-8')
+                def forbidden = forbiddenLoaderImports.find { text.contains(it) }
+                if (forbidden != null) {
+                    throw new GradleException(
+                            "Shared source ${source} imports loader API ${forbidden}; move loader wiring into a platform adapter."
+                    )
+                }
+            }
+        }
+    }
+}
+
 tasks.named('check') {
     dependsOn tasks.named('validateWorldgenCompatibilityContracts')
     dependsOn tasks.named('validateGeologyContactOwnership')
+    dependsOn tasks.named('validateLoaderBoundaries')
 }
 
 tasks.withType(Test).configureEach {
