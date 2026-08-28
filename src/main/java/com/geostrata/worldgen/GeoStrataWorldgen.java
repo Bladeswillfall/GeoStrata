@@ -27,6 +27,7 @@ public final class GeoStrataWorldgen {
     private static final TagKey<Biome> HAS_SWAMP_SOILS = biomeTag("has_swamp_soils");
     private static final TagKey<Biome> HAS_JUNGLE_SOILS = biomeTag("has_jungle_soils");
     private static final TagKey<Biome> HAS_BADLANDS_SOILS = biomeTag("has_badlands_soils");
+    private static final TagKey<Biome> HAS_EXPERIMENTAL_ORE_DEPOSITS = biomeTag("has_experimental_ore_deposits");
 
     private GeoStrataWorldgen() {
     }
@@ -58,14 +59,22 @@ public final class GeoStrataWorldgen {
         addToTag("wet_mud_patch", HAS_SWAMP_SOILS);
         addToTag("compacted_mud_patch", HAS_JUNGLE_SOILS);
         addToTag("red_clay_patch", HAS_BADLANDS_SOILS);
+
+        // Registered in core but dormant until the server-data experiment explicitly opts in.
+        // Decoration runs after ordinary ore-stage host geology has been written.
+        addToTag(
+                "ore_deposit_experiment",
+                HAS_EXPERIMENTAL_ORE_DEPOSITS,
+                GenerationStep.Feature.UNDERGROUND_DECORATION
+        );
     }
 
     private static void addToTag(String feature, TagKey<Biome> tag) {
-        BiomeModifications.addFeature(
-                BiomeSelectors.tag(tag),
-                GenerationStep.Feature.UNDERGROUND_ORES,
-                key(feature)
-        );
+        addToTag(feature, tag, GenerationStep.Feature.UNDERGROUND_ORES);
+    }
+
+    private static void addToTag(String feature, TagKey<Biome> tag, GenerationStep.Feature step) {
+        BiomeModifications.addFeature(BiomeSelectors.tag(tag), step, key(feature));
     }
 
     private static RegistryKey<PlacedFeature> key(String path) {
