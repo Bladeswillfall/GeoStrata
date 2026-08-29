@@ -7,6 +7,7 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 final class DiamondGeologyExperimentTest {
     @Test
@@ -18,6 +19,18 @@ final class DiamondGeologyExperimentTest {
         assertEquals(0.06, snapshot.pipeActivationChance("kimberlite"), 1.0e-12);
         assertEquals(0.02, snapshot.pipeActivationChance("lamproite"), 1.0e-12);
         assertEquals(0.12, snapshot.structuralActivationChancePerCell(), 1.0e-12);
+    }
+
+    @Test
+    void companionPromotesDisabledSnapshotWithoutChangingTuning() {
+        DiamondGeologyExperiment.Snapshot disabled = DiamondGeologyExperiment.parse(valid());
+
+        assertFalse(disabled.activated(false).enabled());
+        DiamondGeologyExperiment.Snapshot active = disabled.activated(true);
+        assertTrue(active.enabled());
+        assertEquals("experimental_runtime", active.runtimeStatus());
+        assertEquals(0.06, active.pipeActivationChance("kimberlite"), 1.0e-12);
+        assertEquals(0.12, active.structuralActivationChancePerCell(), 1.0e-12);
     }
 
     @Test
