@@ -21,7 +21,9 @@ jobs:
         run: python3 -m pip install Pillow
 
       - name: Apply emerald occurrence changes
-        run: python3 scripts/bootstrap_emerald_occurrence.py
+        run: |
+          python3 scripts/bootstrap_emerald_occurrence.py
+          python3 scripts/fix_emerald_bootstrap.py
 
       - name: Regenerate host-aware ore assets
         run: |
@@ -50,7 +52,7 @@ jobs:
         run: gradle clean build :experiment-companion:build --stacktrace
 
       - name: Remove one-shot bootstrap files
-        run: git rm scripts/bootstrap_emerald_occurrence.py .github/workflows/bootstrap-emerald.yml
+        run: git rm scripts/bootstrap_emerald_occurrence.py scripts/fix_emerald_bootstrap.py .github/workflows/bootstrap-emerald.yml
 
       - name: Commit generated implementation
         run: |
