@@ -1,0 +1,61 @@
+name: Bootstrap emerald occurrence
+
+on:
+  push:
+    branches: [ feature/emerald-orogenic-hosts ]
+
+permissions:
+  contents: write
+
+jobs:
+  bootstrap:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout feature branch
+        uses: actions/checkout@v4
+        with:
+          ref: feature/emerald-orogenic-hosts
+
+      - name: Install texture authoring dependency
+        run: python3 -m pip install Pillow
+
+      - name: Apply emerald occurrence changes
+        run: python3 scripts/bootstrap_emerald_occurrence.py
+
+      - name: Regenerate host-aware ore assets
+        run: |
+          python3 scripts/generate_ore_texture_matrix.py
+          python3 scripts/generate_ore_continuity_tilesets.py
+
+      - name: Validate generated contracts
+        run: |
+          python3 scripts/validate_pack_manifest.py
+          python3 scripts/validate_geology_catalog.py
+          python3 scripts/validate_ore_continuity_tilesets.py
+          python3 scripts/validate_optional_integrations.py
+
+      - name: Set up Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Set up Gradle 9.4
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: 9.4.0
+
+      - name: Build and test
+        run: gradle clean build :experiment-companion:build --stacktrace
+
+      - name: Remove one-shot bootstrap files
+        run: git rm scripts/bootstrap_emerald_occurrence.py .github/workflows/bootstrap-emerald.yml
+
+      - name: Commit generated implementation
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Add orogenic emerald occurrence"
+          git push origin HEAD:feature/emerald-orogenic-hosts
