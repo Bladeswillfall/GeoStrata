@@ -11,9 +11,11 @@ The existing `*_ore` feature IDs are retained as stable datapack/worldgen identi
 - Slate, schist and quartzite use thinner, more deformed fallback bands; gneiss uses a broader, thicker fallback body; marble uses a local band/lens.
 - Basalt uses a broad, thin sheet-like profile; rhyolite uses a smaller, thicker local volcanic-body profile.
 
-Baseline placed features use `above_bottom` / `below_top` vertical anchors rather than absolute Y values. The margins preserve the existing vanilla 1.20.1 envelope closely while allowing taller/deeper dimensions to move the fallback envelope with their actual world bounds. The per-body geometry itself is **not** scaled with dimension height.
+Baseline placed features use `geostrata:subsurface_anchor` instead of a fixed Minecraft `height_range`. After the ordinary in-chunk X/Z choice, the modifier reads that column's `OCEAN_FLOOR_WG` height and chooses the body's Y anchor between the active world's real bottom and the generated rock surface. A tall mountain can therefore receive fallback geology even when the dimension's ceiling is unchanged, while a deeper custom dimension naturally exposes a larger subsurface column.
 
-The independent lenses remain conservative compatibility fallbacks: increasing dimension height does not automatically increase their per-chunk attempt count. Coherent full-height geology is the responsibility of the correlated field where that experiment owns a chunk.
+The replacement predicate remains authoritative: bedrock, air, caves, fluids and unrelated blocks are skipped rather than overwritten. Body thickness and shape are **not** scaled with either terrain height or dimension height.
+
+The independent lenses remain conservative compatibility fallbacks: terrain height does not increase their per-chunk attempt count. Coherent full-domain geology is the responsibility of the correlated field where that experiment owns a chunk.
 
 ## Correlated authority
 
