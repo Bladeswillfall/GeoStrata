@@ -20,7 +20,7 @@ Those independent bodies are a compatibility fallback. The opt-in correlated exp
 
 GeoStrata must not encode vanilla world height as geology.
 
-Baseline rock placement uses dimension-relative vertical anchors (`above_bottom` / `below_top`) rather than absolute Minecraft Y coordinates. On a vanilla 1.20.1 overworld those margins reproduce the existing placement envelope closely; on a taller or deeper dimension the fallback envelope moves with the dimension instead of stopping around vanilla Y levels.
+Baseline rock placement uses `geostrata:subsurface_anchor` rather than a fixed `minecraft:height_range`. Once X/Z is selected, the modifier reads that column's `OCEAN_FLOOR_WG` height and samples an anchor between the active world's real bottom and the generated terrain surface. That means a Y=300 mountain can receive fallback geology even in a normal-height dimension, and a deeper custom dimension exposes a correspondingly deeper rock column without a terrain-mod-specific adapter.
 
 The correlated experiment goes further. Its schema declares:
 
@@ -30,7 +30,7 @@ The correlated experiment goes further. Its schema declares:
 
 The runtime therefore evaluates the same stratigraphic field through the active world's actual bottom/top. Bed and cycle thickness do **not** scale with world height. A 500-block mountain exposes or uplifts more of the same geology; it does not turn an ordinary limestone bed into a 100-block-thick layer merely because the terrain is taller.
 
-Bedrock, caves, fluids, structures, ores and other non-host blocks remain protected by the replacement predicate. The geological field may mathematically continue through the vertical domain, but only eligible natural host stone is mutated.
+Bedrock, caves, fluids, structures, ores and other non-host blocks remain protected by the replacement predicate. The geological field may mathematically continue through the vertical domain, but only eligible natural host stone is mutated. The same rule lets the geology terminate naturally against irregular bedrock rather than requiring a bespoke bottom-blending pass.
 
 ## Regional provinces
 
@@ -135,7 +135,7 @@ geostrata:worldgen/base_stone_replaceables
 
 A biome/terrain compatibility datapack can likewise extend GeoStrata-owned biome tags. Java integration is only justified when data/tags cannot express the behavior.
 
-This means a terrain mod with Y=500 mountains, Y=-200 ravines or custom natural stone should not require a second geology algorithm. GeoStrata reads the active generator's morphology, uses the active dimension's bounds and mutates only blocks declared as valid geological hosts.
+This means a terrain mod with Y=500 mountains, Y=-200 ravines or custom natural stone should not require a second geology algorithm. Fallback bodies anchor inside the actual generated rock column, the coherent field reads the active generator's broad morphology and dimension bounds, and mutation remains limited to declared geological host blocks.
 
 ## Determinism
 
@@ -158,7 +158,7 @@ python3 scripts/validate_geology_catalog.py
 gradle test
 ```
 
-`GeologyResourceContractTest` parses the shipped geology graph and validates configured/placed feature pairing. Natural rock fallback placements are required to use dimension-relative vertical anchors; absolute-Y rock placement is treated as a regression. Behavior tests cover province sampling, determinism, strata geometry, contacts, terrain interpolation, erosional attenuation, correlated ownership, metamorphic bands and ore geometry.
+`GeologyResourceContractTest` parses the shipped geology graph and validates configured/placed feature pairing. Every natural-rock fallback is required to use `geostrata:subsurface_anchor`; fixed `minecraft:height_range` placement is treated as a regression. Behavior tests cover province sampling, determinism, strata geometry, contacts, terrain interpolation, erosional attenuation, correlated ownership, metamorphic bands and ore geometry.
 
 ## Direction of travel
 
