@@ -1,16 +1,33 @@
-# GeoStrata correlated experiment companion
+# GeoStrata experiment companion
 
-This subproject builds `geostrata-correlated-experiment`, an **optional experimental Fabric mod** that depends on the normal GeoStrata jar.
+This subproject builds `geostrata-correlated-experiment`, an **optional experimental Fabric mod** that depends on the normal GeoStrata jar. The artifact and mod ID keep their existing names for compatibility, but the companion is now the single explicit switch for GeoStrata worldgen that is not ready for normal installs.
 
-Installing the companion does two things that standalone GeoStrata deliberately does not do:
+Installing the companion activates the currently implemented experimental systems:
 
-1. it registers `geostrata:correlated_sedimentary_experiment` into biomes tagged `geostrata:has_common_rocks` at `UNDERGROUND_DECORATION`;
-2. its Fabric mod ID lets core promote the already validated experiment snapshot to `experimental_runtime`.
+1. correlated sedimentary worldgen and its terrain-aware succession/metamorphism runtime;
+2. GeoStrata graded ore-deposit placement, including the orogenic emerald occurrence;
+3. diamond geology: deep structural corridors plus rare kimberlite/lamproite intrusive events.
 
-Activation uses Fabric Loader's native mod-presence check. There is no activation JSON or resource-order contract.
+Core remains authoritative for all geology data and tuning. The companion does not copy catalogs or replace the experiment JSON resources; Fabric Loader's native mod-presence check promotes the validated snapshots to `experimental_runtime`. It only registers the correlated placed feature itself because ore and diamond experimental placed features are already registered by core and gated by their runtime snapshots.
 
-The companion therefore changes world generation. It is not included in the normal development-pack dependency set and should be evaluated in fresh or disposable worlds until the correlated generator is promoted beyond experiment status.
+Normal GeoStrata installs remain unchanged. Vanilla ore and diamond generation are **not suppressed** by this companion, so current test worlds intentionally contain both vanilla generation and GeoStrata's experimental occurrences.
 
-The companion contains no geological catalog or copied experiment policy of its own. Core remains authoritative for target succession, provinces, lithologies, ownership boundary, host tag and vertical window. The actual-resource JUnit smoke test enforces that separation in CI.
+## Testing
 
-Production Java in this subproject uses the same PMD cyclomatic and cognitive complexity ceiling as the core mod. It is a separate artifact for behavior/compatibility reasons, not a separate engineering standard.
+Build both artifacts with:
+
+```text
+./gradlew clean build :experiment-companion:build
+```
+
+Install the normal GeoStrata jar from `build/libs/` and the companion jar from `experiment-companion/build/libs/`, then create a **fresh or disposable world**. Existing chunks will not be regenerated.
+
+Useful checks for this test pass:
+
+- cave/cliff exposures show coherent correlated beds rather than unrelated local blobs;
+- orogenic mountain terrain can produce graded emerald veins in the intended host rocks;
+- coal/iron/copper/gold/emerald deposits remain geology-qualified and host-aware;
+- cratonic interiors can produce deep diamond structural corridors and rare kimberlite/lamproite pipes;
+- generation remains deterministic for a fixed seed and does not overwrite bedrock, caves, fluids, structures or unrelated blocks.
+
+Do not use the companion for a long-lived survival world yet. Its purpose is to make the current advanced worldgen reachable for evaluation while production defaults stay conservative.
