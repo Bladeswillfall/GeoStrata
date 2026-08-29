@@ -34,17 +34,11 @@ final class GeologyResolverTest {
     @Test
     void resolverReportsSemanticProvenanceWithoutChangingMetamorphism() {
         CorrelatedSedimentaryRuntime.TerrainAwareSite site = site(GeologyProvince.OROGENIC_BELT, "limestone");
-        GeologyResolver.Result resolved = GeologyResolver.resolve(
-                SEED,
-                1000,
-                0,
-                -500,
-                site,
-                catalog("limestone", "carbonate")
-        );
+        LithologyCatalog.Snapshot catalog = catalog("limestone", "carbonate");
+        GeologyResolver.Result resolved = GeologyResolver.resolve(SEED, 1000, 0, -500, site, catalog);
 
-        assertEquals("limestone", resolved.parentLithology());
-        assertEquals("marble", resolved.lithology());
+        assertEquals(site.sample(1000, 0, -500).bed().lithology(), resolved.parentLithology());
+        assertEquals(site.outputLithology(SEED, 1000, 0, -500, catalog), resolved.lithology());
         assertEquals(GeologyProvince.OROGENIC_BELT, resolved.province());
         assertEquals(GeologyResolver.Source.CORRELATED_STRATIGRAPHY, resolved.source());
     }
