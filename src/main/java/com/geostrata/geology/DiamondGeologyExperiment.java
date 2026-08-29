@@ -132,6 +132,19 @@ public final class DiamondGeologyExperiment {
             return !pipeActivationChancePerCell.isEmpty();
         }
 
+        Snapshot activated(boolean companionLoaded) {
+            if (!companionLoaded) {
+                return this;
+            }
+            return new Snapshot(
+                    "experimental_runtime",
+                    true,
+                    nativeGenerationSuppression,
+                    pipeActivationChancePerCell,
+                    structuralActivationChancePerCell
+            );
+        }
+
         public double pipeActivationChance(String kind) {
             Double chance = pipeActivationChancePerCell.get(kind);
             if (chance == null) {
