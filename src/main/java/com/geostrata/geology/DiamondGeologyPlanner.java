@@ -1,0 +1,143 @@
+package com.geostrata.geology;
+
+/** Pure deterministic candidate planning for rare diamond pipes and deep structural corridors. */
+public final class DiamondGeologyPlanner {
+    public static final int PIPE_CELL_SIZE = GeologyProvinceSampler.CELL_SIZE;
+    public static final int STRUCTURAL_CELL_SIZE = 256;
+
+    private static final long PIPE_X_SALT = 0x8CB92BA72F3D8DD7L;
+    private static final long PIPE_Z_SALT = 0x58F38DED09D2C7A9L;
+    private static final long PIPE_TILT_X_SALT = 0xA24BAED4963EE407L;
+    private static final long PIPE_TILT_Z_SALT = 0x9FB21C651E98DF25L;
+    private static final long PIPE_RADIUS_SALT = 0xC13FA9A902A6328FL;
+    private static final long PIPE_ACTIVATION_SALT = 0x91E10DA5C79E7B1DL;
+    private static final long PIPE_CLUSTER_SALT = 0xD1B54A32D192ED03L;
+
+    private static final long STRUCTURAL_X_SALT = 0xDB4F0B9175AE2165L;
+    private static final long STRUCTURAL_Z_SALT = 0xBBE0563303A4615FL;
+    private static final long STRUCTURAL_TILT_X_SALT = 0xA0F2EC75A1FE1575L;
+    private static final long STRUCTURAL_TILT_Z_SALT = 0x89E182857D9ED689L;
+    private static final long STRUCTURAL_ACTIVATION_SALT = 0xC6BC279692B5C323L;
+    private static final long STRUCTURAL_CLUSTER_SALT = 0xD6E8FEB86659FD93L;
+
+    private DiamondGeologyPlanner() {
+    }
+
+    public static PipeCandidate pipe(long worldSeed, int cellX, int cellZ, PipeKind kind) {
+        int minX = cellX * PIPE_CELL_SIZE + PIPE_CELL_SIZE / 4;
+        int minZ = cellZ * PIPE_CELL_SIZE + PIPE_CELL_SIZE / 4;
+        int span = PIPE_CELL_SIZE / 2;
+        int anchorX = minX + (int) Math.floor(roll(worldSeed, cellX, cellZ, PIPE_X_SALT ^ kind.salt()) * span);
+        int anchorZ = minZ + (int) Math.floor(roll(worldSeed, cellX, cellZ, PIPE_Z_SALT ^ kind.salt()) * span);
+        double tiltX = signed(roll(worldSeed, cellX, cellZ, PIPE_TILT_X_SALT ^ kind.salt())) * 0.035;
+        double tiltZ = signed(roll(worldSeed, cellX, cellZ, PIPE_TILT_Z_SALT ^ kind.salt())) * 0.035;
+        double baseRadius = 1.8 + roll(worldSeed, cellX, cellZ, PIPE_RADIUS_SALT ^ kind.salt()) * 1.2;
+        return new PipeCandidate(cellX, cellZ, anchorX, anchorZ, tiltX, tiltZ, baseRadius, kind);
+    }
+
+    public static StructuralCandidate structural(long worldSeed, int cellX, int cellZ) {
+        int minX = cellX * STRUCTURAL_CELL_SIZE + STRUCTURAL_CELL_SIZE / 5;
+        int minZ = cellZ * STRUCTURAL_CELL_SIZE + STRUCTURAL_CELL_SIZE / 5;
+        int span = STRUCTURAL_CELL_SIZE * 3 / 5;
+        int anchorX = minX + (int) Math.floor(roll(worldSeed, cellX, cellZ, STRUCTURAL_X_SALT) * span);
+        int anchorZ = minZ + (int) Math.floor(roll(worldSeed, cellX, cellZ, STRUCTURAL_Z_SALT) * span);
+        double tiltX = signed(roll(worldSeed, cellX, cellZ, STRUCTURAL_TILT_X_SALT)) * 0.055;
+        double tiltZ = signed(roll(worldSeed, cellX, cellZ, STRUCTURAL_TILT_Z_SALT)) * 0.055;
+        int clusters = 2 + (int) Math.floor(roll(worldSeed, cellX, cellZ, STRUCTURAL_CLUSTER_SALT) * 2.0);
+        return new StructuralCandidate(cellX, cellZ, anchorX, anchorZ, tiltX, tiltZ, clusters);
+    }
+
+    public static double pipeActivationRoll(long worldSeed, PipeCandidate candidate) {
+        return roll(
+                worldSeed,
+                candidate.cellX(),
+                candidate.cellZ(),
+                PIPE_ACTIVATION_SALT ^ candidate.kind().salt()
+        );
+    }
+
+    public static double structuralActivationRoll(long worldSeed, StructuralCandidate candidate) {
+        return roll(worldSeed, candidate.cellX(), candidate.cellZ(), STRUCTURAL_ACTIVATION_SALT);
+    }
+
+    public static double pipeClusterRoll(long worldSeed, PipeCandidate candidate, int cluster, long salt) {
+        return GeologyDeterminism.unitRoll(
+                worldSeed,
+                candidate.cellX(),
+                cluster,
+                candidate.cellZ(),
+                PIPE_CLUSTER_SALT ^ candidate.kind().salt() ^ salt
+        );
+    }
+
+    public static double structuralClusterRoll(long worldSeed, StructuralCandidate candidate, int cluster, long salt) {
+        return GeologyDeterminism.unitRoll(
+                worldSeed,
+                candidate.cellX(),
+                cluster,
+                candidate.cellZ(),
+                STRUCTURAL_CLUSTER_SALT ^ salt
+        );
+    }
+
+    private static double roll(long worldSeed, int cellX, int cellZ, long salt) {
+        return GeologyDeterminism.unitRoll(worldSeed, cellX, 0, cellZ, salt);
+    }
+
+    private static double signed(double roll) {
+        return roll * 2.0 - 1.0;
+    }
+
+    public enum PipeKind {
+        KIMBERLITE("kimberlite", 0x632BE59BD9B4E019L),
+        LAMPROITE("lamproite", 0x9E3779B97F4A7C15L);
+
+        private final String id;
+        private final long salt;
+
+        PipeKind(String id, long salt) {
+            this.id = id;
+            this.salt = salt;
+        }
+
+        public String id() {
+            return id;
+        }
+
+        long salt() {
+            return salt;
+        }
+
+        public static PipeKind byId(String id) {
+            for (PipeKind kind : values()) {
+                if (kind.id.equals(id)) {
+                    return kind;
+                }
+            }
+            throw new IllegalArgumentException("unknown diamond pipe kind: " + id);
+        }
+    }
+
+    public record PipeCandidate(
+            int cellX,
+            int cellZ,
+            int anchorX,
+            int anchorZ,
+            double tiltX,
+            double tiltZ,
+            double baseRadius,
+            PipeKind kind
+    ) {
+    }
+
+    public record StructuralCandidate(
+            int cellX,
+            int cellZ,
+            int anchorX,
+            int anchorZ,
+            double tiltX,
+            double tiltZ,
+            int clusterCount
+    ) {
+    }
+}

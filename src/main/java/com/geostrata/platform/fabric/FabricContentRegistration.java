@@ -30,6 +30,12 @@ public final class FabricContentRegistration {
                 GeoStrataFeatures.CORRELATED_SEDIMENTARY
         );
         Registry.register(Registries.FEATURE, GeoStrata.id("ore_deposit"), GeoStrataFeatures.ORE_DEPOSIT);
+        Registry.register(Registries.FEATURE, GeoStrata.id("diamond_pipe"), GeoStrataFeatures.DIAMOND_PIPE);
+        Registry.register(
+                Registries.FEATURE,
+                GeoStrata.id("diamond_structural"),
+                GeoStrataFeatures.DIAMOND_STRUCTURAL
+        );
         Registry.register(
                 Registries.PLACEMENT_MODIFIER_TYPE,
                 GeoStrata.id("sediment_suitability"),

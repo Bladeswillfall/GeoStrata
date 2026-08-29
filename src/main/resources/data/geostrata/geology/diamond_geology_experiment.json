@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "model": "geostrata:diamond_geology_experiment",
+  "runtimeStatus": "experimental_opt_in",
+  "enabled": false,
+  "nativeGenerationSuppression": "not_implemented",
+  "pipeActivationChancePerCell": {
+    "kimberlite": 0.06,
+    "lamproite": 0.02
+  },
+  "structuralActivationChancePerCell": 0.12
+}

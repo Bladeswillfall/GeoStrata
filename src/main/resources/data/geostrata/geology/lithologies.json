@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "model": "geostrata:lithology_catalog",
   "runtimeStatus": "metadata_only",
-  "description": "Semantic geology contract for GeoStrata rock types. The baseline ore-style generator does not yet consume these formation hints directly.",
+  "description": "Semantic geology contract for GeoStrata rock types. Most lithologies use baseline strata bodies; kimberlite and lamproite are event-only diamond intrusives behind the diamond geology experiment.",
   "lithologies": [
     {
       "id": "limestone",
@@ -157,6 +157,28 @@
       "continuity": "local",
       "biomeTag": "geostrata:has_mountain_rocks",
       "baselineFeature": "rhyolite_ore"
+    },
+    {
+      "id": "kimberlite",
+      "block": "geostrata:kimberlite",
+      "rockClass": "igneous",
+      "genesis": "ultramafic_diatreme",
+      "bodyStyle": "volcanic_body",
+      "depthAffinity": "deep",
+      "continuity": "local",
+      "biomeTag": "geostrata:has_experimental_diamond_geology",
+      "baselineFeature": "kimberlite_pipe"
+    },
+    {
+      "id": "lamproite",
+      "block": "geostrata:lamproite",
+      "rockClass": "igneous",
+      "genesis": "ultrapotassic_diatreme",
+      "bodyStyle": "volcanic_body",
+      "depthAffinity": "deep",
+      "continuity": "local",
+      "biomeTag": "geostrata:has_experimental_diamond_geology",
+      "baselineFeature": "lamproite_pipe"
     }
   ]
 }
