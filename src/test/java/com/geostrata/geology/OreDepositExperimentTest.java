@@ -21,6 +21,17 @@ final class OreDepositExperimentTest {
     }
 
     @Test
+    void companionPromotesDisabledSnapshotWithoutChangingTuning() {
+        OreDepositExperiment.Snapshot disabled = experiment(false, 0.25);
+
+        assertFalse(disabled.activated(false).enabled());
+        OreDepositExperiment.Snapshot active = disabled.activated(true);
+        assertTrue(active.enabled());
+        assertEquals("experimental_runtime", active.runtimeStatus());
+        assertEquals(0.25, active.activationChance("copper"), 1.0e-12);
+    }
+
+    @Test
     void unknownMaterialAndNullInputsDoNotSilentlyActivate() {
         OreDepositExperiment.Snapshot experiment = experiment(true, 1.0);
         OreDepositCandidatePlanner.Proposal gold = new OreDepositCandidatePlanner.Proposal(
