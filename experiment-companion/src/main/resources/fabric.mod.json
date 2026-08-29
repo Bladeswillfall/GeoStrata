@@ -2,8 +2,8 @@
   "schemaVersion": 1,
   "id": "geostrata_correlated_experiment",
   "version": "${version}",
-  "name": "GeoStrata Correlated Experiment",
-  "description": "Optional companion that explicitly activates GeoStrata's experimental correlated sedimentary worldgen.",
+  "name": "GeoStrata Experimental Geology",
+  "description": "Optional companion that explicitly activates GeoStrata's experimental correlated strata, ore deposits and diamond geology for test worlds.",
   "authors": [
     "GeoStrata contributors"
   ],
