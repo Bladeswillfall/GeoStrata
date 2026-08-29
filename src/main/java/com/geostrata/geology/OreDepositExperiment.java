@@ -179,6 +179,19 @@ public final class OreDepositExperiment {
             return !activationChancePerCandidate.isEmpty();
         }
 
+        Snapshot activated(boolean companionLoaded) {
+            if (!companionLoaded) {
+                return this;
+            }
+            return new Snapshot(
+                    "experimental_runtime",
+                    true,
+                    placementMode,
+                    nativeGenerationSuppression,
+                    activationChancePerCandidate
+            );
+        }
+
         public double activationChance(String material) {
             Double chance = activationChancePerCandidate.get(material);
             if (chance == null) {

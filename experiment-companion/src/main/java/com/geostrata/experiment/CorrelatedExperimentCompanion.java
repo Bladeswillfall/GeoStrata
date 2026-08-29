@@ -11,7 +11,7 @@ import net.minecraft.world.biome.Biome;
 import net.minecraft.world.gen.GenerationStep;
 import net.minecraft.world.gen.feature.PlacedFeature;
 
-/** Explicit opt-in companion that makes GeoStrata's correlated experiment reachable. */
+/** Explicit opt-in companion that makes GeoStrata's experimental worldgen reachable. */
 public final class CorrelatedExperimentCompanion implements ModInitializer {
     private static final TagKey<Biome> REGISTRATION_BIOMES = TagKey.of(
             RegistryKeys.BIOME,
@@ -29,6 +29,6 @@ public final class CorrelatedExperimentCompanion implements ModInitializer {
                 GenerationStep.Feature.UNDERGROUND_DECORATION,
                 CORRELATED_FEATURE
         );
-        GeoStrata.LOGGER.info("GeoStrata correlated sedimentary experiment companion enabled");
+        GeoStrata.LOGGER.info("GeoStrata experimental worldgen companion enabled");
     }
 }

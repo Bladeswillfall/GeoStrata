@@ -41,17 +41,18 @@ public final class GeologyDataReload {
                     readObject(manager, EXPERIMENT),
                     companionLoaded
             );
+            OreDepositExperiment.Snapshot oreExperiment = loaded.oreExperiment().activated(companionLoaded);
             DiamondGeologyExperiment.Snapshot diamondExperiment = DiamondGeologyExperiment.parse(
                     readObject(manager, DIAMOND_GEOLOGY_EXPERIMENT)
-            );
+            ).activated(companionLoaded);
             validateOreRegistries(loaded.oreOccurrences());
-            loaded.publish();
+            loaded.publish(oreExperiment);
             DiamondGeologyExperiment.install(diamondExperiment);
             GeoStrata.LOGGER.info(
                     "Loaded GeoStrata geology data: {} lithologies, {} ore occurrences, ore placement experiment enabled={}, diamond geology experiment enabled={}, {} successions, correlated experiment enabled={}",
                     loaded.lithologies().entries().size(),
                     loaded.oreOccurrences().occurrences().size(),
-                    loaded.oreExperiment().enabled(),
+                    oreExperiment.enabled(),
                     diamondExperiment.enabled(),
                     loaded.successions().successions().size(),
                     loaded.experiment().enabled()
@@ -139,10 +140,10 @@ public final class GeologyDataReload {
             SedimentaryFieldProfiles.Snapshot fieldProfiles,
             CorrelatedSedimentaryExperiment.Snapshot experiment
     ) {
-        private void publish() {
+        private void publish(OreDepositExperiment.Snapshot activeOreExperiment) {
             LithologyCatalog.install(lithologies);
             OreOccurrenceCatalog.install(oreOccurrences);
-            OreDepositExperiment.install(oreExperiment);
+            OreDepositExperiment.install(activeOreExperiment);
             GeologyProvinceProfiles.install(provinces);
             SedimentarySuccessions.install(successions);
             SedimentaryFieldProfiles.install(fieldProfiles);
