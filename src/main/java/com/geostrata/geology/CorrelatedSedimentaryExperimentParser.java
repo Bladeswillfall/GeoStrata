@@ -25,7 +25,7 @@ final class CorrelatedSedimentaryExperimentParser {
             throw new IllegalArgumentException("correlated experiment dependencies must be loaded first");
         }
 
-        requireInt(experiment, "schemaVersion", 1);
+        requireInt(experiment, "schemaVersion", 2);
         requireString(experiment, "model", "geostrata:correlated_sedimentary_experiment");
         requireString(experiment, "runtimeStatus", "metadata_only");
         if (requireBoolean(experiment, "enabled")) {
@@ -42,6 +42,7 @@ final class CorrelatedSedimentaryExperimentParser {
                     "minimumBoundaryDistanceBlocks must be within 0.." + profiles.blendWidthBlocks()
             );
         }
+        requireString(experiment, "verticalDomain", "dimension_bounds");
 
         return new CorrelatedSedimentaryExperiment.Snapshot(
                 "metadata_only",
@@ -52,7 +53,7 @@ final class CorrelatedSedimentaryExperimentParser {
                 minimumBoundaryDistance,
                 requireOwnedIdentifier(experiment, "registrationBiomeTag"),
                 requireOwnedIdentifier(experiment, "hostBlockTag"),
-                parseVerticalWindow(experiment)
+                CorrelatedSedimentaryExperiment.VerticalWindow.fullDimension()
         );
     }
 
@@ -121,35 +122,12 @@ final class CorrelatedSedimentaryExperimentParser {
         return superseded;
     }
 
-    private static CorrelatedSedimentaryExperiment.VerticalWindow parseVerticalWindow(JsonObject experiment) {
-        JsonObject vertical = requiredObject(experiment, "verticalWindow");
-        requireString(vertical, "anchor", "sea_level");
-        int minOffset = requireInt(vertical, "minOffsetBlocks");
-        int maxOffset = requireInt(vertical, "maxOffsetBlocks");
-        if (minOffset < -256 || maxOffset > 256 || minOffset >= maxOffset) {
-            throw new IllegalArgumentException("vertical offsets must be ordered within -256..256 blocks");
-        }
-        int span = maxOffset - minOffset;
-        if (span < 32 || span > 256) {
-            throw new IllegalArgumentException("vertical experiment span must be within 32..256 blocks");
-        }
-        return new CorrelatedSedimentaryExperiment.VerticalWindow(minOffset, maxOffset);
-    }
-
     private static JsonArray requiredArray(JsonObject object, String key) {
         JsonElement element = object.get(key);
         if (element == null || !element.isJsonArray()) {
             throw new IllegalArgumentException(key + " must be an array");
         }
         return element.getAsJsonArray();
-    }
-
-    private static JsonObject requiredObject(JsonObject object, String key) {
-        JsonElement element = object.get(key);
-        if (element == null || !element.isJsonObject()) {
-            throw new IllegalArgumentException(key + " must be an object");
-        }
-        return element.getAsJsonObject();
     }
 
     private static Set<String> stringSet(JsonArray array, String description) {
