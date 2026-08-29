@@ -92,3 +92,21 @@ helper = '''    private static boolean qualifiesLocation(
     private static OreDepositCandidatePlanner.Proposal proposalForCell(
 '''
 replace_once(feature, helper_anchor, helper)
+
+contract = ROOT / "src/test/java/com/geostrata/geology/GeologyResourceContractTest.java"
+replace_once(
+    contract,
+    'Set.of("coal", "iron", "copper", "gold"),',
+    'Set.of("coal", "iron", "copper", "gold", "emerald"),',
+)
+replace_once(
+    contract,
+    '        assertEquals(0.008, core.oreExperiment().activationChance("gold"), 1.0e-12);\n',
+    '        assertEquals(0.008, core.oreExperiment().activationChance("gold"), 1.0e-12);\n'
+    '        assertEquals(0.004, core.oreExperiment().activationChance("emerald"), 1.0e-12);\n',
+)
+replace_once(
+    contract,
+    'Set.of("coal", "iron", "copper", "gold"),',
+    'Set.of("coal", "iron", "copper", "gold", "emerald"),',
+)
