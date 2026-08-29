@@ -1,1 +1,1 @@
-{"feature":"geostrata:slate_ore","placement":[{"type":"minecraft:count","count":1},{"type":"minecraft:in_square"},{"type":"minecraft:height_range","height":{"type":"minecraft:trapezoid","min_inclusive":{"above_bottom":16},"max_inclusive":{"below_top":159}}},{"type":"minecraft:biome"}]}
+{"feature":"geostrata:slate_ore","placement":[{"type":"minecraft:count","count":1},{"type":"minecraft:in_square"},{"type":"geostrata:subsurface_anchor"},{"type":"minecraft:biome"}]}
