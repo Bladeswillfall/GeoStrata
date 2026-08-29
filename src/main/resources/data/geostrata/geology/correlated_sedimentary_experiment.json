@@ -1,9 +1,9 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "model": "geostrata:correlated_sedimentary_experiment",
   "runtimeStatus": "metadata_only",
   "enabled": false,
-  "description": "Disabled-by-default contract for correlated sedimentary worldgen experiments. The separate experimental companion mod activates the validated contract.",
+  "description": "Disabled-by-default contract for correlated sedimentary worldgen experiments. The separate experimental companion mod activates the validated contract across the active dimension's real vertical bounds.",
   "targetSuccessionIds": [
     "basin_mudrock_carbonate_cycle",
     "shelf_chalk_carbonate_cycle",
@@ -27,9 +27,5 @@
   "minimumBoundaryDistanceBlocks": 96,
   "registrationBiomeTag": "geostrata:has_common_rocks",
   "hostBlockTag": "geostrata:worldgen/base_stone_replaceables",
-  "verticalWindow": {
-    "anchor": "sea_level",
-    "minOffsetBlocks": -96,
-    "maxOffsetBlocks": 48
-  }
+  "verticalDomain": "dimension_bounds"
 }

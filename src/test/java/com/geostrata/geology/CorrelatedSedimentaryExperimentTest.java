@@ -19,8 +19,14 @@ final class CorrelatedSedimentaryExperimentTest {
         assertFalse(snapshot.enabled());
         assertEquals("metadata_only", snapshot.runtimeStatus());
         assertEquals(2, snapshot.supersededLithologies().size());
-        assertEquals(-96, snapshot.verticalWindow().minOffsetBlocks());
-        assertEquals(48, snapshot.verticalWindow().maxOffsetBlocks());
+        assertTrue(snapshot.verticalWindow().isFullDimension());
+    }
+
+    @Test
+    void rejectsLegacySeaLevelWindowSchema() {
+        JsonObject legacy = experiment(false, "metadata_only", 96, "alpha", "beta");
+        legacy.addProperty("schemaVersion", 1);
+        assertThrows(IllegalArgumentException.class, () -> fixture().parse(legacy));
     }
 
     @Test
@@ -44,6 +50,7 @@ final class CorrelatedSedimentaryExperimentTest {
 
         assertTrue(active.enabled());
         assertEquals("experimental_runtime", active.runtimeStatus());
+        assertTrue(active.verticalWindow().isFullDimension());
     }
 
     @Test
@@ -179,7 +186,7 @@ final class CorrelatedSedimentaryExperimentTest {
         }
         return parse("""
                 {
-                  "schemaVersion": 1,
+                  "schemaVersion": 2,
                   "model": "geostrata:correlated_sedimentary_experiment",
                   "runtimeStatus": "%s",
                   "enabled": %s,
@@ -189,11 +196,7 @@ final class CorrelatedSedimentaryExperimentTest {
                   "minimumBoundaryDistanceBlocks": %d,
                   "registrationBiomeTag": "geostrata:has_common_rocks",
                   "hostBlockTag": "geostrata:worldgen/base_stone_replaceables",
-                  "verticalWindow": {
-                    "anchor": "sea_level",
-                    "minOffsetBlocks": -96,
-                    "maxOffsetBlocks": 48
-                  }
+                  "verticalDomain": "dimension_bounds"
                 }
                 """.formatted(runtimeStatus, enabled, lithologies, boundaryDistance));
     }

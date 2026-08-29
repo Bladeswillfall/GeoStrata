@@ -34,6 +34,7 @@ final class GeologyResourceContractTest {
         assertTrue(core.fieldProfiles().loaded());
         assertFalse(core.experiment().enabled());
         assertEquals("metadata_only", core.experiment().runtimeStatus());
+        assertTrue(core.experiment().verticalWindow().isFullDimension());
         assertFalse(core.oreExperiment().enabled());
         assertEquals("experimental_opt_in", core.oreExperiment().runtimeStatus());
         assertEquals("chunk_local_valid_host_clipping", core.oreExperiment().placementMode());
@@ -68,6 +69,7 @@ final class GeologyResourceContractTest {
         GeologyDataReload.State activated = parseGeology(true);
         assertTrue(activated.experiment().enabled());
         assertEquals("experimental_runtime", activated.experiment().runtimeStatus());
+        assertTrue(activated.experiment().verticalWindow().isFullDimension());
         assertFalse(activated.oreExperiment().enabled());
 
         assertCharacteristicProvincePalettes(core);
@@ -171,16 +173,14 @@ final class GeologyResourceContractTest {
                 .map(modifier -> string(modifier, "type"))
                 .toList();
         for (String required : List.of(
-                "minecraft:count", "minecraft:in_square", "minecraft:height_range", "minecraft:biome"
+                "minecraft:count", "minecraft:in_square", "geostrata:subsurface_anchor", "minecraft:biome"
         )) {
             assertEquals(1, types.stream().filter(required::equals).count(), path.toString());
         }
+        assertFalse(types.contains("minecraft:height_range"), path + " must use generated terrain height, not a fixed Y range");
 
         JsonObject count = modifiers.get(types.indexOf("minecraft:count")).getAsJsonObject();
         assertTrue(count.get("count").getAsInt() >= 1 && count.get("count").getAsInt() <= 8);
-        JsonObject height = modifiers.get(types.indexOf("minecraft:height_range"))
-                .getAsJsonObject().getAsJsonObject("height");
-        assertTrue(height != null && height.has("type"));
     }
 
     private static void assertCorrelatedWorldgenStaging() throws IOException {
