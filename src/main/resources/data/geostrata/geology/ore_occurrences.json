@@ -6,7 +6,12 @@
   "nativeGenerationSuppression": "not_implemented",
   "gradeModel": {
     "runtimeStatus": "block_loot_xp_active",
-    "economicGrades": ["poor", "medium", "rich", "massive"],
+    "economicGrades": [
+      "poor",
+      "medium",
+      "rich",
+      "massive"
+    ],
     "trace": {
       "economic": false,
       "runtimeStatus": "evidence_only_not_implemented"
@@ -16,10 +21,34 @@
     "fortuneMode": "minecraft:ore_drops",
     "silkTouchMode": "drops_self",
     "economics": {
-      "poor": {"baseYield": 1, "experience": {"min": 0, "max": 1}},
-      "medium": {"baseYield": 2, "experience": {"min": 1, "max": 2}},
-      "rich": {"baseYield": 4, "experience": {"min": 2, "max": 4}},
-      "massive": {"baseYield": 8, "experience": {"min": 4, "max": 8}}
+      "poor": {
+        "baseYield": 1,
+        "experience": {
+          "min": 0,
+          "max": 1
+        }
+      },
+      "medium": {
+        "baseYield": 2,
+        "experience": {
+          "min": 1,
+          "max": 2
+        }
+      },
+      "rich": {
+        "baseYield": 4,
+        "experience": {
+          "min": 2,
+          "max": 4
+        }
+      },
+      "massive": {
+        "baseYield": 8,
+        "experience": {
+          "min": 4,
+          "max": 8
+        }
+      }
     }
   },
   "occurrences": [
@@ -27,9 +56,18 @@
       "id": "coal",
       "providerMod": "minecraft",
       "outputItem": "minecraft:coal",
-      "hostLithologies": ["shale", "mudstone", "siltstone"],
-      "provinceContexts": ["sedimentary_basin", "rift_province"],
-      "depositStyles": ["coal_seam"],
+      "hostLithologies": [
+        "shale",
+        "mudstone",
+        "siltstone"
+      ],
+      "provinceContexts": [
+        "sedimentary_basin",
+        "rift_province"
+      ],
+      "depositStyles": [
+        "coal_seam"
+      ],
       "gradeBlocks": {
         "poor": "geostrata:poor_coal_ore",
         "medium": "geostrata:medium_coal_ore",
@@ -41,9 +79,25 @@
       "id": "iron",
       "providerMod": "minecraft",
       "outputItem": "minecraft:raw_iron",
-      "hostLithologies": ["shale", "limestone", "quartzite", "basalt", "rhyolite"],
-      "provinceContexts": ["sedimentary_basin", "cratonic_shield", "orogenic_belt", "volcanic_arc", "rift_province"],
-      "depositStyles": ["stratiform", "disseminated", "massive_lens_or_pocket"],
+      "hostLithologies": [
+        "shale",
+        "limestone",
+        "quartzite",
+        "basalt",
+        "rhyolite"
+      ],
+      "provinceContexts": [
+        "sedimentary_basin",
+        "cratonic_shield",
+        "orogenic_belt",
+        "volcanic_arc",
+        "rift_province"
+      ],
+      "depositStyles": [
+        "stratiform",
+        "disseminated",
+        "massive_lens_or_pocket"
+      ],
       "gradeBlocks": {
         "poor": "geostrata:poor_iron_ore",
         "medium": "geostrata:medium_iron_ore",
@@ -55,9 +109,23 @@
       "id": "copper",
       "providerMod": "minecraft",
       "outputItem": "minecraft:raw_copper",
-      "hostLithologies": ["shale", "limestone", "basalt", "rhyolite"],
-      "provinceContexts": ["sedimentary_basin", "volcanic_arc", "rift_province"],
-      "depositStyles": ["vein", "stratiform", "disseminated", "massive_lens_or_pocket"],
+      "hostLithologies": [
+        "shale",
+        "limestone",
+        "basalt",
+        "rhyolite"
+      ],
+      "provinceContexts": [
+        "sedimentary_basin",
+        "volcanic_arc",
+        "rift_province"
+      ],
+      "depositStyles": [
+        "vein",
+        "stratiform",
+        "disseminated",
+        "massive_lens_or_pocket"
+      ],
       "gradeBlocks": {
         "poor": "geostrata:poor_copper_ore",
         "medium": "geostrata:medium_copper_ore",
@@ -69,14 +137,59 @@
       "id": "gold",
       "providerMod": "minecraft",
       "outputItem": "minecraft:raw_gold",
-      "hostLithologies": ["slate", "marble", "quartzite", "schist", "gneiss", "basalt", "rhyolite"],
-      "provinceContexts": ["cratonic_shield", "orogenic_belt", "volcanic_arc"],
-      "depositStyles": ["vein", "disseminated"],
+      "hostLithologies": [
+        "slate",
+        "marble",
+        "quartzite",
+        "schist",
+        "gneiss",
+        "basalt",
+        "rhyolite"
+      ],
+      "provinceContexts": [
+        "cratonic_shield",
+        "orogenic_belt",
+        "volcanic_arc"
+      ],
+      "depositStyles": [
+        "vein",
+        "disseminated"
+      ],
       "gradeBlocks": {
         "poor": "geostrata:poor_gold_ore",
         "medium": "geostrata:medium_gold_ore",
         "rich": "geostrata:rich_gold_ore",
         "massive": "geostrata:massive_gold_ore"
+      }
+    },
+    {
+      "id": "emerald",
+      "providerMod": "minecraft",
+      "outputItem": "minecraft:emerald",
+      "hostLithologies": [
+        "schist",
+        "shale",
+        "marble",
+        "gneiss",
+        "limestone",
+        "slate"
+      ],
+      "provinceContexts": [
+        "orogenic_belt"
+      ],
+      "terrainFilter": {
+        "minimumReliefBlocks": 24,
+        "requirePositiveProminence": true
+      },
+      "depositStyles": [
+        "vein"
+      ],
+      "maximumNaturalGrade": "rich",
+      "gradeBlocks": {
+        "poor": "geostrata:poor_emerald_ore",
+        "medium": "geostrata:medium_emerald_ore",
+        "rich": "geostrata:rich_emerald_ore",
+        "massive": "geostrata:massive_emerald_ore"
       }
     }
   ]

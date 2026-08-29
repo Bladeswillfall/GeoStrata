@@ -42,6 +42,7 @@ public enum OreHost implements StringIdentifiable {
         return switch (material) {
             case "coal", "iron", "copper" -> SHALE;
             case "gold" -> SLATE;
+            case "emerald" -> SCHIST;
             default -> throw new IllegalArgumentException("unknown ore material: " + material);
         };
     }

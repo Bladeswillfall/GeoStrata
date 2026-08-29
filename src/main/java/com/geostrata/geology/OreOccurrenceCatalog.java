@@ -158,10 +158,44 @@ public final class OreOccurrenceCatalog {
         List<String> hosts = stringList(requiredArray(object, "hostLithologies"), id + " hostLithologies");
         requireKnownHosts(id, hosts, knownLithologies);
         List<GeologyProvince> contexts = parseContexts(id, requiredArray(object, "provinceContexts"));
+        TerrainFilter terrainFilter = parseTerrainFilter(id, object);
         List<String> styles = stringList(requiredArray(object, "depositStyles"), id + " depositStyles");
         requireDepositStyles(id, styles);
+        OreGrade maximumNaturalGrade = parseMaximumNaturalGrade(id, object);
         Map<OreGrade, String> gradeBlocks = parseGradeBlocks(id, requiredObject(object, "gradeBlocks"));
-        return new Occurrence(id, providerMod, outputItem, hosts, contexts, styles, gradeBlocks);
+        return new Occurrence(id, providerMod, outputItem, hosts, contexts, styles, terrainFilter, maximumNaturalGrade, gradeBlocks);
+    }
+
+    private static TerrainFilter parseTerrainFilter(String material, JsonObject occurrence) {
+        JsonElement raw = occurrence.get("terrainFilter");
+        if (raw == null) {
+            return TerrainFilter.none();
+        }
+        if (!raw.isJsonObject()) {
+            throw new IllegalArgumentException(material + " terrainFilter must be an object");
+        }
+        JsonObject object = raw.getAsJsonObject();
+        int minimumReliefBlocks = requireInt(object, "minimumReliefBlocks");
+        boolean requirePositiveProminence = requireBoolean(object, "requirePositiveProminence");
+        if (minimumReliefBlocks < 0) {
+            throw new IllegalArgumentException(material + " minimumTerrainReliefBlocks must not be negative");
+        }
+        return new TerrainFilter(minimumReliefBlocks, requirePositiveProminence);
+    }
+
+    private static OreGrade parseMaximumNaturalGrade(String material, JsonObject object) {
+        JsonElement raw = object.get("maximumNaturalGrade");
+        if (raw == null) {
+            return OreGrade.MASSIVE;
+        }
+        if (!raw.isJsonPrimitive() || !raw.getAsJsonPrimitive().isString()) {
+            throw new IllegalArgumentException(material + " maximumNaturalGrade must be a string");
+        }
+        String id = raw.getAsString();
+        return ECONOMIC_GRADES.stream()
+                .filter(grade -> grade.id().equals(id))
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException(material + " uses unknown maximumNaturalGrade " + id));
     }
 
     private static Map<OreGrade, String> parseGradeBlocks(String material, JsonObject object) {
@@ -347,6 +381,19 @@ public final class OreOccurrenceCatalog {
         }
     }
 
+    public record TerrainFilter(int minimumReliefBlocks, boolean requirePositiveProminence) {
+        public static TerrainFilter none() {
+            return new TerrainFilter(0, false);
+        }
+
+        public boolean matches(TerrainMorphologySample sample) {
+            if (sample == null || sample.relief() < minimumReliefBlocks) {
+                return false;
+            }
+            return !requirePositiveProminence || sample.prominence() > 0.0;
+        }
+    }
+
     public record Occurrence(
             String id,
             String providerMod,
@@ -354,15 +401,49 @@ public final class OreOccurrenceCatalog {
             List<String> hostLithologies,
             List<GeologyProvince> provinceContexts,
             List<String> depositStyles,
+            TerrainFilter terrainFilter,
+            OreGrade maximumNaturalGrade,
             Map<OreGrade, String> gradeBlocks
     ) {
         public Occurrence {
             hostLithologies = List.copyOf(hostLithologies);
             provinceContexts = List.copyOf(provinceContexts);
             depositStyles = List.copyOf(depositStyles);
+            if (terrainFilter == null || maximumNaturalGrade == null) {
+                throw new IllegalArgumentException("ore terrain filter and maximum natural grade must not be null");
+            }
             EnumMap<OreGrade, String> copiedBlocks = new EnumMap<>(OreGrade.class);
             copiedBlocks.putAll(gradeBlocks);
             gradeBlocks = Collections.unmodifiableMap(copiedBlocks);
+        }
+
+        public Occurrence(
+                String id,
+                String providerMod,
+                String outputItem,
+                java.util.List<String> hostLithologies,
+                java.util.List<GeologyProvince> provinceContexts,
+                java.util.List<String> depositStyles,
+                java.util.Map<OreGrade, String> gradeBlocks
+        ) {
+            this(
+                    id,
+                    providerMod,
+                    outputItem,
+                    hostLithologies,
+                    provinceContexts,
+                    depositStyles,
+                    TerrainFilter.none(),
+                    OreGrade.MASSIVE,
+                    gradeBlocks
+            );
+        }
+
+        public OreGrade capNaturalGrade(OreGrade grade) {
+            if (grade == null) {
+                throw new IllegalArgumentException("ore grade must not be null");
+            }
+            return grade.ordinal() > maximumNaturalGrade.ordinal() ? maximumNaturalGrade : grade;
         }
     }
 

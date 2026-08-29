@@ -117,7 +117,7 @@ This remains separate from structural bed deformation. Surface sediments describ
 
 ## Ore occurrence
 
-`ore_occurrences.json` defines the phase-one coal, iron, copper and gold geological contracts: material owner/output, valid host lithologies, province contexts and deposit styles.
+`ore_occurrences.json` defines the coal, iron, copper, gold and emerald geological contracts: material owner/output, valid host lithologies, province contexts and deposit styles.
 
 The experimental deposit runtime uses deterministic candidate cells and style-specific bodies. It already searches vertical candidate cells from the active world's `bottomY` to `topY`, and when correlated geology owns a chunk its virtual host resolver reads the same full-dimension stratigraphic field. Vanilla/provider-native ores are still not suppressed while replacement abundance and economy remain experimental.
 

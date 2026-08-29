@@ -881,6 +881,49 @@
         "textureMatrix": "geostrata:materials/ore_texture_matrix",
         "material": "gold"
       }
+    },
+    {
+      "id": "emerald_ore",
+      "primaryBlock": "geostrata:poor_emerald_ore",
+      "derivedBlocks": [
+        "geostrata:medium_emerald_ore",
+        "geostrata:rich_emerald_ore",
+        "geostrata:massive_emerald_ore"
+      ],
+      "family": "ore",
+      "compatibilityRole": "geostrata:ore/emerald",
+      "semanticTags": [
+        "geostrata:ores"
+      ],
+      "gameplay": {
+        "breaking": {
+          "copyFrom": "minecraft:emerald_ore",
+          "hardness": 3.0,
+          "blastResistance": 3.0,
+          "requiresTool": true,
+          "mineableWith": "pickaxe",
+          "minimumToolTier": "iron",
+          "soundGroup": "stone"
+        },
+        "cultivation": {
+          "status": "not_applicable"
+        },
+        "oreEconomy": {
+          "material": "emerald",
+          "outputItem": "minecraft:emerald",
+          "gradeOrder": [
+            "poor",
+            "medium",
+            "rich",
+            "massive"
+          ],
+          "source": "geostrata:geology/ore_occurrences"
+        }
+      },
+      "assets": {
+        "textureMatrix": "geostrata:materials/ore_texture_matrix",
+        "material": "emerald"
+      }
     }
   ]
 }

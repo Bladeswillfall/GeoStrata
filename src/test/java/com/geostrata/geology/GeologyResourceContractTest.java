@@ -40,15 +40,16 @@ final class GeologyResourceContractTest {
         assertEquals("chunk_local_valid_host_clipping", core.oreExperiment().placementMode());
         assertEquals("not_implemented", core.oreExperiment().nativeGenerationSuppression());
         assertEquals(
-                Set.of("coal", "iron", "copper", "gold"),
+                Set.of("coal", "iron", "copper", "gold", "emerald"),
                 core.oreExperiment().activationChancePerCandidate().keySet()
         );
         assertEquals(0.04, core.oreExperiment().activationChance("coal"), 1.0e-12);
         assertEquals(0.025, core.oreExperiment().activationChance("iron"), 1.0e-12);
         assertEquals(0.018, core.oreExperiment().activationChance("copper"), 1.0e-12);
         assertEquals(0.008, core.oreExperiment().activationChance("gold"), 1.0e-12);
+        assertEquals(0.004, core.oreExperiment().activationChance("emerald"), 1.0e-12);
         assertEquals(
-                Set.of("coal", "iron", "copper", "gold"),
+                Set.of("coal", "iron", "copper", "gold", "emerald"),
                 core.oreOccurrences().byId().keySet()
         );
         assertEquals("grade_economy_active", core.oreOccurrences().runtimeStatus());

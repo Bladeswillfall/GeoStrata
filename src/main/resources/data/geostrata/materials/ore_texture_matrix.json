@@ -5,10 +5,18 @@
   "overlayTextureRoot": "geostrata:block/ore_source",
   "compositeTextureRoot": "geostrata:block/ore",
   "grades": {
-    "poor": {"targetPixels": 18},
-    "medium": {"targetPixels": 38},
-    "rich": {"targetPixels": 68},
-    "massive": {"targetPixels": 118}
+    "poor": {
+      "targetPixels": 18
+    },
+    "medium": {
+      "targetPixels": 38
+    },
+    "rich": {
+      "targetPixels": 68
+    },
+    "massive": {
+      "targetPixels": 118
+    }
   },
   "hosts": [
     "limestone",
@@ -29,19 +37,53 @@
   "ores": {
     "coal": {
       "defaultHost": "shale",
-      "validHosts": ["shale", "mudstone", "siltstone"]
+      "validHosts": [
+        "shale",
+        "mudstone",
+        "siltstone"
+      ]
     },
     "iron": {
       "defaultHost": "shale",
-      "validHosts": ["shale", "limestone", "quartzite", "basalt", "rhyolite"]
+      "validHosts": [
+        "shale",
+        "limestone",
+        "quartzite",
+        "basalt",
+        "rhyolite"
+      ]
     },
     "copper": {
       "defaultHost": "shale",
-      "validHosts": ["shale", "limestone", "basalt", "rhyolite"]
+      "validHosts": [
+        "shale",
+        "limestone",
+        "basalt",
+        "rhyolite"
+      ]
     },
     "gold": {
       "defaultHost": "slate",
-      "validHosts": ["slate", "marble", "quartzite", "schist", "gneiss", "basalt", "rhyolite"]
+      "validHosts": [
+        "slate",
+        "marble",
+        "quartzite",
+        "schist",
+        "gneiss",
+        "basalt",
+        "rhyolite"
+      ]
+    },
+    "emerald": {
+      "defaultHost": "schist",
+      "validHosts": [
+        "schist",
+        "shale",
+        "marble",
+        "gneiss",
+        "limestone",
+        "slate"
+      ]
     }
   }
 }

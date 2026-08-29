@@ -1,0 +1,46 @@
+{
+  "variants": {
+    "host=limestone": {
+      "model": "geostrata:block/ore/emerald/limestone/massive"
+    },
+    "host=chalk": {
+      "model": "geostrata:block/ore/emerald/chalk/massive"
+    },
+    "host=shale": {
+      "model": "geostrata:block/ore/emerald/shale/massive"
+    },
+    "host=slate": {
+      "model": "geostrata:block/ore/emerald/slate/massive"
+    },
+    "host=mudstone": {
+      "model": "geostrata:block/ore/emerald/mudstone/massive"
+    },
+    "host=siltstone": {
+      "model": "geostrata:block/ore/emerald/siltstone/massive"
+    },
+    "host=marble": {
+      "model": "geostrata:block/ore/emerald/marble/massive"
+    },
+    "host=quartzite": {
+      "model": "geostrata:block/ore/emerald/quartzite/massive"
+    },
+    "host=schist": {
+      "model": "geostrata:block/ore/emerald/schist/massive"
+    },
+    "host=gneiss": {
+      "model": "geostrata:block/ore/emerald/gneiss/massive"
+    },
+    "host=basalt": {
+      "model": "geostrata:block/ore/emerald/basalt/massive"
+    },
+    "host=rhyolite": {
+      "model": "geostrata:block/ore/emerald/rhyolite/massive"
+    },
+    "host=conglomerate": {
+      "model": "geostrata:block/ore/emerald/conglomerate/massive"
+    },
+    "host=breccia": {
+      "model": "geostrata:block/ore/emerald/breccia/massive"
+    }
+  }
+}
