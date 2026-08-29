@@ -34,6 +34,7 @@ final class GeologyResourceContractTest {
         assertTrue(core.fieldProfiles().loaded());
         assertFalse(core.experiment().enabled());
         assertEquals("metadata_only", core.experiment().runtimeStatus());
+        assertTrue(core.experiment().verticalWindow().isFullDimension());
         assertFalse(core.oreExperiment().enabled());
         assertEquals("experimental_opt_in", core.oreExperiment().runtimeStatus());
         assertEquals("chunk_local_valid_host_clipping", core.oreExperiment().placementMode());
@@ -68,6 +69,7 @@ final class GeologyResourceContractTest {
         GeologyDataReload.State activated = parseGeology(true);
         assertTrue(activated.experiment().enabled());
         assertEquals("experimental_runtime", activated.experiment().runtimeStatus());
+        assertTrue(activated.experiment().verticalWindow().isFullDimension());
         assertFalse(activated.oreExperiment().enabled());
 
         assertCharacteristicProvincePalettes(core);
@@ -180,7 +182,13 @@ final class GeologyResourceContractTest {
         assertTrue(count.get("count").getAsInt() >= 1 && count.get("count").getAsInt() <= 8);
         JsonObject height = modifiers.get(types.indexOf("minecraft:height_range"))
                 .getAsJsonObject().getAsJsonObject("height");
-        assertTrue(height != null && height.has("type"));
+        assertEquals("minecraft:trapezoid", string(height, "type"), path.toString());
+        JsonObject minimum = height.getAsJsonObject("min_inclusive");
+        JsonObject maximum = height.getAsJsonObject("max_inclusive");
+        assertTrue(minimum.has("above_bottom"), path + " must anchor from the dimension bottom");
+        assertTrue(maximum.has("below_top"), path + " must anchor from the dimension top");
+        assertFalse(minimum.has("absolute"), path + " must not hard-code vanilla minimum Y");
+        assertFalse(maximum.has("absolute"), path + " must not hard-code vanilla maximum Y");
     }
 
     private static void assertCorrelatedWorldgenStaging() throws IOException {
