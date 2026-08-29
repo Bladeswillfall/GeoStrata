@@ -43,7 +43,7 @@ public final class GeologyDataReload {
             );
             DiamondGeologyExperiment.Snapshot diamondExperiment = DiamondGeologyExperiment.parse(
                     readObject(manager, DIAMOND_GEOLOGY_EXPERIMENT)
-            );
+            ).activated(companionLoaded);
             validateOreRegistries(loaded.oreOccurrences());
             loaded.publish();
             DiamondGeologyExperiment.install(diamondExperiment);
@@ -94,7 +94,7 @@ public final class GeologyDataReload {
         OreDepositExperiment.Snapshot oreExperiment = OreDepositExperiment.parse(
                 oreDepositExperimentRoot,
                 oreOccurrences
-        );
+        ).activated(companionLoaded);
         GeologyProvinceProfiles.Snapshot provinces = GeologyProvinceProfiles.parse(lithologies, provincesRoot);
         SedimentarySuccessions.Snapshot successions = SedimentarySuccessions.parse(lithologies, successionsRoot);
         SedimentaryFieldProfiles.Snapshot fieldProfiles = SedimentaryFieldProfiles.parse(
