@@ -35,6 +35,11 @@ public final class FabricContentRegistration {
                 GeoStrata.id("sediment_suitability"),
                 GeoStrataPlacementModifiers.SEDIMENT_SUITABILITY
         );
+        Registry.register(
+                Registries.PLACEMENT_MODIFIER_TYPE,
+                GeoStrata.id("subsurface_anchor"),
+                GeoStrataPlacementModifiers.SUBSURFACE_ANCHOR
+        );
 
         Registry.register(
                 Registries.ITEM_GROUP,
