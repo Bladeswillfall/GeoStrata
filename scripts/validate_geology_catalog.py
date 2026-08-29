@@ -583,14 +583,28 @@ def validate_material_catalog() -> int:
             f"extra={sorted(catalog_blocks - set(source_profiles))}"
         )
     rock_materials = {entry["id"] for entry in materials if entry["family"] == "rock"}
-    if set(matrix_hosts) != rock_materials:
-        fail("ore texture matrix hosts must exactly cover registered rock materials")
+    matrix_host_set = set(matrix_hosts)
+    required_ore_hosts = {
+        host
+        for occurrence in occurrences.values()
+        for host in occurrence.get("hostLithologies", [])
+    }
+    if not required_ore_hosts.issubset(matrix_host_set):
+        fail(
+            "ore texture matrix must cover every lithology used by an ore occurrence; "
+            f"missing={sorted(required_ore_hosts - matrix_host_set)}"
+        )
+    if not matrix_host_set.issubset(rock_materials):
+        fail(
+            "ore texture matrix may only contain registered rock materials; "
+            f"unknown={sorted(matrix_host_set - rock_materials)}"
+        )
     try:
         host_source = ORE_HOST_SOURCE.read_text(encoding="utf-8")
     except OSError as exc:
         fail(f"cannot read {ORE_HOST_SOURCE.relative_to(ROOT)}: {exc}")
     source_hosts = set(re.findall(r'\b[A-Z_]+\("([a-z_]+)"\)', host_source))
-    if source_hosts != set(matrix_hosts):
+    if source_hosts != matrix_host_set:
         fail("OreHost.java must exactly match the artist texture-matrix hosts")
     validate_continuity_hosts(matrix_hosts)
     return len(materials)
