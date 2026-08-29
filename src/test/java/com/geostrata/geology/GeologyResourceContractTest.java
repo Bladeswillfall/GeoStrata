@@ -173,22 +173,14 @@ final class GeologyResourceContractTest {
                 .map(modifier -> string(modifier, "type"))
                 .toList();
         for (String required : List.of(
-                "minecraft:count", "minecraft:in_square", "minecraft:height_range", "minecraft:biome"
+                "minecraft:count", "minecraft:in_square", "geostrata:subsurface_anchor", "minecraft:biome"
         )) {
             assertEquals(1, types.stream().filter(required::equals).count(), path.toString());
         }
+        assertFalse(types.contains("minecraft:height_range"), path + " must use generated terrain height, not a fixed Y range");
 
         JsonObject count = modifiers.get(types.indexOf("minecraft:count")).getAsJsonObject();
         assertTrue(count.get("count").getAsInt() >= 1 && count.get("count").getAsInt() <= 8);
-        JsonObject height = modifiers.get(types.indexOf("minecraft:height_range"))
-                .getAsJsonObject().getAsJsonObject("height");
-        assertEquals("minecraft:trapezoid", string(height, "type"), path.toString());
-        JsonObject minimum = height.getAsJsonObject("min_inclusive");
-        JsonObject maximum = height.getAsJsonObject("max_inclusive");
-        assertTrue(minimum.has("above_bottom"), path + " must anchor from the dimension bottom");
-        assertTrue(maximum.has("below_top"), path + " must anchor from the dimension top");
-        assertFalse(minimum.has("absolute"), path + " must not hard-code vanilla minimum Y");
-        assertFalse(maximum.has("absolute"), path + " must not hard-code vanilla maximum Y");
     }
 
     private static void assertCorrelatedWorldgenStaging() throws IOException {
