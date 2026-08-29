@@ -86,7 +86,25 @@ public final class CorrelatedSedimentaryExperiment {
         return new Ownership(true, "owned", sample.province(), boundaryDistance, successionId);
     }
 
+    /**
+     * Vertical mutation envelope used by existing clamped runtime call sites.
+     *
+     * <p>The full-dimension sentinel is deliberately far outside Minecraft's
+     * legal dimension-height range. Existing callers clamp these values against
+     * the active world's bottom/top, so the resulting mutation domain is exactly
+     * the dimension's real vertical domain without adding a second height model.</p>
+     */
     public record VerticalWindow(int minOffsetBlocks, int maxOffsetBlocks) {
+        private static final int DIMENSION_BOUND_SENTINEL = Integer.MAX_VALUE / 4;
+
+        public static VerticalWindow fullDimension() {
+            return new VerticalWindow(-DIMENSION_BOUND_SENTINEL, DIMENSION_BOUND_SENTINEL);
+        }
+
+        public boolean isFullDimension() {
+            return minOffsetBlocks == -DIMENSION_BOUND_SENTINEL
+                    && maxOffsetBlocks == DIMENSION_BOUND_SENTINEL;
+        }
     }
 
     public record Snapshot(
