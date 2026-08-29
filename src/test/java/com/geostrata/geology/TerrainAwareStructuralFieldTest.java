@@ -82,11 +82,31 @@ final class TerrainAwareStructuralFieldTest {
                 80.0
         );
 
+        assertEquals(1.0, orogenic.terrainResponseFactor(32, 64), EPSILON);
         assertEquals(5.0, orogenic.foldAmplitude(32, 64), EPSILON);
         assertEquals(5.0, orogenic.foldOffset(32, 64), EPSILON);
         assertEquals(0.4, cratonic.foldAmplitude(32, 64), EPSILON);
         assertEquals(0.4, cratonic.foldOffset(32, 64), EPSILON);
         assertEquals(0.0, orogenic.sample(32, 5.0, 64, twoBedPlan()).fraction(), EPSILON);
+    }
+
+    @Test
+    void deepNegativeProminenceBehavesMostlyAsErosionalExposure() {
+        SedimentaryStratigraphicField.Field base = new SedimentaryStratigraphicField.Field(
+                0, 0, 100.0, 0.0, 0.0, 0.0, 128.0, 0.0
+        );
+        TerrainAwareStructuralField.TerrainPatch ravine = flatPatch(16.0, -128.0);
+        TerrainAwareStructuralField.Field field = TerrainAwareStructuralField.apply(
+                base,
+                GeologyProvince.OROGENIC_BELT,
+                ravine,
+                80.0
+        );
+
+        assertEquals(TerrainAwareStructuralField.MIN_EROSIONAL_RESPONSE_FACTOR,
+                field.terrainResponseFactor(64, 64), EPSILON);
+        assertEquals(-7.04, field.drapeOffset(64, 64), EPSILON);
+        assertEquals(19.2, field.foldAmplitude(64, 64), EPSILON);
     }
 
     @Test
