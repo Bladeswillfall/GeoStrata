@@ -6,11 +6,15 @@ package com.geostrata.geology;
  * <p>Terrain is sampled on a fixed world grid and bilinearly interpolated, so
  * neighboring chunks share the same boundary heights. The province site remains
  * the structural anchor and province archetypes control broad drape plus
- * prominence-amplified open folding without following every surface block.</p>
+ * prominence-amplified open folding without following every surface block.
+ * Positive prominence is treated as stronger uplift/ridge evidence; increasingly
+ * negative prominence attenuates both responses so deep valleys and ravines tend
+ * to expose existing geology instead of dragging the geological field downward.</p>
  */
 public final class TerrainAwareStructuralField {
     public static final int DEFAULT_GRID_SPACING_BLOCKS = 128;
     public static final double MAX_FOLD_AMPLITUDE_CYCLE_FRACTION = 0.25;
+    public static final double MIN_EROSIONAL_RESPONSE_FACTOR = 0.20;
 
     private TerrainAwareStructuralField() {
     }
@@ -189,12 +193,27 @@ public final class TerrainAwareStructuralField {
             }
         }
 
+        public double terrainResponseFactor(int x, int z) {
+            double prominence = localPatch.prominenceAt(x, z);
+            if (prominence >= 0.0) {
+                return 1.0;
+            }
+            return Math.max(
+                    MIN_EROSIONAL_RESPONSE_FACTOR,
+                    1.0 + prominence / localPatch.spacingBlocks()
+            );
+        }
+
         public double drapeOffset(int x, int z) {
-            return response.drapeCoupling() * (localPatch.heightAt(x, z) - anchorHeight);
+            return response.drapeCoupling()
+                    * (localPatch.heightAt(x, z) - anchorHeight)
+                    * terrainResponseFactor(x, z);
         }
 
         public double foldAmplitude(int x, int z) {
-            double reliefAmplitude = Math.abs(localPatch.prominenceAt(x, z)) * response.foldCoupling();
+            double reliefAmplitude = Math.abs(localPatch.prominenceAt(x, z))
+                    * response.foldCoupling()
+                    * terrainResponseFactor(x, z);
             double maximumAmplitude = baseField.cycleThicknessBlocks() * MAX_FOLD_AMPLITUDE_CYCLE_FRACTION;
             return Math.min(reliefAmplitude, maximumAmplitude);
         }
