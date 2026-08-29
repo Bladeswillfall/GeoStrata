@@ -8,8 +8,8 @@ the pre-deposit baseline unless a datapack explicitly opts in.
 
 ## Current implemented boundary
 
-The catalog currently defines the phase-one materials coal, iron, copper and
-gold. Each occurrence declares:
+The catalog currently defines coal, iron, copper, gold and emerald. Emerald is the first
+occurrence to add an explicit terrain filter and natural-grade ceiling. Each occurrence declares:
 
 - the mod that owns the material economy;
 - the canonical output item;
@@ -62,6 +62,7 @@ host clipping:
 | Iron | 2.5% |
 | Copper | 1.8% |
 | Gold | 0.8% |
+| Emerald | 0.4% |
 
 These are experiment values, not a promised economy. The bodies are much larger
 than vanilla single-feature ore blobs, so high candidate frequency would swamp
@@ -86,6 +87,30 @@ Trace remains evidence-only and does not place a block. Vanilla/provider-native
 ore generation is still **not suppressed**. This experiment exists to measure
 body abundance, readability, performance and economic coverage before GeoStrata
 is allowed to become the exclusive generation owner.
+
+### Emerald occurrence
+
+Emerald remains tied to mountain/orogenic gameplay without a bespoke emerald prospecting
+subsystem. Its occurrence is restricted to `orogenic_belt`, requires at least 24 blocks of
+coarse 128-block-scale terrain relief with positive prominence, and uses the shared `vein`
+body. This means terrain tells the player which mountain belts are worth exploring while the
+local host rock clips the vein naturally.
+
+Valid hosts are, in preferred geological order, schist, shale, marble, gneiss, limestone and
+slate. The list deliberately excludes quartzite, igneous rocks and coarse clastics rather than
+turning rare edge cases into extra gameplay rules. Existing parent-aware metamorphism already
+lets shale/carbonate systems continue into slate/schist/gneiss and marble in orogenic chunks.
+
+The shared grade contract still registers Poor/Medium/Rich/Massive blocks for consistent loot,
+Silk Touch and assets, but emerald declares `maximumNaturalGrade=rich`. Massive emerald is thus
+asset/economy compatible but is not placed by ordinary generation. If a future shared fault or
+structural-intersection field justifies exceptional massive pockets, that can lift the cap in a
+generic structural rule rather than an emerald-only special case.
+
+The current `vein` geometry represents fracture-controlled mineralization, but it is not yet
+bound to a first-class shared fault/shear field because GeoStrata does not currently expose one.
+That binding should be added when faults become a shared geological primitive; emerald should
+not invent a parallel fault simulator just for itself.
 
 ## Grade contract
 

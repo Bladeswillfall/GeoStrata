@@ -3,6 +3,7 @@ package com.geostrata.worldgen.feature;
 import com.geostrata.block.GeoStrataBlocks;
 import com.geostrata.geology.CorrelatedSedimentaryExperiment;
 import com.geostrata.geology.CorrelatedSedimentaryRuntime;
+import com.geostrata.geology.ChunkGeneratorTerrainMorphologySampler;
 import com.geostrata.geology.GeologyProvince;
 import com.geostrata.geology.GeologyProvinceSampler;
 import com.geostrata.geology.LithologyCatalog;
@@ -114,12 +115,7 @@ public final class OreDepositFeature extends Feature<DefaultFeatureConfig> {
                     if (!OreDepositExperiment.active(worldSeed, proposal)) {
                         continue;
                     }
-                    GeologyProvince province = GeologyProvinceSampler.sample(
-                            worldSeed,
-                            proposal.anchorX(),
-                            proposal.anchorZ()
-                    ).province();
-                    if (!occurrence.provinceContexts().contains(province)) {
+                    if (!qualifiesLocation(world, worldSeed, occurrence, proposal)) {
                         continue;
                     }
 
@@ -143,6 +139,25 @@ public final class OreDepositFeature extends Feature<DefaultFeatureConfig> {
             }
         }
         return placed;
+    }
+
+    private static boolean qualifiesLocation(
+            StructureWorldAccess world,
+            long worldSeed,
+            OreOccurrenceCatalog.Occurrence occurrence,
+            OreDepositCandidatePlanner.Proposal proposal
+    ) {
+        GeologyProvince province = GeologyProvinceSampler.sample(
+                worldSeed,
+                proposal.anchorX(),
+                proposal.anchorZ()
+        ).province();
+        return occurrence.provinceContexts().contains(province)
+                && occurrence.terrainFilter().matches(ChunkGeneratorTerrainMorphologySampler.sample(
+                        world.toServerWorld(),
+                        proposal.anchorX(),
+                        proposal.anchorZ()
+                ));
     }
 
     private static OreDepositCandidatePlanner.Proposal proposalForCell(
@@ -209,7 +224,7 @@ public final class OreDepositFeature extends Feature<DefaultFeatureConfig> {
                     }
                     world.setBlockState(
                             mutable,
-                            GeoStrataBlocks.oreState(occurrence.id(), sample.grade(), host),
+                            GeoStrataBlocks.oreState(occurrence.id(), occurrence.capNaturalGrade(sample.grade()), host),
                             Block.NOTIFY_LISTENERS
                     );
                     placed++;

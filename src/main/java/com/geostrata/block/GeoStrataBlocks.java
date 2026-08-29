@@ -72,6 +72,10 @@ public final class GeoStrataBlocks {
     public static final Block MEDIUM_GOLD_ORE = registerOre("medium_gold_ore", "gold", OreGrade.MEDIUM, Blocks.GOLD_ORE, 3.0F, BlockSoundGroup.STONE);
     public static final Block RICH_GOLD_ORE = registerOre("rich_gold_ore", "gold", OreGrade.RICH, Blocks.GOLD_ORE, 3.0F, BlockSoundGroup.STONE);
     public static final Block MASSIVE_GOLD_ORE = registerOre("massive_gold_ore", "gold", OreGrade.MASSIVE, Blocks.GOLD_ORE, 3.0F, BlockSoundGroup.STONE);
+    public static final Block POOR_EMERALD_ORE = registerOre("poor_emerald_ore", "emerald", OreGrade.POOR, Blocks.EMERALD_ORE, 3.0F, BlockSoundGroup.STONE);
+    public static final Block MEDIUM_EMERALD_ORE = registerOre("medium_emerald_ore", "emerald", OreGrade.MEDIUM, Blocks.EMERALD_ORE, 3.0F, BlockSoundGroup.STONE);
+    public static final Block RICH_EMERALD_ORE = registerOre("rich_emerald_ore", "emerald", OreGrade.RICH, Blocks.EMERALD_ORE, 3.0F, BlockSoundGroup.STONE);
+    public static final Block MASSIVE_EMERALD_ORE = registerOre("massive_emerald_ore", "emerald", OreGrade.MASSIVE, Blocks.EMERALD_ORE, 3.0F, BlockSoundGroup.STONE);
 
     private GeoStrataBlocks() {
     }
