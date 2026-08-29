@@ -3,7 +3,7 @@
   "model": "geostrata:province_profiles",
   "runtimeStatus": "runtime_bias",
   "blendWidthBlocks": 192,
-  "description": "Relative lithology suitability by broad geological province. Positive low weights mean uncommon rather than impossible. Strata-lens features now use the effective blended suitability as a deterministic placement acceptance probability.",
+  "description": "Relative lithology suitability by broad geological province. Positive low weights mean uncommon rather than impossible. Diamond intrusive abundance is separately gated by its disabled experiment and deterministic event chances.",
   "profiles": [
     {
       "province": "sedimentary_basin",
@@ -21,7 +21,9 @@
         "schist": 0.08,
         "gneiss": 0.05,
         "basalt": 0.2,
-        "rhyolite": 0.05
+        "rhyolite": 0.05,
+        "kimberlite": 0.01,
+        "lamproite": 0.01
       }
     },
     {
@@ -40,7 +42,9 @@
         "schist": 0.8,
         "gneiss": 1.0,
         "basalt": 0.25,
-        "rhyolite": 0.08
+        "rhyolite": 0.08,
+        "kimberlite": 0.65,
+        "lamproite": 0.65
       }
     },
     {
@@ -59,7 +63,9 @@
         "schist": 1.0,
         "gneiss": 0.85,
         "basalt": 0.3,
-        "rhyolite": 0.3
+        "rhyolite": 0.3,
+        "kimberlite": 0.02,
+        "lamproite": 0.02
       }
     },
     {
@@ -78,7 +84,9 @@
         "schist": 0.35,
         "gneiss": 0.4,
         "basalt": 1.0,
-        "rhyolite": 0.85
+        "rhyolite": 0.85,
+        "kimberlite": 0.01,
+        "lamproite": 0.03
       }
     },
     {
@@ -97,7 +105,9 @@
         "schist": 0.2,
         "gneiss": 0.22,
         "basalt": 1.0,
-        "rhyolite": 0.3
+        "rhyolite": 0.3,
+        "kimberlite": 0.01,
+        "lamproite": 0.02
       }
     }
   ]

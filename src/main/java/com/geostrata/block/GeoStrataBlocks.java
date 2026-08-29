@@ -38,6 +38,8 @@ public final class GeoStrataBlocks {
     public static final Block GNEISS = registerRock("gneiss", rock(Blocks.GRANITE, 1.9F, BlockSoundGroup.STONE));
     public static final Block BASALT = registerRock("basalt", rock(Blocks.BASALT, 2.0F, BlockSoundGroup.BASALT));
     public static final Block RHYOLITE = registerRock("rhyolite", rock(Blocks.GRANITE, 1.7F, BlockSoundGroup.STONE));
+    public static final Block KIMBERLITE = registerRock("kimberlite", rock(Blocks.TUFF, 2.4F, BlockSoundGroup.TUFF));
+    public static final Block LAMPROITE = registerRock("lamproite", rock(Blocks.BASALT, 2.2F, BlockSoundGroup.BASALT));
     public static final Block CONGLOMERATE = registerRock("conglomerate", rock(Blocks.COBBLESTONE, 1.6F, BlockSoundGroup.STONE));
     public static final Block BRECCIA = registerRock("breccia", rock(Blocks.COBBLESTONE, 1.7F, BlockSoundGroup.STONE));
 

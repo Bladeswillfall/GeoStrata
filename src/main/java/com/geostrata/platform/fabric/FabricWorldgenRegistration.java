@@ -19,6 +19,7 @@ public final class FabricWorldgenRegistration {
     private static final TagKey<Biome> HAS_SURFACE_SEDIMENTS = biomeTag("has_surface_sediments");
     private static final TagKey<Biome> HAS_BADLANDS_SOILS = biomeTag("has_badlands_soils");
     private static final TagKey<Biome> HAS_EXPERIMENTAL_ORE_DEPOSITS = biomeTag("has_experimental_ore_deposits");
+    private static final TagKey<Biome> HAS_EXPERIMENTAL_DIAMOND_GEOLOGY = biomeTag("has_experimental_diamond_geology");
 
     private FabricWorldgenRegistration() {
     }
@@ -57,6 +58,21 @@ public final class FabricWorldgenRegistration {
         addToTag(
                 "ore_deposit_experiment",
                 HAS_EXPERIMENTAL_ORE_DEPOSITS,
+                GenerationStep.Feature.UNDERGROUND_DECORATION
+        );
+        addToTag(
+                "kimberlite_pipe",
+                HAS_EXPERIMENTAL_DIAMOND_GEOLOGY,
+                GenerationStep.Feature.UNDERGROUND_DECORATION
+        );
+        addToTag(
+                "lamproite_pipe",
+                HAS_EXPERIMENTAL_DIAMOND_GEOLOGY,
+                GenerationStep.Feature.UNDERGROUND_DECORATION
+        );
+        addToTag(
+                "diamond_structural_experiment",
+                HAS_EXPERIMENTAL_DIAMOND_GEOLOGY,
                 GenerationStep.Feature.UNDERGROUND_DECORATION
         );
     }
