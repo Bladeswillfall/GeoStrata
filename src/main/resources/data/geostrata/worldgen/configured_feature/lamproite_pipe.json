@@ -1,0 +1,10 @@
+{
+  "type": "geostrata:diamond_pipe",
+  "config": {
+    "targets": [{
+      "target": {"predicate_type": "minecraft:tag_match", "tag": "geostrata:worldgen/diamond_pipe_replaceables"},
+      "state": {"Name": "geostrata:lamproite"}
+    }],
+    "pipe_kind": "lamproite"
+  }
+}
