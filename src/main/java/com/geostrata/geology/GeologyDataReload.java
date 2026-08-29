@@ -20,6 +20,7 @@ public final class GeologyDataReload {
     private static final Identifier LITHOLOGIES = GeoStrata.id("geology/lithologies.json");
     private static final Identifier ORE_OCCURRENCES = GeoStrata.id("geology/ore_occurrences.json");
     private static final Identifier ORE_DEPOSIT_EXPERIMENT = GeoStrata.id("geology/ore_deposit_experiment.json");
+    private static final Identifier DIAMOND_GEOLOGY_EXPERIMENT = GeoStrata.id("geology/diamond_geology_experiment.json");
     private static final Identifier PROVINCES = GeoStrata.id("geology/province_profiles.json");
     private static final Identifier SUCCESSIONS = GeoStrata.id("geology/sedimentary_successions.json");
     private static final Identifier FIELD_PROFILES = GeoStrata.id("geology/sedimentary_field_profiles.json");
@@ -40,13 +41,18 @@ public final class GeologyDataReload {
                     readObject(manager, EXPERIMENT),
                     companionLoaded
             );
+            DiamondGeologyExperiment.Snapshot diamondExperiment = DiamondGeologyExperiment.parse(
+                    readObject(manager, DIAMOND_GEOLOGY_EXPERIMENT)
+            );
             validateOreRegistries(loaded.oreOccurrences());
             loaded.publish();
+            DiamondGeologyExperiment.install(diamondExperiment);
             GeoStrata.LOGGER.info(
-                    "Loaded GeoStrata geology data: {} lithologies, {} ore occurrences, ore placement experiment enabled={}, {} successions, correlated experiment enabled={}",
+                    "Loaded GeoStrata geology data: {} lithologies, {} ore occurrences, ore placement experiment enabled={}, diamond geology experiment enabled={}, {} successions, correlated experiment enabled={}",
                     loaded.lithologies().entries().size(),
                     loaded.oreOccurrences().occurrences().size(),
                     loaded.oreExperiment().enabled(),
+                    diamondExperiment.enabled(),
                     loaded.successions().successions().size(),
                     loaded.experiment().enabled()
             );
