@@ -149,8 +149,8 @@ public final class ProvinceBackgroundFeature extends Feature<DefaultFeatureConfi
                     world.getSeaLevel()
             );
             resolver = (x, z, structuralColumn) -> {
-                OrogenicBeltModel.Column column = orogenicBelt.column(x, z, structuralColumn.verticalOffset(0.0));
-                return y -> column.sample(y).lithology();
+                OrogenicBeltModel.Column column = orogenicBelt.column(x, z, 0.0);
+                return y -> column.sample(y, structuralColumn.verticalOffset(y)).lithology();
             };
         } else {
             SedimentarySuccessions.Succession sequence = SedimentarySuccessionSelector.selectForSite(

@@ -99,19 +99,19 @@ public final class OrogenicBeltModel {
             double across = -dx * strikeSin + dz * strikeCos;
             double warp = BELT_WARP_AMPLITUDE
                     * (Math.sin(TWO_PI * along / BELT_WARP_WAVELENGTH + warpPhase) - Math.sin(warpPhase));
-            MarbleLens marble = marbleLens(x, z, structuralOffset);
+            MarbleLens marble = marbleLens(x, z);
             return new Column(
                     across + warp,
                     dip,
                     structuralOffset,
                     marble.horizontalRadius,
-                    marble.centerY,
+                    marble.baseCenterY,
                     marble.radiusY,
                     marble.active
             );
         }
 
-        private MarbleLens marbleLens(int x, int z, double structuralOffset) {
+        private MarbleLens marbleLens(int x, int z) {
             int cellX = Math.floorDiv(x, MARBLE_CELL_SIZE);
             int cellZ = Math.floorDiv(z, MARBLE_CELL_SIZE);
             if (roll(worldSeed, cellX, cellZ, MARBLE_ACTIVE_SALT) >= MARBLE_ACTIVATION_CHANCE) {
@@ -124,9 +124,8 @@ public final class OrogenicBeltModel {
                     + MARBLE_CELL_SPAN * roll(worldSeed, cellX, cellZ, MARBLE_X_SALT);
             double centerZ = originZ + MARBLE_CELL_MARGIN
                     + MARBLE_CELL_SPAN * roll(worldSeed, cellX, cellZ, MARBLE_Z_SALT);
-            double centerY = seaLevel - 38.0
-                    + 92.0 * roll(worldSeed, cellX, cellZ, MARBLE_Y_SALT)
-                    + structuralOffset * 0.45;
+            double baseCenterY = seaLevel - 38.0
+                    + 92.0 * roll(worldSeed, cellX, cellZ, MARBLE_Y_SALT);
             double radiusAlong = 36.0 + 20.0 * roll(worldSeed, cellX, cellZ, MARBLE_ALONG_SALT);
             double radiusAcross = 16.0 + 10.0 * roll(worldSeed, cellX, cellZ, MARBLE_ACROSS_SALT);
             double radiusY = 12.0 + 12.0 * roll(worldSeed, cellX, cellZ, MARBLE_VERTICAL_SALT);
@@ -136,7 +135,7 @@ public final class OrogenicBeltModel {
             double bodyAlong = bodyDx * strikeCos + bodyDz * strikeSin;
             double bodyAcross = -bodyDx * strikeSin + bodyDz * strikeCos;
             double horizontalRadius = square(bodyAlong / radiusAlong) + square(bodyAcross / radiusAcross);
-            return new MarbleLens(true, horizontalRadius, centerY, radiusY);
+            return new MarbleLens(true, horizontalRadius, baseCenterY, radiusY);
         }
     }
 
@@ -145,19 +144,25 @@ public final class OrogenicBeltModel {
             double dip,
             double structuralOffset,
             double marbleHorizontalRadius,
-            double marbleCenterY,
+            double marbleBaseCenterY,
             double marbleRadiusY,
             boolean marbleActive
     ) {
         public Sample sample(double y) {
+            return sample(y, structuralOffset);
+        }
+
+        /** Samples the same X/Z architecture with a Y-specific shared structural offset. */
+        public Sample sample(double y, double dynamicStructuralOffset) {
             if (marbleActive) {
+                double marbleCenterY = marbleBaseCenterY + dynamicStructuralOffset * 0.45;
                 double vertical = (y - marbleCenterY) / marbleRadiusY;
                 if (marbleHorizontalRadius + vertical * vertical <= 1.0) {
                     return new Sample("marble", "marble_lens");
                 }
             }
 
-            double fabric = beltCoordinate + (y - structuralOffset) * dip;
+            double fabric = beltCoordinate + (y - dynamicStructuralOffset) * dip;
             double distance = Math.abs(fabric);
             if (Math.abs(distance - QUARTZITE_RIBBON_OFFSET) <= QUARTZITE_RIBBON_HALF_WIDTH) {
                 return new Sample("quartzite", "quartzite_ribbon");
@@ -175,7 +180,7 @@ public final class OrogenicBeltModel {
     public record Sample(String lithology, String bodyStyle) {
     }
 
-    private record MarbleLens(boolean active, double horizontalRadius, double centerY, double radiusY) {
+    private record MarbleLens(boolean active, double horizontalRadius, double baseCenterY, double radiusY) {
         private static final MarbleLens INACTIVE = new MarbleLens(false, Double.POSITIVE_INFINITY, 0.0, 1.0);
     }
 

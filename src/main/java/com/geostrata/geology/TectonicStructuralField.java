@@ -5,9 +5,9 @@ package com.geostrata.geology;
  * stratigraphic field. Folds are smooth and long-wavelength; faults are discrete
  * block offsets across a seed-derived regional fault family.
  *
- * <p>The model is intentionally small. X/Z work resolves once per column. Rift and
- * sedimentary-basin faults additionally shift their trace with Y, producing dipping
- * fault planes without introducing a second 3-D geology engine.</p>
+ * <p>The model is intentionally small. X/Z work resolves once per column. Basin,
+ * rift and orogenic fault families additionally shift their trace with Y, producing
+ * dipping planes without introducing a second 3-D geology engine.</p>
  */
 public final class TectonicStructuralField {
     private static final double TWO_PI = Math.PI * 2.0;
@@ -51,12 +51,7 @@ public final class TectonicStructuralField {
         double faultThrow = cycleThicknessBlocks
                 * settings.faultThrowCycleFraction()
                 * (0.70 + 0.30 * roll(worldSeed, siteX, siteZ, FAULT_THROW_SALT));
-        double faultDipShift = faultDipShift(
-                worldSeed,
-                province,
-                siteX,
-                siteZ
-        );
+        double faultDipShift = faultDipShift(worldSeed, province, siteX, siteZ);
 
         return new Context(
                 siteX,
@@ -123,6 +118,10 @@ public final class TectonicStructuralField {
             case SEDIMENTARY_BASIN -> {
                 minimum = 0.35;
                 range = 0.20;
+            }
+            case OROGENIC_BELT -> {
+                minimum = 0.90;
+                range = 0.60;
             }
             case RIFT_PROVINCE -> {
                 minimum = 0.55;
