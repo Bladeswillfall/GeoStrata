@@ -49,6 +49,8 @@ public final class ProvinceBackgroundFeature extends Feature<DefaultFeatureConfi
     private static final int CHUNK_SIZE = 16;
     private static final int SECTION_SIZE = 16;
     private static final String ARCHITECTURE_CONTINUITY = "regional";
+    private static final double RIFT_FAULT_DAMAGE_HALF_WIDTH = 1.35;
+    private static final double OROGENIC_FAULT_DAMAGE_HALF_WIDTH = 1.10;
     private static final List<String> VOLCANIC_ARC_LITHOLOGIES = List.of(
             "gneiss",
             "schist",
@@ -68,7 +70,8 @@ public final class ProvinceBackgroundFeature extends Feature<DefaultFeatureConfi
             "schist",
             "slate",
             "quartzite",
-            "marble"
+            "marble",
+            "breccia"
     );
 
     public ProvinceBackgroundFeature() {
@@ -150,7 +153,9 @@ public final class ProvinceBackgroundFeature extends Feature<DefaultFeatureConfi
             );
             resolver = (x, z, structuralColumn) -> {
                 OrogenicBeltModel.Column column = orogenicBelt.column(x, z, 0.0);
-                return y -> column.sample(y, structuralColumn.verticalOffset(y)).lithology();
+                return y -> structuralColumn.tectonicColumn().distanceToFault(y) <= OROGENIC_FAULT_DAMAGE_HALF_WIDTH
+                        ? "breccia"
+                        : column.sample(y, structuralColumn.verticalOffset(y)).lithology();
             };
         } else {
             SedimentarySuccessions.Succession sequence = SedimentarySuccessionSelector.selectForSite(
@@ -184,10 +189,20 @@ public final class ProvinceBackgroundFeature extends Feature<DefaultFeatureConfi
                     .map(SedimentarySuccessions.Bed::lithology)
                     .distinct()
                     .toList(), catalog);
-            resolver = (x, z, structuralColumn) -> y -> sequenceField.baseField()
-                    .sampleAtVerticalOffset(y, plan, structuralColumn.verticalOffset(y))
-                    .bed()
-                    .lithology();
+            boolean faultDamage = province == GeologyProvince.RIFT_PROVINCE;
+            if (faultDamage) {
+                outputStates.put("breccia", outputState("breccia", catalog));
+            }
+            resolver = (x, z, structuralColumn) -> y -> {
+                if (faultDamage
+                        && structuralColumn.tectonicColumn().distanceToFault(y) <= RIFT_FAULT_DAMAGE_HALF_WIDTH) {
+                    return "breccia";
+                }
+                return sequenceField.baseField()
+                        .sampleAtVerticalOffset(y, plan, structuralColumn.verticalOffset(y))
+                        .bed()
+                        .lithology();
+            };
             activeField = sequenceField;
         }
 
