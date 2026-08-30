@@ -60,6 +60,37 @@ final class TectonicStructuralFieldTest {
     }
 
     @Test
+    void faultTraceMeandersAlongStrikeWithoutChangingFaultIdentity() {
+        TectonicStructuralField.Context field = TectonicStructuralField.forSite(
+                271828182L,
+                GeologyProvince.OROGENIC_BELT,
+                0,
+                0,
+                48.0
+        );
+        TectonicStructuralField.FaultTrace origin = field.nearestFault(0, 0.0, 0);
+        boolean meandered = false;
+
+        for (int distance = 128; distance <= 2048; distance += 128) {
+            int x = (int) Math.round(origin.x() + field.faultCos() * distance);
+            int z = (int) Math.round(origin.z() + field.faultSin() * distance);
+            TectonicStructuralField.FaultTrace trace = field.nearestFault(x, 0.0, z);
+            if (trace.faultIndex() != origin.faultIndex()) {
+                continue;
+            }
+            double deltaX = trace.x() - origin.x();
+            double deltaZ = trace.z() - origin.z();
+            double normalShift = -deltaX * field.faultSin() + deltaZ * field.faultCos();
+            if (Math.abs(normalShift) > 1.0) {
+                meandered = true;
+                break;
+            }
+        }
+
+        assertTrue(meandered, "expected the same regional fault trace to wander along strike");
+    }
+
+    @Test
     void riftFaultTraceMovesWithElevationWhileCratonRemainsVertical() {
         TectonicStructuralField.Context rift = TectonicStructuralField.forSite(
                 246813579L,
