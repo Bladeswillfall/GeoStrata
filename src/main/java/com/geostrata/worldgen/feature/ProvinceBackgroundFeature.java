@@ -48,7 +48,7 @@ import java.util.function.IntFunction;
 public final class ProvinceBackgroundFeature extends Feature<DefaultFeatureConfig> {
     private static final int CHUNK_SIZE = 16;
     private static final int SECTION_SIZE = 16;
-    private static final String CONTINUITY = "regional";
+    private static final String ARCHITECTURE_CONTINUITY = "regional";
     private static final List<String> VOLCANIC_ARC_LITHOLOGIES = List.of(
             "gneiss",
             "schist",
@@ -99,22 +99,23 @@ public final class ProvinceBackgroundFeature extends Feature<DefaultFeatureConfi
         long worldSeed = world.getSeed();
         GeologyProvinceSampler.Sample provinceSample = GeologyProvinceSampler.sample(worldSeed, centerX, centerZ);
         GeologyProvince province = provinceSample.province();
-        SedimentaryStratigraphicField.Field baseField = SedimentaryStratigraphicField.forSite(
+        SedimentaryStratigraphicField.Field architectureBaseField = SedimentaryStratigraphicField.forSite(
                 worldSeed,
                 provinceSample.siteX(),
                 provinceSample.siteZ(),
-                fieldProfiles.parametersFor(CONTINUITY)
+                fieldProfiles.parametersFor(ARCHITECTURE_CONTINUITY)
         );
-        TerrainAwareStructuralField.Field field = ChunkGeneratorTerrainMorphologySampler.structuralField(
+        TerrainAwareStructuralField.Field architectureField = ChunkGeneratorTerrainMorphologySampler.structuralField(
                 world.toServerWorld(),
                 centerX,
                 centerZ,
                 province,
-                baseField
+                architectureBaseField
         );
 
         Map<String, BlockState> outputStates;
         ColumnResolver resolver;
+        TerrainAwareStructuralField.Field activeField = architectureField;
         if (province == GeologyProvince.VOLCANIC_ARC) {
             outputStates = outputStates(VOLCANIC_ARC_LITHOLOGIES, catalog);
             VolcanicArcModel.Context volcanicArc = VolcanicArcModel.forSite(
@@ -160,6 +161,19 @@ public final class ProvinceBackgroundFeature extends Feature<DefaultFeatureConfi
                     profiles,
                     successions
             ).succession();
+            SedimentaryStratigraphicField.Field sequenceBaseField = SedimentaryStratigraphicField.forSite(
+                    worldSeed,
+                    provinceSample.siteX(),
+                    provinceSample.siteZ(),
+                    fieldProfiles.parametersFor(sequence.continuity())
+            );
+            TerrainAwareStructuralField.Field sequenceField = ChunkGeneratorTerrainMorphologySampler.structuralField(
+                    world.toServerWorld(),
+                    centerX,
+                    centerZ,
+                    province,
+                    sequenceBaseField
+            );
             SedimentaryContactPlanner.Plan plan = SedimentaryContactPlanner.plan(
                     worldSeed,
                     provinceSample.siteX(),
@@ -170,10 +184,11 @@ public final class ProvinceBackgroundFeature extends Feature<DefaultFeatureConfi
                     .map(SedimentarySuccessions.Bed::lithology)
                     .distinct()
                     .toList(), catalog);
-            resolver = (x, z, structuralOffset) -> y -> field.baseField()
+            resolver = (x, z, structuralOffset) -> y -> sequenceField.baseField()
                     .sampleAtVerticalOffset(y, plan, structuralOffset)
                     .bed()
                     .lithology();
+            activeField = sequenceField;
         }
 
         TagKey<Block> hostTag = hostTag(experiment.hostBlockTag());
@@ -197,7 +212,7 @@ public final class ProvinceBackgroundFeature extends Feature<DefaultFeatureConfi
                 minY,
                 maxY,
                 hostTag,
-                field,
+                activeField,
                 resolver,
                 outputStates
         ) > 0;
