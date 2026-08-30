@@ -12,6 +12,7 @@ import com.geostrata.geology.OreDepositCandidatePlanner;
 import com.geostrata.geology.OreDepositExperiment;
 import com.geostrata.geology.OreDepositGeometry;
 import com.geostrata.geology.OreOccurrenceCatalog;
+import com.geostrata.geology.ProvinceBackgroundRuntime;
 import com.geostrata.geology.SedimentaryFieldProfiles;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
@@ -279,9 +280,10 @@ public final class OreDepositFeature extends Feature<DefaultFeatureConfig> {
             StructureWorldAccess world,
             Map<Block, String> directHosts,
             Optional<CorrelatedSedimentaryRuntime.TerrainAwareSite> correlatedSite,
-            Optional<TagKey<Block>> correlatedHostTag,
-            int correlatedMinY,
-            int correlatedMaxY
+            Optional<ProvinceBackgroundRuntime.Chunk> background,
+            Optional<TagKey<Block>> virtualHostTag,
+            int virtualMinY,
+            int virtualMaxY
     ) {
         private static HostResolver forChunk(
                 StructureWorldAccess world,
@@ -289,13 +291,26 @@ public final class OreDepositFeature extends Feature<DefaultFeatureConfig> {
                 int startZ,
                 LithologyCatalog.Snapshot lithologies
         ) {
-            Optional<CorrelatedSedimentaryRuntime.TerrainAwareSite> site = CorrelatedSedimentaryRuntime.resolve(
+            Optional<CorrelatedSedimentaryRuntime.TerrainAwareSite> correlated = CorrelatedSedimentaryRuntime.resolve(
                     world.toServerWorld(),
                     startX + CHUNK_SIZE / 2,
                     startZ + CHUNK_SIZE / 2
             );
-            if (site.isEmpty()) {
-                return new HostResolver(world, hostBlocks(lithologies), Optional.empty(), Optional.empty(), 1, 0);
+            Optional<ProvinceBackgroundRuntime.Chunk> background = ProvinceBackgroundRuntime.resolve(
+                    world.toServerWorld(),
+                    startX,
+                    startZ
+            );
+            if (correlated.isEmpty() && background.isEmpty()) {
+                return new HostResolver(
+                        world,
+                        hostBlocks(lithologies),
+                        Optional.empty(),
+                        Optional.empty(),
+                        Optional.empty(),
+                        1,
+                        0
+                );
             }
 
             CorrelatedSedimentaryExperiment.Snapshot experiment = CorrelatedSedimentaryExperiment.current();
@@ -310,7 +325,8 @@ public final class OreDepositFeature extends Feature<DefaultFeatureConfig> {
             return new HostResolver(
                     world,
                     hostBlocks(lithologies),
-                    site,
+                    correlated,
+                    background,
                     Optional.of(blockTag(experiment.hostBlockTag())),
                     minY,
                     maxY
@@ -323,19 +339,22 @@ public final class OreDepositFeature extends Feature<DefaultFeatureConfig> {
             if (direct != null) {
                 return direct;
             }
-            if (pos.getY() < correlatedMinY || pos.getY() > correlatedMaxY || correlatedSite.isEmpty()) {
+            if (pos.getY() < virtualMinY || pos.getY() > virtualMaxY) {
                 return null;
             }
-            if (correlatedHostTag.isEmpty() || !state.isIn(correlatedHostTag.get())) {
+            if (virtualHostTag.isEmpty() || !state.isIn(virtualHostTag.get())) {
                 return null;
             }
-            return correlatedSite.get().outputLithology(
-                    world.getSeed(),
-                    pos.getX(),
-                    pos.getY(),
-                    pos.getZ(),
-                    LithologyCatalog.current()
-            );
+            if (correlatedSite.isPresent()) {
+                return correlatedSite.get().outputLithology(
+                        world.getSeed(),
+                        pos.getX(),
+                        pos.getY(),
+                        pos.getZ(),
+                        LithologyCatalog.current()
+                );
+            }
+            return background.map(value -> value.lithologyAt(pos.getX(), pos.getY(), pos.getZ())).orElse(null);
         }
     }
 }
