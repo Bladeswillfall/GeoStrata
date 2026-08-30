@@ -443,9 +443,14 @@ public final class ProvinceBackgroundFeature extends Feature<DefaultFeatureConfi
             ColumnBackground[] columnBackgrounds,
             List<BlockBox> protectedStructurePieces
     ) {
-        int minLocalY = minY - sectionBottomY;
-        int maxLocalY = maxY - sectionBottomY;
-        PalettedContainer<BlockState> states = section.getBlockStateContainer();
+        SectionReplaceContext replacement = new SectionReplaceContext(
+                section.getBlockStateContainer(),
+                sectionBottomY,
+                minY - sectionBottomY,
+                maxY - sectionBottomY,
+                hostTag,
+                protectedStructurePieces
+        );
         int placed = 0;
         section.lock();
         try {
@@ -453,37 +458,14 @@ public final class ProvinceBackgroundFeature extends Feature<DefaultFeatureConfi
                 int worldX = startX + localX;
                 for (int localZ = 0; localZ < SECTION_SIZE; localZ++) {
                     int worldZ = startZ + localZ;
-                    ColumnBackground column = columnBackgrounds[columnIndex(localX, localZ)];
-                    TerrainAwareStructuralField.Column primaryStructural = column.primary().field().column(worldX, worldZ);
-                    IntFunction<String> primaryLithology = column.primary().resolver()
-                            .column(worldX, worldZ, primaryStructural);
-                    TerrainAwareStructuralField.Column neighborStructural = null;
-                    IntFunction<String> neighborLithology = null;
-                    if (column.neighbor() != null) {
-                        neighborStructural = column.neighbor().field().column(worldX, worldZ);
-                        neighborLithology = column.neighbor().resolver()
-                                .column(worldX, worldZ, neighborStructural);
-                    }
-
-                    for (int localY = minLocalY; localY <= maxLocalY; localY++) {
-                        BlockState existing = states.get(localX, localY, localZ);
-                        if (!existing.isIn(hostTag)) {
-                            continue;
-                        }
-                        int worldY = sectionBottomY + localY;
-                        if (insideStructurePiece(protectedStructurePieces, worldX, worldY, worldZ)) {
-                            continue;
-                        }
-
-                        boolean usePrimary = column.contact() == null || column.contact().usesPrimary(worldY);
-                        Background selected = usePrimary ? column.primary() : column.neighbor();
-                        IntFunction<String> lithology = usePrimary ? primaryLithology : neighborLithology;
-                        BlockState replacement = selected.outputStates().get(lithology.apply(worldY));
-                        if (replacement != null && !existing.equals(replacement)) {
-                            states.swapUnsafe(localX, localY, localZ, replacement);
-                            placed++;
-                        }
-                    }
+                    placed += replaceColumn(
+                            replacement,
+                            localX,
+                            localZ,
+                            worldX,
+                            worldZ,
+                            columnBackgrounds[columnIndex(localX, localZ)]
+                    );
                 }
             }
             if (placed > 0) {
@@ -493,6 +475,45 @@ public final class ProvinceBackgroundFeature extends Feature<DefaultFeatureConfi
             section.unlock();
         }
         return placed;
+    }
+
+    private static int replaceColumn(
+            SectionReplaceContext context,
+            int localX,
+            int localZ,
+            int worldX,
+            int worldZ,
+            ColumnBackground column
+    ) {
+        ResolvedColumn primary = resolveColumn(column.primary(), worldX, worldZ);
+        ResolvedColumn neighbor = column.neighbor() == null
+                ? null
+                : resolveColumn(column.neighbor(), worldX, worldZ);
+        int placed = 0;
+        for (int localY = context.minLocalY(); localY <= context.maxLocalY(); localY++) {
+            BlockState existing = context.states().get(localX, localY, localZ);
+            if (!existing.isIn(context.hostTag())) {
+                continue;
+            }
+            int worldY = context.sectionBottomY() + localY;
+            if (insideStructurePiece(context.protectedStructurePieces(), worldX, worldY, worldZ)) {
+                continue;
+            }
+
+            boolean usePrimary = column.contact() == null || column.contact().usesPrimary(worldY);
+            ResolvedColumn selected = usePrimary ? primary : neighbor;
+            BlockState replacement = selected.background().outputStates().get(selected.lithologyAtY().apply(worldY));
+            if (replacement != null && !existing.equals(replacement)) {
+                context.states().swapUnsafe(localX, localY, localZ, replacement);
+                placed++;
+            }
+        }
+        return placed;
+    }
+
+    private static ResolvedColumn resolveColumn(Background background, int x, int z) {
+        TerrainAwareStructuralField.Column structural = background.field().column(x, z);
+        return new ResolvedColumn(background, background.resolver().column(x, z, structural));
     }
 
     private static int columnIndex(int localX, int localZ) {
@@ -557,6 +578,19 @@ public final class ProvinceBackgroundFeature extends Feature<DefaultFeatureConfi
             TerrainAwareStructuralField.Field field,
             ColumnResolver resolver,
             Map<String, BlockState> outputStates
+    ) {
+    }
+
+    private record ResolvedColumn(Background background, IntFunction<String> lithologyAtY) {
+    }
+
+    private record SectionReplaceContext(
+            PalettedContainer<BlockState> states,
+            int sectionBottomY,
+            int minLocalY,
+            int maxLocalY,
+            TagKey<Block> hostTag,
+            List<BlockBox> protectedStructurePieces
     ) {
     }
 
