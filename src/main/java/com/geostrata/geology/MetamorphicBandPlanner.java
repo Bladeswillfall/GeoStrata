@@ -20,13 +20,13 @@ public final class MetamorphicBandPlanner {
             long worldSeed,
             int siteX,
             int siteZ,
-            int blockY,
+            double blockY,
             double structuralVerticalOffset,
             double bandThicknessBlocks,
             MetamorphicIntensityField.Suitability suitability
     ) {
-        if (!Double.isFinite(structuralVerticalOffset)) {
-            throw new IllegalArgumentException("structural vertical offset must be finite");
+        if (!Double.isFinite(blockY) || !Double.isFinite(structuralVerticalOffset)) {
+            throw new IllegalArgumentException("metamorphic structural coordinates must be finite");
         }
         if (!Double.isFinite(bandThicknessBlocks) || bandThicknessBlocks < 1.0) {
             throw new IllegalArgumentException("metamorphic band thickness must be finite and at least one block");
