@@ -1,3 +1,4 @@
+# Temporary benchmark rerun trigger; do not merge.
 name: Build GeoStrata
 
 on:
