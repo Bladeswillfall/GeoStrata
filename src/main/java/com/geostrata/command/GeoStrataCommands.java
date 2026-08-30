@@ -174,7 +174,7 @@ public final class GeoStrataCommands {
                                 + " | beds lower→upper: " + sequence(primary.succession())
                                 + " | neighbor: " + neighbor.succession().id()
                                 + " [" + sample.neighborProvince().displayName() + "]"
-                                + " | diagnostic model only; chunk generation still uses independent features"
+                                + " | correlated companion reuses this selector where it owns generation"
                 ),
                 false
         );
@@ -220,6 +220,36 @@ public final class GeoStrataCommands {
     }
 
     private static int showField(ServerCommandSource source) {
+        Vec3d position = source.getPosition();
+        int x = MathHelper.floor(position.x);
+        int z = MathHelper.floor(position.z);
+        Optional<CorrelatedSedimentaryRuntime.TerrainAwareSite> correlated =
+                CorrelatedSedimentaryRuntime.resolve(source.getWorld(), x, z);
+        if (correlated.isPresent()) {
+            CorrelatedSedimentaryRuntime.TerrainAwareSite site = correlated.get();
+            SedimentaryStratigraphicField.Sample fieldSample = site.sample(x, position.y, z);
+            TerrainAwareStructuralField.Field structuralField = site.field();
+            source.sendFeedback(
+                    () -> Text.literal(
+                            "GeoStrata field: " + fieldSample.bed().lithology()
+                                    + " | succession " + site.succession().id()
+                                    + " [" + site.ownership().province().displayName() + "]"
+                                    + " | authority correlated"
+                                    + " | cycle " + fieldSample.cycleIndex()
+                                    + ", position " + Math.round(fieldSample.fraction() * 100.0) + "%"
+                                    + " | structural offset " + Math.round(fieldSample.verticalOffset()) + " blocks"
+                                    + " (drape " + Math.round(structuralField.drapeOffset(x, z))
+                                    + ", terrain fold " + Math.round(structuralField.foldOffset(x, z))
+                                    + ", tectonic fold " + Math.round(structuralField.tectonicFoldOffset(x, z)) + ")"
+                                    + " | " + site.succession().continuity() + " profile, cycle "
+                                    + Math.round(structuralField.baseField().cycleThicknessBlocks()) + " blocks"
+                                    + " | active worldgen field"
+                    ),
+                    false
+            );
+            return 1;
+        }
+
         GeologyProvinceProfiles.Snapshot profiles = GeologyProvinceProfiles.current();
         SedimentarySuccessions.Snapshot successions = SedimentarySuccessions.current();
         SedimentaryFieldProfiles.Snapshot fieldProfiles = SedimentaryFieldProfiles.current();
@@ -228,9 +258,6 @@ public final class GeoStrataCommands {
             return 0;
         }
 
-        Vec3d position = source.getPosition();
-        int x = MathHelper.floor(position.x);
-        int z = MathHelper.floor(position.z);
         long seed = source.getWorld().getSeed();
         GeologyProvinceSampler.Sample province = GeologyProvinceSampler.sample(seed, x, z);
         SedimentarySuccessionSelector.Selection selection = SedimentarySuccessionSelector.selectForSite(
@@ -270,6 +297,7 @@ public final class GeoStrataCommands {
                         "GeoStrata field: " + fieldSample.bed().lithology()
                                 + " | succession " + plan.successionId()
                                 + " [" + province.province().displayName() + "]"
+                                + " | authority virtual"
                                 + " | cycle " + fieldSample.cycleIndex()
                                 + ", position " + Math.round(fieldSample.fraction() * 100.0) + "%"
                                 + " | structural offset " + Math.round(fieldSample.verticalOffset()) + " blocks"
@@ -281,7 +309,7 @@ public final class GeoStrataCommands {
                                 + Math.round(structuralField.response().drapeCoupling() * 100.0) + "%"
                                 + ", fold "
                                 + Math.round(structuralField.response().foldCoupling() * 100.0) + "%"
-                                + " | virtual model; active in opt-in correlated generation"
+                                + " | virtual model outside correlated ownership"
                 ),
                 false
         );
