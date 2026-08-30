@@ -74,6 +74,7 @@ final class GeologyResourceContractTest {
         assertFalse(activated.oreExperiment().enabled());
 
         assertCharacteristicProvincePalettes(core);
+        assertOrdinaryProvinceMatrixCandidates(core);
         assertSuccessionContextCoverage(core.successions());
         assertExperimentTagsExist(core.experiment());
         assertStrataLensResourcesArePaired();
@@ -104,6 +105,23 @@ final class GeologyResourceContractTest {
                     .mapToDouble(weights -> weights.get(lithology.id()))
                     .max()
                     .orElseThrow() >= 0.65, lithology.id());
+        }
+    }
+
+    private static void assertOrdinaryProvinceMatrixCandidates(GeologyDataReload.State data) {
+        List<LithologyCatalog.Entry> ordinary = data.lithologies().entries().stream()
+                .filter(entry -> entry.baselineFeature().endsWith("_ore"))
+                .toList();
+        assertTrue(ordinary.size() >= 4);
+        assertFalse(ordinary.stream().anyMatch(entry -> entry.id().equals("kimberlite") || entry.id().equals("lamproite")));
+        for (GeologyProvince province : GeologyProvince.values()) {
+            assertEquals(4, ordinary.stream()
+                    .sorted(java.util.Comparator
+                            .<LithologyCatalog.Entry>comparingDouble(entry -> data.provinces().weight(province, entry.id()))
+                            .reversed()
+                            .thenComparing(LithologyCatalog.Entry::id))
+                    .limit(4)
+                    .count());
         }
     }
 
@@ -192,6 +210,14 @@ final class GeologyResourceContractTest {
         JsonObject placed = read(PLACED.resolve("correlated_sedimentary_experiment.json"));
         assertEquals("geostrata:correlated_sedimentary_experiment", string(placed, "feature"));
         assertTrue(placed.getAsJsonArray("placement").isEmpty());
+
+        JsonObject backgroundConfigured = read(CONFIGURED.resolve("province_background_experiment.json"));
+        assertEquals("geostrata:province_background", string(backgroundConfigured, "type"));
+        assertEquals(0, backgroundConfigured.getAsJsonObject("config").size());
+
+        JsonObject backgroundPlaced = read(PLACED.resolve("province_background_experiment.json"));
+        assertEquals("geostrata:province_background_experiment", string(backgroundPlaced, "feature"));
+        assertTrue(backgroundPlaced.getAsJsonArray("placement").isEmpty());
     }
 
     private static void assertOreDepositWorldgenStaging() throws IOException {
