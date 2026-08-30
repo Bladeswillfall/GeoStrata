@@ -161,6 +161,25 @@ public final class TectonicStructuralField {
         }
     }
 
+    /** Nearest point on the deterministic vertical fault trace in X/Z. */
+    public record FaultTrace(
+            double x,
+            double z,
+            double distanceToFault,
+            long faultIndex,
+            FaultRegime faultRegime
+    ) {
+        public FaultTrace {
+            if (!Double.isFinite(x)
+                    || !Double.isFinite(z)
+                    || Double.isNaN(distanceToFault)
+                    || distanceToFault < 0.0
+                    || faultRegime == null) {
+                throw new IllegalArgumentException("invalid tectonic fault trace");
+            }
+        }
+    }
+
     public record Context(
             int siteX,
             int siteZ,
@@ -210,7 +229,7 @@ public final class TectonicStructuralField {
                 return new Sample(foldOffset, 0.0, Double.POSITIVE_INFINITY, faultRegime);
             }
 
-            double acrossFaults = -dx * faultSin + dz * faultCos;
+            double acrossFaults = acrossFaults(x, z);
             double faultCoordinate = (acrossFaults + faultPhaseBlocks) / faultSpacingBlocks;
             long faultBlock = (long) Math.floor(faultCoordinate);
             long anchorBlock = (long) Math.floor(faultPhaseBlocks / faultSpacingBlocks);
@@ -218,6 +237,39 @@ public final class TectonicStructuralField {
                     * (faultState(faultBlock, faultRegime) - faultState(anchorBlock, faultRegime));
             double distanceToFault = Math.abs(faultCoordinate - Math.rint(faultCoordinate)) * faultSpacingBlocks;
             return new Sample(foldOffset, faultOffset, distanceToFault, faultRegime);
+        }
+
+        /**
+         * Projects an X/Z point onto the nearest member of this context's fault family.
+         * The tangent is {@code (faultCos,faultSin)} and the normal is
+         * {@code (-faultSin,faultCos)}.
+         */
+        public FaultTrace nearestFault(int x, int z) {
+            if (faultRegime == FaultRegime.NONE || faultThrowBlocks == 0.0) {
+                return new FaultTrace(x, z, Double.POSITIVE_INFINITY, 0L, faultRegime);
+            }
+
+            double acrossFaults = acrossFaults(x, z);
+            double faultCoordinate = (acrossFaults + faultPhaseBlocks) / faultSpacingBlocks;
+            double nearestIndexValue = Math.rint(faultCoordinate);
+            long nearestIndex = (long) nearestIndexValue;
+            double targetAcross = nearestIndexValue * faultSpacingBlocks - faultPhaseBlocks;
+            double deltaAcross = targetAcross - acrossFaults;
+            double normalX = -faultSin;
+            double normalZ = faultCos;
+            return new FaultTrace(
+                    x + normalX * deltaAcross,
+                    z + normalZ * deltaAcross,
+                    Math.abs(deltaAcross),
+                    nearestIndex,
+                    faultRegime
+            );
+        }
+
+        private double acrossFaults(int x, int z) {
+            double dx = (double) x - siteX;
+            double dz = (double) z - siteZ;
+            return -dx * faultSin + dz * faultCos;
         }
     }
 

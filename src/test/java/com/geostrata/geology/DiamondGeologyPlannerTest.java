@@ -42,11 +42,15 @@ final class DiamondGeologyPlannerTest {
     }
 
     @Test
-    void structuralPlanningStaysSmallAndVertical() {
+    void structuralPlanningOnlyControlsSparseCellAnchors() {
         DiamondGeologyPlanner.StructuralCandidate candidate = DiamondGeologyPlanner.structural(42L, 7, -4);
         assertEquals(candidate, DiamondGeologyPlanner.structural(42L, 7, -4));
         assertTrue(candidate.clusterCount() >= 2 && candidate.clusterCount() <= 3);
-        assertTrue(Math.abs(candidate.tiltX()) <= 0.055);
-        assertTrue(Math.abs(candidate.tiltZ()) <= 0.055);
+
+        int minX = 7 * DiamondGeologyPlanner.STRUCTURAL_CELL_SIZE + DiamondGeologyPlanner.STRUCTURAL_CELL_SIZE / 5;
+        int minZ = -4 * DiamondGeologyPlanner.STRUCTURAL_CELL_SIZE + DiamondGeologyPlanner.STRUCTURAL_CELL_SIZE / 5;
+        int span = DiamondGeologyPlanner.STRUCTURAL_CELL_SIZE * 3 / 5;
+        assertTrue(candidate.anchorX() >= minX && candidate.anchorX() < minX + span);
+        assertTrue(candidate.anchorZ() >= minZ && candidate.anchorZ() < minZ + span);
     }
 }

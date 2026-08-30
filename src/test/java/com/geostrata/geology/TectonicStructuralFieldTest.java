@@ -38,6 +38,26 @@ final class TectonicStructuralFieldTest {
     }
 
     @Test
+    void nearestFaultProjectionLandsOnTheSameFaultFamily() {
+        TectonicStructuralField.Context field = TectonicStructuralField.forSite(
+                314159265L,
+                GeologyProvince.CRATONIC_SHIELD,
+                128,
+                -256,
+                48.0
+        );
+        TectonicStructuralField.FaultTrace trace = field.nearestFault(437, -219);
+        TectonicStructuralField.FaultTrace rounded = field.nearestFault(
+                (int) Math.round(trace.x()),
+                (int) Math.round(trace.z())
+        );
+
+        assertTrue(Double.isFinite(trace.distanceToFault()));
+        assertTrue(rounded.distanceToFault() <= 1.0, rounded.toString());
+        assertEquals(TectonicStructuralField.FaultRegime.ANCIENT, trace.faultRegime());
+    }
+
+    @Test
     void riftFieldContainsDiscreteFaultBlocks() {
         TectonicStructuralField.Context field = TectonicStructuralField.forSite(
                 456789123L,

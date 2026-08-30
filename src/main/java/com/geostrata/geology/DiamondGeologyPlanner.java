@@ -1,6 +1,6 @@
 package com.geostrata.geology;
 
-/** Pure deterministic candidate planning for rare diamond pipes and deep structural corridors. */
+/** Pure deterministic candidate planning for rare diamond pipes and deep structural occurrences. */
 public final class DiamondGeologyPlanner {
     public static final int PIPE_CELL_SIZE = GeologyProvinceSampler.CELL_SIZE;
     public static final int STRUCTURAL_CELL_SIZE = 256;
@@ -15,8 +15,6 @@ public final class DiamondGeologyPlanner {
 
     private static final long STRUCTURAL_X_SALT = 0xDB4F0B9175AE2165L;
     private static final long STRUCTURAL_Z_SALT = 0xBBE0563303A4615FL;
-    private static final long STRUCTURAL_TILT_X_SALT = 0xA0F2EC75A1FE1575L;
-    private static final long STRUCTURAL_TILT_Z_SALT = 0x89E182857D9ED689L;
     private static final long STRUCTURAL_ACTIVATION_SALT = 0xC6BC279692B5C323L;
     private static final long STRUCTURAL_CLUSTER_SALT = 0xD6E8FEB86659FD93L;
 
@@ -35,16 +33,19 @@ public final class DiamondGeologyPlanner {
         return new PipeCandidate(cellX, cellZ, anchorX, anchorZ, tiltX, tiltZ, baseRadius, kind);
     }
 
+    /**
+     * Sparse deterministic anchor used only to control structural-diamond abundance.
+     * Actual corridor geometry comes from {@link TectonicStructuralField}; this
+     * planner deliberately owns no second fault direction or tilt model.
+     */
     public static StructuralCandidate structural(long worldSeed, int cellX, int cellZ) {
         int minX = cellX * STRUCTURAL_CELL_SIZE + STRUCTURAL_CELL_SIZE / 5;
         int minZ = cellZ * STRUCTURAL_CELL_SIZE + STRUCTURAL_CELL_SIZE / 5;
         int span = STRUCTURAL_CELL_SIZE * 3 / 5;
         int anchorX = minX + (int) Math.floor(roll(worldSeed, cellX, cellZ, STRUCTURAL_X_SALT) * span);
         int anchorZ = minZ + (int) Math.floor(roll(worldSeed, cellX, cellZ, STRUCTURAL_Z_SALT) * span);
-        double tiltX = signed(roll(worldSeed, cellX, cellZ, STRUCTURAL_TILT_X_SALT)) * 0.055;
-        double tiltZ = signed(roll(worldSeed, cellX, cellZ, STRUCTURAL_TILT_Z_SALT)) * 0.055;
         int clusters = 2 + (int) Math.floor(roll(worldSeed, cellX, cellZ, STRUCTURAL_CLUSTER_SALT) * 2.0);
-        return new StructuralCandidate(cellX, cellZ, anchorX, anchorZ, tiltX, tiltZ, clusters);
+        return new StructuralCandidate(cellX, cellZ, anchorX, anchorZ, clusters);
     }
 
     public static double pipeActivationRoll(long worldSeed, PipeCandidate candidate) {
@@ -135,8 +136,6 @@ public final class DiamondGeologyPlanner {
             int cellZ,
             int anchorX,
             int anchorZ,
-            double tiltX,
-            double tiltZ,
             int clusterCount
     ) {
     }
