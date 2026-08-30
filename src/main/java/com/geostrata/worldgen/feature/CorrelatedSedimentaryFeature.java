@@ -95,8 +95,8 @@ public final class CorrelatedSedimentaryFeature extends Feature<DefaultFeatureCo
 
     /**
      * Mutates the current chunk section-by-section instead of probing the world
-     * once for every possible Y coordinate. Empty sections and sections whose
-     * palettes contain no replaceable host state are skipped entirely.
+     * once for every possible Y coordinate. Empty/out-of-window sections and
+     * palettes with no replaceable host state are skipped entirely.
      */
     private static int replaceChunk(
             StructureWorldAccess world,
@@ -118,16 +118,15 @@ public final class CorrelatedSedimentaryFeature extends Feature<DefaultFeatureCo
         ChunkSection[] sections = chunk.getSectionArray();
         for (int sectionIndex = 0; sectionIndex < sections.length; sectionIndex++) {
             ChunkSection section = sections[sectionIndex];
-            if (section == null
-                    || section.isEmpty()
-                    || !section.hasAny(state -> replaceable(state, hostTag, site, catalog))) {
+            if (section == null || section.isEmpty()) {
                 continue;
             }
 
             int sectionBottomY = chunk.sectionIndexToCoord(sectionIndex) * SECTION_SIZE;
             int sectionMinY = Math.max(minY, sectionBottomY);
             int sectionMaxY = Math.min(maxY, sectionBottomY + SECTION_SIZE - 1);
-            if (sectionMinY > sectionMaxY) {
+            if (sectionMinY > sectionMaxY
+                    || !section.hasAny(state -> replaceable(state, hostTag, site, catalog))) {
                 continue;
             }
 
@@ -196,10 +195,11 @@ public final class CorrelatedSedimentaryFeature extends Feature<DefaultFeatureCo
                         }
                         int y = sectionBottomY + localY;
                         String lithology = column.outputLithology(y, catalog);
-                        BlockState replacement = outputStates.computeIfAbsent(
-                                lithology,
-                                ignored -> outputState(lithology, catalog)
-                        );
+                        BlockState replacement = outputStates.get(lithology);
+                        if (replacement == null) {
+                            replacement = outputState(lithology, catalog);
+                            outputStates.put(lithology, replacement);
+                        }
                         if (existing.equals(replacement)) {
                             continue;
                         }
