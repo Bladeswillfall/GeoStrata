@@ -41,11 +41,11 @@ public final class TectonicFoldPolarity {
             return normal();
         }
 
-        double strength = 2.15 + 0.30 * unitPhase(field.foldPhase());
-        double limbDirection = Math.sin(field.foldSecondaryPhase()) < 0.0 ? -1.0 : 1.0;
-        double phaseFraction = field.faultPhaseBlocks() / field.faultSpacingBlocks();
+        double faultPhaseFraction = field.faultPhaseBlocks() / field.faultSpacingBlocks();
+        double strength = 2.15 + 0.30 * faultPhaseFraction;
+        double limbDirection = Math.sin(field.foldPhase()) < 0.0 ? -1.0 : 1.0;
         double pivotLocalY = structuralAnchorY
-                - cycleThicknessBlocks * (0.75 + phaseFraction);
+                - cycleThicknessBlocks * (0.75 + unitPhase(field.foldPhase()));
         return new Profile(true, strength, limbDirection, pivotLocalY);
     }
 
