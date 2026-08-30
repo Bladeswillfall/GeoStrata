@@ -3,10 +3,12 @@ package com.geostrata.worldgen.feature;
 import com.geostrata.GeoStrata;
 import com.geostrata.geology.CorrelatedSedimentaryExperiment;
 import com.geostrata.geology.CorrelatedSedimentaryRuntime;
+import com.geostrata.geology.FaultDamageZone;
 import com.geostrata.geology.GeologyProvince;
 import com.geostrata.geology.GeologyProvinceSampler;
 import com.geostrata.geology.LithologyCatalog;
 import com.geostrata.geology.SedimentarySuccessions;
+import com.geostrata.geology.TectonicStructuralField;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.registry.Registries;
@@ -114,7 +116,7 @@ public final class CorrelatedSedimentaryFeature extends Feature<DefaultFeatureCo
                 Math.floorDiv(startX, CHUNK_SIZE),
                 Math.floorDiv(startZ, CHUNK_SIZE)
         );
-        CorrelatedSedimentaryRuntime.Column[] columns = new CorrelatedSedimentaryRuntime.Column[CHUNK_SIZE * CHUNK_SIZE];
+        ColumnCache[] columns = new ColumnCache[CHUNK_SIZE * CHUNK_SIZE];
         GeologyProvinceSampler.Context provinceContext = provinceContext(world.getSeed(), startX, startZ, site);
         int placed = 0;
         ChunkSection[] sections = chunk.getSectionArray();
@@ -190,7 +192,7 @@ public final class CorrelatedSedimentaryFeature extends Feature<DefaultFeatureCo
             CorrelatedSedimentaryRuntime.TerrainAwareSite site,
             LithologyCatalog.Snapshot catalog,
             Map<String, BlockState> outputStates,
-            CorrelatedSedimentaryRuntime.Column[] columns,
+            ColumnCache[] columns,
             GeologyProvinceSampler.Context provinceContext
     ) {
         int minLocalY = minY - sectionBottomY;
@@ -243,13 +245,13 @@ public final class CorrelatedSedimentaryFeature extends Feature<DefaultFeatureCo
             CorrelatedSedimentaryRuntime.TerrainAwareSite site,
             LithologyCatalog.Snapshot catalog,
             Map<String, BlockState> outputStates,
-            CorrelatedSedimentaryRuntime.Column[] columns,
+            ColumnCache[] columns,
             GeologyProvinceSampler.Context provinceContext
     ) {
         int x = startX + localX;
         int z = startZ + localZ;
         int columnIndex = localX * CHUNK_SIZE + localZ;
-        CorrelatedSedimentaryRuntime.Column column = columns[columnIndex];
+        ColumnCache column = columns[columnIndex];
         int placed = 0;
         for (int localY = minLocalY; localY <= maxLocalY; localY++) {
             BlockState existing = states.get(localX, localY, localZ);
@@ -258,11 +260,16 @@ public final class CorrelatedSedimentaryFeature extends Feature<DefaultFeatureCo
             }
 
             if (column == null) {
-                column = site.column(worldSeed, x, z, provinceContext);
+                column = new ColumnCache(
+                        site.column(worldSeed, x, z, provinceContext),
+                        site.field().tectonicField().column(x, z)
+                );
                 columns[columnIndex] = column;
             }
             int y = sectionBottomY + localY;
-            String lithology = column.outputLithology(y, catalog);
+            String lithology = FaultDamageZone.contains(site.ownership().province(), column.tectonic(), y)
+                    ? "breccia"
+                    : column.geology().outputLithology(y, catalog);
             BlockState replacement = replacementState(lithology, catalog, outputStates);
             if (!existing.equals(replacement)) {
                 states.swapUnsafe(localX, localY, localZ, replacement);
@@ -339,5 +346,11 @@ public final class CorrelatedSedimentaryFeature extends Feature<DefaultFeatureCo
         Block block = Registries.BLOCK.getOrEmpty(blockId)
                 .orElseThrow(() -> new IllegalStateException("Missing correlated lithology block: " + blockId));
         return block.getDefaultState();
+    }
+
+    private record ColumnCache(
+            CorrelatedSedimentaryRuntime.Column geology,
+            TectonicStructuralField.Column tectonic
+    ) {
     }
 }
