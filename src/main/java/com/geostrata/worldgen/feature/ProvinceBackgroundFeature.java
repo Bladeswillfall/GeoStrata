@@ -7,6 +7,7 @@ import com.geostrata.geology.GeologyProvince;
 import com.geostrata.geology.GeologyProvinceProfiles;
 import com.geostrata.geology.GeologyProvinceSampler;
 import com.geostrata.geology.LithologyCatalog;
+import com.geostrata.geology.OrogenicBeltModel;
 import com.geostrata.geology.SedimentaryContactPlanner;
 import com.geostrata.geology.SedimentaryFieldProfiles;
 import com.geostrata.geology.SedimentaryStratigraphicField;
@@ -40,9 +41,10 @@ import java.util.function.IntFunction;
 /**
  * Late experimental fill for natural host stone not claimed by richer GeoStrata bodies.
  *
- * <p>Volcanic Arc and Cratonic Shield now use province-specific architecture while
- * the remaining provinces retain the temporary province-weighted matrix. Existing
- * GeoStrata bodies, ores, caves, fluids and structure-piece footprints are preserved.</p>
+ * <p>Volcanic Arc, Cratonic Shield and Orogenic Belt now use province-specific
+ * architecture while the remaining provinces retain the temporary province-weighted
+ * matrix. Existing GeoStrata bodies, ores, caves, fluids and structure-piece footprints
+ * are preserved.</p>
  */
 public final class ProvinceBackgroundFeature extends Feature<DefaultFeatureConfig> {
     private static final int CHUNK_SIZE = 16;
@@ -60,6 +62,13 @@ public final class ProvinceBackgroundFeature extends Feature<DefaultFeatureConfi
     private static final List<String> CRATONIC_SHIELD_LITHOLOGIES = List.of(
             "gneiss",
             "schist",
+            "quartzite",
+            "marble"
+    );
+    private static final List<String> OROGENIC_BELT_LITHOLOGIES = List.of(
+            "gneiss",
+            "schist",
+            "slate",
             "quartzite",
             "marble"
     );
@@ -125,6 +134,18 @@ public final class ProvinceBackgroundFeature extends Feature<DefaultFeatureConfi
             );
             resolver = (x, z, structuralOffset) -> {
                 CratonicShieldModel.Column column = cratonicShield.column(x, z, structuralOffset);
+                return y -> column.sample(y).lithology();
+            };
+        } else if (province == GeologyProvince.OROGENIC_BELT) {
+            outputStates = outputStates(OROGENIC_BELT_LITHOLOGIES, catalog);
+            OrogenicBeltModel.Context orogenicBelt = OrogenicBeltModel.forSite(
+                    worldSeed,
+                    provinceSample.siteX(),
+                    provinceSample.siteZ(),
+                    world.getSeaLevel()
+            );
+            resolver = (x, z, structuralOffset) -> {
+                OrogenicBeltModel.Column column = orogenicBelt.column(x, z, structuralOffset);
                 return y -> column.sample(y).lithology();
             };
         } else {
