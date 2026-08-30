@@ -2,6 +2,7 @@ package com.geostrata.command;
 
 import com.geostrata.geology.ChunkGeneratorTerrainMorphologySampler;
 import com.geostrata.geology.CorrelatedSedimentaryRuntime;
+import com.geostrata.geology.FaultDamageZone;
 import com.geostrata.geology.GeologyProvinceSampler;
 import com.geostrata.geology.SedimentaryFieldProfiles;
 import com.geostrata.geology.SedimentaryStratigraphicField;
@@ -70,8 +71,13 @@ public final class StructuralCommands {
 
         TectonicStructuralField.Sample tectonic = field.tectonicSample(x, y, z);
         TectonicStructuralField.FaultTrace trace = field.tectonicField().nearestFault(x, y, z);
+        TectonicStructuralField.Column faultColumn = field.tectonicField().column(x, z);
+        boolean damaged = FaultDamageZone.contains(province.province(), faultColumn, y);
         String faultDistance = Double.isFinite(trace.distanceToFault())
                 ? Long.toString(Math.round(trace.distanceToFault()))
+                : "n/a";
+        String faultLocation = Double.isFinite(trace.distanceToFault())
+                ? Math.round(trace.x()) + "," + y + "," + Math.round(trace.z())
                 : "n/a";
 
         source.sendFeedback(
@@ -84,10 +90,11 @@ public final class StructuralCommands {
                                 + " | tectonic fold " + signed(tectonic.foldOffset())
                                 + " | fault " + tectonic.faultRegime().name().toLowerCase()
                                 + " offset " + signed(tectonic.faultOffset())
-                                + " | nearest fault @Y" + y + " ~" + faultDistance + " blocks"
+                                + " | nearest @ " + faultLocation + " ~" + faultDistance + " blocks"
                                 + " | spacing ~" + Math.round(field.tectonicField().faultSpacingBlocks())
                                 + ", throw ~" + Math.round(field.tectonicField().faultThrowBlocks())
                                 + ", dip ~" + Math.round(field.tectonicField().faultDipDegrees(y)) + "°"
+                                + (damaged ? " | damage zone" : "")
                                 + " | total " + signed(field.verticalOffset(x, y, z))
                 ),
                 false
