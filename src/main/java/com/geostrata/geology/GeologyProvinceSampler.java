@@ -1,5 +1,8 @@
 package com.geostrata.geology;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * Stable, chunk-order-independent sampler for broad geological provinces.
  *
@@ -50,20 +53,35 @@ public final class GeologyProvinceSampler {
             throw new IllegalStateException("GeoStrata province sampler did not produce two candidate sites");
         }
 
-        return new Sample(
-                best.province,
-                best.cellX,
-                best.cellZ,
-                best.siteX,
-                best.siteZ,
-                best.distanceSquared,
-                second.province,
-                second.cellX,
-                second.cellZ,
-                second.siteX,
-                second.siteZ,
-                second.distanceSquared
-        );
+        return sample(best, second);
+    }
+
+    /**
+     * Precomputes the seed-derived candidate sites required by every point in a
+     * rectangular region. Chunk worldgen can reuse this immutable context for all
+     * 256 columns instead of re-hashing the same coarse Voronoi sites per column.
+     */
+    public static Context context(
+            long worldSeed,
+            int minBlockX,
+            int minBlockZ,
+            int maxBlockX,
+            int maxBlockZ
+    ) {
+        if (minBlockX > maxBlockX || minBlockZ > maxBlockZ) {
+            throw new IllegalArgumentException("province context bounds must be ordered");
+        }
+        int minCellX = Math.floorDiv(minBlockX, CELL_SIZE) - SEARCH_RADIUS;
+        int maxCellX = Math.floorDiv(maxBlockX, CELL_SIZE) + SEARCH_RADIUS;
+        int minCellZ = Math.floorDiv(minBlockZ, CELL_SIZE) - SEARCH_RADIUS;
+        int maxCellZ = Math.floorDiv(maxBlockZ, CELL_SIZE) + SEARCH_RADIUS;
+        List<SiteCandidate> sites = new ArrayList<>((maxCellX - minCellX + 1) * (maxCellZ - minCellZ + 1));
+        for (int cellX = minCellX; cellX <= maxCellX; cellX++) {
+            for (int cellZ = minCellZ; cellZ <= maxCellZ; cellZ++) {
+                sites.add(siteCandidate(worldSeed, cellX, cellZ));
+            }
+        }
+        return new Context(sites.toArray(SiteCandidate[]::new));
     }
 
     private static Candidate candidate(long seed, int blockX, int blockZ, int cellX, int cellZ) {
@@ -74,6 +92,16 @@ public final class GeologyProvinceSampler {
         long distanceSquared = dx * dx + dz * dz;
         GeologyProvince province = provinceFor(hash(seed, cellX, cellZ, PROVINCE_SALT));
         return new Candidate(province, cellX, cellZ, siteX, siteZ, distanceSquared);
+    }
+
+    private static SiteCandidate siteCandidate(long seed, int cellX, int cellZ) {
+        return new SiteCandidate(
+                provinceFor(hash(seed, cellX, cellZ, PROVINCE_SALT)),
+                cellX,
+                cellZ,
+                siteCoordinate(seed, cellX, cellZ, SITE_X_SALT, cellX),
+                siteCoordinate(seed, cellX, cellZ, SITE_Z_SALT, cellZ)
+        );
     }
 
     private static int siteCoordinate(long seed, int cellX, int cellZ, long salt, int axisCell) {
@@ -116,6 +144,66 @@ public final class GeologyProvinceSampler {
         return (hash >>> 11) * 0x1.0p-53;
     }
 
+    private static Sample sample(Candidate best, Candidate second) {
+        return new Sample(
+                best.province,
+                best.cellX,
+                best.cellZ,
+                best.siteX,
+                best.siteZ,
+                best.distanceSquared,
+                second.province,
+                second.cellX,
+                second.cellZ,
+                second.siteX,
+                second.siteZ,
+                second.distanceSquared
+        );
+    }
+
+    private static Sample sample(
+            SiteCandidate best,
+            long bestDistanceSquared,
+            SiteCandidate second,
+            long secondDistanceSquared
+    ) {
+        return new Sample(
+                best.province,
+                best.cellX,
+                best.cellZ,
+                best.siteX,
+                best.siteZ,
+                bestDistanceSquared,
+                second.province,
+                second.cellX,
+                second.cellZ,
+                second.siteX,
+                second.siteZ,
+                secondDistanceSquared
+        );
+    }
+
+    private static long distanceSquared(int blockX, int blockZ, SiteCandidate site) {
+        long dx = (long) blockX - site.siteX;
+        long dz = (long) blockZ - site.siteZ;
+        return dx * dx + dz * dz;
+    }
+
+    private static boolean precedes(
+            SiteCandidate candidate,
+            long candidateDistance,
+            SiteCandidate other,
+            long otherDistance
+    ) {
+        if (other == null || candidateDistance != otherDistance) {
+            return other == null || candidateDistance < otherDistance;
+        }
+        if (candidate.cellX != other.cellX) {
+            return candidate.cellX < other.cellX;
+        }
+        return candidate.cellZ < other.cellZ;
+    }
+
     private record Candidate(
             GeologyProvince province,
             int cellX,
@@ -132,6 +220,46 @@ public final class GeologyProvinceSampler {
                 return cellX < other.cellX;
             }
             return cellZ < other.cellZ;
+        }
+    }
+
+    private record SiteCandidate(
+            GeologyProvince province,
+            int cellX,
+            int cellZ,
+            int siteX,
+            int siteZ
+    ) {
+    }
+
+    public static final class Context {
+        private final SiteCandidate[] sites;
+
+        private Context(SiteCandidate[] sites) {
+            this.sites = sites.clone();
+        }
+
+        public Sample sample(int blockX, int blockZ) {
+            SiteCandidate best = null;
+            SiteCandidate second = null;
+            long bestDistance = Long.MAX_VALUE;
+            long secondDistance = Long.MAX_VALUE;
+            for (SiteCandidate candidate : sites) {
+                long distance = distanceSquared(blockX, blockZ, candidate);
+                if (precedes(candidate, distance, best, bestDistance)) {
+                    second = best;
+                    secondDistance = bestDistance;
+                    best = candidate;
+                    bestDistance = distance;
+                } else if (precedes(candidate, distance, second, secondDistance)) {
+                    second = candidate;
+                    secondDistance = distance;
+                }
+            }
+            if (best == null || second == null) {
+                throw new IllegalStateException("GeoStrata province context did not produce two candidate sites");
+            }
+            return GeologyProvinceSampler.sample(best, bestDistance, second, secondDistance);
         }
     }
 
