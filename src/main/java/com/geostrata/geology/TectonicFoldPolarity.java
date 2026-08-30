@@ -36,6 +36,7 @@ public final class TectonicFoldPolarity {
             throw new IllegalArgumentException("structural anchor Y must be finite");
         }
         if (province != GeologyProvince.OROGENIC_BELT
+                || field.foldAmplitudeBlocks() == 0.0
                 || unitPhase(field.foldSecondaryPhase()) >= ACTIVATION_FRACTION) {
             return normal();
         }
