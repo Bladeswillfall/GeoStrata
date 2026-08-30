@@ -49,12 +49,35 @@ final class GeologyProvinceSamplerTest {
     }
 
     @Test
+    void chunkContextMatchesDirectSampling() {
+        assertContextMatchesDirect(123456789L, 992, -512, 1007, -497);
+    }
+
+    @Test
+    void chunkContextMatchesAcrossProvinceCellBoundary() {
+        assertContextMatchesDirect(8675309L, 760, -8, 775, 7);
+    }
+
+    @Test
     void blendIsHalfAndHalfAtBoundaryAndFullyInteriorPastWidth() {
         GeologyProvinceSampler.Sample sample = GeologyProvinceSampler.sample(-42L, -2000, 3000);
         double width = sample.distanceToBoundary();
         assertEquals(1.0, sample.interiorBlend(width), EPSILON);
         assertEquals(0.5, sample.interiorBlend(width * 2.0), EPSILON);
         assertEquals(1.0, sample.interiorBlend(0.0), EPSILON);
+    }
+
+    private static void assertContextMatchesDirect(long seed, int minX, int minZ, int maxX, int maxZ) {
+        GeologyProvinceSampler.Context context = GeologyProvinceSampler.context(seed, minX, minZ, maxX, maxZ);
+        for (int x = minX; x <= maxX; x++) {
+            for (int z = minZ; z <= maxZ; z++) {
+                assertEquals(
+                        GeologyProvinceSampler.sample(seed, x, z),
+                        context.sample(x, z),
+                        "province context diverged at " + x + "," + z
+                );
+            }
+        }
     }
 
     private static void assertSample(
