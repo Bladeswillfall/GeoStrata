@@ -122,7 +122,7 @@ Inside owned orogenic chunks the correlated pass may also replace earlier GeoStr
 
 `/geostrata experiment` reports ownership, field lithology, actual block, cycle position, structural offsets and the effective mutation domain. Because the domain is dimension-relative, that reported range should match the current world's bottom through top-1.
 
-`/geostrata terrain`, `/geostrata field` and `/geostrata metamorphism` remain read-only diagnostics for inspecting the terrain evidence and geological response. `/geostrata field` still reports the virtual sedimentary field outside correlated-owned chunks; pair it with `/geostrata experiment` until the command is made authority-aware for province-specific background architectures.
+`/geostrata terrain`, `/geostrata field` and `/geostrata metamorphism` remain read-only diagnostics for inspecting the terrain evidence and geological response. `/geostrata field` currently reports the virtual sedimentary field even outside correlated-owned chunks; pair it with `/geostrata experiment` while testing Volcanic Arc. In particular, `outside_allowed_province` means the `/field` lithology is not authoritative there—the Volcanic Arc architecture is.
 
 ## Determinism
 
