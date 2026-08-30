@@ -52,13 +52,9 @@ jobs:
 
   runtime-smoke:
     if: github.head_ref == 'perf/extreme-height-worldgen-20260830'
-    name: runtime-smoke (${{ matrix.scenario }})
+    name: runtime-smoke (paired)
     runs-on: ubuntu-latest
     timeout-minutes: 18
-    strategy:
-      fail-fast: false
-      matrix:
-        scenario: [baseline, experiment]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -81,11 +77,8 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p run/mods
+          mkdir -p run/mods run/results
           rm -f run/mods/geostrata-correlated-experiment-*.jar
-          if [ '${{ matrix.scenario }}' = 'experiment' ]; then
-              cp experiment-companion/build/libs/geostrata-correlated-experiment-0.2.0.jar run/mods/
-          fi
           python3 - <<'PY'
           import json
           import pathlib
@@ -175,65 +168,88 @@ jobs:
           PY
           rm -rf run/geostrata-runtime-smoke run/logs
 
-      - name: Boot Minecraft and generate spawn terrain
+      - name: Benchmark baseline and correlated geology
         shell: bash
         run: |
           set -euo pipefail
-          started_at=$(date +%s)
-          setsid gradle runServer --stacktrace > run/runtime.stdout.log 2>&1 &
-          pid=$!
-          started=0
-          for _ in $(seq 1 390); do
-              if [ -f run/logs/latest.log ] && grep -q 'Done (' run/logs/latest.log; then
-                  started=1
-                  break
+
+          run_scenario() {
+              scenario="$1"
+              rm -rf run/geostrata-runtime-smoke run/logs
+              if [ "$scenario" = experiment ]; then
+                  cp experiment-companion/build/libs/geostrata-correlated-experiment-0.2.0.jar run/mods/
+              else
+                  rm -f run/mods/geostrata-correlated-experiment-*.jar
               fi
-              if ! kill -0 "$pid" 2>/dev/null; then
-                  echo 'Minecraft server exited before reaching Done.'
-                  cat run/runtime.stdout.log
+
+              started_at=$(date +%s)
+              setsid gradle runServer --stacktrace > "run/results/${scenario}.stdout.log" 2>&1 &
+              pid=$!
+              started=0
+              for _ in $(seq 1 390); do
+                  if [ -f run/logs/latest.log ] && grep -q 'Done (' run/logs/latest.log; then
+                      started=1
+                      break
+                  fi
+                  if ! kill -0 "$pid" 2>/dev/null; then
+                      echo "Minecraft server exited before reaching Done for ${scenario}."
+                      cat "run/results/${scenario}.stdout.log"
+                      [ -f run/logs/latest.log ] && cat run/logs/latest.log
+                      exit 1
+                  fi
+                  sleep 2
+              done
+              finished_at=$(date +%s)
+              elapsed=$((finished_at - started_at))
+              printf '%s\n' "$elapsed" > "run/results/${scenario}.elapsed-seconds.txt"
+              if [ -f run/logs/latest.log ]; then
+                  cp run/logs/latest.log "run/results/${scenario}.latest.log"
+              fi
+              echo "${scenario} startup elapsed seconds: ${elapsed}"
+              if [ "$started" -ne 1 ]; then
+                  echo "Minecraft server did not reach Done for ${scenario}."
+                  cat "run/results/${scenario}.stdout.log"
                   [ -f run/logs/latest.log ] && cat run/logs/latest.log
+                  kill -TERM -- "-$pid" 2>/dev/null || true
                   exit 1
               fi
-              sleep 2
-          done
-          finished_at=$(date +%s)
-          elapsed=$((finished_at - started_at))
-          printf '%s\n' "$elapsed" > run/elapsed-seconds.txt
-          echo '${{ matrix.scenario }} startup elapsed seconds:' "$elapsed"
-          if [ "$started" -ne 1 ]; then
-              echo 'Minecraft server did not reach Done.'
-              cat run/runtime.stdout.log
-              [ -f run/logs/latest.log ] && cat run/logs/latest.log
+              sleep 5
               kill -TERM -- "-$pid" 2>/dev/null || true
-              exit 1
-          fi
-          sleep 5
-          kill -TERM -- "-$pid" 2>/dev/null || true
-          wait "$pid" 2>/dev/null || true
+              wait "$pid" 2>/dev/null || true
+          }
 
-      - name: Assert clean worldgen log
+          run_scenario baseline
+          run_scenario experiment
+
+          baseline=$(cat run/results/baseline.elapsed-seconds.txt)
+          experiment=$(cat run/results/experiment.elapsed-seconds.txt)
+          overhead=$((experiment - baseline))
+          printf 'baseline_seconds=%s\nexperiment_seconds=%s\noverhead_seconds=%s\n' \
+              "$baseline" "$experiment" "$overhead" | tee run/results/paired-summary.txt
+
+      - name: Assert clean worldgen logs
         shell: bash
         run: |
           set -euo pipefail
-          test -f run/logs/latest.log
-          grep -q 'Done (' run/logs/latest.log
-          if grep -E '\[(Server thread|Worker-Main-[^]]+)\/ERROR\]|Exception generating new chunk|Crash report saved|Couldn.t load tag geostrata:has_swamp_soils' run/logs/latest.log; then
-              echo 'Worldgen/runtime errors detected:'
-              grep -nE '\[(Server thread|Worker-Main-[^]]+)\/ERROR\]|Exception generating new chunk|Crash report saved|Couldn.t load tag geostrata:has_swamp_soils' run/logs/latest.log
-              exit 1
-          fi
-          echo 'GeoStrata + Tectonic reached a clean dedicated-server startup for ${{ matrix.scenario }}.'
-          echo 'Elapsed seconds:' $(cat run/elapsed-seconds.txt)
+          for scenario in baseline experiment; do
+              log="run/results/${scenario}.latest.log"
+              test -f "$log"
+              grep -q 'Done (' "$log"
+              if grep -E '\[(Server thread|Worker-Main-[^]]+)\/ERROR\]|Exception generating new chunk|Crash report saved|Couldn.t load tag geostrata:has_swamp_soils' "$log"; then
+                  echo "Worldgen/runtime errors detected for ${scenario}:"
+                  grep -nE '\[(Server thread|Worker-Main-[^]]+)\/ERROR\]|Exception generating new chunk|Crash report saved|Couldn.t load tag geostrata:has_swamp_soils' "$log"
+                  exit 1
+              fi
+          done
+          cat run/results/paired-summary.txt
 
       - name: Upload runtime logs
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: geostrata-runtime-smoke-${{ matrix.scenario }}
+          name: geostrata-runtime-smoke-paired
           path: |
-            run/runtime.stdout.log
+            run/results/*
             run/bootstrap.stdout.log
-            run/logs/latest.log
             run/config/tectonic.json
-            run/elapsed-seconds.txt
           if-no-files-found: warn
