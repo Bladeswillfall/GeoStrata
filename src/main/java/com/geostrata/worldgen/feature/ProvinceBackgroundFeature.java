@@ -100,7 +100,56 @@ public final class ProvinceBackgroundFeature extends Feature<DefaultFeatureConfi
         int centerX = startX + CHUNK_SIZE / 2;
         int centerZ = startZ + CHUNK_SIZE / 2;
         long worldSeed = world.getSeed();
-        GeologyProvinceSampler.Sample provinceSample = GeologyProvinceSampler.sample(worldSeed, centerX, centerZ);
+        GeologyProvinceSampler.Sample province = GeologyProvinceSampler.sample(worldSeed, centerX, centerZ);
+        Background background = background(
+                world,
+                worldSeed,
+                centerX,
+                centerZ,
+                province,
+                catalog,
+                profiles,
+                successions,
+                fieldProfiles
+        );
+
+        TagKey<Block> hostTag = hostTag(experiment.hostBlockTag());
+        int minY = Math.max(
+                world.getBottomY(),
+                world.getSeaLevel() + experiment.verticalWindow().minOffsetBlocks()
+        );
+        int maxY = Math.min(
+                world.getTopY() - 1,
+                world.getSeaLevel() + experiment.verticalWindow().maxOffsetBlocks()
+        );
+        if (minY > maxY) {
+            return false;
+        }
+
+        return replaceChunk(
+                world,
+                startX,
+                startZ,
+                minY,
+                maxY,
+                hostTag,
+                background.field(),
+                background.resolver(),
+                background.outputStates()
+        ) > 0;
+    }
+
+    private static Background background(
+            StructureWorldAccess world,
+            long worldSeed,
+            int centerX,
+            int centerZ,
+            GeologyProvinceSampler.Sample provinceSample,
+            LithologyCatalog.Snapshot catalog,
+            GeologyProvinceProfiles.Snapshot profiles,
+            SedimentarySuccessions.Snapshot successions,
+            SedimentaryFieldProfiles.Snapshot fieldProfiles
+    ) {
         GeologyProvince province = provinceSample.province();
         SedimentaryStratigraphicField.Field architectureBaseField = SedimentaryStratigraphicField.forSite(
                 worldSeed,
@@ -116,121 +165,117 @@ public final class ProvinceBackgroundFeature extends Feature<DefaultFeatureConfi
                 architectureBaseField
         );
 
-        Map<String, BlockState> outputStates;
-        ColumnResolver resolver;
-        TerrainAwareStructuralField.Field activeField = architectureField;
         if (province == GeologyProvince.VOLCANIC_ARC) {
-            outputStates = outputStates(VOLCANIC_ARC_LITHOLOGIES, catalog);
-            VolcanicArcModel.Context volcanicArc = VolcanicArcModel.forSite(
+            VolcanicArcModel.Context model = VolcanicArcModel.forSite(
                     worldSeed,
                     provinceSample.siteX(),
                     provinceSample.siteZ(),
                     world.getSeaLevel()
             );
-            resolver = (x, z, structuralColumn) -> {
-                VolcanicArcModel.Column column = volcanicArc.column(x, z, structuralColumn.verticalOffset(0.0));
+            ColumnResolver resolver = (x, z, structuralColumn) -> {
+                VolcanicArcModel.Column column = model.column(x, z, structuralColumn.verticalOffset(0.0));
                 return y -> column.sample(y).lithology();
             };
-        } else if (province == GeologyProvince.CRATONIC_SHIELD) {
-            outputStates = outputStates(CRATONIC_SHIELD_LITHOLOGIES, catalog);
-            CratonicShieldModel.Context cratonicShield = CratonicShieldModel.forSite(
+            return new Background(architectureField, resolver, outputStates(VOLCANIC_ARC_LITHOLOGIES, catalog));
+        }
+        if (province == GeologyProvince.CRATONIC_SHIELD) {
+            CratonicShieldModel.Context model = CratonicShieldModel.forSite(
                     worldSeed,
                     provinceSample.siteX(),
                     provinceSample.siteZ(),
                     world.getSeaLevel()
             );
-            resolver = (x, z, structuralColumn) -> {
-                CratonicShieldModel.Column column = cratonicShield.column(x, z, structuralColumn.verticalOffset(0.0));
+            ColumnResolver resolver = (x, z, structuralColumn) -> {
+                CratonicShieldModel.Column column = model.column(x, z, structuralColumn.verticalOffset(0.0));
                 return y -> column.sample(y).lithology();
             };
-        } else if (province == GeologyProvince.OROGENIC_BELT) {
-            outputStates = outputStates(OROGENIC_BELT_LITHOLOGIES, catalog);
-            OrogenicBeltModel.Context orogenicBelt = OrogenicBeltModel.forSite(
+            return new Background(architectureField, resolver, outputStates(CRATONIC_SHIELD_LITHOLOGIES, catalog));
+        }
+        if (province == GeologyProvince.OROGENIC_BELT) {
+            OrogenicBeltModel.Context model = OrogenicBeltModel.forSite(
                     worldSeed,
                     provinceSample.siteX(),
                     provinceSample.siteZ(),
                     world.getSeaLevel()
             );
-            resolver = (x, z, structuralColumn) -> {
-                OrogenicBeltModel.Column column = orogenicBelt.column(x, z, 0.0);
+            ColumnResolver resolver = (x, z, structuralColumn) -> {
+                OrogenicBeltModel.Column column = model.column(x, z, 0.0);
                 return y -> structuralColumn.tectonicColumn().distanceToFault(y) <= OROGENIC_FAULT_DAMAGE_HALF_WIDTH
                         ? "breccia"
                         : column.sample(y, structuralColumn.verticalOffset(y)).lithology();
             };
-        } else {
-            SedimentarySuccessions.Succession sequence = SedimentarySuccessionSelector.selectForSite(
-                    worldSeed,
-                    province,
-                    provinceSample.siteX(),
-                    provinceSample.siteZ(),
-                    profiles,
-                    successions
-            ).succession();
-            SedimentaryStratigraphicField.Field sequenceBaseField = SedimentaryStratigraphicField.forSite(
-                    worldSeed,
-                    provinceSample.siteX(),
-                    provinceSample.siteZ(),
-                    fieldProfiles.parametersFor(sequence.continuity())
-            );
-            TerrainAwareStructuralField.Field sequenceField = ChunkGeneratorTerrainMorphologySampler.structuralField(
-                    world.toServerWorld(),
-                    centerX,
-                    centerZ,
-                    province,
-                    sequenceBaseField
-            );
-            SedimentaryContactPlanner.Plan plan = SedimentaryContactPlanner.plan(
-                    worldSeed,
-                    provinceSample.siteX(),
-                    provinceSample.siteZ(),
-                    sequence
-            );
-            outputStates = outputStates(sequence.beds().stream()
-                    .map(SedimentarySuccessions.Bed::lithology)
-                    .distinct()
-                    .toList(), catalog);
-            boolean faultDamage = province == GeologyProvince.RIFT_PROVINCE;
-            if (faultDamage) {
-                outputStates.put("breccia", outputState("breccia", catalog));
-            }
-            resolver = (x, z, structuralColumn) -> y -> {
-                if (faultDamage
-                        && structuralColumn.tectonicColumn().distanceToFault(y) <= RIFT_FAULT_DAMAGE_HALF_WIDTH) {
-                    return "breccia";
-                }
-                return sequenceField.baseField()
-                        .sampleAtVerticalOffset(y, plan, structuralColumn.verticalOffset(y))
-                        .bed()
-                        .lithology();
-            };
-            activeField = sequenceField;
+            return new Background(architectureField, resolver, outputStates(OROGENIC_BELT_LITHOLOGIES, catalog));
         }
-
-        TagKey<Block> hostTag = hostTag(experiment.hostBlockTag());
-        int seaLevel = world.getSeaLevel();
-        int minY = Math.max(
-                world.getBottomY(),
-                seaLevel + experiment.verticalWindow().minOffsetBlocks()
-        );
-        int maxY = Math.min(
-                world.getTopY() - 1,
-                seaLevel + experiment.verticalWindow().maxOffsetBlocks()
-        );
-        if (minY > maxY) {
-            return false;
-        }
-
-        return replaceChunk(
+        return sedimentaryBackground(
                 world,
-                startX,
-                startZ,
-                minY,
-                maxY,
-                hostTag,
-                activeField,
-                resolver,
-                outputStates
-        ) > 0;
+                worldSeed,
+                centerX,
+                centerZ,
+                provinceSample,
+                catalog,
+                profiles,
+                successions,
+                fieldProfiles
+        );
+    }
+
+    private static Background sedimentaryBackground(
+            StructureWorldAccess world,
+            long worldSeed,
+            int centerX,
+            int centerZ,
+            GeologyProvinceSampler.Sample provinceSample,
+            LithologyCatalog.Snapshot catalog,
+            GeologyProvinceProfiles.Snapshot profiles,
+            SedimentarySuccessions.Snapshot successions,
+            SedimentaryFieldProfiles.Snapshot fieldProfiles
+    ) {
+        GeologyProvince province = provinceSample.province();
+        SedimentarySuccessions.Succession sequence = SedimentarySuccessionSelector.selectForSite(
+                worldSeed,
+                province,
+                provinceSample.siteX(),
+                provinceSample.siteZ(),
+                profiles,
+                successions
+        ).succession();
+        SedimentaryStratigraphicField.Field baseField = SedimentaryStratigraphicField.forSite(
+                worldSeed,
+                provinceSample.siteX(),
+                provinceSample.siteZ(),
+                fieldProfiles.parametersFor(sequence.continuity())
+        );
+        TerrainAwareStructuralField.Field field = ChunkGeneratorTerrainMorphologySampler.structuralField(
+                world.toServerWorld(),
+                centerX,
+                centerZ,
+                province,
+                baseField
+        );
+        SedimentaryContactPlanner.Plan plan = SedimentaryContactPlanner.plan(
+                worldSeed,
+                provinceSample.siteX(),
+                provinceSample.siteZ(),
+                sequence
+        );
+        Map<String, BlockState> states = outputStates(sequence.beds().stream()
+                .map(SedimentarySuccessions.Bed::lithology)
+                .distinct()
+                .toList(), catalog);
+        boolean faultDamage = province == GeologyProvince.RIFT_PROVINCE;
+        if (faultDamage) {
+            states.put("breccia", outputState("breccia", catalog));
+        }
+        ColumnResolver resolver = (x, z, structuralColumn) -> y -> {
+            if (faultDamage
+                    && structuralColumn.tectonicColumn().distanceToFault(y) <= RIFT_FAULT_DAMAGE_HALF_WIDTH) {
+                return "breccia";
+            }
+            return baseField.sampleAtVerticalOffset(y, plan, structuralColumn.verticalOffset(y))
+                    .bed()
+                    .lithology();
+        };
+        return new Background(field, resolver, states);
     }
 
     private static int replaceChunk(
@@ -377,6 +422,13 @@ public final class ProvinceBackgroundFeature extends Feature<DefaultFeatureConfi
             throw new IllegalStateException("Invalid background geology host block tag: " + rawIdentifier);
         }
         return TagKey.of(RegistryKeys.BLOCK, id);
+    }
+
+    private record Background(
+            TerrainAwareStructuralField.Field field,
+            ColumnResolver resolver,
+            Map<String, BlockState> outputStates
+    ) {
     }
 
     @FunctionalInterface
