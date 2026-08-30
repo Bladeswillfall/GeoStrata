@@ -8,7 +8,14 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 final class VolcanicArcModelTest {
-    private static final Set<String> LITHOLOGIES = Set.of("gneiss", "basalt", "rhyolite", "breccia");
+    private static final Set<String> LITHOLOGIES = Set.of(
+            "gneiss",
+            "schist",
+            "quartzite",
+            "basalt",
+            "rhyolite",
+            "breccia"
+    );
 
     @Test
     void samplingIsDeterministic() {
