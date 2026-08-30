@@ -2,6 +2,9 @@ package com.geostrata.geology;
 
 import org.junit.jupiter.api.Test;
 
+import java.util.HashSet;
+import java.util.Set;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 final class GeologyProvinceSamplerTest {
@@ -56,6 +59,28 @@ final class GeologyProvinceSamplerTest {
     @Test
     void chunkContextMatchesAcrossProvinceCellBoundary() {
         assertContextMatchesDirect(8675309L, 760, -8, 775, 7);
+    }
+
+    @Test
+    void boundaryChunkContextPreservesMultipleOwningSites() {
+        long seed = -42L;
+        int minX = -2000;
+        int minZ = 2992;
+        int maxX = minX + 15;
+        int maxZ = minZ + 15;
+        GeologyProvinceSampler.Context context = GeologyProvinceSampler.context(seed, minX, minZ, maxX, maxZ);
+        Set<String> sites = new HashSet<>();
+
+        for (int x = minX; x <= maxX; x++) {
+            for (int z = minZ; z <= maxZ; z++) {
+                GeologyProvinceSampler.Sample direct = GeologyProvinceSampler.sample(seed, x, z);
+                GeologyProvinceSampler.Sample cached = context.sample(x, z);
+                assertEquals(direct, cached, "province context diverged at " + x + "," + z);
+                sites.add(cached.siteX() + ":" + cached.siteZ());
+            }
+        }
+
+        assertEquals(2, sites.size(), "regression chunk should contain both Rift and Cratonic ownership");
     }
 
     @Test
