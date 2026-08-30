@@ -171,41 +171,30 @@ public final class CorrelatedSedimentaryFeature extends Feature<DefaultFeatureCo
             Map<String, BlockState> outputStates,
             CorrelatedSedimentaryRuntime.Column[] columns
     ) {
-        int placed = 0;
         int minLocalY = minY - sectionBottomY;
         int maxLocalY = maxY - sectionBottomY;
         PalettedContainer<BlockState> states = section.getBlockStateContainer();
+        int placed = 0;
         section.lock();
         try {
             for (int localX = 0; localX < SECTION_SIZE; localX++) {
-                int x = startX + localX;
                 for (int localZ = 0; localZ < SECTION_SIZE; localZ++) {
-                    int z = startZ + localZ;
-                    int columnIndex = localX * CHUNK_SIZE + localZ;
-                    CorrelatedSedimentaryRuntime.Column column = columns[columnIndex];
-                    for (int localY = minLocalY; localY <= maxLocalY; localY++) {
-                        BlockState existing = states.get(localX, localY, localZ);
-                        if (!replaceable(existing, hostTag, site, catalog)) {
-                            continue;
-                        }
-
-                        if (column == null) {
-                            column = site.column(worldSeed, x, z);
-                            columns[columnIndex] = column;
-                        }
-                        int y = sectionBottomY + localY;
-                        String lithology = column.outputLithology(y, catalog);
-                        BlockState replacement = outputStates.get(lithology);
-                        if (replacement == null) {
-                            replacement = outputState(lithology, catalog);
-                            outputStates.put(lithology, replacement);
-                        }
-                        if (existing.equals(replacement)) {
-                            continue;
-                        }
-                        states.swapUnsafe(localX, localY, localZ, replacement);
-                        placed++;
-                    }
+                    placed += replaceSectionColumn(
+                            worldSeed,
+                            startX,
+                            startZ,
+                            sectionBottomY,
+                            localX,
+                            localZ,
+                            minLocalY,
+                            maxLocalY,
+                            states,
+                            hostTag,
+                            site,
+                            catalog,
+                            outputStates,
+                            columns
+                    );
                 }
             }
             if (placed > 0) {
@@ -215,6 +204,61 @@ public final class CorrelatedSedimentaryFeature extends Feature<DefaultFeatureCo
             section.unlock();
         }
         return placed;
+    }
+
+    private static int replaceSectionColumn(
+            long worldSeed,
+            int startX,
+            int startZ,
+            int sectionBottomY,
+            int localX,
+            int localZ,
+            int minLocalY,
+            int maxLocalY,
+            PalettedContainer<BlockState> states,
+            TagKey<Block> hostTag,
+            CorrelatedSedimentaryRuntime.TerrainAwareSite site,
+            LithologyCatalog.Snapshot catalog,
+            Map<String, BlockState> outputStates,
+            CorrelatedSedimentaryRuntime.Column[] columns
+    ) {
+        int x = startX + localX;
+        int z = startZ + localZ;
+        int columnIndex = localX * CHUNK_SIZE + localZ;
+        CorrelatedSedimentaryRuntime.Column column = columns[columnIndex];
+        int placed = 0;
+        for (int localY = minLocalY; localY <= maxLocalY; localY++) {
+            BlockState existing = states.get(localX, localY, localZ);
+            if (!replaceable(existing, hostTag, site, catalog)) {
+                continue;
+            }
+
+            if (column == null) {
+                column = site.column(worldSeed, x, z);
+                columns[columnIndex] = column;
+            }
+            int y = sectionBottomY + localY;
+            String lithology = column.outputLithology(y, catalog);
+            BlockState replacement = replacementState(lithology, catalog, outputStates);
+            if (!existing.equals(replacement)) {
+                states.swapUnsafe(localX, localY, localZ, replacement);
+                placed++;
+            }
+        }
+        return placed;
+    }
+
+    private static BlockState replacementState(
+            String lithology,
+            LithologyCatalog.Snapshot catalog,
+            Map<String, BlockState> outputStates
+    ) {
+        BlockState replacement = outputStates.get(lithology);
+        if (replacement == null) {
+            replacement = outputState(lithology, catalog);
+            outputStates.put(lithology, replacement);
+        }
+        return replacement;
     }
 
     private static boolean replaceable(
