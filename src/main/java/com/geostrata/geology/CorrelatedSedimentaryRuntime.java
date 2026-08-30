@@ -142,6 +142,27 @@ public final class CorrelatedSedimentaryRuntime {
             return field.sample(x, y, z, base.plan());
         }
 
+        /**
+         * Resolves all X/Z-only structural work once for a vertical worldgen column.
+         * Sampling Y values from the returned column preserves the exact field while
+         * avoiding repeated terrain interpolation, warp trigonometry, and regional
+         * metamorphic suitability calculations.
+         */
+        public Column column(long worldSeed, int x, int z) {
+            double verticalOffset = field.verticalOffset(x, z);
+            MetamorphicIntensityField.Suitability suitability = null;
+            if (ownership().province() == GeologyProvince.OROGENIC_BELT) {
+                suitability = MetamorphicIntensityField.sample(
+                        worldSeed,
+                        x,
+                        z,
+                        MetamorphicIntensityField.DEFAULT_PROVINCE_BLEND_WIDTH_BLOCKS,
+                        field.localPatch().morphologyAt(x, z)
+                ).suitability();
+            }
+            return new Column(this, worldSeed, x, z, verticalOffset, suitability);
+        }
+
         public String outputLithology(
                 long worldSeed,
                 int x,
@@ -149,8 +170,35 @@ public final class CorrelatedSedimentaryRuntime {
                 int z,
                 LithologyCatalog.Snapshot catalog
         ) {
-            String parent = sample(x, y, z).bed().lithology();
-            if (ownership().province() != GeologyProvince.OROGENIC_BELT) {
+            return column(worldSeed, x, z).outputLithology(y, catalog);
+        }
+    }
+
+    public record Column(
+            TerrainAwareSite site,
+            long worldSeed,
+            int x,
+            int z,
+            double verticalOffset,
+            MetamorphicIntensityField.Suitability metamorphicSuitability
+    ) {
+        public Column {
+            if (site == null || !Double.isFinite(verticalOffset)) {
+                throw new IllegalArgumentException("correlated column context must be valid");
+            }
+        }
+
+        public SedimentaryStratigraphicField.Sample sample(double y) {
+            return site.field().baseField().sampleAtVerticalOffset(
+                    y,
+                    site.plan(),
+                    verticalOffset
+            );
+        }
+
+        public String outputLithology(int y, LithologyCatalog.Snapshot catalog) {
+            String parent = sample(y).bed().lithology();
+            if (metamorphicSuitability == null) {
                 return parent;
             }
 
@@ -159,21 +207,14 @@ public final class CorrelatedSedimentaryRuntime {
                 return parent;
             }
 
-            MetamorphicIntensityField.Suitability suitability = MetamorphicIntensityField.sample(
-                    worldSeed,
-                    x,
-                    z,
-                    MetamorphicIntensityField.DEFAULT_PROVINCE_BLEND_WIDTH_BLOCKS,
-                    field.localPatch().morphologyAt(x, z)
-            ).suitability();
             Optional<MetamorphicBandPlanner.Selection> selection = MetamorphicBandPlanner.select(
                     worldSeed,
-                    field.baseField().siteX(),
-                    field.baseField().siteZ(),
+                    site.field().baseField().siteX(),
+                    site.field().baseField().siteZ(),
                     y,
-                    field.verticalOffset(x, z),
-                    field.baseField().cycleThicknessBlocks(),
-                    suitability
+                    verticalOffset,
+                    site.field().baseField().cycleThicknessBlocks(),
+                    metamorphicSuitability
             );
             if (selection.isEmpty()) {
                 return parent;
