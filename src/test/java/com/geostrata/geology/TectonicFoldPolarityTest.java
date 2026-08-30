@@ -25,6 +25,35 @@ final class TectonicFoldPolarityTest {
     }
 
     @Test
+    void activeProfilesCanSelectEitherCompressedLimb() {
+        boolean negative = false;
+        boolean positive = false;
+        for (long seed = 0; seed < 4096 && !(negative && positive); seed++) {
+            TectonicStructuralField.Context field = TectonicStructuralField.forSite(
+                    seed,
+                    GeologyProvince.OROGENIC_BELT,
+                    0,
+                    0,
+                    48.0
+            );
+            TectonicFoldPolarity.Profile profile = TectonicFoldPolarity.forField(
+                    GeologyProvince.OROGENIC_BELT,
+                    field,
+                    48.0,
+                    80.0
+            );
+            if (!profile.active()) {
+                continue;
+            }
+            negative |= profile.limbDirection() < 0.0;
+            positive |= profile.limbDirection() > 0.0;
+        }
+
+        assertTrue(negative, "expected some active sites to overturn the negative limb");
+        assertTrue(positive, "expected some active sites to overturn the positive limb");
+    }
+
+    @Test
     void activeOrogenicProfileContainsNormalAndOverturnedLimbs() {
         ActiveField active = activeField();
         boolean foundNormal = false;
