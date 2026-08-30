@@ -4,8 +4,8 @@ package com.geostrata.geology;
  * Deterministic block-scale architecture for the experimental Volcanic Arc province.
  *
  * <p>This is deliberately province-specific rather than a generic architecture engine.
- * It supplies a metamorphic basement, mafic dikes/sills, local rhyolitic bodies and
- * breccia halos while reusing the shared structural offset supplied by GeoStrata's
+ * It supplies a varied metamorphic basement, mafic dikes/sills, local rhyolitic bodies
+ * and breccia halos while reusing the shared structural offset supplied by GeoStrata's
  * terrain-aware field.</p>
  */
 public final class VolcanicArcModel {
@@ -15,6 +15,9 @@ public final class VolcanicArcModel {
     private static final double DIKE_BRECCIA_HALF_THICKNESS = 3.25;
     private static final double SILL_SPACING = 160.0;
     private static final double SILL_HALF_THICKNESS = 2.25;
+    private static final double METAMORPHIC_BELT_SPACING = 224.0;
+    private static final double SCHIST_HALF_WIDTH = 32.0;
+    private static final double QUARTZITE_HALF_WIDTH = 7.0;
     private static final int RHYOLITE_CELL_SIZE = 256;
     private static final double RHYOLITE_CELL_MARGIN = 64.0;
     private static final double RHYOLITE_CELL_SPAN = RHYOLITE_CELL_SIZE - RHYOLITE_CELL_MARGIN * 2.0;
@@ -23,6 +26,8 @@ public final class VolcanicArcModel {
     private static final long DIKE_ANGLE_SALT = 0x8EBC6AF09C88C6E3L;
     private static final long DIKE_PHASE_SALT = 0x589965CC75374CC3L;
     private static final long SILL_PHASE_SALT = 0x1D8E4E27C47D124FL;
+    private static final long METAMORPHIC_ANGLE_SALT = 0xA54FF53A5F1D36F1L;
+    private static final long METAMORPHIC_PHASE_SALT = 0x510E527FADE682D1L;
     private static final long RHYOLITE_X_SALT = 0xEB44ACCAB455D165L;
     private static final long RHYOLITE_Y_SALT = 0xA4093822299F31D0L;
     private static final long RHYOLITE_Z_SALT = 0x13198A2E03707344L;
@@ -33,15 +38,21 @@ public final class VolcanicArcModel {
     }
 
     public static Context forSite(long worldSeed, int siteX, int siteZ, double seaLevel) {
-        double angle = TWO_PI * GeologyDeterminism.unitRoll(worldSeed, siteX, 0, siteZ, DIKE_ANGLE_SALT);
+        double dikeAngle = TWO_PI * GeologyDeterminism.unitRoll(worldSeed, siteX, 0, siteZ, DIKE_ANGLE_SALT);
+        double metamorphicAngle = TWO_PI
+                * GeologyDeterminism.unitRoll(worldSeed, siteX, 0, siteZ, METAMORPHIC_ANGLE_SALT);
         return new Context(
                 worldSeed,
                 siteX,
                 siteZ,
-                Math.sin(angle),
-                Math.cos(angle),
+                Math.sin(dikeAngle),
+                Math.cos(dikeAngle),
                 DIKE_SPACING * GeologyDeterminism.unitRoll(worldSeed, siteX, 0, siteZ, DIKE_PHASE_SALT),
                 SILL_SPACING * GeologyDeterminism.unitRoll(worldSeed, siteX, 0, siteZ, SILL_PHASE_SALT),
+                Math.sin(metamorphicAngle),
+                Math.cos(metamorphicAngle),
+                METAMORPHIC_BELT_SPACING
+                        * GeologyDeterminism.unitRoll(worldSeed, siteX, 0, siteZ, METAMORPHIC_PHASE_SALT),
                 seaLevel
         );
     }
@@ -73,37 +84,51 @@ public final class VolcanicArcModel {
         private final long worldSeed;
         private final int siteX;
         private final int siteZ;
-        private final double sin;
-        private final double cos;
+        private final double dikeSin;
+        private final double dikeCos;
         private final double dikePhase;
         private final double sillPhase;
+        private final double metamorphicSin;
+        private final double metamorphicCos;
+        private final double metamorphicPhase;
         private final double seaLevel;
 
         private Context(
                 long worldSeed,
                 int siteX,
                 int siteZ,
-                double sin,
-                double cos,
+                double dikeSin,
+                double dikeCos,
                 double dikePhase,
                 double sillPhase,
+                double metamorphicSin,
+                double metamorphicCos,
+                double metamorphicPhase,
                 double seaLevel
         ) {
             this.worldSeed = worldSeed;
             this.siteX = siteX;
             this.siteZ = siteZ;
-            this.sin = sin;
-            this.cos = cos;
+            this.dikeSin = dikeSin;
+            this.dikeCos = dikeCos;
             this.dikePhase = dikePhase;
             this.sillPhase = sillPhase;
+            this.metamorphicSin = metamorphicSin;
+            this.metamorphicCos = metamorphicCos;
+            this.metamorphicPhase = metamorphicPhase;
             this.seaLevel = seaLevel;
         }
 
         public Column column(int x, int z, double structuralOffset) {
             double dx = (double) x - siteX;
             double dz = (double) z - siteZ;
-            double across = -dx * sin + dz * cos;
-            double dikeDistance = periodicDistance(across + dikePhase, DIKE_SPACING);
+            double dikeAcross = -dx * dikeSin + dz * dikeCos;
+            double dikeDistance = periodicDistance(dikeAcross + dikePhase, DIKE_SPACING);
+            double metamorphicAcross = -dx * metamorphicSin + dz * metamorphicCos;
+            double metamorphicDistance = periodicDistance(
+                    metamorphicAcross + metamorphicPhase,
+                    METAMORPHIC_BELT_SPACING
+            );
 
             int cellX = Math.floorDiv(x, RHYOLITE_CELL_SIZE);
             int cellZ = Math.floorDiv(z, RHYOLITE_CELL_SIZE);
@@ -124,6 +149,7 @@ public final class VolcanicArcModel {
 
             return new Column(
                     dikeDistance,
+                    metamorphicDistance,
                     horizontalRadius,
                     centerY,
                     radiusY,
@@ -135,6 +161,7 @@ public final class VolcanicArcModel {
 
     public record Column(
             double dikeDistance,
+            double metamorphicDistance,
             double rhyoliteHorizontalRadius,
             double rhyoliteCenterY,
             double rhyoliteRadiusY,
@@ -161,6 +188,12 @@ public final class VolcanicArcModel {
             double sillDistance = periodicDistance(y - structuralOffset + sillPhase, SILL_SPACING);
             if (sillDistance <= SILL_HALF_THICKNESS) {
                 return new Sample("basalt", "sill");
+            }
+            if (metamorphicDistance <= QUARTZITE_HALF_WIDTH) {
+                return new Sample("quartzite", "metamorphic_belt_core");
+            }
+            if (metamorphicDistance <= SCHIST_HALF_WIDTH) {
+                return new Sample("schist", "metamorphic_belt");
             }
             return new Sample("gneiss", "basement");
         }
