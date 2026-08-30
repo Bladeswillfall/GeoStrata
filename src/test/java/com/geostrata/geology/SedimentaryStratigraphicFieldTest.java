@@ -79,6 +79,27 @@ final class SedimentaryStratigraphicFieldTest {
     }
 
     @Test
+    void precomputedVerticalOffsetMatchesNormalSampling() {
+        SedimentaryContactPlanner.Plan plan = twoBedPlan(0.17);
+        SedimentaryStratigraphicField.Field field = SedimentaryStratigraphicField.forSite(
+                8675309L,
+                -192,
+                384,
+                new SedimentaryStratigraphicField.Parameters(52.0, 0.22, 7.0, 176.0)
+        );
+        int x = 73;
+        int z = -41;
+        double extraOffset = 11.75;
+        double totalOffset = field.verticalOffset(x, z) + extraOffset;
+
+        for (double y : new double[]{-128.0, -1.0, 63.0, 192.5, 639.0}) {
+            SedimentaryStratigraphicField.Sample normal = field.sample(x, y, z, plan, extraOffset);
+            SedimentaryStratigraphicField.Sample cached = field.sampleAtVerticalOffset(y, plan, totalOffset);
+            assertEquals(normal, cached);
+        }
+    }
+
+    @Test
     void fieldDerivationIsDeterministicForAProvinceSite() {
         SedimentaryStratigraphicField.Parameters parameters =
                 new SedimentaryStratigraphicField.Parameters(56.0, 0.3, 4.5, 144.0);
@@ -118,6 +139,8 @@ final class SedimentaryStratigraphicFieldTest {
                 () -> field.sample(0, Double.NaN, 0, twoBedPlan(0.0)));
         assertThrows(IllegalArgumentException.class,
                 () -> field.sample(0, 0.0, 0, twoBedPlan(0.0), Double.POSITIVE_INFINITY));
+        assertThrows(IllegalArgumentException.class,
+                () -> field.sampleAtVerticalOffset(0.0, twoBedPlan(0.0), Double.POSITIVE_INFINITY));
     }
 
     private static SedimentaryContactPlanner.Plan twoBedPlan(double phase) {
