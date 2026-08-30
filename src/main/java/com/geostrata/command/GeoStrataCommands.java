@@ -4,6 +4,7 @@ import com.geostrata.geology.CorrelatedExperimentChunkOwnership;
 import com.geostrata.geology.CorrelatedSedimentaryExperiment;
 import com.geostrata.geology.CorrelatedSedimentaryRuntime;
 import com.geostrata.geology.ChunkGeneratorTerrainMorphologySampler;
+import com.geostrata.geology.FaultControlledOrePlanner;
 import com.geostrata.geology.GeologyProvinceProfiles;
 import com.geostrata.geology.GeologyProvinceSampler;
 import com.geostrata.geology.GeologySurvey;
@@ -505,8 +506,9 @@ public final class GeoStrataCommands {
     private static int showOreCandidate(ServerCommandSource source, String material) {
         OreOccurrenceCatalog.Snapshot catalog = OreOccurrenceCatalog.current();
         LithologyCatalog.Snapshot lithologies = LithologyCatalog.current();
-        if (!catalog.loaded() || !lithologies.loaded()) {
-            source.sendError(Text.literal("GeoStrata ore and lithology catalogs have not been loaded yet."));
+        SedimentaryFieldProfiles.Snapshot fieldProfiles = SedimentaryFieldProfiles.current();
+        if (!catalog.loaded() || !lithologies.loaded() || !fieldProfiles.loaded()) {
+            source.sendError(Text.literal("GeoStrata ore, lithology and field metadata have not been loaded yet."));
             return 0;
         }
 
@@ -523,13 +525,19 @@ public final class GeoStrataCommands {
         int y = MathHelper.floor(position.y);
         int z = MathHelper.floor(position.z);
         long seed = source.getWorld().getSeed();
-        OreDepositCandidatePlanner.Proposal proposal = OreDepositCandidatePlanner.propose(
+        OreDepositCandidatePlanner.Proposal rawProposal = OreDepositCandidatePlanner.propose(
                 seed,
                 x,
                 y,
                 z,
                 occurrence
         );
+        FaultControlledOrePlanner.Binding binding = FaultControlledOrePlanner.bind(
+                seed,
+                rawProposal,
+                fieldProfiles.parametersFor("regional").cycleThicknessBlocks()
+        );
+        OreDepositCandidatePlanner.Proposal proposal = binding.proposal();
         GeologyProvinceSampler.Sample province = GeologyProvinceSampler.sample(
                 seed,
                 proposal.anchorX(),
@@ -545,9 +553,9 @@ public final class GeoStrataCommands {
         String status = candidate.isPresent()
                 ? "anchor-qualified geometry preview"
                 : "anchor diagnostic: " + candidateRejection(source, proposal, occurrence, province, host);
-        String geometry = candidate
-                .map(value -> bodySummary(seed, value, x, y, z))
-                .orElse("anchor-preview unavailable until host and province qualify");
+        String geometry = candidate.isPresent()
+                ? bodySummary(binding.body(seed), binding.faultAligned(), x, y, z)
+                : "anchor-preview unavailable until host and province qualify";
 
         source.sendFeedback(
                 () -> Text.literal(
@@ -569,18 +577,19 @@ public final class GeoStrataCommands {
     }
 
     private static String bodySummary(
-            long worldSeed,
-            OreDepositCandidatePlanner.Candidate candidate,
+            OreDepositGeometry.Body body,
+            boolean faultAligned,
             int x,
             int y,
             int z
     ) {
-        OreDepositGeometry.Body body = OreDepositGeometry.forCandidate(worldSeed, candidate);
         OreDepositGeometry.Sample sample = body.sample(x, y, z);
         return "body " + Math.round(body.lengthRadius() * 2.0)
                 + "x" + Math.round(body.widthRadius() * 2.0)
                 + "x" + Math.round(body.thicknessRadius() * 2.0)
                 + " blocks, dip " + Math.round(Math.toDegrees(body.dipRadians())) + "deg"
+                + ", bearing " + Math.round(Math.toDegrees(body.azimuthRadians())) + "deg"
+                + (faultAligned ? " fault-aligned" : "")
                 + ", branches " + body.branches().size()
                 + " | here " + sample.zone()
                 + " at " + Math.round(sample.concentration() * 100.0) + "% concentration";
