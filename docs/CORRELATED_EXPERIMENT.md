@@ -33,21 +33,34 @@ Owned chunks must select an allowed target succession and remain at least 96 blo
 
 The companion also runs a late background pass after the correlated feature. Its purpose is to ensure that otherwise-unclaimed natural host stone is still interpreted as GeoStrata geology instead of remaining vanilla stone.
 
-This is not a single-rock province fill. For each geological province the pass ranks the ordinary strata-lens lithologies by the existing `province_profiles.json` suitability weights and uses the strongest four as a repeated regional sequence. Event-only pipe lithologies such as kimberlite and lamproite are excluded because their baseline features are not ordinary strata lenses.
+The initial implementation used one background rock per province. Live testing showed that this turned a cratonic shield into an effectively solid gneiss mass, so that fallback was removed. Most provinces currently use a temporary province-weighted four-lithology matrix derived from the existing `province_profiles.json` suitability weights while their distinct architecture is validated.
 
-The sequence reuses the existing regional stratigraphic field, contact planner and active-terrain structural transform. As a result, the base matrix has coherent dipped/warped contacts and the same province-specific terrain response rather than per-block noise or biome-driven stone selection.
-
-Typical current palettes are:
+Typical temporary palettes are:
 
 - sedimentary basin: limestone, shale, mudstone, siltstone;
 - cratonic shield: gneiss, schist, quartzite, slate;
 - orogenic belt: schist, quartzite, gneiss, slate;
-- volcanic arc: basalt, rhyolite, breccia, gneiss;
 - rift province: basalt, conglomerate, shale, siltstone.
 
-The background pass only mutates `geostrata:worldgen/base_stone_replaceables`. Correlated strata and earlier GeoStrata bodies are already non-host blocks and therefore remain authoritative. Ores, caves, fluids and unrelated blocks are untouched. Known structure-piece bounding volumes are skipped so structure-placed raw stone is not reinterpreted as terrain geology.
+The temporary matrix reuses the regional stratigraphic field, contact planner and active-terrain structural transform. It is diagnostic scaffolding, not the intended final architecture for every province.
 
-This background matrix exists only in the opt-in companion while the world-level geology model is being visually validated. Standalone GeoStrata continues to use the conservative compatibility fallback.
+### Volcanic Arc architecture
+
+Volcanic Arc is the first province moved off the repeating matrix after visual testing showed that applying the same layered geometry to every rock made volcanic terrain read as stacked sedimentary beds.
+
+The experimental Volcanic Arc resolver is deliberately province-specific rather than a general architecture framework. It currently produces:
+
+- broad gneissic/metamorphic basement;
+- steep basalt dikes in a deterministic regional family;
+- sparse basalt sills deformed by the existing structural field;
+- local ellipsoidal rhyolite bodies;
+- breccia halos around dikes and rhyolitic bodies.
+
+The model is a pure function of world seed and coordinates. Dike orientation and phase are anchored to the geological province site, while rhyolite bodies use deterministic 256-block cells. The generated bodies therefore cross chunk boundaries without using chunk-local random state. Site geometry is precomputed once and rhyolite geometry once per X/Z column before the vertical scan.
+
+Existing GeoStrata bodies placed by earlier features are preserved because the background pass only mutates `geostrata:worldgen/base_stone_replaceables`. Ores, caves, fluids and unrelated blocks are untouched, and known structure-piece bounding volumes are skipped so structure-placed raw stone is not reinterpreted as terrain geology.
+
+This is the pattern for later province work: implement one geology architecture with existing primitives, test it visually, then extract shared code only after a second architecture proves what is actually common.
 
 ## Dimension-relative vertical domain
 
@@ -109,7 +122,7 @@ Inside owned orogenic chunks the correlated pass may also replace earlier GeoStr
 
 `/geostrata experiment` reports ownership, field lithology, actual block, cycle position, structural offsets and the effective mutation domain. Because the domain is dimension-relative, that reported range should match the current world's bottom through top-1.
 
-`/geostrata terrain`, `/geostrata field` and `/geostrata metamorphism` remain read-only diagnostics for inspecting the terrain evidence and geological response.
+`/geostrata terrain`, `/geostrata field` and `/geostrata metamorphism` remain read-only diagnostics for inspecting the terrain evidence and geological response. `/geostrata field` still reports the virtual sedimentary field outside correlated-owned chunks; pair it with `/geostrata experiment` until the command is made authority-aware for province-specific background architectures.
 
 ## Determinism
 
@@ -118,6 +131,7 @@ The experiment follows `docs/DETERMINISM.md`:
 - province and succession selection derive from world seed and stable site coordinates;
 - chunk ownership is normalized before evaluation;
 - structural fields and metamorphic bands use stable salts and coordinates;
+- volcanic-arc architecture derives from the same stable world seed, province site and coordinate inputs;
 - terrain evidence comes from the unchanged active deterministic chunk generator;
 - no first-visited state, runtime UUID or process-local random source creates geological identity.
 
@@ -125,8 +139,8 @@ Changing the terrain generator, GeoStrata version, datapacks or other worldgen i
 
 ## Validation and status
 
-`GeologyResourceContractTest` validates the bundled graph, requires natural-rock fallback placements to use dimension-relative vertical anchors, checks the full-dimension correlated contract and verifies companion staging. Behavior tests cover deterministic ownership, structural interpolation, erosional attenuation, metamorphic band selection and parent-rock boundaries.
+`GeologyResourceContractTest` validates the bundled graph, requires natural-rock fallback placements to use dimension-relative vertical anchors, checks the full-dimension correlated contract and verifies companion staging. Behavior tests cover deterministic ownership, structural interpolation, erosional attenuation, metamorphic band selection and parent-rock boundaries. `VolcanicArcModelTest` covers deterministic sampling and restricts the experimental architecture to its declared gneiss/basalt/rhyolite/breccia lithologies.
 
-The remaining work is empirical rather than architectural: evaluate abundance, contacts, cliff/ravine exposure, extreme-height terrain, performance and compatibility in fresh worlds before considering promotion into standalone worldgen.
+The remaining work is empirical: evaluate volcanic body abundance and geometry, contacts, cliff/ravine exposure, extreme-height terrain, performance and compatibility in fresh worlds before moving the next province off the temporary matrix.
 
 Standalone GeoStrata remains on the fallback baseline unless the companion is deliberately installed.
