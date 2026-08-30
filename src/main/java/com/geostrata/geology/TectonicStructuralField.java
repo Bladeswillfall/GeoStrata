@@ -5,9 +5,9 @@ package com.geostrata.geology;
  * stratigraphic field. Folds are smooth and long-wavelength; faults are discrete
  * block offsets across a seed-derived regional fault family.
  *
- * <p>The model is intentionally small. It adds the structural primitives needed
- * for readable anticline/syncline-style folding and faulted contacts without
- * creating a second terrain generator or mutable plate simulation.</p>
+ * <p>The model is intentionally small. X/Z work resolves once per column. Rift and
+ * sedimentary-basin faults additionally shift their trace with Y, producing dipping
+ * fault planes without introducing a second 3-D geology engine.</p>
  */
 public final class TectonicStructuralField {
     private static final double TWO_PI = Math.PI * 2.0;
@@ -21,6 +21,8 @@ public final class TectonicStructuralField {
     private static final long FAULT_PHASE_SALT = 0x9B05688C2B3E6C1FL;
     private static final long FAULT_SCALE_SALT = 0x1F83D9ABFB41BD6BL;
     private static final long FAULT_THROW_SALT = 0x5BE0CD19137E2179L;
+    private static final long FAULT_DIP_MAGNITUDE_SALT = 0x243F6A8885A308D3L;
+    private static final long FAULT_DIP_DIRECTION_SALT = 0x13198A2E03707344L;
 
     private TectonicStructuralField() {
     }
@@ -49,6 +51,12 @@ public final class TectonicStructuralField {
         double faultThrow = cycleThicknessBlocks
                 * settings.faultThrowCycleFraction()
                 * (0.70 + 0.30 * roll(worldSeed, siteX, siteZ, FAULT_THROW_SALT));
+        double faultDipShift = faultDipShift(
+                worldSeed,
+                province,
+                siteX,
+                siteZ
+        );
 
         return new Context(
                 siteX,
@@ -64,13 +72,30 @@ public final class TectonicStructuralField {
                 Math.sin(faultAngle),
                 faultSpacing * roll(worldSeed, siteX, siteZ, FAULT_PHASE_SALT),
                 faultThrow,
+                faultDipShift,
                 settings.faultRegime()
         );
     }
 
     /** Flat context used by pure terrain-response tests that do not opt into tectonics. */
     public static Context flat() {
-        return new Context(0, 0, 0.0, 1.0, 1.0, 0.0, 0.0, 0.0, 1.0, 1.0, 0.0, 0.0, 0.0, FaultRegime.NONE);
+        return new Context(
+                0,
+                0,
+                0.0,
+                1.0,
+                1.0,
+                0.0,
+                0.0,
+                0.0,
+                1.0,
+                1.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                FaultRegime.NONE
+        );
     }
 
     public static Settings settingsFor(GeologyProvince province) {
@@ -84,6 +109,31 @@ public final class TectonicStructuralField {
             case VOLCANIC_ARC -> new Settings(0.14, 540.0, 640.0, 0.35, FaultRegime.MIXED);
             case RIFT_PROVINCE -> new Settings(0.10, 680.0, 360.0, 0.55, FaultRegime.NORMAL);
         };
+    }
+
+    private static double faultDipShift(
+            long worldSeed,
+            GeologyProvince province,
+            int siteX,
+            int siteZ
+    ) {
+        double minimum;
+        double range;
+        switch (province) {
+            case SEDIMENTARY_BASIN -> {
+                minimum = 0.35;
+                range = 0.20;
+            }
+            case RIFT_PROVINCE -> {
+                minimum = 0.55;
+                range = 0.30;
+            }
+            default -> {
+                return 0.0;
+            }
+        }
+        double magnitude = minimum + range * roll(worldSeed, siteX, siteZ, FAULT_DIP_MAGNITUDE_SALT);
+        return roll(worldSeed, siteX, siteZ, FAULT_DIP_DIRECTION_SALT) < 0.5 ? -magnitude : magnitude;
     }
 
     private static double roll(long worldSeed, int siteX, int siteZ, long salt) {
@@ -161,7 +211,7 @@ public final class TectonicStructuralField {
         }
     }
 
-    /** Nearest point on the deterministic vertical fault trace in X/Z. */
+    /** Nearest point on the deterministic fault trace at the requested Y. */
     public record FaultTrace(
             double x,
             double z,
@@ -194,6 +244,7 @@ public final class TectonicStructuralField {
             double faultSin,
             double faultPhaseBlocks,
             double faultThrowBlocks,
+            double faultDipShiftPerVerticalBlock,
             FaultRegime faultRegime
     ) {
         public Context {
@@ -205,16 +256,23 @@ public final class TectonicStructuralField {
                     || !Double.isFinite(faultCos) || !Double.isFinite(faultSin)
                     || !Double.isFinite(faultPhaseBlocks)
                     || !Double.isFinite(faultThrowBlocks) || faultThrowBlocks < 0.0
+                    || !Double.isFinite(faultDipShiftPerVerticalBlock)
                     || faultRegime == null) {
                 throw new IllegalArgumentException("invalid tectonic structural context");
             }
         }
 
+        /** Legacy X/Z sample, equivalent to sampling the fault family at Y=0. */
         public Sample sample(int x, int z) {
-            if (faultRegime == FaultRegime.NONE && foldAmplitudeBlocks == 0.0) {
-                return new Sample(0.0, 0.0, Double.POSITIVE_INFINITY, FaultRegime.NONE);
-            }
+            return column(x, z).sample(0.0);
+        }
 
+        public Sample sample(int x, double y, int z) {
+            return column(x, z).sample(y);
+        }
+
+        /** Resolves every X/Z-only term once for repeated vertical sampling. */
+        public Column column(int x, int z) {
             double dx = (double) x - siteX;
             double dz = (double) z - siteZ;
             double alongFold = dx * foldCos + dz * foldSin;
@@ -224,36 +282,41 @@ public final class TectonicStructuralField {
             );
             double foldAtAnchor = wave(foldPhase, foldSecondaryPhase);
             double foldOffset = 0.5 * foldAmplitudeBlocks * (foldAtPoint - foldAtAnchor);
-
-            if (faultRegime == FaultRegime.NONE || faultThrowBlocks == 0.0) {
-                return new Sample(foldOffset, 0.0, Double.POSITIVE_INFINITY, faultRegime);
-            }
-
-            double acrossFaults = acrossFaults(x, z);
-            double faultCoordinate = (acrossFaults + faultPhaseBlocks) / faultSpacingBlocks;
-            long faultBlock = (long) Math.floor(faultCoordinate);
+            double faultCoordinateAtYZero = acrossFaults(x, z) + faultPhaseBlocks;
             long anchorBlock = (long) Math.floor(faultPhaseBlocks / faultSpacingBlocks);
-            double faultOffset = faultThrowBlocks
-                    * (faultState(faultBlock, faultRegime) - faultState(anchorBlock, faultRegime));
-            double distanceToFault = Math.abs(faultCoordinate - Math.rint(faultCoordinate)) * faultSpacingBlocks;
-            return new Sample(foldOffset, faultOffset, distanceToFault, faultRegime);
+            return new Column(
+                    foldOffset,
+                    faultCoordinateAtYZero,
+                    faultSpacingBlocks,
+                    faultThrowBlocks,
+                    faultDipShiftPerVerticalBlock,
+                    anchorBlock,
+                    faultRegime
+            );
         }
 
-        /**
-         * Projects an X/Z point onto the nearest member of this context's fault family.
-         * The tangent is {@code (faultCos,faultSin)} and the normal is
-         * {@code (-faultSin,faultCos)}.
-         */
+        /** Legacy X/Z projection, equivalent to projecting onto the Y=0 trace. */
         public FaultTrace nearestFault(int x, int z) {
+            return nearestFault(x, 0.0, z);
+        }
+
+        /** Projects an X/Z point onto the nearest member of this context's fault family at Y. */
+        public FaultTrace nearestFault(int x, double y, int z) {
+            if (!Double.isFinite(y)) {
+                throw new IllegalArgumentException("fault trace Y must be finite");
+            }
             if (faultRegime == FaultRegime.NONE || faultThrowBlocks == 0.0) {
                 return new FaultTrace(x, z, Double.POSITIVE_INFINITY, 0L, faultRegime);
             }
 
             double acrossFaults = acrossFaults(x, z);
-            double faultCoordinate = (acrossFaults + faultPhaseBlocks) / faultSpacingBlocks;
+            double shiftedAcross = acrossFaults + faultPhaseBlocks + faultDipShiftPerVerticalBlock * y;
+            double faultCoordinate = shiftedAcross / faultSpacingBlocks;
             double nearestIndexValue = Math.rint(faultCoordinate);
             long nearestIndex = (long) nearestIndexValue;
-            double targetAcross = nearestIndexValue * faultSpacingBlocks - faultPhaseBlocks;
+            double targetAcross = nearestIndexValue * faultSpacingBlocks
+                    - faultPhaseBlocks
+                    - faultDipShiftPerVerticalBlock * y;
             double deltaAcross = targetAcross - acrossFaults;
             double normalX = -faultSin;
             double normalZ = faultCos;
@@ -266,10 +329,92 @@ public final class TectonicStructuralField {
             );
         }
 
+        /** Standard geological dip angle measured down from horizontal. */
+        public double faultDipDegrees() {
+            if (faultDipShiftPerVerticalBlock == 0.0) {
+                return 90.0;
+            }
+            return Math.toDegrees(Math.atan2(1.0, Math.abs(faultDipShiftPerVerticalBlock)));
+        }
+
         private double acrossFaults(int x, int z) {
             double dx = (double) x - siteX;
             double dz = (double) z - siteZ;
             return -dx * faultSin + dz * faultCos;
+        }
+    }
+
+    /** Piecewise-constant fault state for one X/Z column. */
+    public record Column(
+            double foldOffset,
+            double faultCoordinateAtYZeroBlocks,
+            double faultSpacingBlocks,
+            double faultThrowBlocks,
+            double faultDipShiftPerVerticalBlock,
+            long anchorFaultBlock,
+            FaultRegime faultRegime
+    ) {
+        public Column {
+            if (!Double.isFinite(foldOffset)
+                    || !Double.isFinite(faultCoordinateAtYZeroBlocks)
+                    || !Double.isFinite(faultSpacingBlocks) || faultSpacingBlocks < 1.0
+                    || !Double.isFinite(faultThrowBlocks) || faultThrowBlocks < 0.0
+                    || !Double.isFinite(faultDipShiftPerVerticalBlock)
+                    || faultRegime == null) {
+                throw new IllegalArgumentException("invalid tectonic structural column");
+            }
+        }
+
+        public Sample sample(double y) {
+            if (!Double.isFinite(y)) {
+                throw new IllegalArgumentException("tectonic sample Y must be finite");
+            }
+            if (faultRegime == FaultRegime.NONE || faultThrowBlocks == 0.0) {
+                return new Sample(foldOffset, 0.0, Double.POSITIVE_INFINITY, faultRegime);
+            }
+
+            double coordinate = faultCoordinate(y);
+            long faultBlock = (long) Math.floor(coordinate);
+            double faultOffset = faultThrowBlocks
+                    * (faultState(faultBlock, faultRegime) - faultState(anchorFaultBlock, faultRegime));
+            double distanceToFault = Math.abs(coordinate - Math.rint(coordinate)) * faultSpacingBlocks;
+            return new Sample(foldOffset, faultOffset, distanceToFault, faultRegime);
+        }
+
+        public double faultOffset(double y) {
+            return sample(y).faultOffset();
+        }
+
+        /** Last integer Y that retains the same fault block while scanning upward. */
+        public int faultRunEndY(int y) {
+            if (faultRegime == FaultRegime.NONE
+                    || faultThrowBlocks == 0.0
+                    || faultDipShiftPerVerticalBlock == 0.0) {
+                return Integer.MAX_VALUE;
+            }
+
+            double coordinate = faultCoordinate(y);
+            double boundaryCoordinate = faultDipShiftPerVerticalBlock > 0.0
+                    ? Math.floor(coordinate) + 1.0
+                    : Math.ceil(coordinate) - 1.0;
+            double boundaryY = (boundaryCoordinate * faultSpacingBlocks - faultCoordinateAtYZeroBlocks)
+                    / faultDipShiftPerVerticalBlock;
+            if (!Double.isFinite(boundaryY) || boundaryY >= Integer.MAX_VALUE) {
+                return Integer.MAX_VALUE;
+            }
+
+            long firstDifferentY = faultDipShiftPerVerticalBlock > 0.0
+                    ? (long) Math.ceil(boundaryY)
+                    : (long) Math.floor(boundaryY) + 1L;
+            firstDifferentY = Math.max((long) y + 1L, firstDifferentY);
+            if (firstDifferentY > Integer.MAX_VALUE) {
+                return Integer.MAX_VALUE;
+            }
+            return (int) firstDifferentY - 1;
+        }
+
+        private double faultCoordinate(double y) {
+            return (faultCoordinateAtYZeroBlocks + faultDipShiftPerVerticalBlock * y) / faultSpacingBlocks;
         }
     }
 

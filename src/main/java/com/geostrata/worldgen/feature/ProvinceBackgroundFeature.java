@@ -124,8 +124,8 @@ public final class ProvinceBackgroundFeature extends Feature<DefaultFeatureConfi
                     provinceSample.siteZ(),
                     world.getSeaLevel()
             );
-            resolver = (x, z, structuralOffset) -> {
-                VolcanicArcModel.Column column = volcanicArc.column(x, z, structuralOffset);
+            resolver = (x, z, structuralColumn) -> {
+                VolcanicArcModel.Column column = volcanicArc.column(x, z, structuralColumn.verticalOffset(0.0));
                 return y -> column.sample(y).lithology();
             };
         } else if (province == GeologyProvince.CRATONIC_SHIELD) {
@@ -136,8 +136,8 @@ public final class ProvinceBackgroundFeature extends Feature<DefaultFeatureConfi
                     provinceSample.siteZ(),
                     world.getSeaLevel()
             );
-            resolver = (x, z, structuralOffset) -> {
-                CratonicShieldModel.Column column = cratonicShield.column(x, z, structuralOffset);
+            resolver = (x, z, structuralColumn) -> {
+                CratonicShieldModel.Column column = cratonicShield.column(x, z, structuralColumn.verticalOffset(0.0));
                 return y -> column.sample(y).lithology();
             };
         } else if (province == GeologyProvince.OROGENIC_BELT) {
@@ -148,8 +148,8 @@ public final class ProvinceBackgroundFeature extends Feature<DefaultFeatureConfi
                     provinceSample.siteZ(),
                     world.getSeaLevel()
             );
-            resolver = (x, z, structuralOffset) -> {
-                OrogenicBeltModel.Column column = orogenicBelt.column(x, z, structuralOffset);
+            resolver = (x, z, structuralColumn) -> {
+                OrogenicBeltModel.Column column = orogenicBelt.column(x, z, structuralColumn.verticalOffset(0.0));
                 return y -> column.sample(y).lithology();
             };
         } else {
@@ -184,8 +184,8 @@ public final class ProvinceBackgroundFeature extends Feature<DefaultFeatureConfi
                     .map(SedimentarySuccessions.Bed::lithology)
                     .distinct()
                     .toList(), catalog);
-            resolver = (x, z, structuralOffset) -> y -> sequenceField.baseField()
-                    .sampleAtVerticalOffset(y, plan, structuralOffset)
+            resolver = (x, z, structuralColumn) -> y -> sequenceField.baseField()
+                    .sampleAtVerticalOffset(y, plan, structuralColumn.verticalOffset(y))
                     .bed()
                     .lithology();
             activeField = sequenceField;
@@ -297,8 +297,8 @@ public final class ProvinceBackgroundFeature extends Feature<DefaultFeatureConfi
                 int worldX = startX + localX;
                 for (int localZ = 0; localZ < SECTION_SIZE; localZ++) {
                     int worldZ = startZ + localZ;
-                    double verticalOffset = field.verticalOffset(worldX, worldZ);
-                    IntFunction<String> lithologyAtY = resolver.column(worldX, worldZ, verticalOffset);
+                    TerrainAwareStructuralField.Column structuralColumn = field.column(worldX, worldZ);
+                    IntFunction<String> lithologyAtY = resolver.column(worldX, worldZ, structuralColumn);
                     for (int localY = minLocalY; localY <= maxLocalY; localY++) {
                         BlockState existing = states.get(localX, localY, localZ);
                         if (!existing.isIn(hostTag)) {
@@ -366,6 +366,6 @@ public final class ProvinceBackgroundFeature extends Feature<DefaultFeatureConfi
 
     @FunctionalInterface
     private interface ColumnResolver {
-        IntFunction<String> column(int x, int z, double structuralOffset);
+        IntFunction<String> column(int x, int z, TerrainAwareStructuralField.Column structuralColumn);
     }
 }

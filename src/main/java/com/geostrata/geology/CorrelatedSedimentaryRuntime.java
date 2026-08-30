@@ -144,9 +144,8 @@ public final class CorrelatedSedimentaryRuntime {
 
         /**
          * Resolves all X/Z-only structural work once for a vertical worldgen column.
-         * The returned column also caches contiguous Y-runs with identical output,
-         * so solid rock does not repeat stratigraphic and metamorphic selection for
-         * every block inside the same bed/band.
+         * Dipping fault state remains a cheap Y-only lookup on that column. The returned
+         * column also caches contiguous Y-runs with identical output.
          */
         public Column column(long worldSeed, int x, int z) {
             return column(worldSeed, x, z, null);
@@ -159,7 +158,7 @@ public final class CorrelatedSedimentaryRuntime {
                 int z,
                 GeologyProvinceSampler.Context provinceContext
         ) {
-            double verticalOffset = field.verticalOffset(x, z);
+            TerrainAwareStructuralField.Column structuralColumn = field.column(x, z);
             MetamorphicIntensityField.Suitability suitability = null;
             if (ownership().province() == GeologyProvince.OROGENIC_BELT) {
                 TerrainMorphologySample morphology = field.localPatch().morphologyAt(x, z);
@@ -180,7 +179,7 @@ public final class CorrelatedSedimentaryRuntime {
                                 provinceContext.sample(x, z)
                         ).suitability();
             }
-            return new Column(this, worldSeed, x, z, verticalOffset, suitability);
+            return new Column(this, worldSeed, x, z, structuralColumn, suitability);
         }
 
         public String outputLithology(
@@ -200,7 +199,7 @@ public final class CorrelatedSedimentaryRuntime {
         private final long worldSeed;
         private final int x;
         private final int z;
-        private final double verticalOffset;
+        private final TerrainAwareStructuralField.Column structuralColumn;
         private final MetamorphicIntensityField.Suitability metamorphicSuitability;
         private int cachedFromY = 1;
         private int cachedThroughY = 0;
@@ -211,17 +210,17 @@ public final class CorrelatedSedimentaryRuntime {
                 long worldSeed,
                 int x,
                 int z,
-                double verticalOffset,
+                TerrainAwareStructuralField.Column structuralColumn,
                 MetamorphicIntensityField.Suitability metamorphicSuitability
         ) {
-            if (site == null || !Double.isFinite(verticalOffset)) {
+            if (site == null || structuralColumn == null) {
                 throw new IllegalArgumentException("correlated column context must be valid");
             }
             this.site = site;
             this.worldSeed = worldSeed;
             this.x = x;
             this.z = z;
-            this.verticalOffset = verticalOffset;
+            this.structuralColumn = structuralColumn;
             this.metamorphicSuitability = metamorphicSuitability;
         }
 
@@ -241,8 +240,13 @@ public final class CorrelatedSedimentaryRuntime {
             return z;
         }
 
+        /** Legacy Y=0 structural offset. */
         public double verticalOffset() {
-            return verticalOffset;
+            return verticalOffset(0.0);
+        }
+
+        public double verticalOffset(double y) {
+            return structuralColumn.verticalOffset(y);
         }
 
         public MetamorphicIntensityField.Suitability metamorphicSuitability() {
@@ -253,7 +257,7 @@ public final class CorrelatedSedimentaryRuntime {
             return site.field().baseField().sampleAtVerticalOffset(
                     y,
                     site.plan(),
-                    verticalOffset
+                    verticalOffset(y)
             );
         }
 
@@ -265,9 +269,17 @@ public final class CorrelatedSedimentaryRuntime {
                 return cachedLithology;
             }
 
-            SedimentaryStratigraphicField.Sample sample = sample(y);
+            double verticalOffset = verticalOffset(y);
+            SedimentaryStratigraphicField.Sample sample = site.field().baseField().sampleAtVerticalOffset(
+                    y,
+                    site.plan(),
+                    verticalOffset
+            );
             String parent = sample.bed().lithology();
-            int runEndY = sedimentaryRunEndY(sample, y);
+            int runEndY = Math.min(
+                    sedimentaryRunEndY(sample, y, verticalOffset),
+                    structuralColumn.faultRunEndY(y)
+            );
             if (metamorphicSuitability == null) {
                 return cache(y, runEndY, parent);
             }
@@ -299,11 +311,18 @@ public final class CorrelatedSedimentaryRuntime {
             if (selection.isEmpty()) {
                 return cache(y, runEndY, parent);
             }
-            runEndY = Math.min(runEndY, metamorphicRunEndY(selection.get().bandIndex(), y));
+            runEndY = Math.min(
+                    runEndY,
+                    metamorphicRunEndY(selection.get().bandIndex(), y, verticalOffset)
+            );
             return cache(y, runEndY, selection.get().lithology());
         }
 
-        private int sedimentaryRunEndY(SedimentaryStratigraphicField.Sample sample, int y) {
+        private int sedimentaryRunEndY(
+                SedimentaryStratigraphicField.Sample sample,
+                int y,
+                double verticalOffset
+        ) {
             double nextContactCoordinate = sample.cycleIndex() + sample.bed().upperFraction();
             double nextContactY = verticalOffset
                     + site.field().baseField().cycleThicknessBlocks()
@@ -311,7 +330,7 @@ public final class CorrelatedSedimentaryRuntime {
             return integerBeforeBoundary(nextContactY, y);
         }
 
-        private int metamorphicRunEndY(int bandIndex, int y) {
+        private int metamorphicRunEndY(int bandIndex, int y, double verticalOffset) {
             double nextBandY = verticalOffset
                     + site.field().baseField().cycleThicknessBlocks() * ((double) bandIndex + 1.0);
             return integerBeforeBoundary(nextBandY, y);

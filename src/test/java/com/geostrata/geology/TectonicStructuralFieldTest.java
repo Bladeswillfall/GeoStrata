@@ -6,6 +6,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 final class TectonicStructuralFieldTest {
@@ -20,10 +21,11 @@ final class TectonicStructuralFieldTest {
         );
 
         assertEquals(field.sample(384, -192), field.sample(384, -192));
+        assertEquals(field.sample(384, -192), field.sample(384, 0.0, -192));
     }
 
     @Test
-    void provinceSiteRemainsZeroDisplacementAnchor() {
+    void provinceSiteRemainsZeroDisplacementAnchorAtReferenceElevation() {
         TectonicStructuralField.Context field = TectonicStructuralField.forSite(
                 987654321L,
                 GeologyProvince.RIFT_PROVINCE,
@@ -55,6 +57,60 @@ final class TectonicStructuralFieldTest {
         assertTrue(Double.isFinite(trace.distanceToFault()));
         assertTrue(rounded.distanceToFault() <= 1.0, rounded.toString());
         assertEquals(TectonicStructuralField.FaultRegime.ANCIENT, trace.faultRegime());
+    }
+
+    @Test
+    void riftFaultTraceMovesWithElevationWhileCratonRemainsVertical() {
+        TectonicStructuralField.Context rift = TectonicStructuralField.forSite(
+                246813579L,
+                GeologyProvince.RIFT_PROVINCE,
+                0,
+                0,
+                48.0
+        );
+        TectonicStructuralField.Context craton = TectonicStructuralField.forSite(
+                246813579L,
+                GeologyProvince.CRATONIC_SHIELD,
+                0,
+                0,
+                48.0
+        );
+        TectonicStructuralField.FaultTrace lower = rift.nearestFault(0, 0.0, 0);
+        TectonicStructuralField.FaultTrace upper = rift.nearestFault(0, 128.0, 0);
+
+        assertTrue(Math.abs(rift.faultDipShiftPerVerticalBlock()) >= 0.55);
+        assertTrue(Math.abs(rift.faultDipShiftPerVerticalBlock()) <= 0.85);
+        assertTrue(rift.faultDipDegrees() > 45.0 && rift.faultDipDegrees() < 65.0);
+        assertTrue(Math.hypot(upper.x() - lower.x(), upper.z() - lower.z()) > 60.0);
+        assertEquals(0.0, craton.faultDipShiftPerVerticalBlock(), 0.0);
+        assertEquals(90.0, craton.faultDipDegrees(), 0.0);
+    }
+
+    @Test
+    void dippingFaultColumnReportsItsNextStateBoundary() {
+        TectonicStructuralField.Context field = TectonicStructuralField.forSite(
+                135792468L,
+                GeologyProvince.RIFT_PROVINCE,
+                0,
+                0,
+                48.0
+        );
+
+        boolean found = false;
+        for (int x = -512; x <= 512 && !found; x += 32) {
+            for (int z = -512; z <= 512 && !found; z += 32) {
+                TectonicStructuralField.Column column = field.column(x, z);
+                int runEnd = column.faultRunEndY(-64);
+                if (runEnd >= 320) {
+                    continue;
+                }
+                assertEquals(column.faultOffset(-64), column.faultOffset(runEnd), 1.0e-9);
+                assertNotEquals(column.faultOffset(runEnd), column.faultOffset(runEnd + 1), 1.0e-9);
+                found = true;
+            }
+        }
+
+        assertTrue(found, "expected a sampled rift column to cross a dipping fault within world height");
     }
 
     @Test

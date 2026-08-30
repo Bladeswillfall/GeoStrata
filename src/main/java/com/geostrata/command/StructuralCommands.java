@@ -34,6 +34,7 @@ public final class StructuralCommands {
     private static int show(ServerCommandSource source) {
         Vec3d position = source.getPosition();
         int x = MathHelper.floor(position.x);
+        int y = MathHelper.floor(position.y);
         int z = MathHelper.floor(position.z);
         long seed = source.getWorld().getSeed();
         GeologyProvinceSampler.Sample province = GeologyProvinceSampler.sample(seed, x, z);
@@ -67,8 +68,8 @@ public final class StructuralCommands {
             authority = "province_background";
         }
 
-        TectonicStructuralField.Sample tectonic = field.tectonicSample(x, z);
-        TectonicStructuralField.FaultTrace trace = field.tectonicField().nearestFault(x, z);
+        TectonicStructuralField.Sample tectonic = field.tectonicSample(x, y, z);
+        TectonicStructuralField.FaultTrace trace = field.tectonicField().nearestFault(x, y, z);
         String faultDistance = Double.isFinite(trace.distanceToFault())
                 ? Long.toString(Math.round(trace.distanceToFault()))
                 : "n/a";
@@ -83,10 +84,11 @@ public final class StructuralCommands {
                                 + " | tectonic fold " + signed(tectonic.foldOffset())
                                 + " | fault " + tectonic.faultRegime().name().toLowerCase()
                                 + " offset " + signed(tectonic.faultOffset())
-                                + " | nearest fault ~" + faultDistance + " blocks"
+                                + " | nearest fault @Y" + y + " ~" + faultDistance + " blocks"
                                 + " | spacing ~" + Math.round(field.tectonicField().faultSpacingBlocks())
                                 + ", throw ~" + Math.round(field.tectonicField().faultThrowBlocks())
-                                + " | total " + signed(field.verticalOffset(x, z))
+                                + ", dip ~" + Math.round(field.tectonicField().faultDipDegrees()) + "°"
+                                + " | total " + signed(field.verticalOffset(x, y, z))
                 ),
                 false
         );
