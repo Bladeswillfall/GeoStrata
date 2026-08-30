@@ -56,7 +56,20 @@ public final class ChunkGeneratorTerrainMorphologySampler {
                 DEFAULT_SAMPLE_SPACING_BLOCKS
         );
         double anchorHeight = anchorPatch.heightAt(baseField.siteX(), baseField.siteZ());
-        return TerrainAwareStructuralField.apply(baseField, province, localPatch, anchorHeight);
+        TectonicStructuralField.Context tectonicField = TectonicStructuralField.forSite(
+                world.getSeed(),
+                province,
+                baseField.siteX(),
+                baseField.siteZ(),
+                baseField.cycleThicknessBlocks()
+        );
+        return TerrainAwareStructuralField.apply(
+                baseField,
+                province,
+                localPatch,
+                anchorHeight,
+                tectonicField
+        );
     }
 
     private static HeightSource cachedHeightSource(ServerWorld world) {
