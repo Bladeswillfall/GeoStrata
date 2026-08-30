@@ -242,15 +242,21 @@ public final class TerrainAwareStructuralField {
         }
 
         public TectonicStructuralField.Sample tectonicSample(int x, int z) {
-            return tectonicField.sample(x, z);
+            return tectonicSample(x, 0.0, z);
         }
 
         public TectonicStructuralField.Sample tectonicSample(int x, double y, int z) {
-            return tectonicField.sample(x, y, z);
+            TectonicStructuralField.Sample raw = tectonicField.sample(x, y, z);
+            return new TectonicStructuralField.Sample(
+                    TectonicFoldClosures.offset(tectonicField, x, z),
+                    raw.faultOffset(),
+                    raw.distanceToFault(),
+                    raw.faultRegime()
+            );
         }
 
         public double tectonicFoldOffset(int x, int z) {
-            return tectonicField.column(x, z).foldOffset();
+            return TectonicFoldClosures.offset(tectonicField, x, z);
         }
 
         public double faultOffset(int x, int z) {
@@ -278,6 +284,7 @@ public final class TerrainAwareStructuralField {
         public Column column(int x, int z) {
             return new Column(
                     baseField.verticalOffset(x, z) + terrainOffset(x, z),
+                    tectonicFoldOffset(x, z),
                     tectonicField.column(x, z)
             );
         }
@@ -294,25 +301,23 @@ public final class TerrainAwareStructuralField {
 
     public record Column(
             double baseAndTerrainOffset,
+            double tectonicFoldOffset,
             TectonicStructuralField.Column tectonicColumn
     ) {
         public Column {
-            if (!Double.isFinite(baseAndTerrainOffset) || tectonicColumn == null) {
+            if (!Double.isFinite(baseAndTerrainOffset)
+                    || !Double.isFinite(tectonicFoldOffset)
+                    || tectonicColumn == null) {
                 throw new IllegalArgumentException("terrain-aware structural column must be valid");
             }
         }
 
         public double verticalOffset(double y) {
-            TectonicStructuralField.Sample tectonic = tectonicColumn.sample(y);
-            return baseAndTerrainOffset + tectonic.totalOffset();
+            return baseAndTerrainOffset + tectonicFoldOffset + tectonicColumn.faultOffset(y);
         }
 
         public double faultOffset(double y) {
             return tectonicColumn.faultOffset(y);
-        }
-
-        public double tectonicFoldOffset() {
-            return tectonicColumn.foldOffset();
         }
 
         public int faultRunEndY(int y) {
