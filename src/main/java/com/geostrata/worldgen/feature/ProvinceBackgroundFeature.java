@@ -34,6 +34,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.IntFunction;
 
 /**
  * Late experimental fill for natural host stone not claimed by richer GeoStrata bodies.
@@ -94,20 +95,19 @@ public final class ProvinceBackgroundFeature extends Feature<DefaultFeatureConfi
         );
 
         Map<String, BlockState> outputStates;
-        LithologyResolver resolver;
+        ColumnResolver resolver;
         if (province == GeologyProvince.VOLCANIC_ARC) {
             outputStates = outputStates(VOLCANIC_ARC_LITHOLOGIES, catalog);
-            double seaLevel = world.getSeaLevel();
-            resolver = (x, y, z, structuralOffset) -> VolcanicArcModel.sample(
+            VolcanicArcModel.Context volcanicArc = VolcanicArcModel.forSite(
                     worldSeed,
-                    x,
-                    y,
-                    z,
                     provinceSample.siteX(),
                     provinceSample.siteZ(),
-                    structuralOffset,
-                    seaLevel
-            ).lithology();
+                    world.getSeaLevel()
+            );
+            resolver = (x, z, structuralOffset) -> {
+                VolcanicArcModel.Column column = volcanicArc.column(x, z, structuralOffset);
+                return y -> column.sample(y).lithology();
+            };
         } else {
             SedimentarySuccessions.Succession sequence = backgroundSequence(province, profiles, catalog);
             SedimentaryContactPlanner.Plan plan = SedimentaryContactPlanner.plan(
@@ -119,7 +119,7 @@ public final class ProvinceBackgroundFeature extends Feature<DefaultFeatureConfi
             outputStates = outputStates(sequence.beds().stream()
                     .map(SedimentarySuccessions.Bed::lithology)
                     .toList(), catalog);
-            resolver = (x, y, z, structuralOffset) -> field.baseField()
+            resolver = (x, z, structuralOffset) -> y -> field.baseField()
                     .sampleAtVerticalOffset(y, plan, structuralOffset)
                     .bed()
                     .lithology();
@@ -192,7 +192,7 @@ public final class ProvinceBackgroundFeature extends Feature<DefaultFeatureConfi
             int maxY,
             TagKey<Block> hostTag,
             TerrainAwareStructuralField.Field field,
-            LithologyResolver resolver,
+            ColumnResolver resolver,
             Map<String, BlockState> outputStates
     ) {
         Chunk chunk = world.getChunk(
@@ -249,7 +249,7 @@ public final class ProvinceBackgroundFeature extends Feature<DefaultFeatureConfi
             int maxY,
             TagKey<Block> hostTag,
             TerrainAwareStructuralField.Field field,
-            LithologyResolver resolver,
+            ColumnResolver resolver,
             Map<String, BlockState> outputStates,
             List<BlockBox> protectedStructurePieces
     ) {
@@ -264,6 +264,7 @@ public final class ProvinceBackgroundFeature extends Feature<DefaultFeatureConfi
                 for (int localZ = 0; localZ < SECTION_SIZE; localZ++) {
                     int worldZ = startZ + localZ;
                     double verticalOffset = field.verticalOffset(worldX, worldZ);
+                    IntFunction<String> lithologyAtY = resolver.column(worldX, worldZ, verticalOffset);
                     for (int localY = minLocalY; localY <= maxLocalY; localY++) {
                         BlockState existing = states.get(localX, localY, localZ);
                         if (!existing.isIn(hostTag)) {
@@ -273,8 +274,7 @@ public final class ProvinceBackgroundFeature extends Feature<DefaultFeatureConfi
                         if (insideStructurePiece(protectedStructurePieces, worldX, worldY, worldZ)) {
                             continue;
                         }
-                        String lithology = resolver.lithology(worldX, worldY, worldZ, verticalOffset);
-                        BlockState replacement = outputStates.get(lithology);
+                        BlockState replacement = outputStates.get(lithologyAtY.apply(worldY));
                         if (replacement != null && !existing.equals(replacement)) {
                             states.swapUnsafe(localX, localY, localZ, replacement);
                             placed++;
@@ -331,7 +331,7 @@ public final class ProvinceBackgroundFeature extends Feature<DefaultFeatureConfi
     }
 
     @FunctionalInterface
-    private interface LithologyResolver {
-        String lithology(int x, int y, int z, double structuralOffset);
+    private interface ColumnResolver {
+        IntFunction<String> column(int x, int z, double structuralOffset);
     }
 }
