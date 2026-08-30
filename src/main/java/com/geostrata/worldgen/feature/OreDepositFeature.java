@@ -372,7 +372,13 @@ public final class OreDepositFeature extends Feature<DefaultFeatureConfig> {
             if (correlatedHostTag.isEmpty() || !state.isIn(correlatedHostTag.get())) {
                 return null;
             }
-            return correlatedSite.get().sample(pos.getX(), pos.getY(), pos.getZ()).bed().lithology();
+            return correlatedSite.get().outputLithology(
+                    world.getSeed(),
+                    pos.getX(),
+                    pos.getY(),
+                    pos.getZ(),
+                    LithologyCatalog.current()
+            );
         }
     }
 }
