@@ -5,14 +5,19 @@ package com.geostrata.geology;
  * stratigraphic field. Folds are smooth and long-wavelength; faults are discrete
  * block offsets across a seed-derived regional fault family.
  *
- * <p>The model is intentionally small. X/Z work resolves once per column. Basin,
- * rift and orogenic fault families shift their trace with Y; rift faults add one
- * restrained curvature term so they flatten gradually with depth.</p>
+ * <p>The model is intentionally small. X/Z work resolves once per column. Fault
+ * traces gain a restrained long-wavelength meander derived from existing structural
+ * phase and throw. Basin, rift and orogenic fault families additionally shift their
+ * trace with Y; rift faults add one curvature term so they flatten with depth.</p>
  */
 public final class TectonicStructuralField {
     private static final double TWO_PI = Math.PI * 2.0;
     private static final double SECOND_HARMONIC_WEIGHT = 0.22;
     private static final double ROOT_EPSILON = 1.0e-9;
+    private static final double MAX_FAULT_MEANDER_BLOCKS = 18.0;
+    private static final double FAULT_MEANDER_THROW_MULTIPLIER = 0.60;
+    private static final double FAULT_MEANDER_WAVELENGTH_MULTIPLIER = 2.0;
+    private static final double MIN_FAULT_MEANDER_WAVELENGTH_BLOCKS = 256.0;
 
     private static final long FOLD_ANGLE_SALT = 0x6A09E667F3BCC909L;
     private static final long FOLD_PHASE_SALT = 0xBB67AE8584CAA73BL;
@@ -373,7 +378,25 @@ public final class TectonicStructuralField {
         private double acrossFaults(int x, int z) {
             double dx = (double) x - siteX;
             double dz = (double) z - siteZ;
-            return -dx * faultSin + dz * faultCos;
+            double alongFault = dx * faultCos + dz * faultSin;
+            double across = -dx * faultSin + dz * faultCos;
+            return across + faultTraceMeander(alongFault);
+        }
+
+        private double faultTraceMeander(double alongFault) {
+            if (faultThrowBlocks == 0.0) {
+                return 0.0;
+            }
+            double amplitude = Math.min(
+                    MAX_FAULT_MEANDER_BLOCKS,
+                    faultThrowBlocks * FAULT_MEANDER_THROW_MULTIPLIER
+            );
+            double wavelength = Math.max(
+                    MIN_FAULT_MEANDER_WAVELENGTH_BLOCKS,
+                    faultSpacingBlocks * FAULT_MEANDER_WAVELENGTH_MULTIPLIER
+            );
+            double phase = TWO_PI * alongFault / wavelength + foldPhase;
+            return amplitude * (Math.sin(phase) - Math.sin(foldPhase));
         }
     }
 
