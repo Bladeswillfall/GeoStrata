@@ -14,6 +14,8 @@ import net.minecraft.registry.tag.TagKey;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.StructureWorldAccess;
+import net.minecraft.world.chunk.Chunk;
+import net.minecraft.world.chunk.ChunkSection;
 import net.minecraft.world.gen.feature.DefaultFeatureConfig;
 import net.minecraft.world.gen.feature.Feature;
 import net.minecraft.world.gen.feature.util.FeatureContext;
@@ -33,6 +35,7 @@ import java.util.Set;
  */
 public final class CorrelatedSedimentaryFeature extends Feature<DefaultFeatureConfig> {
     private static final int CHUNK_SIZE = 16;
+    private static final int SECTION_SIZE = 16;
 
     public CorrelatedSedimentaryFeature() {
         super(DefaultFeatureConfig.CODEC);
@@ -89,6 +92,13 @@ public final class CorrelatedSedimentaryFeature extends Feature<DefaultFeatureCo
         ) > 0;
     }
 
+    /**
+     * Mutates the current chunk section-by-section instead of probing the world
+     * once for every possible Y coordinate. Empty sections and sections whose
+     * palettes contain no replaceable host state are skipped entirely. Because
+     * all replacements are solid, zero-luminance rock states, direct section
+     * mutation preserves the chunk's existing heightmap and lighting geometry.
+     */
     private static int replaceChunk(
             StructureWorldAccess world,
             int startX,
@@ -100,54 +110,91 @@ public final class CorrelatedSedimentaryFeature extends Feature<DefaultFeatureCo
             LithologyCatalog.Snapshot catalog,
             Map<String, BlockState> outputStates
     ) {
+        Chunk chunk = world.getChunk(
+                Math.floorDiv(startX, CHUNK_SIZE),
+                Math.floorDiv(startZ, CHUNK_SIZE)
+        );
         int placed = 0;
-        BlockPos.Mutable mutable = new BlockPos.Mutable();
-        for (int x = startX; x < startX + CHUNK_SIZE; x++) {
-            for (int z = startZ; z < startZ + CHUNK_SIZE; z++) {
-                placed += replaceColumn(
-                        world,
-                        x,
-                        z,
-                        minY,
-                        maxY,
-                        hostTag,
-                        site,
-                        catalog,
-                        outputStates,
-                        mutable
-                );
+        ChunkSection[] sections = chunk.getSectionArray();
+        for (int sectionIndex = 0; sectionIndex < sections.length; sectionIndex++) {
+            ChunkSection section = sections[sectionIndex];
+            if (section == null
+                    || section.isEmpty()
+                    || !section.hasAny(state -> replaceable(state, hostTag, site, catalog))) {
+                continue;
             }
+
+            int sectionBottomY = chunk.sectionIndexToCoord(sectionIndex) * SECTION_SIZE;
+            int sectionMinY = Math.max(minY, sectionBottomY);
+            int sectionMaxY = Math.min(maxY, sectionBottomY + SECTION_SIZE - 1);
+            if (sectionMinY > sectionMaxY) {
+                continue;
+            }
+
+            placed += replaceSection(
+                    world.getSeed(),
+                    startX,
+                    startZ,
+                    section,
+                    sectionBottomY,
+                    sectionMinY,
+                    sectionMaxY,
+                    hostTag,
+                    site,
+                    catalog,
+                    outputStates
+            );
+        }
+        if (placed > 0) {
+            chunk.setNeedsSaving(true);
         }
         return placed;
     }
 
-    private static int replaceColumn(
-            StructureWorldAccess world,
-            int x,
-            int z,
+    private static int replaceSection(
+            long worldSeed,
+            int startX,
+            int startZ,
+            ChunkSection section,
+            int sectionBottomY,
             int minY,
             int maxY,
             TagKey<Block> hostTag,
             CorrelatedSedimentaryRuntime.TerrainAwareSite site,
             LithologyCatalog.Snapshot catalog,
-            Map<String, BlockState> outputStates,
-            BlockPos.Mutable mutable
+            Map<String, BlockState> outputStates
     ) {
         int placed = 0;
-        for (int y = minY; y <= maxY; y++) {
-            mutable.set(x, y, z);
-            BlockState existing = world.getBlockState(mutable);
-            if (!replaceable(existing, hostTag, site, catalog)) {
-                continue;
-            }
+        int minLocalY = minY - sectionBottomY;
+        int maxLocalY = maxY - sectionBottomY;
+        section.lock();
+        try {
+            for (int localX = 0; localX < SECTION_SIZE; localX++) {
+                int x = startX + localX;
+                for (int localZ = 0; localZ < SECTION_SIZE; localZ++) {
+                    int z = startZ + localZ;
+                    for (int localY = minLocalY; localY <= maxLocalY; localY++) {
+                        BlockState existing = section.getBlockState(localX, localY, localZ);
+                        if (!replaceable(existing, hostTag, site, catalog)) {
+                            continue;
+                        }
 
-            String lithology = site.outputLithology(world.getSeed(), x, y, z, catalog);
-            BlockState replacement = outputStates.computeIfAbsent(
-                    lithology,
-                    ignored -> outputState(lithology, catalog)
-            );
-            world.setBlockState(mutable, replacement, Block.NOTIFY_LISTENERS);
-            placed++;
+                        int y = sectionBottomY + localY;
+                        String lithology = site.outputLithology(worldSeed, x, y, z, catalog);
+                        BlockState replacement = outputStates.computeIfAbsent(
+                                lithology,
+                                ignored -> outputState(lithology, catalog)
+                        );
+                        if (existing.equals(replacement)) {
+                            continue;
+                        }
+                        section.setBlockState(localX, localY, localZ, replacement, false);
+                        placed++;
+                    }
+                }
+            }
+        } finally {
+            section.unlock();
         }
         return placed;
     }
