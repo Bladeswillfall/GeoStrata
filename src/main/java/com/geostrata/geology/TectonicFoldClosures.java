@@ -9,13 +9,12 @@ public final class TectonicFoldClosures {
     private TectonicFoldClosures() {
     }
 
-    public static double offset(TectonicStructuralField.Context field, int x, int z) {
+    public static double envelope(TectonicStructuralField.Context field, int x, int z) {
         if (field == null) {
             throw new IllegalArgumentException("tectonic field must not be null");
         }
-        TectonicStructuralField.Column column = field.column(x, z);
-        if (column.foldOffset() == 0.0 || field.foldAmplitudeBlocks() == 0.0) {
-            return column.foldOffset();
+        if (field.foldAmplitudeBlocks() == 0.0) {
+            return 1.0;
         }
 
         double dx = (double) x - field.siteX();
@@ -24,8 +23,15 @@ public final class TectonicFoldClosures {
         double phase = TWO_PI * alongAxis
                 / (field.foldWavelengthBlocks() * AXIS_WAVELENGTH_MULTIPLIER)
                 + field.foldSecondaryPhase();
-        double envelope = MINIMUM_ENVELOPE
+        return MINIMUM_ENVELOPE
                 + (1.0 - MINIMUM_ENVELOPE) * 0.5 * (1.0 + Math.cos(phase));
-        return column.foldOffset() * envelope;
+    }
+
+    public static double offset(TectonicStructuralField.Context field, int x, int z) {
+        if (field == null) {
+            throw new IllegalArgumentException("tectonic field must not be null");
+        }
+        TectonicStructuralField.Column column = field.column(x, z);
+        return column.foldOffset() * envelope(field, x, z);
     }
 }
