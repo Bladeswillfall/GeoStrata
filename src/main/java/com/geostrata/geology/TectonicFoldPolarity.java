@@ -6,16 +6,12 @@ package com.geostrata.geology;
  * <p>The transform changes only the vertical component of stratigraphic orientation.
  * A scale of +1 preserves ordinary younging-up beds, zero represents a near-vertical
  * hinge, and a negative scale reverses stratigraphic polarity on an overturned limb.
- * The existing fold axis, wavelength, phase and closure envelope own the geometry.</p>
+ * Existing fold/fault phases supply all deterministic variation; no second random
+ * structural field is introduced.</p>
  */
 public final class TectonicFoldPolarity {
     private static final double TWO_PI = Math.PI * 2.0;
-    private static final double ACTIVATION_CHANCE = 0.32;
-
-    private static final long ACTIVE_SALT = 0x082EFA98EC4E6C89L;
-    private static final long STRENGTH_SALT = 0x452821E638D01377L;
-    private static final long LIMB_SALT = 0xBE5466CF34E90C6CL;
-    private static final long PIVOT_SALT = 0xC0AC29B7C97C50DDL;
+    private static final double ACTIVATION_FRACTION = 0.32;
 
     private TectonicFoldPolarity() {
     }
@@ -24,16 +20,14 @@ public final class TectonicFoldPolarity {
         return Profile.NORMAL;
     }
 
-    public static Profile forSite(
-            long worldSeed,
+    public static Profile forField(
             GeologyProvince province,
-            int siteX,
-            int siteZ,
+            TectonicStructuralField.Context field,
             double cycleThicknessBlocks,
             double structuralAnchorY
     ) {
-        if (province == null) {
-            throw new IllegalArgumentException("geological province must not be null");
+        if (province == null || field == null) {
+            throw new IllegalArgumentException("fold polarity requires province and tectonic field");
         }
         if (!Double.isFinite(cycleThicknessBlocks) || cycleThicknessBlocks < 1.0) {
             throw new IllegalArgumentException("cycle thickness must be finite and at least one block");
@@ -42,19 +36,21 @@ public final class TectonicFoldPolarity {
             throw new IllegalArgumentException("structural anchor Y must be finite");
         }
         if (province != GeologyProvince.OROGENIC_BELT
-                || roll(worldSeed, siteX, siteZ, ACTIVE_SALT) >= ACTIVATION_CHANCE) {
+                || unitPhase(field.foldSecondaryPhase()) >= ACTIVATION_FRACTION) {
             return normal();
         }
 
-        double strength = 2.15 + 0.30 * roll(worldSeed, siteX, siteZ, STRENGTH_SALT);
-        double limbDirection = roll(worldSeed, siteX, siteZ, LIMB_SALT) < 0.5 ? -1.0 : 1.0;
+        double strength = 2.15 + 0.30 * unitPhase(field.foldPhase());
+        double limbDirection = Math.sin(field.foldSecondaryPhase()) < 0.0 ? -1.0 : 1.0;
+        double phaseFraction = field.faultPhaseBlocks() / field.faultSpacingBlocks();
         double pivotLocalY = structuralAnchorY
-                - cycleThicknessBlocks * (0.75 + roll(worldSeed, siteX, siteZ, PIVOT_SALT));
+                - cycleThicknessBlocks * (0.75 + phaseFraction);
         return new Profile(true, strength, limbDirection, pivotLocalY);
     }
 
-    private static double roll(long worldSeed, int siteX, int siteZ, long salt) {
-        return GeologyDeterminism.unitRoll(worldSeed, siteX, 0, siteZ, salt);
+    private static double unitPhase(double phase) {
+        double normalized = phase / TWO_PI;
+        return normalized - Math.floor(normalized);
     }
 
     public record Profile(
