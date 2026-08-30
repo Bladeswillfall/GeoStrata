@@ -52,6 +52,8 @@ public final class ProvinceBackgroundFeature extends Feature<DefaultFeatureConfi
     private static final String CONTINUITY = "regional";
     private static final List<String> VOLCANIC_ARC_LITHOLOGIES = List.of(
             "gneiss",
+            "schist",
+            "quartzite",
             "basalt",
             "rhyolite",
             "breccia"
