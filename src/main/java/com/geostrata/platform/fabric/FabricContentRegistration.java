@@ -29,6 +29,11 @@ public final class FabricContentRegistration {
                 GeoStrata.id("correlated_sedimentary"),
                 GeoStrataFeatures.CORRELATED_SEDIMENTARY
         );
+        Registry.register(
+                Registries.FEATURE,
+                GeoStrata.id("province_background"),
+                GeoStrataFeatures.PROVINCE_BACKGROUND
+        );
         Registry.register(Registries.FEATURE, GeoStrata.id("ore_deposit"), GeoStrataFeatures.ORE_DEPOSIT);
         Registry.register(Registries.FEATURE, GeoStrata.id("diamond_pipe"), GeoStrataFeatures.DIAMOND_PIPE);
         Registry.register(
