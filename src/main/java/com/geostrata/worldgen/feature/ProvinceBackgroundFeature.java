@@ -9,21 +9,25 @@ import net.minecraft.registry.Registries;
 import net.minecraft.registry.RegistryKeys;
 import net.minecraft.registry.tag.TagKey;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.math.BlockBox;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.StructureWorldAccess;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.chunk.ChunkSection;
 import net.minecraft.world.chunk.PalettedContainer;
+import net.minecraft.world.gen.StructureAccessor;
 import net.minecraft.world.gen.feature.DefaultFeatureConfig;
 import net.minecraft.world.gen.feature.Feature;
 import net.minecraft.world.gen.feature.util.FeatureContext;
+
+import java.util.List;
 
 /**
  * Late experimental fill for natural host stone not claimed by richer GeoStrata bodies.
  *
  * <p>The correlated pass remains authoritative where it owns a chunk. This feature runs
  * afterwards and only targets the vanilla/compatibility host tag, so correlated strata,
- * fallback GeoStrata bodies, ores, caves and structures are preserved.</p>
+ * fallback GeoStrata bodies, ores, caves and structure-piece footprints are preserved.</p>
  */
 public final class ProvinceBackgroundFeature extends Feature<DefaultFeatureConfig> {
     private static final int CHUNK_SIZE = 16;
@@ -82,6 +86,12 @@ public final class ProvinceBackgroundFeature extends Feature<DefaultFeatureConfi
                 Math.floorDiv(startX, CHUNK_SIZE),
                 Math.floorDiv(startZ, CHUNK_SIZE)
         );
+        StructureAccessor structures = world.toServerWorld().getStructureAccessor();
+        List<BlockBox> protectedStructurePieces = structures.getStructureStarts(chunk.getPos(), structure -> true).stream()
+                .flatMap(start -> start.getChildren().stream())
+                .map(piece -> piece.getBoundingBox())
+                .toList();
+
         int placed = 0;
         ChunkSection[] sections = chunk.getSectionArray();
         for (int sectionIndex = 0; sectionIndex < sections.length; sectionIndex++) {
@@ -99,11 +109,14 @@ public final class ProvinceBackgroundFeature extends Feature<DefaultFeatureConfi
 
             placed += replaceSection(
                     section,
+                    startX,
+                    startZ,
                     sectionBottomY,
                     sectionMinY,
                     sectionMaxY,
                     hostTag,
-                    replacement
+                    replacement,
+                    protectedStructurePieces
             );
         }
         if (placed > 0) {
@@ -114,11 +127,14 @@ public final class ProvinceBackgroundFeature extends Feature<DefaultFeatureConfi
 
     private static int replaceSection(
             ChunkSection section,
+            int startX,
+            int startZ,
             int sectionBottomY,
             int minY,
             int maxY,
             TagKey<Block> hostTag,
-            BlockState replacement
+            BlockState replacement,
+            List<BlockBox> protectedStructurePieces
     ) {
         int minLocalY = minY - sectionBottomY;
         int maxLocalY = maxY - sectionBottomY;
@@ -127,10 +143,15 @@ public final class ProvinceBackgroundFeature extends Feature<DefaultFeatureConfi
         section.lock();
         try {
             for (int localY = minLocalY; localY <= maxLocalY; localY++) {
+                int worldY = sectionBottomY + localY;
                 for (int localX = 0; localX < SECTION_SIZE; localX++) {
+                    int worldX = startX + localX;
                     for (int localZ = 0; localZ < SECTION_SIZE; localZ++) {
+                        int worldZ = startZ + localZ;
                         BlockState existing = states.get(localX, localY, localZ);
-                        if (existing.isIn(hostTag) && !existing.equals(replacement)) {
+                        if (existing.isIn(hostTag)
+                                && !existing.equals(replacement)
+                                && !insideStructurePiece(protectedStructurePieces, worldX, worldY, worldZ)) {
                             states.swapUnsafe(localX, localY, localZ, replacement);
                             placed++;
                         }
@@ -144,6 +165,15 @@ public final class ProvinceBackgroundFeature extends Feature<DefaultFeatureConfi
             section.unlock();
         }
         return placed;
+    }
+
+    private static boolean insideStructurePiece(List<BlockBox> boxes, int x, int y, int z) {
+        for (BlockBox box : boxes) {
+            if (box.contains(x, y, z)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private static BlockState outputState(String lithology, LithologyCatalog.Snapshot catalog) {
