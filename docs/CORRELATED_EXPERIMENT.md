@@ -29,6 +29,26 @@ One chunk-normalized ownership decision controls both sides of the handoff:
 
 Owned chunks must select an allowed target succession and remain at least 96 blocks from the nearest province boundary. Province blending is 192 blocks wide, so the experiment deliberately avoids the most ambiguous transition zone during testing.
 
+## Province background matrix
+
+The companion also runs a late background pass after the correlated feature. Its purpose is to ensure that otherwise-unclaimed natural host stone is still interpreted as GeoStrata geology instead of remaining vanilla stone.
+
+This is not a single-rock province fill. For each geological province the pass ranks the ordinary strata-lens lithologies by the existing `province_profiles.json` suitability weights and uses the strongest four as a repeated regional sequence. Event-only pipe lithologies such as kimberlite and lamproite are excluded because their baseline features are not ordinary strata lenses.
+
+The sequence reuses the existing regional stratigraphic field, contact planner and active-terrain structural transform. As a result, the base matrix has coherent dipped/warped contacts and the same province-specific terrain response rather than per-block noise or biome-driven stone selection.
+
+Typical current palettes are:
+
+- sedimentary basin: limestone, shale, mudstone, siltstone;
+- cratonic shield: gneiss, schist, quartzite, slate;
+- orogenic belt: schist, quartzite, gneiss, slate;
+- volcanic arc: basalt, rhyolite, breccia, gneiss;
+- rift province: basalt, conglomerate, shale, siltstone.
+
+The background pass only mutates `geostrata:worldgen/base_stone_replaceables`. Correlated strata and earlier GeoStrata bodies are already non-host blocks and therefore remain authoritative. Ores, caves, fluids and unrelated blocks are untouched. Known structure-piece bounding volumes are skipped so structure-placed raw stone is not reinterpreted as terrain geology.
+
+This background matrix exists only in the opt-in companion while the world-level geology model is being visually validated. Standalone GeoStrata continues to use the conservative compatibility fallback.
+
 ## Dimension-relative vertical domain
 
 Schema 2 replaces the old sea-level-relative test window with:
