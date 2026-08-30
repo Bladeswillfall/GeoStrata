@@ -152,18 +152,34 @@ public final class SedimentaryStratigraphicField {
                 SedimentaryContactPlanner.Plan plan,
                 double additionalVerticalOffset
         ) {
+            return sampleAtVerticalOffset(
+                    y,
+                    plan,
+                    verticalOffset(x, z) + additionalVerticalOffset
+            );
+        }
+
+        /**
+         * Samples a column when its total structural vertical offset has already
+         * been resolved. Worldgen can compute that X/Z-only value once per column
+         * rather than repeating dip, warp, and terrain interpolation for every Y.
+         */
+        public Sample sampleAtVerticalOffset(
+                double y,
+                SedimentaryContactPlanner.Plan plan,
+                double verticalOffset
+        ) {
             if (plan == null) {
                 throw new IllegalArgumentException("contact plan must not be null");
             }
             if (!Double.isFinite(y)) {
                 throw new IllegalArgumentException("sample Y must be finite");
             }
-            if (!Double.isFinite(additionalVerticalOffset)) {
-                throw new IllegalArgumentException("additional vertical offset must be finite");
+            if (!Double.isFinite(verticalOffset)) {
+                throw new IllegalArgumentException("vertical offset must be finite");
             }
 
-            double offset = verticalOffset(x, z) + additionalVerticalOffset;
-            double coordinate = (y - offset) / cycleThicknessBlocks + plan.phase();
+            double coordinate = (y - verticalOffset) / cycleThicknessBlocks + plan.phase();
             if (!Double.isFinite(coordinate)) {
                 throw new IllegalArgumentException("stratigraphic coordinate must be finite");
             }
@@ -180,7 +196,7 @@ public final class SedimentaryStratigraphicField {
             }
 
             SedimentaryContactPlanner.Interval bed = plan.bedAt(fraction);
-            return new Sample(coordinate, cycleIndex, fraction, offset, bed);
+            return new Sample(coordinate, cycleIndex, fraction, verticalOffset, bed);
         }
     }
 
