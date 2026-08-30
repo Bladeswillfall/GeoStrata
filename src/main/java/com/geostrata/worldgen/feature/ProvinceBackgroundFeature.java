@@ -1,8 +1,6 @@
 package com.geostrata.worldgen.feature;
 
-import com.geostrata.GeoStrata;
 import com.geostrata.geology.CorrelatedSedimentaryExperiment;
-import com.geostrata.geology.GeologyProvince;
 import com.geostrata.geology.GeologyProvinceSampler;
 import com.geostrata.geology.LithologyCatalog;
 import net.minecraft.block.Block;
@@ -47,12 +45,12 @@ public final class ProvinceBackgroundFeature extends Feature<DefaultFeatureConfi
         BlockPos origin = context.getOrigin();
         int startX = Math.floorDiv(origin.getX(), CHUNK_SIZE) * CHUNK_SIZE;
         int startZ = Math.floorDiv(origin.getZ(), CHUNK_SIZE) * CHUNK_SIZE;
-        GeologyProvince province = GeologyProvinceSampler.sample(
+        String backgroundLithology = GeologyProvinceSampler.sample(
                 world.getSeed(),
                 startX + CHUNK_SIZE / 2,
                 startZ + CHUNK_SIZE / 2
-        ).province();
-        BlockState replacement = outputState(backgroundLithology(province), catalog);
+        ).province().backgroundLithology();
+        BlockState replacement = outputState(backgroundLithology, catalog);
         TagKey<Block> hostTag = hostTag(experiment.hostBlockTag());
 
         int seaLevel = world.getSeaLevel();
@@ -69,14 +67,6 @@ public final class ProvinceBackgroundFeature extends Feature<DefaultFeatureConfi
         }
 
         return replaceChunk(world, startX, startZ, minY, maxY, hostTag, replacement) > 0;
-    }
-
-    static String backgroundLithology(GeologyProvince province) {
-        return switch (province) {
-            case SEDIMENTARY_BASIN -> "shale";
-            case CRATONIC_SHIELD, OROGENIC_BELT -> "gneiss";
-            case VOLCANIC_ARC, RIFT_PROVINCE -> "basalt";
-        };
     }
 
     private static int replaceChunk(
