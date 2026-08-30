@@ -157,7 +157,8 @@ public final class OreDepositFeature extends Feature<DefaultFeatureConfig> {
     /**
      * First shared structural binding for fracture-controlled veins. Candidate
      * cells still own abundance; when their anchor is already near a real fault,
-     * the body is centred on that trace instead of inventing a second fault field.
+     * the body is centred on that fault plane at the body's own elevation instead
+     * of inventing a second structural field.
      */
     private static OreDepositCandidatePlanner.Proposal alignVeinToFault(
             long worldSeed,
@@ -182,6 +183,7 @@ public final class OreDepositFeature extends Feature<DefaultFeatureConfig> {
         );
         TectonicStructuralField.FaultTrace trace = tectonics.nearestFault(
                 proposal.anchorX(),
+                proposal.anchorY(),
                 proposal.anchorZ()
         );
         if (trace.distanceToFault() > VEIN_FAULT_CAPTURE_DISTANCE
