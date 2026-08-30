@@ -16,6 +16,7 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.StructureWorldAccess;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.chunk.ChunkSection;
+import net.minecraft.world.chunk.PalettedContainer;
 import net.minecraft.world.gen.feature.DefaultFeatureConfig;
 import net.minecraft.world.gen.feature.Feature;
 import net.minecraft.world.gen.feature.util.FeatureContext;
@@ -95,9 +96,7 @@ public final class CorrelatedSedimentaryFeature extends Feature<DefaultFeatureCo
     /**
      * Mutates the current chunk section-by-section instead of probing the world
      * once for every possible Y coordinate. Empty sections and sections whose
-     * palettes contain no replaceable host state are skipped entirely. Because
-     * all replacements are solid, zero-luminance rock states, direct section
-     * mutation preserves the chunk's existing heightmap and lighting geometry.
+     * palettes contain no replaceable host state are skipped entirely.
      */
     private static int replaceChunk(
             StructureWorldAccess world,
@@ -153,6 +152,12 @@ public final class CorrelatedSedimentaryFeature extends Feature<DefaultFeatureCo
         return placed;
     }
 
+    /**
+     * Writes directly to the section palette while holding its lock, then rebuilds
+     * the section counters once if anything changed. This avoids repeating air,
+     * fluid, and random-tick bookkeeping for every rock replacement while keeping
+     * the section counters correct even if another mod extends the host tag.
+     */
     private static int replaceSection(
             long worldSeed,
             int startX,
@@ -170,6 +175,7 @@ public final class CorrelatedSedimentaryFeature extends Feature<DefaultFeatureCo
         int placed = 0;
         int minLocalY = minY - sectionBottomY;
         int maxLocalY = maxY - sectionBottomY;
+        PalettedContainer<BlockState> states = section.getBlockStateContainer();
         section.lock();
         try {
             for (int localX = 0; localX < SECTION_SIZE; localX++) {
@@ -179,7 +185,7 @@ public final class CorrelatedSedimentaryFeature extends Feature<DefaultFeatureCo
                     int columnIndex = localX * CHUNK_SIZE + localZ;
                     CorrelatedSedimentaryRuntime.Column column = columns[columnIndex];
                     for (int localY = minLocalY; localY <= maxLocalY; localY++) {
-                        BlockState existing = section.getBlockState(localX, localY, localZ);
+                        BlockState existing = states.get(localX, localY, localZ);
                         if (!replaceable(existing, hostTag, site, catalog)) {
                             continue;
                         }
@@ -197,10 +203,13 @@ public final class CorrelatedSedimentaryFeature extends Feature<DefaultFeatureCo
                         if (existing.equals(replacement)) {
                             continue;
                         }
-                        section.setBlockState(localX, localY, localZ, replacement, false);
+                        states.swapUnsafe(localX, localY, localZ, replacement);
                         placed++;
                     }
                 }
+            }
+            if (placed > 0) {
+                section.calculateCounts();
             }
         } finally {
             section.unlock();
