@@ -6,6 +6,7 @@ import com.geostrata.geology.FaultDamageZone;
 import com.geostrata.geology.GeologyProvinceSampler;
 import com.geostrata.geology.SedimentaryFieldProfiles;
 import com.geostrata.geology.SedimentaryStratigraphicField;
+import com.geostrata.geology.TectonicFoldPolarity;
 import com.geostrata.geology.TectonicStructuralField;
 import com.geostrata.geology.TerrainAwareStructuralField;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
@@ -42,11 +43,15 @@ public final class StructuralCommands {
 
         TerrainAwareStructuralField.Field field;
         String authority;
+        String polarity;
         Optional<CorrelatedSedimentaryRuntime.TerrainAwareSite> correlated =
                 CorrelatedSedimentaryRuntime.resolve(source.getWorld(), x, z);
         if (correlated.isPresent()) {
-            field = correlated.get().field();
-            authority = "correlated:" + correlated.get().succession().id();
+            CorrelatedSedimentaryRuntime.TerrainAwareSite site = correlated.get();
+            field = site.field();
+            authority = "correlated:" + site.succession().id();
+            TectonicFoldPolarity.Transform transform = site.foldPolarity().transform(field.tectonicField(), x, z);
+            polarity = polarity(transform.verticalScale());
         } else {
             SedimentaryFieldProfiles.Snapshot profiles = SedimentaryFieldProfiles.current();
             if (!profiles.loaded()) {
@@ -67,6 +72,7 @@ public final class StructuralCommands {
                     base
             );
             authority = "province_background";
+            polarity = "n/a";
         }
 
         TectonicStructuralField.Sample tectonic = field.tectonicSample(x, y, z);
@@ -88,6 +94,7 @@ public final class StructuralCommands {
                                 + " | drape " + signed(field.drapeOffset(x, z))
                                 + " | terrain fold " + signed(field.foldOffset(x, z))
                                 + " | tectonic fold " + signed(tectonic.foldOffset())
+                                + " | strata polarity " + polarity
                                 + " | fault " + tectonic.faultRegime().name().toLowerCase()
                                 + " offset " + signed(tectonic.faultOffset())
                                 + " | nearest @ " + faultLocation + " ~" + faultDistance + " blocks"
@@ -100,6 +107,18 @@ public final class StructuralCommands {
                 false
         );
         return 1;
+    }
+
+    private static String polarity(double scale) {
+        String state;
+        if (scale < 0.0) {
+            state = "overturned";
+        } else if (Math.abs(scale) < 0.15) {
+            state = "near-vertical";
+        } else {
+            state = "normal";
+        }
+        return state + " " + Math.round(scale * 100.0) + "%";
     }
 
     private static String signed(double value) {
