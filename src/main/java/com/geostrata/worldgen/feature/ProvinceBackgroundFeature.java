@@ -11,6 +11,7 @@ import com.geostrata.geology.SedimentaryFieldProfiles;
 import com.geostrata.geology.SedimentaryStratigraphicField;
 import com.geostrata.geology.SedimentarySuccessions;
 import com.geostrata.geology.TerrainAwareStructuralField;
+import com.geostrata.geology.VolcanicArcModel;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.registry.Registries;
@@ -37,16 +38,23 @@ import java.util.Map;
 /**
  * Late experimental fill for natural host stone not claimed by richer GeoStrata bodies.
  *
- * <p>The correlated pass remains authoritative where it owns a chunk. Remaining natural
- * host stone is filled from a coherent province-weighted lithology sequence using the
- * same structural field and active-terrain response as correlated strata. Existing
- * GeoStrata bodies, ores, caves, fluids and structure-piece footprints are preserved.</p>
+ * <p>Most provinces still use the temporary province-weighted matrix while their
+ * architecture is validated. Volcanic arcs are the first province-specific path:
+ * metamorphic basement cut by mafic dikes/sills and local rhyolitic bodies with
+ * breccia halos. Existing GeoStrata bodies, ores, caves, fluids and structure-piece
+ * footprints are preserved.</p>
  */
 public final class ProvinceBackgroundFeature extends Feature<DefaultFeatureConfig> {
     private static final int CHUNK_SIZE = 16;
     private static final int SECTION_SIZE = 16;
     private static final int PALETTE_SIZE = 4;
     private static final String CONTINUITY = "regional";
+    private static final List<String> VOLCANIC_ARC_LITHOLOGIES = List.of(
+            "gneiss",
+            "basalt",
+            "rhyolite",
+            "breccia"
+    );
 
     public ProvinceBackgroundFeature() {
         super(DefaultFeatureConfig.CODEC);
@@ -68,17 +76,11 @@ public final class ProvinceBackgroundFeature extends Feature<DefaultFeatureConfi
         int startZ = Math.floorDiv(origin.getZ(), CHUNK_SIZE) * CHUNK_SIZE;
         int centerX = startX + CHUNK_SIZE / 2;
         int centerZ = startZ + CHUNK_SIZE / 2;
-        GeologyProvinceSampler.Sample provinceSample = GeologyProvinceSampler.sample(world.getSeed(), centerX, centerZ);
+        long worldSeed = world.getSeed();
+        GeologyProvinceSampler.Sample provinceSample = GeologyProvinceSampler.sample(worldSeed, centerX, centerZ);
         GeologyProvince province = provinceSample.province();
-        SedimentarySuccessions.Succession sequence = backgroundSequence(province, profiles, catalog);
-        SedimentaryContactPlanner.Plan plan = SedimentaryContactPlanner.plan(
-                world.getSeed(),
-                provinceSample.siteX(),
-                provinceSample.siteZ(),
-                sequence
-        );
         SedimentaryStratigraphicField.Field baseField = SedimentaryStratigraphicField.forSite(
-                world.getSeed(),
+                worldSeed,
                 provinceSample.siteX(),
                 provinceSample.siteZ(),
                 fieldProfiles.parametersFor(CONTINUITY)
@@ -90,9 +92,40 @@ public final class ProvinceBackgroundFeature extends Feature<DefaultFeatureConfi
                 province,
                 baseField
         );
-        Map<String, BlockState> outputStates = outputStates(sequence, catalog);
-        TagKey<Block> hostTag = hostTag(experiment.hostBlockTag());
 
+        Map<String, BlockState> outputStates;
+        LithologyResolver resolver;
+        if (province == GeologyProvince.VOLCANIC_ARC) {
+            outputStates = outputStates(VOLCANIC_ARC_LITHOLOGIES, catalog);
+            double seaLevel = world.getSeaLevel();
+            resolver = (x, y, z, structuralOffset) -> VolcanicArcModel.sample(
+                    worldSeed,
+                    x,
+                    y,
+                    z,
+                    provinceSample.siteX(),
+                    provinceSample.siteZ(),
+                    structuralOffset,
+                    seaLevel
+            ).lithology();
+        } else {
+            SedimentarySuccessions.Succession sequence = backgroundSequence(province, profiles, catalog);
+            SedimentaryContactPlanner.Plan plan = SedimentaryContactPlanner.plan(
+                    worldSeed,
+                    provinceSample.siteX(),
+                    provinceSample.siteZ(),
+                    sequence
+            );
+            outputStates = outputStates(sequence.beds().stream()
+                    .map(SedimentarySuccessions.Bed::lithology)
+                    .toList(), catalog);
+            resolver = (x, y, z, structuralOffset) -> field.baseField()
+                    .sampleAtVerticalOffset(y, plan, structuralOffset)
+                    .bed()
+                    .lithology();
+        }
+
+        TagKey<Block> hostTag = hostTag(experiment.hostBlockTag());
         int seaLevel = world.getSeaLevel();
         int minY = Math.max(
                 world.getBottomY(),
@@ -114,7 +147,7 @@ public final class ProvinceBackgroundFeature extends Feature<DefaultFeatureConfi
                 maxY,
                 hostTag,
                 field,
-                plan,
+                resolver,
                 outputStates
         ) > 0;
     }
@@ -159,7 +192,7 @@ public final class ProvinceBackgroundFeature extends Feature<DefaultFeatureConfi
             int maxY,
             TagKey<Block> hostTag,
             TerrainAwareStructuralField.Field field,
-            SedimentaryContactPlanner.Plan plan,
+            LithologyResolver resolver,
             Map<String, BlockState> outputStates
     ) {
         Chunk chunk = world.getChunk(
@@ -196,7 +229,7 @@ public final class ProvinceBackgroundFeature extends Feature<DefaultFeatureConfi
                     sectionMaxY,
                     hostTag,
                     field,
-                    plan,
+                    resolver,
                     outputStates,
                     protectedStructurePieces
             );
@@ -216,7 +249,7 @@ public final class ProvinceBackgroundFeature extends Feature<DefaultFeatureConfi
             int maxY,
             TagKey<Block> hostTag,
             TerrainAwareStructuralField.Field field,
-            SedimentaryContactPlanner.Plan plan,
+            LithologyResolver resolver,
             Map<String, BlockState> outputStates,
             List<BlockBox> protectedStructurePieces
     ) {
@@ -240,10 +273,7 @@ public final class ProvinceBackgroundFeature extends Feature<DefaultFeatureConfi
                         if (insideStructurePiece(protectedStructurePieces, worldX, worldY, worldZ)) {
                             continue;
                         }
-                        String lithology = field.baseField()
-                                .sampleAtVerticalOffset(worldY, plan, verticalOffset)
-                                .bed()
-                                .lithology();
+                        String lithology = resolver.lithology(worldX, worldY, worldZ, verticalOffset);
                         BlockState replacement = outputStates.get(lithology);
                         if (replacement != null && !existing.equals(replacement)) {
                             states.swapUnsafe(localX, localY, localZ, replacement);
@@ -271,12 +301,12 @@ public final class ProvinceBackgroundFeature extends Feature<DefaultFeatureConfi
     }
 
     private static Map<String, BlockState> outputStates(
-            SedimentarySuccessions.Succession sequence,
+            List<String> lithologies,
             LithologyCatalog.Snapshot catalog
     ) {
         Map<String, BlockState> states = new HashMap<>();
-        for (SedimentarySuccessions.Bed bed : sequence.beds()) {
-            states.put(bed.lithology(), outputState(bed.lithology(), catalog));
+        for (String lithology : lithologies) {
+            states.put(lithology, outputState(lithology, catalog));
         }
         return states;
     }
@@ -298,5 +328,10 @@ public final class ProvinceBackgroundFeature extends Feature<DefaultFeatureConfi
             throw new IllegalStateException("Invalid background geology host block tag: " + rawIdentifier);
         }
         return TagKey.of(RegistryKeys.BLOCK, id);
+    }
+
+    @FunctionalInterface
+    private interface LithologyResolver {
+        String lithology(int x, int y, int z, double structuralOffset);
     }
 }
