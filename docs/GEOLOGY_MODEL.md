@@ -1,148 +1,150 @@
 # GeoStrata geology model
 
-GeoStrata is a world-level geology system rather than a collection of decorative stone patches. Terrain generators own terrain shape; GeoStrata owns the geological interpretation of eligible natural rock that terrain exposes.
+GeoStrata is a world-level geology system rather than a collection of decorative stone patches. Terrain generators own terrain shape; GeoStrata interprets eligible natural rock exposed by that terrain.
 
 ## Runtime authority
 
-The normal standalone mod keeps the fourteen natural-rock `strata_lens` features as a compatibility fallback. The historical `*_ore` IDs remain stable datapack/worldgen identifiers even though the bodies are no longer vanilla ore blobs.
+Standalone GeoStrata retains the natural-rock `strata_lens` compatibility fallback. The opt-in experiment companion enables the advanced runtime.
 
-The opt-in experiment companion is the more geological runtime. Its authority is deliberately layered rather than replaced by one monolithic generator:
+Advanced authority is layered rather than monolithic:
 
-1. terrain generation establishes the world's shape;
-2. GeoStrata resolves geological province and province-site context;
-3. correlated succession/runtime geology owns eligible sedimentary host stone where its experiment claims a chunk;
-4. province-specific architecture fills remaining eligible natural host stone;
-5. metamorphism and mineral deposits consume the same geology/structural context;
-6. caves, fluids, bedrock, structures, ores and other non-host blocks remain untouched by the late background fill.
+1. the active terrain generator creates terrain;
+2. `GeologyProvinceSampler` resolves regional province/site context;
+3. `CorrelatedSedimentaryRuntime` owns eligible ordered sedimentary host in experiment-owned chunks;
+4. `ProvinceBackgroundRuntime` resolves the remaining province architecture;
+5. the shared structural field deforms those geological authorities;
+6. metamorphism, fault damage, diamonds and ore deposits consume the same semantic geology;
+7. mutation features only replace eligible natural host and preserve caves, fluids, ores, structures and unrelated blocks.
+
+`ProvinceBackgroundRuntime` is intentionally semantic rather than tied to mutation order. A consumer such as ore worldgen can ask what rock will occupy a location even when the late background replacement has not run yet.
 
 Existing chunks are not retroactively rewritten.
 
-## Province architecture
+## Provinces
 
-`GeologyProvinceSampler` deterministically assigns one of five broad geological contexts from world seed and X/Z using jittered coarse sites and nearest-site ownership. Province identity does not depend on chunk generation order or mutable runtime state.
+`GeologyProvinceSampler` assigns five broad contexts from world seed and X/Z using deterministic jittered sites. Sampling is evaluated per world column, not once at chunk centre.
 
 ### Sedimentary Basin
 
-The Basin reuses the existing `SedimentarySuccessionSelector` and the selected succession's own `regional`/`local` field profile. There is no separate four-rock background palette.
-
-Its tectonic field has sparse, modest normal faults and weak regional folding. The faults are planar but dipping rather than permanently vertical.
+Uses the existing `SedimentarySuccessionSelector` and the selected succession's own field profile. Structure is weakly folded with sparse modest dipping normal faults.
 
 ### Rift Province
 
-Rift background geology also reuses the existing succession selector instead of a second rock matrix. Closely spaced, high-throw normal faults provide horst/graben-style displacement.
-
-Rift faults are listric: their trace uses one restrained quadratic curvature term so the fault plane becomes shallower with depth. This is intentionally a small extension of the shared fault family, not a second 3-D fault simulator.
-
-A very narrow breccia damage seam can reveal the shared fault plane in cave/cliff exposure. The same structural overlay is available to eligible correlated host so the visible plane does not disappear where correlated stratigraphy has higher authority. Ores, caves, fluids, structures and unrelated blocks remain protected.
+Also reuses the existing succession selector. Structure is strongly extensional with closer, higher-throw normal faults, restrained listric curvature and narrow fault-damage breccia.
 
 ### Cratonic Shield
 
-Cratonic Shield uses an old metamorphic-basement architecture rather than repeated synthetic beds:
+Uses basement/terrane architecture rather than repeating synthetic beds:
 
-- broad warped gneiss/schist terranes;
+- broad warped gneiss/schist domains;
 - narrow quartzite belts;
 - occasional elongated marble lenses;
-- subdued folds and sparse low-throw ancient faults.
-
-Marble therefore has a coherent geological home rather than receiving a global abundance multiplier.
+- subdued folding and sparse low-throw ancient faults.
 
 ### Orogenic Belt
 
-Orogenic background geology is a strongly deformed metamorphic gradient:
+Uses a deformed metamorphic gradient:
 
 - gneiss high-grade core;
 - schist intermediate zone;
 - slate outer zone;
 - quartzite ribbons;
-- comparatively common elongated marble lenses.
+- comparatively common marble lenses.
 
-The shared structural field supplies strong folds and dipping reverse/thrust-style faults. Their planar dip varies deterministically from moderately low-angle thrust-style geometry to steeper reverse faults. A narrow breccia damage seam may expose the same fault through both eligible background and correlated host.
-
-Where correlated parent-aware strata own host rock, they remain the ordered stratigraphic authority and may additionally express sparse overturned limbs. The fallback metamorphic gradient does not claim a younging direction and therefore does not pretend to be overturned stratigraphy.
+Where correlated parent-aware stratigraphy owns the rock it remains the higher authority and may express real overturned younging direction. Background metamorphic architecture does not claim stratigraphic polarity.
 
 ### Volcanic Arc
 
-Volcanic Arc uses a metamorphic basement cut by intrusive/volcanic structures:
+Uses metamorphic basement cut by igneous/volcanic bodies:
 
 - varied gneiss/schist basement;
 - narrower quartzite cores;
 - steep basalt dikes;
 - basalt sills;
 - local rhyolite bodies;
-- breccia halos around dikes and rhyolite bodies.
+- breccia halos around intrusive/volcanic bodies.
 
-Its shared mixed fault family currently remains vertical-plane geometry; no additional dipping/shear model is added until live testing justifies it.
+The rejected one-rock-per-province fill and later repeated four-lithology background matrix are no longer part of the advanced runtime.
+
+## Province contacts
+
+A province boundary is a geological contact, not a chunk boundary.
+
+Per-column sampling removes the former 16×16 staircase caused by choosing one province from the chunk centre. Within 96 blocks of the actual boundary, `TerraneSuture` allows the two existing province architectures to meet on a bounded steeply dipping contact through depth.
+
+At the reference surface the boundary remains at the X/Z position selected by `GeologyProvinceSampler`. With depth the neighbouring terrane may project beneath the surface province. The shift is capped so the suture cannot consume an entire province.
+
+The suture does not blend random lithologies and does not create a third transition palette.
 
 ## Structural field
 
-The generated geological position is assembled from existing small transforms rather than one opaque noise function:
+Geological position is assembled from small reusable transforms:
 
-- base stratigraphic dip/warp;
+- base dip/warp;
 - coarse terrain drape;
 - terrain-evidence open-fold response;
-- long-wavelength tectonic fold and axial closure envelope;
-- correlated Orogenic stratigraphic-polarity transform where selected;
-- discrete tectonic fault throw.
+- long-wavelength tectonic fold;
+- along-strike fold closure envelope;
+- sparse correlated Orogenic stratigraphic-polarity transform;
+- discrete tectonic fault displacement.
 
-`TectonicStructuralField` is the authoritative tectonic primitive. The terrain-driven fold remains separate: terrain can amplify/expose geological structure without becoming the tectonic structure itself.
+`TectonicStructuralField` is the shared tectonic primitive. Terrain response remains separate so terrain can expose/amplify structure without becoming the source of tectonic structure.
 
-### Tectonic folds
+### Folds
 
-Folds are deterministic, province-scale and long-wavelength. A restrained second harmonic avoids perfectly sinusoidal contacts. Orogenic belts receive the strongest fold amplitude; cratonic shields the weakest.
+Folds are deterministic, province-scale and long-wavelength. A restrained second harmonic avoids perfectly sinusoidal contacts. `TectonicFoldClosures` modulates amplitude along strike so folds terminate into broad noses instead of infinite parallel stripes.
 
-`TectonicFoldClosures` modulates the existing fold amplitude along strike so folds wax and wane into broad noses/closures instead of behaving like infinitely parallel stripes. It does not increase the underlying fold amplitude or introduce another noise field.
+Sparse correlated Orogenic columns may use `TectonicFoldPolarity`:
 
-Sparse correlated Orogenic folds can also reverse stratigraphic polarity. `TectonicFoldPolarity` reuses the existing fold axis, wavelength, phase and closure envelope; existing phase values also choose whether the site activates, which compressed limb is selected, the overturn strength and a structural pivot below the terrain anchor. No second random structural field is introduced.
+- positive vertical scale: normal younging-up;
+- near zero: near-vertical limb/hinge;
+- negative: stratigraphic coordinate decreases upward, producing an actual overturned limb.
 
-The vertical stratigraphic scale has a direct geological meaning:
-
-- `+1` is ordinary younging-up stratigraphy;
-- values approaching `0` represent a near-vertical hinge/limb;
-- negative values reverse the upward younging direction and therefore represent an overturned limb.
-
-The transform is applied only where an ordered correlated succession is authoritative. Tests verify that the correlated stratigraphic coordinate actually decreases as world Y increases on an overturned limb and that upward traversal crosses a reversed bed contact.
-
-This is not yet a general recumbent-fold or nappe simulator. Large-scale repeated thrust sheets, recumbent closures and arbitrary multi-valued fold loops should only be added if they can reuse the same structural coordinate model without introducing a second voxel-scale simulation.
+This is deliberately not a full recumbent-fold/nappe simulator.
 
 ### Faults
-
-Fault spacing, throw and regime vary by province. Fault identity is seed-derived and stable.
-
-The current geometry is:
 
 | Province | Regime | Geometry |
 | --- | --- | --- |
 | Sedimentary Basin | normal | sparse, modest, planar dipping |
-| Cratonic Shield | ancient | sparse, low-throw, vertical plane |
-| Orogenic Belt | reverse | strong planar dipping / thrust-style |
-| Volcanic Arc | mixed | moderate vertical plane |
+| Cratonic Shield | ancient | sparse, low-throw, near-vertical |
+| Orogenic Belt | reverse | strong dipping / thrust-style |
+| Volcanic Arc | mixed | moderate near-vertical |
 | Rift Province | normal | close, high-throw, listric |
 
-Fault dip is expressed as horizontal trace shift per vertical block. Expensive X/Z work resolves once into a `TectonicStructuralField.Column`; only the piecewise fault-state lookup varies with Y. Rift curvature adds one quadratic term to that cached column.
+Fault traces also have restrained long-wavelength along-strike meander. Meander amplitude is derived from existing fault parameters and remains bounded; it does not introduce another independent structural noise field.
 
-The province site remains the zero-displacement reference at Y=0 so deterministic anchoring and existing 2-D callers remain stable. Legacy X/Z-only methods therefore mean the Y=0 trace.
+Rift listric geometry is one restrained vertical curvature term. X/Z structural work is still resolved once per column and Y sampling applies the remaining piecewise fault state.
 
-`TerrainAwareStructuralField.Column` composes the cached base/terrain/fold terms with the Y-aware fault state. Correlated worldgen uses the same column and terminates its normal run cache at the next fault-state boundary so a dipping fault cannot be skipped by a long lithology cache run.
+Narrow fault-damage breccia is exposed only where justified and uses the same shared fault geometry.
 
 ## Structural consumers
 
 ### Diamonds
 
-The earlier diamond-only proxy corridor has been removed. Sparse deep structural diamond candidates in cratonic interiors project onto the same real ancient fault family that displaces the surrounding geology. Candidate cells still own rarity; the structural field owns geometry.
+Sparse deep structural diamonds in cratonic interiors project onto the same ancient fault family that displaces surrounding geology. Candidate cells own rarity; the structural field owns location.
 
 Kimberlite/lamproite pipes remain a separate very-rare intrusive route.
 
 ### Ore veins
 
-Fracture-controlled experimental `vein` candidates reuse the shared fault field. If a candidate lies close enough to a fault, its centre is projected onto that fault plane at the candidate's own Y. This means a deep vein follows the deep position of a dipping/listric plane rather than its surface/Y=0 trace.
+`FaultControlledOrePlanner` is the structural binding for fracture-style experimental `vein` deposits.
 
-The existing branched vein body remains responsible for local fracture geometry. GeoStrata does not run a second ore-specific fault simulator.
+When a candidate is close enough to the shared fault field:
+
+1. its centre is projected onto the fault trace at the candidate's actual Y;
+2. nearby points on that same trace determine the local meandering strike;
+3. the existing branched `OreDepositGeometry.Body` is re-oriented along that strike.
+
+Body size, warp, branches, concentration and grade logic remain unchanged. Non-vein styles bypass the binding unchanged. Candidate activation is still keyed to the original deterministic cell, so fault projection cannot reroll abundance.
+
+Ore host qualification is semantic and order-independent. Existing GeoStrata rock wins first; otherwise an eligible natural host may resolve through correlated or province-background runtime geology. Air, caves and unrelated blocks do not receive fictional future hosts.
 
 ## Terrain evidence and compatibility
 
-`ChunkGeneratorTerrainMorphologySampler` samples the active terrain generator through `OCEAN_FLOOR_WG` without loading neighboring chunks. Sampling occurs on a shared 128-block grid and is bilinearly interpolated.
+`ChunkGeneratorTerrainMorphologySampler` samples the active terrain generator through `OCEAN_FLOOR_WG` on a shared 128-block grid and interpolates between shared points.
 
-Province drape/fold couplings remain deliberately partial:
+Current terrain couplings remain deliberately partial:
 
 | Province | Drape | Terrain fold |
 | --- | ---: | ---: |
@@ -152,53 +154,57 @@ Province drape/fold couplings remain deliberately partial:
 | Volcanic Arc | 35% | 35% |
 | Rift Province | 45% | 20% |
 
-Positive prominence is treated as stronger uplift/ridge evidence. Increasingly negative prominence attenuates terrain response so ravines mostly expose existing geology instead of dragging the geological field down to their floor.
+Positive prominence acts as uplift/ridge evidence. Strong negative prominence attenuates response so ravines primarily expose existing geology rather than drag the geological field to their floor.
 
-No absolute vanilla Y level is used as geological identity. Field thickness remains geological scale rather than a percentage of dimension height, and the experiment operates against the active dimension bounds.
+No vanilla absolute Y is geological identity. Bed/cycle thickness remains geological scale rather than a percentage of dimension height.
 
-Terrain/mod compatibility remains semantic: a terrain mod can make its natural stone eligible by extending `geostrata:worldgen/base_stone_replaceables`. Java integration is only justified where tags/data cannot express the behavior.
+Terrain-mod compatibility is semantic: a mod can make its natural stone eligible by extending `geostrata:worldgen/base_stone_replaceables`. Java integration is only justified where tags/data cannot express the behavior.
 
 ## Parent-aware metamorphism
 
-In correlated orogenic chunks the runtime resolves the parent rock before metamorphic output:
+In correlated Orogenic chunks the parent rock is resolved before metamorphic output:
 
-- mudrock -> slate / schist / gneiss where the metamorphic band selects an output;
-- carbonate -> marble;
+- mudrock → slate / schist / gneiss when the metamorphic band selects an output;
+- carbonate → marble;
 - unsupported parents remain unchanged.
 
-The same transformed stratigraphic Y is supplied to metamorphic band selection on a polarity-transformed limb, so parent bedding and metamorphic output do not silently use opposing structural coordinates.
+The same transformed stratigraphic coordinate is used for parent bedding and metamorphic selection on overturned limbs.
 
-Quartzite remains fallback-only until GeoStrata has a valid quartz-rich sandstone parent rather than inventing a false parent relationship.
+Quartzite remains fallback-only until a legitimate quartz-rich sandstone parent exists.
 
 ## Diagnostics
 
-Useful commands include:
+Useful commands:
 
-- `/geostrata province`
-- `/geostrata terrain`
-- `/geostrata field`
-- `/geostrata structure`
-- `/geostrata metamorphism`
-- `/geostrata experiment`
+```text
+/geostrata province
+/geostrata terrain
+/geostrata field
+/geostrata structure
+/geostrata metamorphism
+/geostrata experiment
+/geostrata ore <material> candidate
+```
 
-`/geostrata structure` reports the active authority, base/terrain/tectonic components, correlated stratigraphic polarity when applicable, fault regime and throw, nearest fault position/distance at the player's current Y, local fault dip, fault-damage-zone membership and total structural displacement. Background architecture reports polarity as `n/a` because it does not claim an ordered bed younging direction.
+`/geostrata structure` reports the active authority, structural components, correlated polarity when applicable, current-Y fault position/distance/dip, damage-zone state, total displacement and near-boundary suture information.
+
+`/geostrata ore <material> candidate` uses the same fault binding and host precedence as runtime generation.
 
 ## Determinism and performance
 
-Worldgen identity is a pure function of stable world inputs: world seed, geological site/province, loaded geology data and active terrain-generator evidence. There is no first-visited state or mutable plate simulation.
+Worldgen identity is a pure function of stable world inputs. There is no mutable plate simulation or first-visited state.
 
-The structural implementation keeps the hot path small:
+The hot path is intentionally bounded:
 
-- terrain evidence is coarse and cached;
-- tectonic orientation/spacing/throw/curvature resolve once per site;
+- terrain evidence is coarse/cached;
+- province context is cached per chunk;
+- province model contexts are cached per unique site used by that chunk;
 - X/Z structural work resolves once per generated column;
-- Y sampling performs only the remaining piecewise fault/contact work;
-- ordinary correlated lithology runs are cached until the next geological or structural boundary;
-- polarity-transformed columns conservatively use one-block lithology runs so a reversed contact cannot be skipped.
+- only columns close enough to a boundary resolve a second terrane;
+- ordinary correlated lithology runs cache until the next geological/structural boundary;
+- sparse polarity-transformed columns currently use conservative one-block runs rather than a second complex boundary solver.
 
-The one-block policy is intentionally simpler than adding a second boundary solver before profiling shows it is needed. The polarity transform is sparse and Orogenic-only; if live benchmarks show it is material, its linear per-column transform can support an exact reversed-boundary cache without changing the geology model.
-
-This is the constraint for future structures: additional geometry should reuse these primitives or justify its runtime cost before a new simulation layer is introduced.
+New structural features should reuse these primitives or justify both their geological value and runtime cost before adding another simulation layer.
 
 ## Validation
 
@@ -209,4 +215,4 @@ python3 scripts/validate_geology_catalog.py
 gradle test
 ```
 
-The repository tests cover province sampling, deterministic stratigraphy, terrain response, metamorphic bands, ore geometry, province-specific architectures, fault projection, dipping fault planes, listric Rift curvature, fault-damage overlays, fold closures, structural run-boundary behavior and actual correlated stratigraphic reversal on overturned Orogenic limbs.
+Current tests cover deterministic province sampling, terrain response, province architectures, metamorphism, fault projection, dipping/listric/meandering fault geometry, fault-damage policy, fold closures, overturned correlated contacts, shared fault-controlled ore geometry and dipping terrane sutures.
