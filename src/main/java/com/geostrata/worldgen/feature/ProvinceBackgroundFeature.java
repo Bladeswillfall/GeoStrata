@@ -11,6 +11,7 @@ import com.geostrata.geology.OrogenicBeltModel;
 import com.geostrata.geology.SedimentaryContactPlanner;
 import com.geostrata.geology.SedimentaryFieldProfiles;
 import com.geostrata.geology.SedimentaryStratigraphicField;
+import com.geostrata.geology.SedimentarySuccessionSelector;
 import com.geostrata.geology.SedimentarySuccessions;
 import com.geostrata.geology.TerrainAwareStructuralField;
 import com.geostrata.geology.VolcanicArcModel;
@@ -31,8 +32,6 @@ import net.minecraft.world.gen.feature.DefaultFeatureConfig;
 import net.minecraft.world.gen.feature.Feature;
 import net.minecraft.world.gen.feature.util.FeatureContext;
 
-import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -41,15 +40,14 @@ import java.util.function.IntFunction;
 /**
  * Late experimental fill for natural host stone not claimed by richer GeoStrata bodies.
  *
- * <p>Volcanic Arc, Cratonic Shield and Orogenic Belt now use province-specific
- * architecture while the remaining provinces retain the temporary province-weighted
- * matrix. Existing GeoStrata bodies, ores, caves, fluids and structure-piece footprints
- * are preserved.</p>
+ * <p>Metamorphic/igneous provinces use their province-specific architecture. Sedimentary
+ * Basin and Rift reuse the already-loaded succession selector rather than maintaining a
+ * second synthetic rock-palette model. Existing GeoStrata bodies, ores, caves, fluids and
+ * structure-piece footprints are preserved.</p>
  */
 public final class ProvinceBackgroundFeature extends Feature<DefaultFeatureConfig> {
     private static final int CHUNK_SIZE = 16;
     private static final int SECTION_SIZE = 16;
-    private static final int PALETTE_SIZE = 4;
     private static final String CONTINUITY = "regional";
     private static final List<String> VOLCANIC_ARC_LITHOLOGIES = List.of(
             "gneiss",
@@ -83,8 +81,13 @@ public final class ProvinceBackgroundFeature extends Feature<DefaultFeatureConfi
         CorrelatedSedimentaryExperiment.Snapshot experiment = CorrelatedSedimentaryExperiment.current();
         LithologyCatalog.Snapshot catalog = LithologyCatalog.current();
         GeologyProvinceProfiles.Snapshot profiles = GeologyProvinceProfiles.current();
+        SedimentarySuccessions.Snapshot successions = SedimentarySuccessions.current();
         SedimentaryFieldProfiles.Snapshot fieldProfiles = SedimentaryFieldProfiles.current();
-        if (!experiment.enabled() || !catalog.loaded() || !profiles.loaded() || !fieldProfiles.loaded()) {
+        if (!experiment.enabled()
+                || !catalog.loaded()
+                || !profiles.loaded()
+                || !successions.loaded()
+                || !fieldProfiles.loaded()) {
             return false;
         }
 
@@ -149,7 +152,14 @@ public final class ProvinceBackgroundFeature extends Feature<DefaultFeatureConfi
                 return y -> column.sample(y).lithology();
             };
         } else {
-            SedimentarySuccessions.Succession sequence = backgroundSequence(province, profiles, catalog);
+            SedimentarySuccessions.Succession sequence = SedimentarySuccessionSelector.selectForSite(
+                    worldSeed,
+                    province,
+                    provinceSample.siteX(),
+                    provinceSample.siteZ(),
+                    profiles,
+                    successions
+            ).succession();
             SedimentaryContactPlanner.Plan plan = SedimentaryContactPlanner.plan(
                     worldSeed,
                     provinceSample.siteX(),
@@ -158,6 +168,7 @@ public final class ProvinceBackgroundFeature extends Feature<DefaultFeatureConfi
             );
             outputStates = outputStates(sequence.beds().stream()
                     .map(SedimentarySuccessions.Bed::lithology)
+                    .distinct()
                     .toList(), catalog);
             resolver = (x, z, structuralOffset) -> y -> field.baseField()
                     .sampleAtVerticalOffset(y, plan, structuralOffset)
@@ -190,38 +201,6 @@ public final class ProvinceBackgroundFeature extends Feature<DefaultFeatureConfi
                 resolver,
                 outputStates
         ) > 0;
-    }
-
-    private static SedimentarySuccessions.Succession backgroundSequence(
-            GeologyProvince province,
-            GeologyProvinceProfiles.Snapshot profiles,
-            LithologyCatalog.Snapshot catalog
-    ) {
-        List<LithologyCatalog.Entry> candidates = new ArrayList<>();
-        for (LithologyCatalog.Entry entry : catalog.entries()) {
-            if (entry.baselineFeature().endsWith("_ore")) {
-                candidates.add(entry);
-            }
-        }
-        candidates.sort(
-                Comparator.<LithologyCatalog.Entry>comparingDouble(entry -> profiles.weight(province, entry.id()))
-                        .reversed()
-                        .thenComparing(LithologyCatalog.Entry::id)
-        );
-        if (candidates.size() < PALETTE_SIZE) {
-            throw new IllegalStateException("Not enough ordinary lithologies for province background " + province.id());
-        }
-
-        List<SedimentarySuccessions.Bed> beds = candidates.stream()
-                .limit(PALETTE_SIZE)
-                .map(entry -> new SedimentarySuccessions.Bed(entry.id(), profiles.weight(province, entry.id())))
-                .toList();
-        return new SedimentarySuccessions.Succession(
-                "province_background_" + province.id(),
-                List.of(province),
-                CONTINUITY,
-                beds
-        );
     }
 
     private static int replaceChunk(
