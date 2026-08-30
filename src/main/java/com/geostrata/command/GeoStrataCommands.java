@@ -609,7 +609,13 @@ public final class GeoStrataCommands {
                 proposal.anchorZ()
         );
         if (site.isPresent() && insideCorrelatedWindow(source, proposal.anchorY())) {
-            return site.get().sample(proposal.anchorX(), proposal.anchorY(), proposal.anchorZ()).bed().lithology();
+            return site.get().outputLithology(
+                    source.getWorld().getSeed(),
+                    proposal.anchorX(),
+                    proposal.anchorY(),
+                    proposal.anchorZ(),
+                    lithologies
+            );
         }
 
         String block = blockAt(source, proposal);
