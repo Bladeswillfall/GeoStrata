@@ -28,11 +28,32 @@ public final class MetamorphicIntensityField {
             int provinceBlendWidthBlocks,
             TerrainMorphologySample terrain
     ) {
+        return sample(
+                worldSeed,
+                blockX,
+                blockZ,
+                provinceBlendWidthBlocks,
+                terrain,
+                GeologyProvinceSampler.sample(worldSeed, blockX, blockZ)
+        );
+    }
+
+    /** Reuses an already-resolved province sample when a chunk context supplied it. */
+    public static Sample sample(
+            long worldSeed,
+            int blockX,
+            int blockZ,
+            int provinceBlendWidthBlocks,
+            TerrainMorphologySample terrain,
+            GeologyProvinceSampler.Sample province
+    ) {
         if (provinceBlendWidthBlocks <= 0) {
             throw new IllegalArgumentException("province blend width must be positive");
         }
+        if (province == null) {
+            throw new IllegalArgumentException("province sample must not be null");
+        }
 
-        GeologyProvinceSampler.Sample province = GeologyProvinceSampler.sample(worldSeed, blockX, blockZ);
         double interior = province.interiorBlend(provinceBlendWidthBlocks);
         double provinceBaseline = blend(
                 baselineFor(province.province()),
