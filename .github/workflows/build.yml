@@ -49,3 +49,191 @@ jobs:
             build/libs/*.jar
             experiment-companion/build/libs/*.jar
           if-no-files-found: error
+
+  runtime-smoke:
+    if: github.head_ref == 'fix/pre-local-runtime-20260830'
+    name: runtime-smoke (${{ matrix.scenario }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    strategy:
+      fail-fast: false
+      matrix:
+        scenario: [baseline, experiment]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Java 21 for Gradle and Loom
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Set up Gradle 9.4
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: 9.4.0
+
+      - name: Build mod and experiment companion
+        run: gradle build :experiment-companion:build --stacktrace
+
+      - name: Install runtime test mods
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p run/mods
+          rm -f run/mods/geostrata-correlated-experiment-*.jar
+          if [ '${{ matrix.scenario }}' = 'experiment' ]; then
+              cp experiment-companion/build/libs/geostrata-correlated-experiment-0.2.0.jar run/mods/
+          fi
+          python3 - <<'PY'
+          import json
+          import pathlib
+          import urllib.parse
+          import urllib.request
+
+          mods = pathlib.Path('run/mods')
+          for project in ('tectonic', 'lithostitched'):
+              query = urllib.parse.urlencode({
+                  'loaders': json.dumps(['fabric']),
+                  'game_versions': json.dumps(['1.20.1']),
+              })
+              url = f'https://api.modrinth.com/v2/project/{project}/version?{query}'
+              with urllib.request.urlopen(url) as response:
+                  versions = json.load(response)
+              if not versions:
+                  raise SystemExit(f'No Fabric 1.20.1 version found for {project}')
+              version = versions[0]
+              primary = next((f for f in version['files'] if f.get('primary')), version['files'][0])
+              target = mods / primary['filename']
+              print(f'Downloading {project} {version["version_number"]} -> {target}')
+              urllib.request.urlretrieve(primary['url'], target)
+          PY
+
+      - name: Prepare dedicated server
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p run
+          printf 'eula=true\n' > run/eula.txt
+          cat > run/server.properties <<'EOF'
+          level-name=geostrata-runtime-smoke
+          level-seed=8675309
+          level-type=minecraft:normal
+          online-mode=false
+          spawn-protection=0
+          view-distance=2
+          simulation-distance=2
+          max-tick-time=-1
+          enable-command-block=false
+          EOF
+
+      - name: Bootstrap Tectonic config
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf run/geostrata-runtime-smoke run/logs run/config/tectonic.json
+          setsid gradle runServer --stacktrace > run/bootstrap.stdout.log 2>&1 &
+          pid=$!
+          found=0
+          for _ in $(seq 1 120); do
+              if [ -f run/config/tectonic.json ]; then
+                  found=1
+                  break
+              fi
+              if ! kill -0 "$pid" 2>/dev/null; then
+                  cat run/bootstrap.stdout.log
+                  exit 1
+              fi
+              sleep 2
+          done
+          kill -TERM -- "-$pid" 2>/dev/null || true
+          wait "$pid" 2>/dev/null || true
+          if [ "$found" -ne 1 ]; then
+              echo 'Tectonic did not create its config file.'
+              cat run/bootstrap.stdout.log
+              exit 1
+          fi
+
+      - name: Configure increased-height Tectonic world
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          path = Path('run/config/tectonic.json')
+          data = json.loads(path.read_text())
+          terrain = data.setdefault('global_terrain', {})
+          terrain['max_y'] = 640
+          terrain['min_y'] = -128
+          if 'vertical_scale' in terrain:
+              terrain['vertical_scale'] = max(float(terrain['vertical_scale']), 1.25)
+          path.write_text(json.dumps(data, indent=2) + '\n')
+          print(path.read_text())
+          PY
+          rm -rf run/geostrata-runtime-smoke run/logs
+
+      - name: Boot Minecraft and generate spawn terrain
+        shell: bash
+        run: |
+          set -euo pipefail
+          started_at=$(date +%s)
+          setsid gradle runServer --stacktrace > run/runtime.stdout.log 2>&1 &
+          pid=$!
+          started=0
+          for _ in $(seq 1 390); do
+              if [ -f run/logs/latest.log ] && grep -q 'Done (' run/logs/latest.log; then
+                  started=1
+                  break
+              fi
+              if ! kill -0 "$pid" 2>/dev/null; then
+                  echo 'Minecraft server exited before reaching Done.'
+                  cat run/runtime.stdout.log
+                  [ -f run/logs/latest.log ] && cat run/logs/latest.log
+                  exit 1
+              fi
+              sleep 2
+          done
+          finished_at=$(date +%s)
+          elapsed=$((finished_at - started_at))
+          printf '%s\n' "$elapsed" > run/elapsed-seconds.txt
+          echo '${{ matrix.scenario }} startup elapsed seconds:' "$elapsed"
+          if [ "$started" -ne 1 ]; then
+              echo 'Minecraft server did not reach Done.'
+              cat run/runtime.stdout.log
+              [ -f run/logs/latest.log ] && cat run/logs/latest.log
+              kill -TERM -- "-$pid" 2>/dev/null || true
+              exit 1
+          fi
+          sleep 5
+          kill -TERM -- "-$pid" 2>/dev/null || true
+          wait "$pid" 2>/dev/null || true
+
+      - name: Assert clean worldgen log
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f run/logs/latest.log
+          grep -q 'Done (' run/logs/latest.log
+          if grep -E '\[(Server thread|Worker-Main-[^]]+)\/ERROR\]|Exception generating new chunk|Crash report saved|Couldn.t load tag geostrata:has_swamp_soils' run/logs/latest.log; then
+              echo 'Worldgen/runtime errors detected:'
+              grep -nE '\[(Server thread|Worker-Main-[^]]+)\/ERROR\]|Exception generating new chunk|Crash report saved|Couldn.t load tag geostrata:has_swamp_soils' run/logs/latest.log
+              exit 1
+          fi
+          echo 'GeoStrata + Tectonic reached a clean dedicated-server startup for ${{ matrix.scenario }}.'
+          echo 'Elapsed seconds:' $(cat run/elapsed-seconds.txt)
+
+      - name: Upload runtime logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: geostrata-runtime-smoke-${{ matrix.scenario }}
+          path: |
+            run/runtime.stdout.log
+            run/bootstrap.stdout.log
+            run/logs/latest.log
+            run/config/tectonic.json
+            run/elapsed-seconds.txt
+          if-no-files-found: warn
