@@ -87,7 +87,7 @@ public final class StructuralCommands {
                                 + " | nearest fault @Y" + y + " ~" + faultDistance + " blocks"
                                 + " | spacing ~" + Math.round(field.tectonicField().faultSpacingBlocks())
                                 + ", throw ~" + Math.round(field.tectonicField().faultThrowBlocks())
-                                + ", dip ~" + Math.round(field.tectonicField().faultDipDegrees()) + "°"
+                                + ", dip ~" + Math.round(field.tectonicField().faultDipDegrees(y)) + "°"
                                 + " | total " + signed(field.verticalOffset(x, y, z))
                 ),
                 false
