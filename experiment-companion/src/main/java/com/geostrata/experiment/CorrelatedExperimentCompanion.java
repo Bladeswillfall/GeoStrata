@@ -21,6 +21,10 @@ public final class CorrelatedExperimentCompanion implements ModInitializer {
             RegistryKeys.PLACED_FEATURE,
             GeoStrata.id("correlated_sedimentary_experiment")
     );
+    private static final RegistryKey<PlacedFeature> BACKGROUND_FEATURE = RegistryKey.of(
+            RegistryKeys.PLACED_FEATURE,
+            GeoStrata.id("province_background_experiment")
+    );
 
     @Override
     public void onInitialize() {
@@ -28,6 +32,11 @@ public final class CorrelatedExperimentCompanion implements ModInitializer {
                 BiomeSelectors.tag(REGISTRATION_BIOMES),
                 GenerationStep.Feature.UNDERGROUND_DECORATION,
                 CORRELATED_FEATURE
+        );
+        BiomeModifications.addFeature(
+                BiomeSelectors.tag(REGISTRATION_BIOMES),
+                GenerationStep.Feature.UNDERGROUND_DECORATION,
+                BACKGROUND_FEATURE
         );
         GeoStrata.LOGGER.info("GeoStrata experimental worldgen companion enabled");
     }
