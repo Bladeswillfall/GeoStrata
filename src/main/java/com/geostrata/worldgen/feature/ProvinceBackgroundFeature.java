@@ -99,13 +99,21 @@ public final class ProvinceBackgroundFeature extends Feature<DefaultFeatureConfi
         int centerX = startX + CHUNK_SIZE / 2;
         int centerZ = startZ + CHUNK_SIZE / 2;
         long worldSeed = world.getSeed();
-        GeologyProvinceSampler.Sample province = GeologyProvinceSampler.sample(worldSeed, centerX, centerZ);
-        Background background = background(
+        GeologyProvinceSampler.Context provinceContext = GeologyProvinceSampler.context(
+                worldSeed,
+                startX,
+                startZ,
+                startX + CHUNK_SIZE - 1,
+                startZ + CHUNK_SIZE - 1
+        );
+        Background[] columnBackgrounds = columnBackgrounds(
                 world,
                 worldSeed,
+                startX,
+                startZ,
                 centerX,
                 centerZ,
-                province,
+                provinceContext,
                 catalog,
                 profiles,
                 successions,
@@ -132,10 +140,50 @@ public final class ProvinceBackgroundFeature extends Feature<DefaultFeatureConfi
                 minY,
                 maxY,
                 hostTag,
-                background.field(),
-                background.resolver(),
-                background.outputStates()
+                columnBackgrounds
         ) > 0;
+    }
+
+    private static Background[] columnBackgrounds(
+            StructureWorldAccess world,
+            long worldSeed,
+            int startX,
+            int startZ,
+            int centerX,
+            int centerZ,
+            GeologyProvinceSampler.Context provinceContext,
+            LithologyCatalog.Snapshot catalog,
+            GeologyProvinceProfiles.Snapshot profiles,
+            SedimentarySuccessions.Snapshot successions,
+            SedimentaryFieldProfiles.Snapshot fieldProfiles
+    ) {
+        Background[] columns = new Background[CHUNK_SIZE * CHUNK_SIZE];
+        Map<SiteKey, Background> bySite = new HashMap<>();
+        for (int localX = 0; localX < CHUNK_SIZE; localX++) {
+            int worldX = startX + localX;
+            for (int localZ = 0; localZ < CHUNK_SIZE; localZ++) {
+                int worldZ = startZ + localZ;
+                GeologyProvinceSampler.Sample sample = provinceContext.sample(worldX, worldZ);
+                SiteKey key = new SiteKey(sample.province(), sample.siteX(), sample.siteZ());
+                Background resolved = bySite.get(key);
+                if (resolved == null) {
+                    resolved = background(
+                            world,
+                            worldSeed,
+                            centerX,
+                            centerZ,
+                            sample,
+                            catalog,
+                            profiles,
+                            successions,
+                            fieldProfiles
+                    );
+                    bySite.put(key, resolved);
+                }
+                columns[columnIndex(localX, localZ)] = resolved;
+            }
+        }
+        return columns;
     }
 
     private static Background background(
@@ -261,8 +309,7 @@ public final class ProvinceBackgroundFeature extends Feature<DefaultFeatureConfi
                 .map(SedimentarySuccessions.Bed::lithology)
                 .distinct()
                 .toList(), catalog);
-        boolean faultDamage = province == GeologyProvince.RIFT_PROVINCE;
-        if (faultDamage) {
+        if (province == GeologyProvince.RIFT_PROVINCE) {
             states.put("breccia", outputState("breccia", catalog));
         }
         ColumnResolver resolver = (x, z, structuralColumn) -> y -> {
@@ -283,9 +330,7 @@ public final class ProvinceBackgroundFeature extends Feature<DefaultFeatureConfi
             int minY,
             int maxY,
             TagKey<Block> hostTag,
-            TerrainAwareStructuralField.Field field,
-            ColumnResolver resolver,
-            Map<String, BlockState> outputStates
+            Background[] columnBackgrounds
     ) {
         Chunk chunk = world.getChunk(
                 Math.floorDiv(startX, CHUNK_SIZE),
@@ -320,9 +365,7 @@ public final class ProvinceBackgroundFeature extends Feature<DefaultFeatureConfi
                     sectionMinY,
                     sectionMaxY,
                     hostTag,
-                    field,
-                    resolver,
-                    outputStates,
+                    columnBackgrounds,
                     protectedStructurePieces
             );
         }
@@ -340,9 +383,7 @@ public final class ProvinceBackgroundFeature extends Feature<DefaultFeatureConfi
             int minY,
             int maxY,
             TagKey<Block> hostTag,
-            TerrainAwareStructuralField.Field field,
-            ColumnResolver resolver,
-            Map<String, BlockState> outputStates,
+            Background[] columnBackgrounds,
             List<BlockBox> protectedStructurePieces
     ) {
         int minLocalY = minY - sectionBottomY;
@@ -355,8 +396,9 @@ public final class ProvinceBackgroundFeature extends Feature<DefaultFeatureConfi
                 int worldX = startX + localX;
                 for (int localZ = 0; localZ < SECTION_SIZE; localZ++) {
                     int worldZ = startZ + localZ;
-                    TerrainAwareStructuralField.Column structuralColumn = field.column(worldX, worldZ);
-                    IntFunction<String> lithologyAtY = resolver.column(worldX, worldZ, structuralColumn);
+                    Background background = columnBackgrounds[columnIndex(localX, localZ)];
+                    TerrainAwareStructuralField.Column structuralColumn = background.field().column(worldX, worldZ);
+                    IntFunction<String> lithologyAtY = background.resolver().column(worldX, worldZ, structuralColumn);
                     for (int localY = minLocalY; localY <= maxLocalY; localY++) {
                         BlockState existing = states.get(localX, localY, localZ);
                         if (!existing.isIn(hostTag)) {
@@ -366,7 +408,7 @@ public final class ProvinceBackgroundFeature extends Feature<DefaultFeatureConfi
                         if (insideStructurePiece(protectedStructurePieces, worldX, worldY, worldZ)) {
                             continue;
                         }
-                        BlockState replacement = outputStates.get(lithologyAtY.apply(worldY));
+                        BlockState replacement = background.outputStates().get(lithologyAtY.apply(worldY));
                         if (replacement != null && !existing.equals(replacement)) {
                             states.swapUnsafe(localX, localY, localZ, replacement);
                             placed++;
@@ -381,6 +423,10 @@ public final class ProvinceBackgroundFeature extends Feature<DefaultFeatureConfi
             section.unlock();
         }
         return placed;
+    }
+
+    private static int columnIndex(int localX, int localZ) {
+        return localX * CHUNK_SIZE + localZ;
     }
 
     private static boolean insideStructurePiece(List<BlockBox> boxes, int x, int y, int z) {
@@ -420,6 +466,9 @@ public final class ProvinceBackgroundFeature extends Feature<DefaultFeatureConfi
             throw new IllegalStateException("Invalid background geology host block tag: " + rawIdentifier);
         }
         return TagKey.of(RegistryKeys.BLOCK, id);
+    }
+
+    private record SiteKey(GeologyProvince province, int siteX, int siteZ) {
     }
 
     private record Background(
