@@ -44,6 +44,21 @@ final class CorrelatedMetamorphicOutputTest {
         assertEquals("shale", site.outputLithology(SEED, X, 0, Z, catalog()));
     }
 
+    @Test
+    void cachedColumnMatchesFreshSamplingAcrossExtendedHeight() {
+        CorrelatedSedimentaryRuntime.TerrainAwareSite site = layeredSite();
+        LithologyCatalog.Snapshot catalog = catalog();
+        CorrelatedSedimentaryRuntime.Column cached = site.column(SEED, X, Z);
+
+        for (int y = -128; y <= 640; y++) {
+            assertEquals(
+                    site.outputLithology(SEED, X, y, Z, catalog),
+                    cached.outputLithology(y, catalog),
+                    "cached column diverged at y=" + y
+            );
+        }
+    }
+
     private static CorrelatedSedimentaryRuntime.TerrainAwareSite site(
             GeologyProvince province,
             String parentLithology
@@ -61,6 +76,39 @@ final class CorrelatedMetamorphicOutputTest {
                 0.0,
                 List.of(new SedimentaryContactPlanner.Interval(0, parentLithology, 1.0, 0.0, 1.0))
         );
+        return site(province, succession, plan);
+    }
+
+    private static CorrelatedSedimentaryRuntime.TerrainAwareSite layeredSite() {
+        SedimentarySuccessions.Succession succession = new SedimentarySuccessions.Succession(
+                "layered_test",
+                List.of(GeologyProvince.OROGENIC_BELT),
+                "local",
+                List.of(
+                        new SedimentarySuccessions.Bed("shale", 1.0),
+                        new SedimentarySuccessions.Bed("siltstone", 1.0),
+                        new SedimentarySuccessions.Bed("limestone", 2.0)
+                )
+        );
+        SedimentaryContactPlanner.Plan plan = new SedimentaryContactPlanner.Plan(
+                "layered_test",
+                "local",
+                4.0,
+                0.17,
+                List.of(
+                        new SedimentaryContactPlanner.Interval(0, "shale", 1.0, 0.0, 0.25),
+                        new SedimentaryContactPlanner.Interval(1, "siltstone", 1.0, 0.25, 0.5),
+                        new SedimentaryContactPlanner.Interval(2, "limestone", 2.0, 0.5, 1.0)
+                )
+        );
+        return site(GeologyProvince.OROGENIC_BELT, succession, plan);
+    }
+
+    private static CorrelatedSedimentaryRuntime.TerrainAwareSite site(
+            GeologyProvince province,
+            SedimentarySuccessions.Succession succession,
+            SedimentaryContactPlanner.Plan plan
+    ) {
         SedimentaryStratigraphicField.Field baseField = new SedimentaryStratigraphicField.Field(
                 1165,
                 -602,
@@ -76,7 +124,7 @@ final class CorrelatedMetamorphicOutputTest {
                 "owned",
                 province,
                 122.0,
-                "test"
+                succession.id()
         );
         CorrelatedSedimentaryRuntime.Site base = new CorrelatedSedimentaryRuntime.Site(
                 1000,
