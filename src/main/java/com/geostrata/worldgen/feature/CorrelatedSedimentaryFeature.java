@@ -4,6 +4,7 @@ import com.geostrata.GeoStrata;
 import com.geostrata.geology.CorrelatedSedimentaryExperiment;
 import com.geostrata.geology.CorrelatedSedimentaryRuntime;
 import com.geostrata.geology.GeologyProvince;
+import com.geostrata.geology.GeologyProvinceSampler;
 import com.geostrata.geology.LithologyCatalog;
 import com.geostrata.geology.SedimentarySuccessions;
 import net.minecraft.block.Block;
@@ -114,6 +115,7 @@ public final class CorrelatedSedimentaryFeature extends Feature<DefaultFeatureCo
                 Math.floorDiv(startZ, CHUNK_SIZE)
         );
         CorrelatedSedimentaryRuntime.Column[] columns = new CorrelatedSedimentaryRuntime.Column[CHUNK_SIZE * CHUNK_SIZE];
+        GeologyProvinceSampler.Context provinceContext = provinceContext(world.getSeed(), startX, startZ, site);
         int placed = 0;
         ChunkSection[] sections = chunk.getSectionArray();
         for (int sectionIndex = 0; sectionIndex < sections.length; sectionIndex++) {
@@ -142,13 +144,32 @@ public final class CorrelatedSedimentaryFeature extends Feature<DefaultFeatureCo
                     site,
                     catalog,
                     outputStates,
-                    columns
+                    columns,
+                    provinceContext
             );
         }
         if (placed > 0) {
             chunk.setNeedsSaving(true);
         }
         return placed;
+    }
+
+    private static GeologyProvinceSampler.Context provinceContext(
+            long worldSeed,
+            int startX,
+            int startZ,
+            CorrelatedSedimentaryRuntime.TerrainAwareSite site
+    ) {
+        if (site.ownership().province() != GeologyProvince.OROGENIC_BELT) {
+            return null;
+        }
+        return GeologyProvinceSampler.context(
+                worldSeed,
+                startX,
+                startZ,
+                startX + CHUNK_SIZE - 1,
+                startZ + CHUNK_SIZE - 1
+        );
     }
 
     /**
@@ -169,7 +190,8 @@ public final class CorrelatedSedimentaryFeature extends Feature<DefaultFeatureCo
             CorrelatedSedimentaryRuntime.TerrainAwareSite site,
             LithologyCatalog.Snapshot catalog,
             Map<String, BlockState> outputStates,
-            CorrelatedSedimentaryRuntime.Column[] columns
+            CorrelatedSedimentaryRuntime.Column[] columns,
+            GeologyProvinceSampler.Context provinceContext
     ) {
         int minLocalY = minY - sectionBottomY;
         int maxLocalY = maxY - sectionBottomY;
@@ -193,7 +215,8 @@ public final class CorrelatedSedimentaryFeature extends Feature<DefaultFeatureCo
                             site,
                             catalog,
                             outputStates,
-                            columns
+                            columns,
+                            provinceContext
                     );
                 }
             }
@@ -220,7 +243,8 @@ public final class CorrelatedSedimentaryFeature extends Feature<DefaultFeatureCo
             CorrelatedSedimentaryRuntime.TerrainAwareSite site,
             LithologyCatalog.Snapshot catalog,
             Map<String, BlockState> outputStates,
-            CorrelatedSedimentaryRuntime.Column[] columns
+            CorrelatedSedimentaryRuntime.Column[] columns,
+            GeologyProvinceSampler.Context provinceContext
     ) {
         int x = startX + localX;
         int z = startZ + localZ;
@@ -234,7 +258,7 @@ public final class CorrelatedSedimentaryFeature extends Feature<DefaultFeatureCo
             }
 
             if (column == null) {
-                column = site.column(worldSeed, x, z);
+                column = site.column(worldSeed, x, z, provinceContext);
                 columns[columnIndex] = column;
             }
             int y = sectionBottomY + localY;
