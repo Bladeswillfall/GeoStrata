@@ -2,6 +2,7 @@ package com.geostrata.worldgen.feature;
 
 import com.geostrata.geology.ChunkGeneratorTerrainMorphologySampler;
 import com.geostrata.geology.CorrelatedSedimentaryExperiment;
+import com.geostrata.geology.CratonicShieldModel;
 import com.geostrata.geology.GeologyProvince;
 import com.geostrata.geology.GeologyProvinceProfiles;
 import com.geostrata.geology.GeologyProvinceSampler;
@@ -39,11 +40,9 @@ import java.util.function.IntFunction;
 /**
  * Late experimental fill for natural host stone not claimed by richer GeoStrata bodies.
  *
- * <p>Most provinces still use the temporary province-weighted matrix while their
- * architecture is validated. Volcanic arcs are the first province-specific path:
- * metamorphic basement cut by mafic dikes/sills and local rhyolitic bodies with
- * breccia halos. Existing GeoStrata bodies, ores, caves, fluids and structure-piece
- * footprints are preserved.</p>
+ * <p>Volcanic Arc and Cratonic Shield now use province-specific architecture while
+ * the remaining provinces retain the temporary province-weighted matrix. Existing
+ * GeoStrata bodies, ores, caves, fluids and structure-piece footprints are preserved.</p>
  */
 public final class ProvinceBackgroundFeature extends Feature<DefaultFeatureConfig> {
     private static final int CHUNK_SIZE = 16;
@@ -57,6 +56,12 @@ public final class ProvinceBackgroundFeature extends Feature<DefaultFeatureConfi
             "basalt",
             "rhyolite",
             "breccia"
+    );
+    private static final List<String> CRATONIC_SHIELD_LITHOLOGIES = List.of(
+            "gneiss",
+            "schist",
+            "quartzite",
+            "marble"
     );
 
     public ProvinceBackgroundFeature() {
@@ -108,6 +113,18 @@ public final class ProvinceBackgroundFeature extends Feature<DefaultFeatureConfi
             );
             resolver = (x, z, structuralOffset) -> {
                 VolcanicArcModel.Column column = volcanicArc.column(x, z, structuralOffset);
+                return y -> column.sample(y).lithology();
+            };
+        } else if (province == GeologyProvince.CRATONIC_SHIELD) {
+            outputStates = outputStates(CRATONIC_SHIELD_LITHOLOGIES, catalog);
+            CratonicShieldModel.Context cratonicShield = CratonicShieldModel.forSite(
+                    worldSeed,
+                    provinceSample.siteX(),
+                    provinceSample.siteZ(),
+                    world.getSeaLevel()
+            );
+            resolver = (x, z, structuralOffset) -> {
+                CratonicShieldModel.Column column = cratonicShield.column(x, z, structuralOffset);
                 return y -> column.sample(y).lithology();
             };
         } else {
