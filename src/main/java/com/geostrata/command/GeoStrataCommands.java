@@ -13,6 +13,7 @@ import com.geostrata.geology.OreDepositCandidatePlanner;
 import com.geostrata.geology.OreDepositExperiment;
 import com.geostrata.geology.OreDepositGeometry;
 import com.geostrata.geology.OreOccurrenceCatalog;
+import com.geostrata.geology.ProvinceBackgroundRuntime;
 import com.geostrata.geology.SedimentaryContactPlanner;
 import com.geostrata.geology.SedimentaryFieldProfiles;
 import com.geostrata.geology.SedimentaryStratigraphicField;
@@ -22,10 +23,14 @@ import com.geostrata.geology.TerrainMorphologySample;
 import com.geostrata.geology.TerrainAwareStructuralField;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
+import net.minecraft.block.Block;
 import net.minecraft.registry.Registries;
+import net.minecraft.registry.RegistryKeys;
+import net.minecraft.registry.tag.TagKey;
 import net.minecraft.server.command.CommandManager;
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.text.Text;
+import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
@@ -612,13 +617,26 @@ public final class GeoStrataCommands {
             OreDepositCandidatePlanner.Proposal proposal,
             LithologyCatalog.Snapshot lithologies
     ) {
-        Optional<CorrelatedSedimentaryRuntime.TerrainAwareSite> site = CorrelatedSedimentaryRuntime.resolve(
+        BlockPos anchor = new BlockPos(proposal.anchorX(), proposal.anchorY(), proposal.anchorZ());
+        String block = Registries.BLOCK.getId(source.getWorld().getBlockState(anchor).getBlock()).toString();
+        Optional<String> direct = lithologies.entries().stream()
+                .filter(entry -> entry.block().equals(block))
+                .map(LithologyCatalog.Entry::id)
+                .findFirst();
+        if (direct.isPresent()) {
+            return direct.get();
+        }
+        if (!insideCorrelatedWindow(source, proposal.anchorY()) || !isVirtualHost(source, anchor)) {
+            return null;
+        }
+
+        Optional<CorrelatedSedimentaryRuntime.TerrainAwareSite> correlated = CorrelatedSedimentaryRuntime.resolve(
                 source.getWorld(),
                 proposal.anchorX(),
                 proposal.anchorZ()
         );
-        if (site.isPresent() && insideCorrelatedWindow(source, proposal.anchorY())) {
-            return site.get().outputLithology(
+        if (correlated.isPresent()) {
+            return correlated.get().outputLithology(
                     source.getWorld().getSeed(),
                     proposal.anchorX(),
                     proposal.anchorY(),
@@ -626,13 +644,23 @@ public final class GeoStrataCommands {
                     lithologies
             );
         }
+        return ProvinceBackgroundRuntime.resolve(
+                source.getWorld(),
+                proposal.anchorX(),
+                proposal.anchorZ()
+        ).map(background -> background.lithologyAt(
+                proposal.anchorX(),
+                proposal.anchorY(),
+                proposal.anchorZ()
+        )).orElse(null);
+    }
 
-        String block = blockAt(source, proposal);
-        return lithologies.entries().stream()
-                .filter(entry -> entry.block().equals(block))
-                .map(LithologyCatalog.Entry::id)
-                .findFirst()
-                .orElse(null);
+    private static boolean isVirtualHost(ServerCommandSource source, BlockPos anchor) {
+        Identifier id = Identifier.tryParse(CorrelatedSedimentaryExperiment.current().hostBlockTag());
+        if (id == null) {
+            throw new IllegalStateException("Invalid correlated host block tag");
+        }
+        return source.getWorld().getBlockState(anchor).isIn(TagKey.of(RegistryKeys.BLOCK, id));
     }
 
     private static boolean insideCorrelatedWindow(ServerCommandSource source, int y) {
