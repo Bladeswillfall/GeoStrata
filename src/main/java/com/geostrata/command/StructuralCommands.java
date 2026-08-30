@@ -8,6 +8,7 @@ import com.geostrata.geology.SedimentaryFieldProfiles;
 import com.geostrata.geology.SedimentaryStratigraphicField;
 import com.geostrata.geology.TectonicFoldPolarity;
 import com.geostrata.geology.TectonicStructuralField;
+import com.geostrata.geology.TerraneSuture;
 import com.geostrata.geology.TerrainAwareStructuralField;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.minecraft.server.command.CommandManager;
@@ -40,6 +41,11 @@ public final class StructuralCommands {
         int z = MathHelper.floor(position.z);
         long seed = source.getWorld().getSeed();
         GeologyProvinceSampler.Sample province = GeologyProvinceSampler.sample(seed, x, z);
+        SedimentaryFieldProfiles.Snapshot profiles = SedimentaryFieldProfiles.current();
+        if (!profiles.loaded()) {
+            source.sendError(Text.literal("GeoStrata structural field metadata has not been loaded yet."));
+            return 0;
+        }
 
         TerrainAwareStructuralField.Field field;
         String authority;
@@ -53,11 +59,6 @@ public final class StructuralCommands {
             TectonicFoldPolarity.Transform transform = site.foldPolarity().transform(field.tectonicField(), x, z);
             polarity = polarity(transform.verticalScale());
         } else {
-            SedimentaryFieldProfiles.Snapshot profiles = SedimentaryFieldProfiles.current();
-            if (!profiles.loaded()) {
-                source.sendError(Text.literal("GeoStrata structural field metadata has not been loaded yet."));
-                return 0;
-            }
             SedimentaryStratigraphicField.Field base = SedimentaryStratigraphicField.forSite(
                     seed,
                     province.siteX(),
@@ -85,6 +86,7 @@ public final class StructuralCommands {
         String faultLocation = Double.isFinite(trace.distanceToFault())
                 ? Math.round(trace.x()) + "," + y + "," + Math.round(trace.z())
                 : "n/a";
+        String suture = sutureSummary(source, seed, y, province, profiles);
 
         source.sendFeedback(
                 () -> Text.literal(
@@ -102,11 +104,51 @@ public final class StructuralCommands {
                                 + ", throw ~" + Math.round(field.tectonicField().faultThrowBlocks())
                                 + ", dip ~" + Math.round(field.tectonicField().faultDipDegrees(y)) + "°"
                                 + (damaged ? " | damage zone" : "")
+                                + suture
                                 + " | total " + signed(field.verticalOffset(x, y, z))
                 ),
                 false
         );
         return 1;
+    }
+
+    private static String sutureSummary(
+            ServerCommandSource source,
+            long seed,
+            int y,
+            GeologyProvinceSampler.Sample province,
+            SedimentaryFieldProfiles.Snapshot profiles
+    ) {
+        if (!TerraneSuture.canCross(province)) {
+            return "";
+        }
+        double cycleThickness = profiles.parametersFor(BACKGROUND_CONTINUITY).cycleThicknessBlocks();
+        TectonicStructuralField.Context primary = TectonicStructuralField.forSite(
+                seed,
+                province.province(),
+                province.siteX(),
+                province.siteZ(),
+                cycleThickness
+        );
+        TectonicStructuralField.Context neighbor = TectonicStructuralField.forSite(
+                seed,
+                province.neighborProvince(),
+                province.neighborSiteX(),
+                province.neighborSiteZ(),
+                cycleThickness
+        );
+        TerraneSuture.Contact contact = TerraneSuture.forColumn(
+                province,
+                primary,
+                neighbor,
+                source.getWorld().getSeaLevel()
+        );
+        String currentTerrane = contact.usesPrimary(y)
+                ? province.province().displayName()
+                : province.neighborProvince().displayName();
+        return " | suture surface ~" + Math.round(province.distanceToBoundary())
+                + " blocks, dip ~" + Math.round(contact.dipDegrees()) + "°"
+                + ", current-Y terrane " + currentTerrane;
     }
 
     private static String polarity(double scale) {
