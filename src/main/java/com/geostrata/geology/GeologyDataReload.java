@@ -88,6 +88,9 @@ public final class GeologyDataReload {
             boolean companionLoaded
     ) {
         LithologyCatalog.Snapshot lithologies = LithologyCatalog.parse(lithologiesRoot);
+        for (GeologyProvince province : GeologyProvince.values()) {
+            lithologies.require(province.backgroundLithology());
+        }
         OreOccurrenceCatalog.Snapshot oreOccurrences = OreOccurrenceCatalog.parse(
                 lithologies,
                 oreOccurrencesRoot
