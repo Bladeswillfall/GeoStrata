@@ -149,16 +149,36 @@ public final class CorrelatedSedimentaryRuntime {
          * every block inside the same bed/band.
          */
         public Column column(long worldSeed, int x, int z) {
+            return column(worldSeed, x, z, null);
+        }
+
+        /** Reuses a chunk-local province candidate context when worldgen has one. */
+        public Column column(
+                long worldSeed,
+                int x,
+                int z,
+                GeologyProvinceSampler.Context provinceContext
+        ) {
             double verticalOffset = field.verticalOffset(x, z);
             MetamorphicIntensityField.Suitability suitability = null;
             if (ownership().province() == GeologyProvince.OROGENIC_BELT) {
-                suitability = MetamorphicIntensityField.sample(
-                        worldSeed,
-                        x,
-                        z,
-                        MetamorphicIntensityField.DEFAULT_PROVINCE_BLEND_WIDTH_BLOCKS,
-                        field.localPatch().morphologyAt(x, z)
-                ).suitability();
+                TerrainMorphologySample morphology = field.localPatch().morphologyAt(x, z);
+                suitability = provinceContext == null
+                        ? MetamorphicIntensityField.sample(
+                                worldSeed,
+                                x,
+                                z,
+                                MetamorphicIntensityField.DEFAULT_PROVINCE_BLEND_WIDTH_BLOCKS,
+                                morphology
+                        ).suitability()
+                        : MetamorphicIntensityField.sample(
+                                worldSeed,
+                                x,
+                                z,
+                                MetamorphicIntensityField.DEFAULT_PROVINCE_BLEND_WIDTH_BLOCKS,
+                                morphology,
+                                provinceContext.sample(x, z)
+                        ).suitability();
             }
             return new Column(this, worldSeed, x, z, verticalOffset, suitability);
         }
