@@ -14,6 +14,7 @@ import com.geostrata.geology.SedimentaryFieldProfiles;
 import com.geostrata.geology.SedimentaryStratigraphicField;
 import com.geostrata.geology.SedimentarySuccessionSelector;
 import com.geostrata.geology.SedimentarySuccessions;
+import com.geostrata.geology.TerraneSuture;
 import com.geostrata.geology.TerrainAwareStructuralField;
 import com.geostrata.geology.VolcanicArcModel;
 import net.minecraft.block.Block;
@@ -106,7 +107,7 @@ public final class ProvinceBackgroundFeature extends Feature<DefaultFeatureConfi
                 startX + CHUNK_SIZE - 1,
                 startZ + CHUNK_SIZE - 1
         );
-        Background[] columnBackgrounds = columnBackgrounds(
+        ColumnBackground[] columnBackgrounds = columnBackgrounds(
                 world,
                 worldSeed,
                 startX,
@@ -144,7 +145,7 @@ public final class ProvinceBackgroundFeature extends Feature<DefaultFeatureConfi
         ) > 0;
     }
 
-    private static Background[] columnBackgrounds(
+    private static ColumnBackground[] columnBackgrounds(
             StructureWorldAccess world,
             long worldSeed,
             int startX,
@@ -157,33 +158,89 @@ public final class ProvinceBackgroundFeature extends Feature<DefaultFeatureConfi
             SedimentarySuccessions.Snapshot successions,
             SedimentaryFieldProfiles.Snapshot fieldProfiles
     ) {
-        Background[] columns = new Background[CHUNK_SIZE * CHUNK_SIZE];
+        ColumnBackground[] columns = new ColumnBackground[CHUNK_SIZE * CHUNK_SIZE];
         Map<SiteKey, Background> bySite = new HashMap<>();
         for (int localX = 0; localX < CHUNK_SIZE; localX++) {
             int worldX = startX + localX;
             for (int localZ = 0; localZ < CHUNK_SIZE; localZ++) {
                 int worldZ = startZ + localZ;
                 GeologyProvinceSampler.Sample sample = provinceContext.sample(worldX, worldZ);
-                SiteKey key = new SiteKey(sample.province(), sample.siteX(), sample.siteZ());
-                Background resolved = bySite.get(key);
-                if (resolved == null) {
-                    resolved = background(
-                            world,
-                            worldSeed,
-                            centerX,
-                            centerZ,
-                            sample,
-                            catalog,
-                            profiles,
-                            successions,
-                            fieldProfiles
-                    );
-                    bySite.put(key, resolved);
+                SiteKey primaryKey = new SiteKey(sample.province(), sample.siteX(), sample.siteZ());
+                Background primary = backgroundForSite(
+                        bySite,
+                        primaryKey,
+                        world,
+                        worldSeed,
+                        centerX,
+                        centerZ,
+                        catalog,
+                        profiles,
+                        successions,
+                        fieldProfiles
+                );
+                if (!TerraneSuture.canCross(sample)) {
+                    columns[columnIndex(localX, localZ)] = new ColumnBackground(primary, null, null);
+                    continue;
                 }
-                columns[columnIndex(localX, localZ)] = resolved;
+
+                SiteKey neighborKey = new SiteKey(
+                        sample.neighborProvince(),
+                        sample.neighborSiteX(),
+                        sample.neighborSiteZ()
+                );
+                Background neighbor = backgroundForSite(
+                        bySite,
+                        neighborKey,
+                        world,
+                        worldSeed,
+                        centerX,
+                        centerZ,
+                        catalog,
+                        profiles,
+                        successions,
+                        fieldProfiles
+                );
+                TerraneSuture.Contact contact = TerraneSuture.forColumn(
+                        sample,
+                        primary.field().tectonicField(),
+                        neighbor.field().tectonicField(),
+                        world.getSeaLevel()
+                );
+                columns[columnIndex(localX, localZ)] = new ColumnBackground(primary, neighbor, contact);
             }
         }
         return columns;
+    }
+
+    private static Background backgroundForSite(
+            Map<SiteKey, Background> cache,
+            SiteKey site,
+            StructureWorldAccess world,
+            long worldSeed,
+            int centerX,
+            int centerZ,
+            LithologyCatalog.Snapshot catalog,
+            GeologyProvinceProfiles.Snapshot profiles,
+            SedimentarySuccessions.Snapshot successions,
+            SedimentaryFieldProfiles.Snapshot fieldProfiles
+    ) {
+        Background cached = cache.get(site);
+        if (cached != null) {
+            return cached;
+        }
+        Background created = background(
+                world,
+                worldSeed,
+                centerX,
+                centerZ,
+                site,
+                catalog,
+                profiles,
+                successions,
+                fieldProfiles
+        );
+        cache.put(site, created);
+        return created;
     }
 
     private static Background background(
@@ -191,17 +248,17 @@ public final class ProvinceBackgroundFeature extends Feature<DefaultFeatureConfi
             long worldSeed,
             int centerX,
             int centerZ,
-            GeologyProvinceSampler.Sample provinceSample,
+            SiteKey site,
             LithologyCatalog.Snapshot catalog,
             GeologyProvinceProfiles.Snapshot profiles,
             SedimentarySuccessions.Snapshot successions,
             SedimentaryFieldProfiles.Snapshot fieldProfiles
     ) {
-        GeologyProvince province = provinceSample.province();
+        GeologyProvince province = site.province();
         SedimentaryStratigraphicField.Field architectureBaseField = SedimentaryStratigraphicField.forSite(
                 worldSeed,
-                provinceSample.siteX(),
-                provinceSample.siteZ(),
+                site.siteX(),
+                site.siteZ(),
                 fieldProfiles.parametersFor(ARCHITECTURE_CONTINUITY)
         );
         TerrainAwareStructuralField.Field architectureField = ChunkGeneratorTerrainMorphologySampler.structuralField(
@@ -215,8 +272,8 @@ public final class ProvinceBackgroundFeature extends Feature<DefaultFeatureConfi
         if (province == GeologyProvince.VOLCANIC_ARC) {
             VolcanicArcModel.Context model = VolcanicArcModel.forSite(
                     worldSeed,
-                    provinceSample.siteX(),
-                    provinceSample.siteZ(),
+                    site.siteX(),
+                    site.siteZ(),
                     world.getSeaLevel()
             );
             ColumnResolver resolver = (x, z, structuralColumn) -> {
@@ -228,8 +285,8 @@ public final class ProvinceBackgroundFeature extends Feature<DefaultFeatureConfi
         if (province == GeologyProvince.CRATONIC_SHIELD) {
             CratonicShieldModel.Context model = CratonicShieldModel.forSite(
                     worldSeed,
-                    provinceSample.siteX(),
-                    provinceSample.siteZ(),
+                    site.siteX(),
+                    site.siteZ(),
                     world.getSeaLevel()
             );
             ColumnResolver resolver = (x, z, structuralColumn) -> {
@@ -241,8 +298,8 @@ public final class ProvinceBackgroundFeature extends Feature<DefaultFeatureConfi
         if (province == GeologyProvince.OROGENIC_BELT) {
             OrogenicBeltModel.Context model = OrogenicBeltModel.forSite(
                     worldSeed,
-                    provinceSample.siteX(),
-                    provinceSample.siteZ(),
+                    site.siteX(),
+                    site.siteZ(),
                     world.getSeaLevel()
             );
             ColumnResolver resolver = (x, z, structuralColumn) -> {
@@ -258,7 +315,7 @@ public final class ProvinceBackgroundFeature extends Feature<DefaultFeatureConfi
                 worldSeed,
                 centerX,
                 centerZ,
-                provinceSample,
+                site,
                 catalog,
                 profiles,
                 successions,
@@ -271,25 +328,25 @@ public final class ProvinceBackgroundFeature extends Feature<DefaultFeatureConfi
             long worldSeed,
             int centerX,
             int centerZ,
-            GeologyProvinceSampler.Sample provinceSample,
+            SiteKey site,
             LithologyCatalog.Snapshot catalog,
             GeologyProvinceProfiles.Snapshot profiles,
             SedimentarySuccessions.Snapshot successions,
             SedimentaryFieldProfiles.Snapshot fieldProfiles
     ) {
-        GeologyProvince province = provinceSample.province();
+        GeologyProvince province = site.province();
         SedimentarySuccessions.Succession sequence = SedimentarySuccessionSelector.selectForSite(
                 worldSeed,
                 province,
-                provinceSample.siteX(),
-                provinceSample.siteZ(),
+                site.siteX(),
+                site.siteZ(),
                 profiles,
                 successions
         ).succession();
         SedimentaryStratigraphicField.Field baseField = SedimentaryStratigraphicField.forSite(
                 worldSeed,
-                provinceSample.siteX(),
-                provinceSample.siteZ(),
+                site.siteX(),
+                site.siteZ(),
                 fieldProfiles.parametersFor(sequence.continuity())
         );
         TerrainAwareStructuralField.Field field = ChunkGeneratorTerrainMorphologySampler.structuralField(
@@ -301,8 +358,8 @@ public final class ProvinceBackgroundFeature extends Feature<DefaultFeatureConfi
         );
         SedimentaryContactPlanner.Plan plan = SedimentaryContactPlanner.plan(
                 worldSeed,
-                provinceSample.siteX(),
-                provinceSample.siteZ(),
+                site.siteX(),
+                site.siteZ(),
                 sequence
         );
         Map<String, BlockState> states = outputStates(sequence.beds().stream()
@@ -330,7 +387,7 @@ public final class ProvinceBackgroundFeature extends Feature<DefaultFeatureConfi
             int minY,
             int maxY,
             TagKey<Block> hostTag,
-            Background[] columnBackgrounds
+            ColumnBackground[] columnBackgrounds
     ) {
         Chunk chunk = world.getChunk(
                 Math.floorDiv(startX, CHUNK_SIZE),
@@ -383,7 +440,7 @@ public final class ProvinceBackgroundFeature extends Feature<DefaultFeatureConfi
             int minY,
             int maxY,
             TagKey<Block> hostTag,
-            Background[] columnBackgrounds,
+            ColumnBackground[] columnBackgrounds,
             List<BlockBox> protectedStructurePieces
     ) {
         int minLocalY = minY - sectionBottomY;
@@ -396,9 +453,18 @@ public final class ProvinceBackgroundFeature extends Feature<DefaultFeatureConfi
                 int worldX = startX + localX;
                 for (int localZ = 0; localZ < SECTION_SIZE; localZ++) {
                     int worldZ = startZ + localZ;
-                    Background background = columnBackgrounds[columnIndex(localX, localZ)];
-                    TerrainAwareStructuralField.Column structuralColumn = background.field().column(worldX, worldZ);
-                    IntFunction<String> lithologyAtY = background.resolver().column(worldX, worldZ, structuralColumn);
+                    ColumnBackground column = columnBackgrounds[columnIndex(localX, localZ)];
+                    TerrainAwareStructuralField.Column primaryStructural = column.primary().field().column(worldX, worldZ);
+                    IntFunction<String> primaryLithology = column.primary().resolver()
+                            .column(worldX, worldZ, primaryStructural);
+                    TerrainAwareStructuralField.Column neighborStructural = null;
+                    IntFunction<String> neighborLithology = null;
+                    if (column.neighbor() != null) {
+                        neighborStructural = column.neighbor().field().column(worldX, worldZ);
+                        neighborLithology = column.neighbor().resolver()
+                                .column(worldX, worldZ, neighborStructural);
+                    }
+
                     for (int localY = minLocalY; localY <= maxLocalY; localY++) {
                         BlockState existing = states.get(localX, localY, localZ);
                         if (!existing.isIn(hostTag)) {
@@ -408,7 +474,11 @@ public final class ProvinceBackgroundFeature extends Feature<DefaultFeatureConfi
                         if (insideStructurePiece(protectedStructurePieces, worldX, worldY, worldZ)) {
                             continue;
                         }
-                        BlockState replacement = background.outputStates().get(lithologyAtY.apply(worldY));
+
+                        boolean usePrimary = column.contact() == null || column.contact().usesPrimary(worldY);
+                        Background selected = usePrimary ? column.primary() : column.neighbor();
+                        IntFunction<String> lithology = usePrimary ? primaryLithology : neighborLithology;
+                        BlockState replacement = selected.outputStates().get(lithology.apply(worldY));
                         if (replacement != null && !existing.equals(replacement)) {
                             states.swapUnsafe(localX, localY, localZ, replacement);
                             placed++;
@@ -469,6 +539,18 @@ public final class ProvinceBackgroundFeature extends Feature<DefaultFeatureConfi
     }
 
     private record SiteKey(GeologyProvince province, int siteX, int siteZ) {
+    }
+
+    private record ColumnBackground(
+            Background primary,
+            Background neighbor,
+            TerraneSuture.Contact contact
+    ) {
+        private ColumnBackground {
+            if (primary == null || (neighbor == null) != (contact == null)) {
+                throw new IllegalArgumentException("column background must have primary and optional paired suture");
+            }
+        }
     }
 
     private record Background(
