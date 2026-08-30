@@ -14,7 +14,7 @@ The baseline geometry is body-specific:
 - basalt uses a broad thin sheet-like body;
 - rhyolite uses a smaller thicker volcanic body.
 
-Those independent bodies are a compatibility fallback. The opt-in correlated experiment is the more geological runtime: in owned sedimentary-basin, rift and orogenic chunks it replaces independent sedimentary fallback lenses with one continuous stratigraphic field and derives supported metamorphic outputs from their parent strata.
+Those independent bodies are a compatibility fallback. The opt-in companion is the more geological runtime: in owned sedimentary-basin, rift and orogenic chunks it replaces independent sedimentary fallback lenses with one continuous stratigraphic field and derives supported metamorphic outputs from their parent strata. Any natural host stone still unclaimed after those richer bodies is filled by a province-weighted background matrix that reuses the same structural field and active-terrain response, so the experiment does not fall back to vanilla stone or a single blanket rock.
 
 ## Vertical coordinate rule
 
@@ -47,6 +47,20 @@ Five archetypes exist:
 The sampler also tracks the neighboring site and distance to the province boundary. `province_profiles.json` supplies relative lithology suitability and blends neighboring profiles across a 192-block transition rather than creating hard geological borders.
 
 Province selection is a pure function of seed and coordinates. It does not depend on chunk generation order, first visit, runtime UUIDs or mutable world state.
+
+### Experimental province background matrix
+
+When the companion is active, province identity also determines the ordinary lithologies available to the final base-rock matrix. For each province, the four strongest normal strata-lens lithologies in `province_profiles.json` form a repeated regional sequence. Their existing suitability weights become relative bed thicknesses.
+
+The matrix is deliberately derived from existing data instead of creating a second palette configuration. Rare event-only pipe rocks are excluded because they are not ordinary strata-lens baselines. The current dominant palettes resolve to:
+
+- sedimentary basin: limestone, shale, mudstone, siltstone;
+- cratonic shield: gneiss, schist, quartzite, slate;
+- orogenic belt: schist, quartzite, gneiss, slate;
+- volcanic arc: basalt, rhyolite, breccia, gneiss;
+- rift province: basalt, conglomerate, shale, siltstone.
+
+The same regional field parameters, province terrain response and province-site anchor used elsewhere give those contacts dip, warp and broad terrain deformation. This matrix only replaces host stone left behind by higher-authority geology, so correlated strata and already-placed GeoStrata bodies remain intact.
 
 ## Stratigraphy
 
