@@ -4,6 +4,7 @@ import com.geostrata.block.GeoStrataBlocks;
 import com.geostrata.geology.CorrelatedSedimentaryExperiment;
 import com.geostrata.geology.CorrelatedSedimentaryRuntime;
 import com.geostrata.geology.ChunkGeneratorTerrainMorphologySampler;
+import com.geostrata.geology.FaultControlledOrePlanner;
 import com.geostrata.geology.GeologyProvince;
 import com.geostrata.geology.GeologyProvinceSampler;
 import com.geostrata.geology.LithologyCatalog;
@@ -12,7 +13,6 @@ import com.geostrata.geology.OreDepositExperiment;
 import com.geostrata.geology.OreDepositGeometry;
 import com.geostrata.geology.OreOccurrenceCatalog;
 import com.geostrata.geology.SedimentaryFieldProfiles;
-import com.geostrata.geology.TectonicStructuralField;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.registry.Registries;
@@ -42,8 +42,6 @@ public final class OreDepositFeature extends Feature<DefaultFeatureConfig> {
     private static final int CHUNK_SIZE = 16;
     private static final int SEARCH_PADDING_BLOCKS = 224;
     private static final String STRUCTURAL_CONTINUITY = "regional";
-    private static final double VEIN_FAULT_CAPTURE_DISTANCE = 96.0;
-    private static final double PROVINCE_BOUNDARY_MARGIN = 16.0;
 
     public OreDepositFeature() {
         super(DefaultFeatureConfig.CODEC);
@@ -70,6 +68,9 @@ public final class OreDepositFeature extends Feature<DefaultFeatureConfig> {
         int endX = startX + CHUNK_SIZE - 1;
         int endZ = startZ + CHUNK_SIZE - 1;
         long worldSeed = world.toServerWorld().getSeed();
+        double structuralCycleThickness = fieldProfiles
+                .parametersFor(STRUCTURAL_CONTINUITY)
+                .cycleThicknessBlocks();
         HostResolver hosts = HostResolver.forChunk(world, startX, startZ, lithologies);
 
         int placed = 0;
@@ -83,7 +84,7 @@ public final class OreDepositFeature extends Feature<DefaultFeatureConfig> {
                     endZ,
                     occurrence,
                     hosts,
-                    fieldProfiles
+                    structuralCycleThickness
             );
         }
         return placed > 0;
@@ -98,7 +99,7 @@ public final class OreDepositFeature extends Feature<DefaultFeatureConfig> {
             int endZ,
             OreOccurrenceCatalog.Occurrence occurrence,
             HostResolver hosts,
-            SedimentaryFieldProfiles.Snapshot fieldProfiles
+            double structuralCycleThickness
     ) {
         int minCellX = Math.floorDiv(startX - SEARCH_PADDING_BLOCKS, OreDepositCandidatePlanner.HORIZONTAL_CELL_SIZE);
         int maxCellX = Math.floorDiv(endX + SEARCH_PADDING_BLOCKS, OreDepositCandidatePlanner.HORIZONTAL_CELL_SIZE);
@@ -127,12 +128,17 @@ public final class OreDepositFeature extends Feature<DefaultFeatureConfig> {
                     if (!OreDepositExperiment.active(worldSeed, proposal)) {
                         continue;
                     }
-                    proposal = alignVeinToFault(worldSeed, proposal, fieldProfiles);
+                    FaultControlledOrePlanner.Binding binding = FaultControlledOrePlanner.bind(
+                            worldSeed,
+                            proposal,
+                            structuralCycleThickness
+                    );
+                    proposal = binding.proposal();
                     if (!qualifiesLocation(world, worldSeed, occurrence, proposal)) {
                         continue;
                     }
 
-                    OreDepositGeometry.Body body = OreDepositGeometry.forProposal(worldSeed, proposal);
+                    OreDepositGeometry.Body body = binding.body(worldSeed);
                     OreDepositGeometry.Bounds bounds = body.bounds();
                     if (!intersectsChunk(bounds, startX, endX, startZ, endZ, world)) {
                         continue;
@@ -152,55 +158,6 @@ public final class OreDepositFeature extends Feature<DefaultFeatureConfig> {
             }
         }
         return placed;
-    }
-
-    /**
-     * First shared structural binding for fracture-controlled veins. Candidate
-     * cells still own abundance; when their anchor is already near a real fault,
-     * the body is centred on that fault plane at the body's own elevation instead
-     * of inventing a second structural field.
-     */
-    private static OreDepositCandidatePlanner.Proposal alignVeinToFault(
-            long worldSeed,
-            OreDepositCandidatePlanner.Proposal proposal,
-            SedimentaryFieldProfiles.Snapshot fieldProfiles
-    ) {
-        if (!"vein".equals(proposal.depositStyle())) {
-            return proposal;
-        }
-
-        GeologyProvinceSampler.Sample province = GeologyProvinceSampler.sample(
-                worldSeed,
-                proposal.anchorX(),
-                proposal.anchorZ()
-        );
-        TectonicStructuralField.Context tectonics = TectonicStructuralField.forSite(
-                worldSeed,
-                province.province(),
-                province.siteX(),
-                province.siteZ(),
-                fieldProfiles.parametersFor(STRUCTURAL_CONTINUITY).cycleThicknessBlocks()
-        );
-        TectonicStructuralField.FaultTrace trace = tectonics.nearestFault(
-                proposal.anchorX(),
-                proposal.anchorY(),
-                proposal.anchorZ()
-        );
-        if (trace.distanceToFault() > VEIN_FAULT_CAPTURE_DISTANCE
-                || province.distanceToBoundary() <= trace.distanceToFault() + PROVINCE_BOUNDARY_MARGIN) {
-            return proposal;
-        }
-
-        return new OreDepositCandidatePlanner.Proposal(
-                proposal.material(),
-                proposal.depositStyle(),
-                proposal.cellX(),
-                proposal.cellY(),
-                proposal.cellZ(),
-                (int) Math.round(trace.x()),
-                proposal.anchorY(),
-                (int) Math.round(trace.z())
-        );
     }
 
     private static boolean qualifiesLocation(
