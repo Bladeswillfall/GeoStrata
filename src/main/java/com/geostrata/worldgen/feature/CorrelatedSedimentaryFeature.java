@@ -114,6 +114,7 @@ public final class CorrelatedSedimentaryFeature extends Feature<DefaultFeatureCo
                 Math.floorDiv(startX, CHUNK_SIZE),
                 Math.floorDiv(startZ, CHUNK_SIZE)
         );
+        CorrelatedSedimentaryRuntime.Column[] columns = new CorrelatedSedimentaryRuntime.Column[CHUNK_SIZE * CHUNK_SIZE];
         int placed = 0;
         ChunkSection[] sections = chunk.getSectionArray();
         for (int sectionIndex = 0; sectionIndex < sections.length; sectionIndex++) {
@@ -142,7 +143,8 @@ public final class CorrelatedSedimentaryFeature extends Feature<DefaultFeatureCo
                     hostTag,
                     site,
                     catalog,
-                    outputStates
+                    outputStates,
+                    columns
             );
         }
         if (placed > 0) {
@@ -162,7 +164,8 @@ public final class CorrelatedSedimentaryFeature extends Feature<DefaultFeatureCo
             TagKey<Block> hostTag,
             CorrelatedSedimentaryRuntime.TerrainAwareSite site,
             LithologyCatalog.Snapshot catalog,
-            Map<String, BlockState> outputStates
+            Map<String, BlockState> outputStates,
+            CorrelatedSedimentaryRuntime.Column[] columns
     ) {
         int placed = 0;
         int minLocalY = minY - sectionBottomY;
@@ -173,14 +176,20 @@ public final class CorrelatedSedimentaryFeature extends Feature<DefaultFeatureCo
                 int x = startX + localX;
                 for (int localZ = 0; localZ < SECTION_SIZE; localZ++) {
                     int z = startZ + localZ;
+                    int columnIndex = localX * CHUNK_SIZE + localZ;
+                    CorrelatedSedimentaryRuntime.Column column = columns[columnIndex];
                     for (int localY = minLocalY; localY <= maxLocalY; localY++) {
                         BlockState existing = section.getBlockState(localX, localY, localZ);
                         if (!replaceable(existing, hostTag, site, catalog)) {
                             continue;
                         }
 
+                        if (column == null) {
+                            column = site.column(worldSeed, x, z);
+                            columns[columnIndex] = column;
+                        }
                         int y = sectionBottomY + localY;
-                        String lithology = site.outputLithology(worldSeed, x, y, z, catalog);
+                        String lithology = column.outputLithology(y, catalog);
                         BlockState replacement = outputStates.computeIfAbsent(
                                 lithology,
                                 ignored -> outputState(lithology, catalog)
