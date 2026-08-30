@@ -1,8 +1,16 @@
 package com.geostrata.worldgen.feature;
 
+import com.geostrata.geology.ChunkGeneratorTerrainMorphologySampler;
 import com.geostrata.geology.CorrelatedSedimentaryExperiment;
+import com.geostrata.geology.GeologyProvince;
+import com.geostrata.geology.GeologyProvinceProfiles;
 import com.geostrata.geology.GeologyProvinceSampler;
 import com.geostrata.geology.LithologyCatalog;
+import com.geostrata.geology.SedimentaryContactPlanner;
+import com.geostrata.geology.SedimentaryFieldProfiles;
+import com.geostrata.geology.SedimentaryStratigraphicField;
+import com.geostrata.geology.SedimentarySuccessions;
+import com.geostrata.geology.TerrainAwareStructuralField;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.registry.Registries;
@@ -20,18 +28,25 @@ import net.minecraft.world.gen.feature.DefaultFeatureConfig;
 import net.minecraft.world.gen.feature.Feature;
 import net.minecraft.world.gen.feature.util.FeatureContext;
 
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Late experimental fill for natural host stone not claimed by richer GeoStrata bodies.
  *
- * <p>The correlated pass remains authoritative where it owns a chunk. This feature runs
- * afterwards and only targets the vanilla/compatibility host tag, so correlated strata,
- * fallback GeoStrata bodies, ores, caves and structure-piece footprints are preserved.</p>
+ * <p>The correlated pass remains authoritative where it owns a chunk. Remaining natural
+ * host stone is filled from a coherent province-weighted lithology sequence using the
+ * same structural field and active-terrain response as correlated strata. Existing
+ * GeoStrata bodies, ores, caves, fluids and structure-piece footprints are preserved.</p>
  */
 public final class ProvinceBackgroundFeature extends Feature<DefaultFeatureConfig> {
     private static final int CHUNK_SIZE = 16;
     private static final int SECTION_SIZE = 16;
+    private static final int PALETTE_SIZE = 4;
+    private static final String CONTINUITY = "regional";
 
     public ProvinceBackgroundFeature() {
         super(DefaultFeatureConfig.CODEC);
@@ -42,19 +57,40 @@ public final class ProvinceBackgroundFeature extends Feature<DefaultFeatureConfi
         StructureWorldAccess world = context.getWorld();
         CorrelatedSedimentaryExperiment.Snapshot experiment = CorrelatedSedimentaryExperiment.current();
         LithologyCatalog.Snapshot catalog = LithologyCatalog.current();
-        if (!experiment.enabled() || !catalog.loaded()) {
+        GeologyProvinceProfiles.Snapshot profiles = GeologyProvinceProfiles.current();
+        SedimentaryFieldProfiles.Snapshot fieldProfiles = SedimentaryFieldProfiles.current();
+        if (!experiment.enabled() || !catalog.loaded() || !profiles.loaded() || !fieldProfiles.loaded()) {
             return false;
         }
 
         BlockPos origin = context.getOrigin();
         int startX = Math.floorDiv(origin.getX(), CHUNK_SIZE) * CHUNK_SIZE;
         int startZ = Math.floorDiv(origin.getZ(), CHUNK_SIZE) * CHUNK_SIZE;
-        String backgroundLithology = GeologyProvinceSampler.sample(
+        int centerX = startX + CHUNK_SIZE / 2;
+        int centerZ = startZ + CHUNK_SIZE / 2;
+        GeologyProvinceSampler.Sample provinceSample = GeologyProvinceSampler.sample(world.getSeed(), centerX, centerZ);
+        GeologyProvince province = provinceSample.province();
+        SedimentarySuccessions.Succession sequence = backgroundSequence(province, profiles, catalog);
+        SedimentaryContactPlanner.Plan plan = SedimentaryContactPlanner.plan(
                 world.getSeed(),
-                startX + CHUNK_SIZE / 2,
-                startZ + CHUNK_SIZE / 2
-        ).province().backgroundLithology();
-        BlockState replacement = outputState(backgroundLithology, catalog);
+                provinceSample.siteX(),
+                provinceSample.siteZ(),
+                sequence
+        );
+        SedimentaryStratigraphicField.Field baseField = SedimentaryStratigraphicField.forSite(
+                world.getSeed(),
+                provinceSample.siteX(),
+                provinceSample.siteZ(),
+                fieldProfiles.parametersFor(CONTINUITY)
+        );
+        TerrainAwareStructuralField.Field field = ChunkGeneratorTerrainMorphologySampler.structuralField(
+                world.toServerWorld(),
+                centerX,
+                centerZ,
+                province,
+                baseField
+        );
+        Map<String, BlockState> outputStates = outputStates(sequence, catalog);
         TagKey<Block> hostTag = hostTag(experiment.hostBlockTag());
 
         int seaLevel = world.getSeaLevel();
@@ -70,7 +106,49 @@ public final class ProvinceBackgroundFeature extends Feature<DefaultFeatureConfi
             return false;
         }
 
-        return replaceChunk(world, startX, startZ, minY, maxY, hostTag, replacement) > 0;
+        return replaceChunk(
+                world,
+                startX,
+                startZ,
+                minY,
+                maxY,
+                hostTag,
+                field,
+                plan,
+                outputStates
+        ) > 0;
+    }
+
+    private static SedimentarySuccessions.Succession backgroundSequence(
+            GeologyProvince province,
+            GeologyProvinceProfiles.Snapshot profiles,
+            LithologyCatalog.Snapshot catalog
+    ) {
+        List<LithologyCatalog.Entry> candidates = new ArrayList<>();
+        for (LithologyCatalog.Entry entry : catalog.entries()) {
+            if (entry.baselineFeature().endsWith("_ore")) {
+                candidates.add(entry);
+            }
+        }
+        candidates.sort(
+                Comparator.<LithologyCatalog.Entry>comparingDouble(entry -> profiles.weight(province, entry.id()))
+                        .reversed()
+                        .thenComparing(LithologyCatalog.Entry::id)
+        );
+        if (candidates.size() < PALETTE_SIZE) {
+            throw new IllegalStateException("Not enough ordinary lithologies for province background " + province.id());
+        }
+
+        List<SedimentarySuccessions.Bed> beds = candidates.stream()
+                .limit(PALETTE_SIZE)
+                .map(entry -> new SedimentarySuccessions.Bed(entry.id(), profiles.weight(province, entry.id())))
+                .toList();
+        return new SedimentarySuccessions.Succession(
+                "province_background_" + province.id(),
+                List.of(province),
+                CONTINUITY,
+                beds
+        );
     }
 
     private static int replaceChunk(
@@ -80,7 +158,9 @@ public final class ProvinceBackgroundFeature extends Feature<DefaultFeatureConfi
             int minY,
             int maxY,
             TagKey<Block> hostTag,
-            BlockState replacement
+            TerrainAwareStructuralField.Field field,
+            SedimentaryContactPlanner.Plan plan,
+            Map<String, BlockState> outputStates
     ) {
         Chunk chunk = world.getChunk(
                 Math.floorDiv(startX, CHUNK_SIZE),
@@ -115,7 +195,9 @@ public final class ProvinceBackgroundFeature extends Feature<DefaultFeatureConfi
                     sectionMinY,
                     sectionMaxY,
                     hostTag,
-                    replacement,
+                    field,
+                    plan,
+                    outputStates,
                     protectedStructurePieces
             );
         }
@@ -133,7 +215,9 @@ public final class ProvinceBackgroundFeature extends Feature<DefaultFeatureConfi
             int minY,
             int maxY,
             TagKey<Block> hostTag,
-            BlockState replacement,
+            TerrainAwareStructuralField.Field field,
+            SedimentaryContactPlanner.Plan plan,
+            Map<String, BlockState> outputStates,
             List<BlockBox> protectedStructurePieces
     ) {
         int minLocalY = minY - sectionBottomY;
@@ -142,16 +226,26 @@ public final class ProvinceBackgroundFeature extends Feature<DefaultFeatureConfi
         int placed = 0;
         section.lock();
         try {
-            for (int localY = minLocalY; localY <= maxLocalY; localY++) {
-                int worldY = sectionBottomY + localY;
-                for (int localX = 0; localX < SECTION_SIZE; localX++) {
-                    int worldX = startX + localX;
-                    for (int localZ = 0; localZ < SECTION_SIZE; localZ++) {
-                        int worldZ = startZ + localZ;
+            for (int localX = 0; localX < SECTION_SIZE; localX++) {
+                int worldX = startX + localX;
+                for (int localZ = 0; localZ < SECTION_SIZE; localZ++) {
+                    int worldZ = startZ + localZ;
+                    double verticalOffset = field.verticalOffset(worldX, worldZ);
+                    for (int localY = minLocalY; localY <= maxLocalY; localY++) {
                         BlockState existing = states.get(localX, localY, localZ);
-                        if (existing.isIn(hostTag)
-                                && !existing.equals(replacement)
-                                && !insideStructurePiece(protectedStructurePieces, worldX, worldY, worldZ)) {
+                        if (!existing.isIn(hostTag)) {
+                            continue;
+                        }
+                        int worldY = sectionBottomY + localY;
+                        if (insideStructurePiece(protectedStructurePieces, worldX, worldY, worldZ)) {
+                            continue;
+                        }
+                        String lithology = field.baseField()
+                                .sampleAtVerticalOffset(worldY, plan, verticalOffset)
+                                .bed()
+                                .lithology();
+                        BlockState replacement = outputStates.get(lithology);
+                        if (replacement != null && !existing.equals(replacement)) {
                             states.swapUnsafe(localX, localY, localZ, replacement);
                             placed++;
                         }
@@ -174,6 +268,17 @@ public final class ProvinceBackgroundFeature extends Feature<DefaultFeatureConfi
             }
         }
         return false;
+    }
+
+    private static Map<String, BlockState> outputStates(
+            SedimentarySuccessions.Succession sequence,
+            LithologyCatalog.Snapshot catalog
+    ) {
+        Map<String, BlockState> states = new HashMap<>();
+        for (SedimentarySuccessions.Bed bed : sequence.beds()) {
+            states.put(bed.lithology(), outputState(bed.lithology(), catalog));
+        }
+        return states;
     }
 
     private static BlockState outputState(String lithology, LithologyCatalog.Snapshot catalog) {
