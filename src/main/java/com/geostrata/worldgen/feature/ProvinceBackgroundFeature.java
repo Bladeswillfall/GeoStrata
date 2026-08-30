@@ -3,6 +3,7 @@ package com.geostrata.worldgen.feature;
 import com.geostrata.geology.ChunkGeneratorTerrainMorphologySampler;
 import com.geostrata.geology.CorrelatedSedimentaryExperiment;
 import com.geostrata.geology.CratonicShieldModel;
+import com.geostrata.geology.FaultDamageZone;
 import com.geostrata.geology.GeologyProvince;
 import com.geostrata.geology.GeologyProvinceProfiles;
 import com.geostrata.geology.GeologyProvinceSampler;
@@ -49,8 +50,6 @@ public final class ProvinceBackgroundFeature extends Feature<DefaultFeatureConfi
     private static final int CHUNK_SIZE = 16;
     private static final int SECTION_SIZE = 16;
     private static final String ARCHITECTURE_CONTINUITY = "regional";
-    private static final double RIFT_FAULT_DAMAGE_HALF_WIDTH = 1.35;
-    private static final double OROGENIC_FAULT_DAMAGE_HALF_WIDTH = 1.10;
     private static final List<String> VOLCANIC_ARC_LITHOLOGIES = List.of(
             "gneiss",
             "schist",
@@ -200,7 +199,7 @@ public final class ProvinceBackgroundFeature extends Feature<DefaultFeatureConfi
             );
             ColumnResolver resolver = (x, z, structuralColumn) -> {
                 OrogenicBeltModel.Column column = model.column(x, z, 0.0);
-                return y -> structuralColumn.tectonicColumn().distanceToFault(y) <= OROGENIC_FAULT_DAMAGE_HALF_WIDTH
+                return y -> FaultDamageZone.contains(province, structuralColumn.tectonicColumn(), y)
                         ? "breccia"
                         : column.sample(y, structuralColumn.verticalOffset(y)).lithology();
             };
@@ -267,8 +266,7 @@ public final class ProvinceBackgroundFeature extends Feature<DefaultFeatureConfi
             states.put("breccia", outputState("breccia", catalog));
         }
         ColumnResolver resolver = (x, z, structuralColumn) -> y -> {
-            if (faultDamage
-                    && structuralColumn.tectonicColumn().distanceToFault(y) <= RIFT_FAULT_DAMAGE_HALF_WIDTH) {
+            if (FaultDamageZone.contains(province, structuralColumn.tectonicColumn(), y)) {
                 return "breccia";
             }
             return baseField.sampleAtVerticalOffset(y, plan, structuralColumn.verticalOffset(y))
