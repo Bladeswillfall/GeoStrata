@@ -6,11 +6,16 @@ import javax.imageio.ImageIO;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
+import java.util.Set;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 final class PngAssetIntegrityTest {
+    private static final Set<String> ECONOMIC_GRADES = Set.of("poor", "medium", "rich", "massive");
+
     @Test
     void bundledPngAssetsAreReadable() throws IOException {
         Path assets = Path.of("src/main/resources/assets/geostrata");
@@ -19,6 +24,34 @@ final class PngAssetIntegrityTest {
                 var image = ImageIO.read(path.toFile());
                 assertNotNull(image, path.toString());
                 assertTrue(image.getWidth() > 0 && image.getHeight() > 0, path.toString());
+            }
+        }
+    }
+
+    @Test
+    void everyOreHostHasFourDistinctEconomicGradeTextures() throws IOException {
+        Path oreTextures = Path.of("src/main/resources/assets/geostrata/textures/block/ore");
+        try (var directories = Files.walk(oreTextures, 2)) {
+            for (Path hostDirectory : directories.filter(path -> Files.isDirectory(path) && path.getNameCount()
+                    == oreTextures.getNameCount() + 2).sorted().toList()) {
+                List<Path> textures;
+                try (var files = Files.list(hostDirectory)) {
+                    textures = files.filter(path -> path.toString().endsWith(".png")).sorted().toList();
+                }
+                Set<String> grades = textures.stream()
+                        .map(path -> path.getFileName().toString().replaceFirst("\\.png$", ""))
+                        .collect(java.util.stream.Collectors.toSet());
+                assertEquals(ECONOMIC_GRADES, grades, hostDirectory.toString());
+
+                for (int left = 0; left < textures.size(); left++) {
+                    for (int right = left + 1; right < textures.size(); right++) {
+                        assertTrue(
+                                Files.mismatch(textures.get(left), textures.get(right)) >= 0,
+                                hostDirectory + " has duplicate grade textures: "
+                                        + textures.get(left).getFileName() + " / " + textures.get(right).getFileName()
+                        );
+                    }
+                }
             }
         }
     }
