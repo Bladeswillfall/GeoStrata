@@ -27,11 +27,9 @@ import java.util.Set;
 /** Developer-only distribution scan for comparing vanilla and GeoStrata ore visibility. */
 public final class OreDistributionBenchmarkCommands {
     private static final int GRID_CHUNKS = 10;
-    // Fixed off-spawn square with a similar Basin/Shield split to the original benchmark region.
-    private static final int MIN_CHUNK_X = 76;
-    private static final int MIN_CHUNK_Z = 224;
-    private static final int MAX_CHUNK_X = MIN_CHUNK_X + GRID_CHUNKS - 1;
-    private static final int MAX_CHUNK_Z = MIN_CHUNK_Z + GRID_CHUNKS - 1;
+    // Known-copper tuning square used by the paired benchmark series.
+    private static final int MIN_CHUNK = -5;
+    private static final int MAX_CHUNK = MIN_CHUNK + GRID_CHUNKS - 1;
     private static final int GENERATION_HALO_CHUNKS = 1;
     private static final int AIR_PROXIMITY_RADIUS = 12;
     private static final int PLANE_LOCAL_X = 8;
@@ -77,11 +75,11 @@ public final class OreDistributionBenchmarkCommands {
     }
 
     private static BenchmarkStats scan(ServerWorld world) {
-        for (int chunkX = MIN_CHUNK_X - GENERATION_HALO_CHUNKS;
-                chunkX <= MAX_CHUNK_X + GENERATION_HALO_CHUNKS;
+        for (int chunkX = MIN_CHUNK - GENERATION_HALO_CHUNKS;
+                chunkX <= MAX_CHUNK + GENERATION_HALO_CHUNKS;
                 chunkX++) {
-            for (int chunkZ = MIN_CHUNK_Z - GENERATION_HALO_CHUNKS;
-                    chunkZ <= MAX_CHUNK_Z + GENERATION_HALO_CHUNKS;
+            for (int chunkZ = MIN_CHUNK - GENERATION_HALO_CHUNKS;
+                    chunkZ <= MAX_CHUNK + GENERATION_HALO_CHUNKS;
                     chunkZ++) {
                 world.getChunk(chunkX, chunkZ);
             }
@@ -90,8 +88,8 @@ public final class OreDistributionBenchmarkCommands {
         BenchmarkStats stats = new BenchmarkStats(world.getBottomY(), world.getTopY());
         BlockPos.Mutable pos = new BlockPos.Mutable();
         BlockPos.Mutable neighbor = new BlockPos.Mutable();
-        for (int chunkX = MIN_CHUNK_X; chunkX <= MAX_CHUNK_X; chunkX++) {
-            for (int chunkZ = MIN_CHUNK_Z; chunkZ <= MAX_CHUNK_Z; chunkZ++) {
+        for (int chunkX = MIN_CHUNK; chunkX <= MAX_CHUNK; chunkX++) {
+            for (int chunkZ = MIN_CHUNK; chunkZ <= MAX_CHUNK; chunkZ++) {
                 scanChunk(world, chunkX, chunkZ, stats, pos, neighbor);
             }
         }
@@ -412,10 +410,8 @@ public final class OreDistributionBenchmarkCommands {
             JsonObject root = new JsonObject();
             root.addProperty("mode", OreDepositExperiment.current().enabled() ? "geostrata_experiment" : "vanilla_baseline");
             root.addProperty("seed", world.getSeed());
-            root.addProperty("chunkMinX", MIN_CHUNK_X);
-            root.addProperty("chunkMaxX", MAX_CHUNK_X);
-            root.addProperty("chunkMinZ", MIN_CHUNK_Z);
-            root.addProperty("chunkMaxZ", MAX_CHUNK_Z);
+            root.addProperty("chunkMin", MIN_CHUNK);
+            root.addProperty("chunkMax", MAX_CHUNK);
             root.addProperty("chunkCount", GRID_CHUNKS * GRID_CHUNKS);
             root.addProperty("generationHaloChunks", GENERATION_HALO_CHUNKS);
             root.addProperty("airProximityRadius", AIR_PROXIMITY_RADIUS);
