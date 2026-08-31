@@ -2,6 +2,7 @@ package com.geostrata.command;
 
 import com.geostrata.GeoStrata;
 import com.geostrata.block.GradedOreBlock;
+import com.geostrata.geology.GeologyProvinceSampler;
 import com.geostrata.geology.OreDepositExperiment;
 import com.geostrata.geology.OreGrade;
 import com.google.gson.JsonObject;
@@ -93,6 +94,7 @@ public final class OreDistributionBenchmarkCommands {
         var chunk = world.getChunk(chunkX, chunkZ);
         int startX = chunkX << 4;
         int startZ = chunkZ << 4;
+        stats.recordProvince(GeologyProvinceSampler.sample(world.getSeed(), startX + 8, startZ + 8).province().id());
         long chunkKey = chunkKey(chunkX, chunkZ);
         for (int localX = 0; localX < 16; localX++) {
             int x = startX + localX;
@@ -254,6 +256,7 @@ public final class OreDistributionBenchmarkCommands {
         private final int bottomY;
         private final int topY;
         private final Map<String, MaterialStats> materials = new LinkedHashMap<>();
+        private final Map<String, Integer> provinceChunks = new LinkedHashMap<>();
 
         private BenchmarkStats(int bottomY, int topY) {
             this.bottomY = bottomY;
@@ -266,6 +269,10 @@ public final class OreDistributionBenchmarkCommands {
         private void record(OreSample sample, boolean plane, int airFaces, long chunkKey, long pos) {
             materials.computeIfAbsent(sample.material(), ignored -> new MaterialStats())
                     .record(sample, plane, airFaces, chunkKey, pos);
+        }
+
+        private void recordProvince(String province) {
+            provinceChunks.merge(province, 1, Integer::sum);
         }
 
         private long totalOreBlocks() {
@@ -289,6 +296,9 @@ public final class OreDistributionBenchmarkCommands {
             root.addProperty("planeBlocksScanned", (long) GRID_CHUNKS * GRID_CHUNKS * 16L * (topY - bottomY));
             root.addProperty("totalOreBlocks", totalOreBlocks());
             root.addProperty("totalAirExposedOreBlocks", totalExposedBlocks());
+            JsonObject provinceJson = new JsonObject();
+            provinceChunks.forEach(provinceJson::addProperty);
+            root.add("provinceChunks", provinceJson);
             JsonObject materialJson = new JsonObject();
             materials.forEach((material, stats) -> materialJson.add(material, stats.toJson()));
             root.add("materials", materialJson);
