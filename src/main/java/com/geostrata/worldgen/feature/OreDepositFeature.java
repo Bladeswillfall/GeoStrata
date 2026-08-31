@@ -297,14 +297,14 @@ public final class OreDepositFeature extends Feature<DefaultFeatureConfig> {
             return false;
         }
         mutable.set(x, y, z);
-        String host = hosts.resolve(mutable);
-        if (host == null || !OreHost.supports(host)) {
+        ResolvedHost host = hosts.resolve(mutable);
+        if (host == null || !OreHost.supports(host.lithology())) {
             return false;
         }
         boolean discoveryOre = stringer || exposedFringe;
         boolean exposedTrace = sample.trace()
                 && (exposedFringe || touchesAir(world, neighbor, x, y, z));
-        boolean parentHost = validHosts.contains(host);
+        boolean parentHost = host.matches(validHosts);
         OreGrade grade = parentHost
                 ? OreExposurePlacement.placementGrade(sample, exposedTrace, discoveryOre)
                 : discoveryOre ? OreGrade.POOR : null;
@@ -313,7 +313,11 @@ public final class OreDepositFeature extends Feature<DefaultFeatureConfig> {
         }
         world.setBlockState(
                 mutable,
-                GeoStrataBlocks.oreState(occurrence.id(), occurrence.capNaturalGrade(grade), host),
+                GeoStrataBlocks.oreState(
+                        occurrence.id(),
+                        occurrence.capNaturalGrade(grade),
+                        host.lithology()
+                ),
                 Block.NOTIFY_LISTENERS
         );
         return true;
@@ -370,6 +374,18 @@ public final class OreDepositFeature extends Feature<DefaultFeatureConfig> {
         return TagKey.of(RegistryKeys.BLOCK, id);
     }
 
+    private record ResolvedHost(String lithology, Optional<String> parentLithology) {
+        private ResolvedHost {
+            if (lithology == null || lithology.isBlank() || parentLithology == null) {
+                throw new IllegalArgumentException("resolved ore host must be complete");
+            }
+        }
+
+        private boolean matches(Set<String> validHosts) {
+            return validHosts.contains(lithology) || parentLithology.map(validHosts::contains).orElse(false);
+        }
+    }
+
     private record HostResolver(
             StructureWorldAccess world,
             Map<Block, String> directHosts,
@@ -419,22 +435,29 @@ public final class OreDepositFeature extends Feature<DefaultFeatureConfig> {
             );
         }
 
-        private String resolve(BlockPos pos) {
+        private ResolvedHost resolve(BlockPos pos) {
             BlockState state = world.getBlockState(pos);
+            Optional<GeologyResolver.Result> semantic = semanticResult(pos);
             String direct = directHosts.get(state.getBlock());
             if (direct != null) {
-                return direct;
-            }
-            if (pos.getY() < virtualMinY || pos.getY() > virtualMaxY) {
-                return null;
+                Optional<String> parent = semantic
+                        .filter(result -> direct.equals(result.lithology()))
+                        .flatMap(GeologyResolver.Result::parentLithology);
+                return new ResolvedHost(direct, parent);
             }
             if (virtualHostTag.isEmpty() || !state.isIn(virtualHostTag.get())) {
                 return null;
             }
-            return semanticGeology
-                    .flatMap(value -> value.resolve(pos.getX(), pos.getY(), pos.getZ()))
-                    .map(GeologyResolver.Result::lithology)
+            return semantic
+                    .map(result -> new ResolvedHost(result.lithology(), result.parentLithology()))
                     .orElse(null);
+        }
+
+        private Optional<GeologyResolver.Result> semanticResult(BlockPos pos) {
+            if (pos.getY() < virtualMinY || pos.getY() > virtualMaxY) {
+                return Optional.empty();
+            }
+            return semanticGeology.flatMap(value -> value.resolve(pos.getX(), pos.getY(), pos.getZ()));
         }
     }
 }
