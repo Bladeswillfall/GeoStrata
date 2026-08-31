@@ -64,10 +64,10 @@ public final class OreDiscoveryStringers {
         );
 
         double normalComponent = (roll(body, salt ^ (NORMAL_SALT << 1)) - 0.5) * 1.20;
-        double upwardBias = "copper".equals(body.material()) && index < 4 ? 1.0 : 0.0;
-        double directionAlong = cos + upwardBias * Math.sin(body.dipRadians());
+        double verticalBias = "copper".equals(body.material()) && index < 4 ? -1.0 : 0.0;
+        double directionAlong = cos + verticalBias * Math.sin(body.dipRadians());
         double directionAcross = sin;
-        double directionNormal = normalComponent + upwardBias * Math.cos(body.dipRadians());
+        double directionNormal = normalComponent + verticalBias * Math.cos(body.dipRadians());
         double directionLength = Math.sqrt(
                 directionAlong * directionAlong
                         + directionAcross * directionAcross
