@@ -11,11 +11,13 @@ public final class ContactMetamorphism {
         }
 
         String genesis = catalog.require(parentLithology).genesis();
-        return switch (genesis) {
+        String product = switch (genesis) {
             case "mudrock", "silt_clastic", "low_grade_foliated", "medium_grade_foliated" -> "hornfels";
             case "carbonate", "carbonate_metamorphic" -> "marble";
             case "quartz_rich_metamorphic" -> "quartzite";
             default -> parentLithology;
         };
+        catalog.require(product);
+        return product;
     }
 }
