@@ -4,7 +4,7 @@ package com.geostrata.geology;
  * Deterministic block-scale architecture for the experimental Volcanic Arc province.
  *
  * <p>This is deliberately province-specific rather than a generic architecture engine.
- * It supplies a varied metamorphic basement, mafic dikes/sills, local rhyolitic bodies
+ * It supplies a varied metamorphic basement, mafic dikes/sills, zoned volcanic complexes
  * and breccia halos while reusing the shared structural offset supplied by GeoStrata's
  * terrain-aware field.</p>
  */
@@ -19,20 +19,22 @@ public final class VolcanicArcModel {
     private static final double METAMORPHIC_BELT_SPACING = 224.0;
     private static final double SCHIST_HALF_WIDTH = 32.0;
     private static final double QUARTZITE_HALF_WIDTH = 7.0;
-    private static final int RHYOLITE_CELL_SIZE = 256;
-    private static final double RHYOLITE_CELL_MARGIN = 64.0;
-    private static final double RHYOLITE_CELL_SPAN = RHYOLITE_CELL_SIZE - RHYOLITE_CELL_MARGIN * 2.0;
+    private static final int COMPLEX_CELL_SIZE = 256;
+    private static final double COMPLEX_CELL_MARGIN = 64.0;
+    private static final double COMPLEX_CELL_SPAN = COMPLEX_CELL_SIZE - COMPLEX_CELL_MARGIN * 2.0;
     private static final double RHYOLITE_HALO_SCALE = 1.18;
+    private static final double PLUTON_TOP_NORMALIZED_Y = -0.20;
+    private static final double GRANITE_CORE_RADIUS = 0.58;
 
     private static final long DIKE_ANGLE_SALT = 0x8EBC6AF09C88C6E3L;
     private static final long DIKE_PHASE_SALT = 0x589965CC75374CC3L;
     private static final long METAMORPHIC_ANGLE_SALT = 0xA54FF53A5F1D36F1L;
     private static final long METAMORPHIC_PHASE_SALT = 0x510E527FADE682D1L;
-    private static final long RHYOLITE_X_SALT = 0xEB44ACCAB455D165L;
-    private static final long RHYOLITE_Y_SALT = 0xA4093822299F31D0L;
-    private static final long RHYOLITE_Z_SALT = 0x13198A2E03707344L;
-    private static final long RHYOLITE_RADIUS_XZ_SALT = 0x243F6A8885A308D3L;
-    private static final long RHYOLITE_RADIUS_Y_SALT = 0x452821E638D01377L;
+    private static final long COMPLEX_X_SALT = 0xEB44ACCAB455D165L;
+    private static final long COMPLEX_Y_SALT = 0xA4093822299F31D0L;
+    private static final long COMPLEX_Z_SALT = 0x13198A2E03707344L;
+    private static final long COMPLEX_RADIUS_XZ_SALT = 0x243F6A8885A308D3L;
+    private static final long COMPLEX_RADIUS_Y_SALT = 0x452821E638D01377L;
 
     private VolcanicArcModel() {
     }
@@ -126,19 +128,19 @@ public final class VolcanicArcModel {
                     METAMORPHIC_BELT_SPACING
             );
 
-            int cellX = Math.floorDiv(x, RHYOLITE_CELL_SIZE);
-            int cellZ = Math.floorDiv(z, RHYOLITE_CELL_SIZE);
-            int originX = cellX * RHYOLITE_CELL_SIZE;
-            int originZ = cellZ * RHYOLITE_CELL_SIZE;
-            double centerX = originX + RHYOLITE_CELL_MARGIN + RHYOLITE_CELL_SPAN
-                    * roll(worldSeed, cellX, cellZ, RHYOLITE_X_SALT);
-            double centerZ = originZ + RHYOLITE_CELL_MARGIN + RHYOLITE_CELL_SPAN
-                    * roll(worldSeed, cellX, cellZ, RHYOLITE_Z_SALT);
+            int cellX = Math.floorDiv(x, COMPLEX_CELL_SIZE);
+            int cellZ = Math.floorDiv(z, COMPLEX_CELL_SIZE);
+            int originX = cellX * COMPLEX_CELL_SIZE;
+            int originZ = cellZ * COMPLEX_CELL_SIZE;
+            double centerX = originX + COMPLEX_CELL_MARGIN + COMPLEX_CELL_SPAN
+                    * roll(worldSeed, cellX, cellZ, COMPLEX_X_SALT);
+            double centerZ = originZ + COMPLEX_CELL_MARGIN + COMPLEX_CELL_SPAN
+                    * roll(worldSeed, cellX, cellZ, COMPLEX_Z_SALT);
             double centerY = seaLevel - 48.0
-                    + 96.0 * roll(worldSeed, cellX, cellZ, RHYOLITE_Y_SALT)
+                    + 96.0 * roll(worldSeed, cellX, cellZ, COMPLEX_Y_SALT)
                     + structuralOffset * 0.25;
-            double radiusXZ = 28.0 + 20.0 * roll(worldSeed, cellX, cellZ, RHYOLITE_RADIUS_XZ_SALT);
-            double radiusY = 14.0 + 16.0 * roll(worldSeed, cellX, cellZ, RHYOLITE_RADIUS_Y_SALT);
+            double radiusXZ = 28.0 + 20.0 * roll(worldSeed, cellX, cellZ, COMPLEX_RADIUS_XZ_SALT);
+            double radiusY = 14.0 + 16.0 * roll(worldSeed, cellX, cellZ, COMPLEX_RADIUS_Y_SALT);
             double centerDx = x - centerX;
             double centerDz = z - centerZ;
             double horizontalX = centerDx / radiusXZ;
@@ -169,9 +171,9 @@ public final class VolcanicArcModel {
     public record Column(
             double dikeDistance,
             double metamorphicDistance,
-            double rhyoliteHorizontalRadius,
-            double rhyoliteCenterY,
-            double rhyoliteRadiusY,
+            double complexHorizontalRadius,
+            double complexCenterY,
+            double complexRadiusY,
             double sillFootprint,
             double sillCenterY
     ) {
@@ -183,12 +185,18 @@ public final class VolcanicArcModel {
                 return new Sample("breccia", "dike_breccia");
             }
 
-            double vertical = (y - rhyoliteCenterY) / rhyoliteRadiusY;
-            double rhyoliteRadius = rhyoliteHorizontalRadius + vertical * vertical;
-            if (rhyoliteRadius <= 1.0) {
+            double vertical = (y - complexCenterY) / complexRadiusY;
+            double complexRadius = complexHorizontalRadius + vertical * vertical;
+            if (complexRadius <= 1.0) {
+                if (vertical <= PLUTON_TOP_NORMALIZED_Y) {
+                    if (complexRadius <= GRANITE_CORE_RADIUS) {
+                        return new Sample("granite", "plutonic_core");
+                    }
+                    return new Sample("diorite", "plutonic_margin");
+                }
                 return new Sample("rhyolite", "rhyolite_body");
             }
-            if (rhyoliteRadius <= RHYOLITE_HALO_SCALE) {
+            if (vertical > PLUTON_TOP_NORMALIZED_Y && complexRadius <= RHYOLITE_HALO_SCALE) {
                 return new Sample("breccia", "rhyolite_breccia");
             }
 

@@ -23,9 +23,24 @@ A semantic lithology does not have to be a block owned by GeoStrata. The block n
 
 GeoStrata-owned entries (`geostrata:*`) must keep their explicit GeoStrata baseline feature and remain covered by the material/asset contract. Provider-owned entries use an existing registered block directly and set `baselineFeature` to `null`; GeoStrata does not create a duplicate block, texture set or fallback feature for them.
 
-Vanilla granite and diorite are the first bundled examples. They are now valid igneous lithologies in the semantic catalog and province profiles, but this change alone does not add new pluton geometry or make the province models emit them. Their first runtime use belongs in the existing intrusive architecture rather than a second generator.
+Vanilla granite and diorite are the first bundled examples. The provider-neutral contract gives them semantic identities and province profiles without adding duplicate blocks, textures or fallback features.
 
 The same ownership rule is intended for compatibility adapters: a loaded third-party provider can supply the material while GeoStrata supplies geological meaning and, where appropriate, shared geometry. Optional-mod activation remains an adapter concern; the core catalog must not pretend an absent provider block exists.
+
+## Volcanic-arc intrusive zoning
+
+The advanced Volcanic Arc runtime reuses its existing deterministic volcanic-complex ellipsoid rather than adding a second intrusion generator.
+
+Within that same complex:
+
+- the shallow zone remains rhyolite;
+- the deeper inner root resolves to vanilla granite;
+- the deeper outer margin resolves to vanilla diorite;
+- the existing rhyolite breccia halo applies only to the shallow volcanic zone;
+- existing basalt dikes retain first precedence and may cross-cut the complex;
+- existing finite basalt sills retain their current geometry and ordering.
+
+The granite/diorite split is therefore compositional zoning inside geometry GeoStrata already calculates. It adds no new noise, cell lattice, random roll or mutable geology state. Contact metamorphism remains separate future work; the plutonic root does not invent a hornfels substitute from an unrelated existing rock.
 
 ## Correlated authority
 

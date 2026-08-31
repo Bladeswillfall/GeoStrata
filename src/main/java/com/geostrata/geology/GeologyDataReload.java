@@ -34,6 +34,8 @@ public final class GeologyDataReload {
             "marble",
             "basalt",
             "rhyolite",
+            "granite",
+            "diorite",
             "breccia"
     );
 
