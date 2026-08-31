@@ -42,6 +42,7 @@ public final class MetamorphismCommands {
                         "GeoStrata metamorphism: intensity " + percent(sample.intensity())
                                 + " | likely " + suitability.dominantLithology()
                                 + " | slate " + percent(suitability.slate())
+                                + ", phyllite " + percent(suitability.phyllite())
                                 + ", schist " + percent(suitability.schist())
                                 + ", gneiss " + percent(suitability.gneiss())
                                 + " | regional " + signedPercent(sample.regionalAdjustment())
