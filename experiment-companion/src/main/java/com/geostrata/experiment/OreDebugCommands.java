@@ -8,6 +8,7 @@ import com.geostrata.geology.GeologyProvinceSampler;
 import com.geostrata.geology.OreDepositCandidatePlanner;
 import com.geostrata.geology.OreDepositExperiment;
 import com.geostrata.geology.OreDepositGeometry;
+import com.geostrata.geology.OreGrade;
 import com.geostrata.geology.OreOccurrenceCatalog;
 import com.geostrata.geology.SedimentaryFieldProfiles;
 import com.mojang.brigadier.arguments.StringArgumentType;
@@ -20,9 +21,11 @@ import net.minecraft.text.Text;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 
+import java.util.EnumMap;
+import java.util.Map;
 import java.util.Optional;
 
-/** Companion-only command for locating an ore voxel that worldgen actually placed. */
+/** Companion-only command for locating ore voxels that worldgen actually placed. */
 final class OreDebugCommands {
     private static final int SEARCH_RADIUS_CELLS = 4;
     private static final int STRUCTURAL_SCAN_STRIDE = 2;
@@ -38,12 +41,19 @@ final class OreDebugCommands {
                                         .then(CommandManager.literal("locate")
                                                 .executes(context -> locate(
                                                         context.getSource(),
-                                                        StringArgumentType.getString(context, "material")
-                                                ))))))
+                                                        StringArgumentType.getString(context, "material"),
+                                                        null
+                                                ))
+                                                .then(CommandManager.argument("style", StringArgumentType.word())
+                                                        .executes(context -> locate(
+                                                                context.getSource(),
+                                                                StringArgumentType.getString(context, "material"),
+                                                                StringArgumentType.getString(context, "style")
+                                                        )))))))
         );
     }
 
-    private static int locate(ServerCommandSource source, String material) {
+    private static int locate(ServerCommandSource source, String material, String requestedStyle) {
         OreOccurrenceCatalog.Snapshot occurrences = OreOccurrenceCatalog.current();
         SedimentaryFieldProfiles.Snapshot fieldProfiles = SedimentaryFieldProfiles.current();
         OreDepositExperiment.Snapshot experiment = OreDepositExperiment.current();
@@ -59,11 +69,20 @@ final class OreDebugCommands {
             source.sendError(Text.literal(exception.getMessage()));
             return 0;
         }
+        if (requestedStyle != null && !occurrence.depositStyles().contains(requestedStyle)) {
+            source.sendError(Text.literal(
+                    "GeoStrata " + material + " does not use deposit style " + requestedStyle
+                            + "; allowed: " + String.join(",", occurrence.depositStyles())
+            ));
+            return 0;
+        }
 
-        Optional<LocatedOre> found = findNearby(source, occurrence, fieldProfiles);
+        Optional<LocatedOre> found = findNearby(source, occurrence, fieldProfiles, requestedStyle);
         if (found.isEmpty()) {
             source.sendError(Text.literal(
-                    "No placed GeoStrata " + material + " ore found within ~"
+                    "No placed GeoStrata " + material
+                            + (requestedStyle == null ? "" : " " + requestedStyle)
+                            + " ore found within ~"
                             + (SEARCH_RADIUS_CELLS * OreDepositCandidatePlanner.HORIZONTAL_CELL_SIZE)
                             + " blocks. Move ~512 blocks and run the locate command again."
             ));
@@ -75,9 +94,11 @@ final class OreDebugCommands {
         source.sendFeedback(
                 () -> Text.literal(
                         "GeoStrata ore locate " + material
-                                + ": FOUND " + ore.grade()
+                                + ": FOUND " + ore.style()
+                                + " | richest " + ore.grade()
                                 + " at " + pos.getX() + "," + pos.getY() + "," + pos.getZ()
-                                + " | actual placed block"
+                                + " | grades " + gradeSummary(ore.counts())
+                                + " | total " + ore.counts().values().stream().mapToInt(Integer::intValue).sum()
                                 + " | teleport: /tp @s " + pos.getX() + " " + pos.getY() + " " + pos.getZ()
                 ),
                 false
@@ -88,7 +109,8 @@ final class OreDebugCommands {
     private static Optional<LocatedOre> findNearby(
             ServerCommandSource source,
             OreOccurrenceCatalog.Occurrence occurrence,
-            SedimentaryFieldProfiles.Snapshot fieldProfiles
+            SedimentaryFieldProfiles.Snapshot fieldProfiles,
+            String requestedStyle
     ) {
         ServerWorld world = source.getWorld();
         long seed = world.getSeed();
@@ -114,7 +136,8 @@ final class OreDebugCommands {
                                 cellY,
                                 originCellZ + dz,
                                 occurrence,
-                                structuralCycle
+                                structuralCycle,
+                                requestedStyle
                         );
                         if (found.isPresent()) {
                             return found;
@@ -133,7 +156,8 @@ final class OreDebugCommands {
             int cellY,
             int cellZ,
             OreOccurrenceCatalog.Occurrence occurrence,
-            double structuralCycle
+            double structuralCycle,
+            String requestedStyle
     ) {
         OreDepositCandidatePlanner.Proposal proposal = OreDepositCandidatePlanner.propose(
                 seed,
@@ -142,7 +166,8 @@ final class OreDebugCommands {
                 cellZ * OreDepositCandidatePlanner.HORIZONTAL_CELL_SIZE,
                 occurrence
         );
-        if (!OreDepositExperiment.active(seed, proposal)) {
+        if ((requestedStyle != null && !requestedStyle.equals(proposal.depositStyle()))
+                || !OreDepositExperiment.active(seed, proposal)) {
             return Optional.empty();
         }
 
@@ -159,11 +184,13 @@ final class OreDebugCommands {
         }
 
         OreDepositGeometry.Body body = binding.body(seed);
-        Optional<LocatedOre> coarse = findPlacedOre(world, body, occurrence.id(), STRUCTURAL_SCAN_STRIDE);
-        return coarse.isPresent() ? coarse : findPlacedOre(world, body, occurrence.id(), 1);
+        if (scanPlacedOre(world, body, occurrence.id(), STRUCTURAL_SCAN_STRIDE).isEmpty()) {
+            return scanPlacedOre(world, body, occurrence.id(), 1);
+        }
+        return scanPlacedOre(world, body, occurrence.id(), 1);
     }
 
-    private static Optional<LocatedOre> findPlacedOre(
+    private static Optional<LocatedOre> scanPlacedOre(
             ServerWorld world,
             OreDepositGeometry.Body body,
             String material,
@@ -173,6 +200,9 @@ final class OreDebugCommands {
         int minY = Math.max(world.getBottomY(), bounds.minY());
         int maxY = Math.min(world.getTopY() - 1, bounds.maxY());
         BlockPos.Mutable mutable = new BlockPos.Mutable();
+        EnumMap<OreGrade, Integer> counts = new EnumMap<>(OreGrade.class);
+        BlockPos richestPos = null;
+        OreGrade richestGrade = null;
 
         for (int x = bounds.minX(); x <= bounds.maxX(); x += stride) {
             for (int z = bounds.minZ(); z <= bounds.maxZ(); z += stride) {
@@ -183,14 +213,34 @@ final class OreDebugCommands {
                     mutable.set(x, y, z);
                     BlockState state = world.getBlockState(mutable);
                     if (state.getBlock() instanceof GradedOreBlock ore && ore.material().equals(material)) {
-                        return Optional.of(new LocatedOre(mutable.toImmutable(), ore.grade().id()));
+                        OreGrade grade = ore.grade();
+                        counts.merge(grade, 1, Integer::sum);
+                        if (richestGrade == null || grade.ordinal() > richestGrade.ordinal()) {
+                            richestGrade = grade;
+                            richestPos = mutable.toImmutable();
+                        }
                     }
                 }
             }
         }
-        return Optional.empty();
+        if (richestPos == null) {
+            return Optional.empty();
+        }
+        return Optional.of(new LocatedOre(
+                richestPos,
+                richestGrade.id(),
+                body.style(),
+                Map.copyOf(counts)
+        ));
     }
 
-    private record LocatedOre(BlockPos pos, String grade) {
+    private static String gradeSummary(Map<OreGrade, Integer> counts) {
+        return "poor " + counts.getOrDefault(OreGrade.POOR, 0)
+                + ", medium " + counts.getOrDefault(OreGrade.MEDIUM, 0)
+                + ", rich " + counts.getOrDefault(OreGrade.RICH, 0)
+                + ", massive " + counts.getOrDefault(OreGrade.MASSIVE, 0);
+    }
+
+    private record LocatedOre(BlockPos pos, String grade, String style, Map<OreGrade, Integer> counts) {
     }
 }
