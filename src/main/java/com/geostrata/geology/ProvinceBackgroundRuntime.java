@@ -170,7 +170,10 @@ public final class ProvinceBackgroundRuntime {
             );
             ColumnResolver resolver = (x, z, structural) -> {
                 VolcanicArcModel.Column column = model.column(x, z, structural.verticalOffset(0.0));
-                return y -> column.sample(y).lithology();
+                return y -> {
+                    VolcanicArcModel.Sample sample = column.sample(y);
+                    return new ResolvedSample(sample.lithology(), sample.bodyStyle());
+                };
             };
             return new SiteContext(province, architectureField, resolver);
         }
@@ -183,7 +186,10 @@ public final class ProvinceBackgroundRuntime {
             );
             ColumnResolver resolver = (x, z, structural) -> {
                 CratonicShieldModel.Column column = model.column(x, z, structural.verticalOffset(0.0));
-                return y -> column.sample(y).lithology();
+                return y -> {
+                    CratonicShieldModel.Sample sample = column.sample(y);
+                    return new ResolvedSample(sample.lithology(), sample.bodyStyle());
+                };
             };
             return new SiteContext(province, architectureField, resolver);
         }
@@ -196,9 +202,13 @@ public final class ProvinceBackgroundRuntime {
             );
             ColumnResolver resolver = (x, z, structural) -> {
                 OrogenicBeltModel.Column column = model.column(x, z, 0.0);
-                return y -> FaultDamageZone.contains(province, structural.tectonicColumn(), y)
-                        ? "breccia"
-                        : column.sample(y, structural.verticalOffset(y)).lithology();
+                return y -> {
+                    if (FaultDamageZone.contains(province, structural.tectonicColumn(), y)) {
+                        return new ResolvedSample("breccia", "fault_damage");
+                    }
+                    OrogenicBeltModel.Sample sample = column.sample(y, structural.verticalOffset(y));
+                    return new ResolvedSample(sample.lithology(), sample.bodyStyle());
+                };
             };
             return new SiteContext(province, architectureField, resolver);
         }
@@ -254,9 +264,10 @@ public final class ProvinceBackgroundRuntime {
         );
         ColumnResolver resolver = (x, z, structural) -> y -> {
             if (FaultDamageZone.contains(province, structural.tectonicColumn(), y)) {
-                return "breccia";
+                return new ResolvedSample("breccia", "fault_damage");
             }
-            return base.sampleAtVerticalOffset(y, plan, structural.verticalOffset(y)).bed().lithology();
+            String lithology = base.sampleAtVerticalOffset(y, plan, structural.verticalOffset(y)).bed().lithology();
+            return new ResolvedSample(lithology, "stratigraphic_bed");
         };
         return new SiteContext(province, field, resolver);
     }
@@ -273,8 +284,16 @@ public final class ProvinceBackgroundRuntime {
             }
         }
 
+        public ResolvedSample sampleAt(int x, int y, int z) {
+            return columnAt(x, z).sampleAt(y);
+        }
+
         public String lithologyAt(int x, int y, int z) {
-            return columnAt(x, z).lithologyAt(y);
+            return sampleAt(x, y, z).lithology();
+        }
+
+        public String bodyStyleAt(int x, int y, int z) {
+            return sampleAt(x, y, z).bodyStyle();
         }
 
         public GeologyProvince provinceAt(int x, int y, int z) {
@@ -302,8 +321,16 @@ public final class ProvinceBackgroundRuntime {
             }
         }
 
+        public ResolvedSample sampleAt(int y) {
+            return resolvedAt(y).sampleAtY().apply(y);
+        }
+
         public String lithologyAt(int y) {
-            return resolvedAt(y).lithologyAtY().apply(y);
+            return sampleAt(y).lithology();
+        }
+
+        public String bodyStyleAt(int y) {
+            return sampleAt(y).bodyStyle();
         }
 
         public GeologyProvince provinceAt(int y) {
@@ -315,10 +342,18 @@ public final class ProvinceBackgroundRuntime {
         }
     }
 
-    public record ResolvedColumn(GeologyProvince province, IntFunction<String> lithologyAtY) {
+    public record ResolvedSample(String lithology, String bodyStyle) {
+        public ResolvedSample {
+            if (lithology == null || lithology.isBlank() || bodyStyle == null || bodyStyle.isBlank()) {
+                throw new IllegalArgumentException("background lithology and body style must not be blank");
+            }
+        }
+    }
+
+    public record ResolvedColumn(GeologyProvince province, IntFunction<ResolvedSample> sampleAtY) {
         public ResolvedColumn {
-            if (province == null || lithologyAtY == null) {
-                throw new IllegalArgumentException("background province and lithology sampler must not be null");
+            if (province == null || sampleAtY == null) {
+                throw new IllegalArgumentException("background province and semantic sampler must not be null");
             }
         }
     }
@@ -339,6 +374,6 @@ public final class ProvinceBackgroundRuntime {
 
     @FunctionalInterface
     private interface ColumnResolver {
-        IntFunction<String> column(int x, int z, TerrainAwareStructuralField.Column structuralColumn);
+        IntFunction<ResolvedSample> column(int x, int z, TerrainAwareStructuralField.Column structuralColumn);
     }
 }
