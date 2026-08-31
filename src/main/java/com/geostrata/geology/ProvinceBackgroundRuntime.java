@@ -172,7 +172,7 @@ public final class ProvinceBackgroundRuntime {
                 VolcanicArcModel.Column column = model.column(x, z, structural.verticalOffset(0.0));
                 return y -> column.sample(y).lithology();
             };
-            return new SiteContext(architectureField, resolver);
+            return new SiteContext(province, architectureField, resolver);
         }
         if (province == GeologyProvince.CRATONIC_SHIELD) {
             CratonicShieldModel.Context model = CratonicShieldModel.forSite(
@@ -185,7 +185,7 @@ public final class ProvinceBackgroundRuntime {
                 CratonicShieldModel.Column column = model.column(x, z, structural.verticalOffset(0.0));
                 return y -> column.sample(y).lithology();
             };
-            return new SiteContext(architectureField, resolver);
+            return new SiteContext(province, architectureField, resolver);
         }
         if (province == GeologyProvince.OROGENIC_BELT) {
             OrogenicBeltModel.Context model = OrogenicBeltModel.forSite(
@@ -200,7 +200,7 @@ public final class ProvinceBackgroundRuntime {
                         ? "breccia"
                         : column.sample(y, structural.verticalOffset(y)).lithology();
             };
-            return new SiteContext(architectureField, resolver);
+            return new SiteContext(province, architectureField, resolver);
         }
         return sedimentarySite(
                 world,
@@ -258,7 +258,7 @@ public final class ProvinceBackgroundRuntime {
             }
             return base.sampleAtVerticalOffset(y, plan, structural.verticalOffset(y)).bed().lithology();
         };
-        return new SiteContext(field, resolver);
+        return new SiteContext(province, field, resolver);
     }
 
     private static int columnIndex(int localX, int localZ) {
@@ -274,12 +274,20 @@ public final class ProvinceBackgroundRuntime {
         }
 
         public String lithologyAt(int x, int y, int z) {
+            return columnAt(x, z).lithologyAt(y);
+        }
+
+        public GeologyProvince provinceAt(int x, int y, int z) {
+            return columnAt(x, z).provinceAt(y);
+        }
+
+        private Column columnAt(int x, int z) {
             int localX = x - startX;
             int localZ = z - startZ;
             if (localX < 0 || localX >= CHUNK_SIZE || localZ < 0 || localZ >= CHUNK_SIZE) {
                 throw new IllegalArgumentException("coordinate is outside province background chunk");
             }
-            return columns[columnIndex(localX, localZ)].lithologyAt(y);
+            return columns[columnIndex(localX, localZ)];
         }
     }
 
@@ -295,16 +303,22 @@ public final class ProvinceBackgroundRuntime {
         }
 
         public String lithologyAt(int y) {
-            return contact == null || contact.usesPrimary(y)
-                    ? primary.lithologyAtY().apply(y)
-                    : neighbor.lithologyAtY().apply(y);
+            return resolvedAt(y).lithologyAtY().apply(y);
+        }
+
+        public GeologyProvince provinceAt(int y) {
+            return resolvedAt(y).province();
+        }
+
+        private ResolvedColumn resolvedAt(int y) {
+            return contact == null || contact.usesPrimary(y) ? primary : neighbor;
         }
     }
 
-    public record ResolvedColumn(IntFunction<String> lithologyAtY) {
+    public record ResolvedColumn(GeologyProvince province, IntFunction<String> lithologyAtY) {
         public ResolvedColumn {
-            if (lithologyAtY == null) {
-                throw new IllegalArgumentException("background lithology sampler must not be null");
+            if (province == null || lithologyAtY == null) {
+                throw new IllegalArgumentException("background province and lithology sampler must not be null");
             }
         }
     }
@@ -312,10 +326,14 @@ public final class ProvinceBackgroundRuntime {
     private record SiteKey(GeologyProvince province, int siteX, int siteZ) {
     }
 
-    private record SiteContext(TerrainAwareStructuralField.Field field, ColumnResolver resolver) {
+    private record SiteContext(
+            GeologyProvince province,
+            TerrainAwareStructuralField.Field field,
+            ColumnResolver resolver
+    ) {
         private ResolvedColumn resolve(int x, int z) {
             TerrainAwareStructuralField.Column structural = field.column(x, z);
-            return new ResolvedColumn(resolver.column(x, z, structural));
+            return new ResolvedColumn(province, resolver.column(x, z, structural));
         }
     }
 
