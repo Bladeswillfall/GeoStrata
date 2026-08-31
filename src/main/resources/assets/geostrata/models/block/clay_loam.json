@@ -1,1 +1,1 @@
-{"parent":"minecraft:block/cube_all","textures":{"all":"minecraft:block/rooted_dirt"}}
+{"parent":"minecraft:block/cube_all","textures":{"all":"geostrata:block/soft_earth/clay_loam"}}

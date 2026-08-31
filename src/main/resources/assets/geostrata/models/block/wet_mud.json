@@ -1,1 +1,1 @@
-{"parent":"minecraft:block/cube_all","textures":{"all":"minecraft:block/mud"}}
+{"parent":"minecraft:block/cube_all","textures":{"all":"geostrata:block/soft_earth/wet_mud"}}

@@ -68,13 +68,24 @@ final class PngAssetIntegrityTest {
     }
 
     @Test
-    void softEarthModelsDoNotCollapseToOnePlaceholder() throws IOException {
+    void softEarthAssetsDoNotCollapseToOnePlaceholder() throws IOException {
         Path models = Path.of("src/main/resources/assets/geostrata/models/block");
+        Path textures = Path.of("src/main/resources/assets/geostrata/textures/block/soft_earth");
         Set<String> definitions = new java.util.HashSet<>();
+        List<Path> textureFiles = new java.util.ArrayList<>();
         for (String model : SOFT_EARTH_MODELS) {
             String definition = Files.readString(models.resolve(model + ".json"));
             assertFalse(definition.contains("placeholder_earth"), model + " still uses placeholder_earth");
             assertTrue(definitions.add(definition), model + " duplicates another soft-earth model");
+            textureFiles.add(textures.resolve(model + ".png"));
+        }
+        for (int left = 0; left < textureFiles.size(); left++) {
+            for (int right = left + 1; right < textureFiles.size(); right++) {
+                assertTrue(
+                        Files.mismatch(textureFiles.get(left), textureFiles.get(right)) >= 0,
+                        textureFiles.get(left).getFileName() + " duplicates " + textureFiles.get(right).getFileName()
+                );
+            }
         }
     }
 }
