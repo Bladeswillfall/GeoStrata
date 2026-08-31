@@ -143,11 +143,21 @@ public final class StructuralCommands {
                 neighbor,
                 source.getWorld().getSeaLevel()
         );
-        String currentTerrane = contact.usesPrimary(y)
+        boolean usesPrimary = contact.usesPrimary(y);
+        boolean sameProvince = province.province() == province.neighborProvince();
+        if (sameProvince) {
+            int currentSiteX = usesPrimary ? province.siteX() : province.neighborSiteX();
+            int currentSiteZ = usesPrimary ? province.siteZ() : province.neighborSiteZ();
+            return " | terrane contact surface ~" + Math.round(province.distanceToBoundary())
+                    + " blocks (same province), dip ~" + Math.round(contact.dipDegrees()) + "°"
+                    + ", current-Y site " + currentSiteX + "," + currentSiteZ;
+        }
+        String currentTerrane = usesPrimary
                 ? province.province().displayName()
                 : province.neighborProvince().displayName();
         return " | suture surface ~" + Math.round(province.distanceToBoundary())
-                + " blocks, dip ~" + Math.round(contact.dipDegrees()) + "°"
+                + " blocks toward " + province.neighborProvince().displayName()
+                + ", dip ~" + Math.round(contact.dipDegrees()) + "°"
                 + ", current-Y terrane " + currentTerrane;
     }
 
