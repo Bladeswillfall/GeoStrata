@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "model": "geostrata:lithology_catalog",
   "runtimeStatus": "metadata_only",
-  "description": "Semantic geology contract for GeoStrata rock types. Most lithologies use baseline strata bodies; kimberlite and lamproite are event-only diamond intrusives behind the diamond geology experiment.",
+  "description": "Semantic geology contract for GeoStrata rock types. GeoStrata-owned lithologies keep explicit fallback features; provider-owned lithologies may reference existing registered blocks without duplicating them. Kimberlite and lamproite remain event-only diamond intrusives behind the diamond geology experiment.",
   "lithologies": [
     {
       "id": "limestone",
@@ -157,6 +157,28 @@
       "continuity": "local",
       "biomeTag": "geostrata:has_mountain_rocks",
       "baselineFeature": "rhyolite_ore"
+    },
+    {
+      "id": "granite",
+      "block": "minecraft:granite",
+      "rockClass": "igneous",
+      "genesis": "felsic_intrusive",
+      "bodyStyle": "plutonic_body",
+      "depthAffinity": "mid_to_deep",
+      "continuity": "regional",
+      "biomeTag": "geostrata:has_mountain_rocks",
+      "baselineFeature": null
+    },
+    {
+      "id": "diorite",
+      "block": "minecraft:diorite",
+      "rockClass": "igneous",
+      "genesis": "intermediate_intrusive",
+      "bodyStyle": "plutonic_body",
+      "depthAffinity": "mid_to_deep",
+      "continuity": "local",
+      "biomeTag": "geostrata:has_mountain_rocks",
+      "baselineFeature": null
     },
     {
       "id": "kimberlite",
