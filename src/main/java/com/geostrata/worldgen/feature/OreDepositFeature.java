@@ -11,6 +11,8 @@ import com.geostrata.geology.LithologyCatalog;
 import com.geostrata.geology.OreDepositCandidatePlanner;
 import com.geostrata.geology.OreDepositExperiment;
 import com.geostrata.geology.OreDepositGeometry;
+import com.geostrata.geology.OreExposurePlacement;
+import com.geostrata.geology.OreGrade;
 import com.geostrata.geology.OreOccurrenceCatalog;
 import com.geostrata.geology.ProvinceBackgroundRuntime;
 import com.geostrata.geology.SedimentaryFieldProfiles;
@@ -147,7 +149,7 @@ public final class OreDepositFeature extends Feature<DefaultFeatureConfig> {
                     }
 
                     OreDepositGeometry.Body body = binding.body(worldSeed);
-                    OreDepositGeometry.Bounds bounds = body.bounds();
+                    OreDepositGeometry.Bounds bounds = OreExposurePlacement.placementBounds(body);
                     if (!intersectsChunk(bounds, startX, endX, startZ, endZ, world)) {
                         continue;
                     }
@@ -239,6 +241,7 @@ public final class OreDepositFeature extends Feature<DefaultFeatureConfig> {
 
         int placed = 0;
         BlockPos.Mutable mutable = new BlockPos.Mutable();
+        BlockPos.Mutable neighbor = new BlockPos.Mutable();
         for (int x = minX; x <= maxX; x++) {
             for (int z = minZ; z <= maxZ; z++) {
                 for (int y = minY; y <= maxY; y++) {
@@ -246,7 +249,7 @@ public final class OreDepositFeature extends Feature<DefaultFeatureConfig> {
                         continue;
                     }
                     OreDepositGeometry.Sample sample = body.sample(x, y, z);
-                    if (!sample.economic()) {
+                    if (!sample.economic() && !sample.trace()) {
                         continue;
                     }
                     mutable.set(x, y, z);
@@ -254,9 +257,16 @@ public final class OreDepositFeature extends Feature<DefaultFeatureConfig> {
                     if (host == null || !validHosts.contains(host)) {
                         continue;
                     }
+                    OreGrade grade = OreExposurePlacement.placementGrade(
+                            sample,
+                            sample.trace() && touchesAir(world, neighbor, x, y, z)
+                    );
+                    if (grade == null) {
+                        continue;
+                    }
                     world.setBlockState(
                             mutable,
-                            GeoStrataBlocks.oreState(occurrence.id(), occurrence.capNaturalGrade(sample.grade()), host),
+                            GeoStrataBlocks.oreState(occurrence.id(), occurrence.capNaturalGrade(grade), host),
                             Block.NOTIFY_LISTENERS
                     );
                     placed++;
@@ -264,6 +274,35 @@ public final class OreDepositFeature extends Feature<DefaultFeatureConfig> {
             }
         }
         return placed;
+    }
+
+    private static boolean touchesAir(
+            StructureWorldAccess world,
+            BlockPos.Mutable neighbor,
+            int x,
+            int y,
+            int z
+    ) {
+        return isAir(world, neighbor, x + 1, y, z)
+                || isAir(world, neighbor, x - 1, y, z)
+                || isAir(world, neighbor, x, y + 1, z)
+                || isAir(world, neighbor, x, y - 1, z)
+                || isAir(world, neighbor, x, y, z + 1)
+                || isAir(world, neighbor, x, y, z - 1);
+    }
+
+    private static boolean isAir(
+            StructureWorldAccess world,
+            BlockPos.Mutable pos,
+            int x,
+            int y,
+            int z
+    ) {
+        if (y < world.getBottomY() || y >= world.getTopY()) {
+            return false;
+        }
+        pos.set(x, y, z);
+        return world.getBlockState(pos).isAir();
     }
 
     private static Map<Block, String> hostBlocks(LithologyCatalog.Snapshot lithologies) {
