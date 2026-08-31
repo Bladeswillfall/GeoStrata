@@ -47,7 +47,8 @@ Uses a deformed metamorphic gradient:
 
 - gneiss high-grade core;
 - schist intermediate zone;
-- slate outer zone;
+- phyllite low-to-medium grade zone;
+- slate outer low-grade zone;
 - quartzite ribbons;
 - comparatively common marble lenses.
 
@@ -167,7 +168,7 @@ Terrain-mod compatibility is semantic: a mod can make its natural stone eligible
 
 In correlated Orogenic chunks the parent rock is resolved before metamorphic output:
 
-- mudrock → slate / schist / gneiss through the existing grade-band selector;
+- mudrock → slate / phyllite / schist / gneiss through the existing grade-band selector;
 - carbonate → marble;
 - quartz-rich sandstone → quartzite;
 - unsupported parents remain unchanged.
@@ -180,7 +181,9 @@ breccia → conglomerate → sandstone → siltstone → shale
 
 The same transformed stratigraphic coordinate is used for parent bedding and metamorphic selection on overturned limbs. Outside an eligible orogenic metamorphic context, sandstone remains sandstone.
 
-Contact metamorphism is separately geometry-driven but uses the same parent-first rule. In the volcanic-arc plutonic aureole, suitable pelitic/silty material becomes hornfels, carbonate becomes marble, quartz sandstone becomes quartzite, and unsupported/high-grade country rock remains unchanged.
+Phyllite is a GeoStrata-owned runtime-only lithology. It is selected by the same regional metamorphic field and deterministic band roll as slate/schist/gneiss and by the existing Orogenic background gradient. It has no independent `phyllite_ore` fallback feature, no extra noise field and no separate worldgen pass.
+
+Contact metamorphism is separately geometry-driven but uses the same parent-first rule. In the volcanic-arc plutonic aureole, suitable pelitic/silty/low-grade foliated material becomes hornfels, carbonate becomes marble, quartz sandstone becomes quartzite, and unsupported/high-grade country rock remains unchanged.
 
 ## Diagnostics
 
