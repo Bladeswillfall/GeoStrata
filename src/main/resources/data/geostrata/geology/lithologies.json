@@ -105,6 +105,18 @@
       "baselineFeature": "slate_ore"
     },
     {
+      "id": "phyllite",
+      "block": "geostrata:phyllite",
+      "rockClass": "metamorphic",
+      "genesis": "low_grade_foliated",
+      "bodyStyle": "metamorphic_band",
+      "depthAffinity": "mid",
+      "continuity": "regional",
+      "biomeTag": "geostrata:has_mountain_rocks",
+      "baselineFeature": null,
+      "runtimeAuthority": "regional_metamorphism"
+    },
+    {
       "id": "marble",
       "block": "geostrata:marble",
       "rockClass": "metamorphic",
