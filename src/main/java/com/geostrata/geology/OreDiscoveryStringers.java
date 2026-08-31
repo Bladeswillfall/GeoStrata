@@ -12,7 +12,7 @@ import java.util.List;
  */
 public final class OreDiscoveryStringers {
     private static final double TWO_PI = Math.PI * 2.0;
-    private static final double EXPOSED_HALO_BLOCKS = 0.0;
+    private static final double COPPER_EXPOSED_HALO_BLOCKS = 3.0;
     private static final long STRINGER_SALT = 0x6A09E667F3BCC909L;
     private static final long LENGTH_SALT = 0xBB67AE8584CAA73BL;
     private static final long RADIUS_SALT = 0x3C6EF372FE94F82BL;
@@ -98,6 +98,10 @@ public final class OreDiscoveryStringers {
         segments.add(new Segment(middle, end, radius * 0.82));
     }
 
+    private static double exposedHaloBlocks(OreDepositGeometry.Body body) {
+        return "copper".equals(body.material()) ? COPPER_EXPOSED_HALO_BLOCKS : 0.0;
+    }
+
     private static BoundsAccumulator worldBounds(
             OreDepositGeometry.Body body,
             Segment segment,
@@ -105,7 +109,7 @@ public final class OreDiscoveryStringers {
     ) {
         WorldPoint start = toWorld(body, segment.start());
         WorldPoint end = toWorld(body, segment.end());
-        double radius = segment.radius() + EXPOSED_HALO_BLOCKS + 1.0;
+        double radius = segment.radius() + exposedHaloBlocks(body) + 1.0;
         return bounds.include(start, radius).include(end, radius);
     }
 
@@ -267,7 +271,7 @@ public final class OreDiscoveryStringers {
 
         /** Broadens only cave-facing discovery; underground stringers remain their original thin radius. */
         public boolean nearStringer(int x, int y, int z) {
-            return contains(x, y, z, EXPOSED_HALO_BLOCKS);
+            return contains(x, y, z, exposedHaloBlocks(body));
         }
 
         private boolean contains(int x, int y, int z, double padding) {
