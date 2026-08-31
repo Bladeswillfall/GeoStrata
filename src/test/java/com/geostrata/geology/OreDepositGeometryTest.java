@@ -2,6 +2,7 @@ package com.geostrata.geology;
 
 import org.junit.jupiter.api.Test;
 
+import java.util.EnumSet;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -32,6 +33,26 @@ final class OreDepositGeometryTest {
             assertFalse(anchor.trace());
             assertEquals("massive", anchor.zone());
         }
+    }
+
+    @Test
+    void depositContainsEveryEconomicGradeFromMarginToCore() {
+        OreDepositGeometry.Body body = OreDepositGeometry.forCandidate(8675309L, candidate("massive_lens_or_pocket"));
+        OreDepositGeometry.Bounds bounds = body.bounds();
+        EnumSet<OreGrade> grades = EnumSet.noneOf(OreGrade.class);
+
+        for (int x = bounds.minX(); x <= bounds.maxX() && grades.size() < OreGrade.values().length; x++) {
+            for (int y = bounds.minY(); y <= bounds.maxY() && grades.size() < OreGrade.values().length; y++) {
+                for (int z = bounds.minZ(); z <= bounds.maxZ() && grades.size() < OreGrade.values().length; z++) {
+                    OreGrade grade = body.sample(x, y, z).grade();
+                    if (grade != null) {
+                        grades.add(grade);
+                    }
+                }
+            }
+        }
+
+        assertEquals(EnumSet.allOf(OreGrade.class), grades);
     }
 
     @Test
