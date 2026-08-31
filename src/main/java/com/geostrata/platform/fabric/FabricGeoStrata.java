@@ -3,6 +3,7 @@ package com.geostrata.platform.fabric;
 import com.geostrata.GeoStrata;
 import com.geostrata.block.GeoStrataBlocks;
 import com.geostrata.command.GeoStrataCommands;
+import com.geostrata.command.GeologyResolveCommands;
 import com.geostrata.command.MetamorphismCommands;
 import com.geostrata.command.OreDistributionBenchmarkCommands;
 import com.geostrata.command.StructuralCommands;
@@ -16,6 +17,7 @@ public final class FabricGeoStrata implements ModInitializer {
         FabricGeologyReloadRegistration.register();
         FabricWorldgenRegistration.register();
         GeoStrataCommands.register();
+        GeologyResolveCommands.register();
         MetamorphismCommands.register();
         StructuralCommands.register();
         OreDistributionBenchmarkCommands.register();
