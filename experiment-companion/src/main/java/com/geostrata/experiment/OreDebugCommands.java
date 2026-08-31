@@ -8,6 +8,7 @@ import com.geostrata.geology.GeologyProvinceSampler;
 import com.geostrata.geology.OreDepositCandidatePlanner;
 import com.geostrata.geology.OreDepositExperiment;
 import com.geostrata.geology.OreDepositGeometry;
+import com.geostrata.geology.OreExposurePlacement;
 import com.geostrata.geology.OreGrade;
 import com.geostrata.geology.OreOccurrenceCatalog;
 import com.geostrata.geology.SedimentaryFieldProfiles;
@@ -196,7 +197,7 @@ final class OreDebugCommands {
             String material,
             int stride
     ) {
-        OreDepositGeometry.Bounds bounds = body.bounds();
+        OreDepositGeometry.Bounds bounds = OreExposurePlacement.placementBounds(body);
         int minY = Math.max(world.getBottomY(), bounds.minY());
         int maxY = Math.min(world.getTopY() - 1, bounds.maxY());
         BlockPos.Mutable mutable = new BlockPos.Mutable();
@@ -239,7 +240,8 @@ final class OreDebugCommands {
             int y,
             int z
     ) {
-        if (!body.sample(x, y, z).economic()) {
+        OreDepositGeometry.Sample sample = body.sample(x, y, z);
+        if (!sample.economic() && !sample.trace()) {
             return null;
         }
         mutable.set(x, y, z);
