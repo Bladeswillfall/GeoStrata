@@ -12,6 +12,7 @@ public final class ProvinceBackgroundRuntime {
     private static final int CHUNK_SIZE = 16;
     private static final String ARCHITECTURE_CONTINUITY = "regional";
     private static final String COMPANION_RUNTIME_STATUS = "experimental_runtime";
+    private static final String CONTACT_AUREOLE = "contact_aureole";
 
     private ProvinceBackgroundRuntime() {
     }
@@ -162,24 +163,7 @@ public final class ProvinceBackgroundRuntime {
         );
 
         if (province == GeologyProvince.VOLCANIC_ARC) {
-            VolcanicArcModel.Context model = VolcanicArcModel.forSite(
-                    worldSeed,
-                    site.siteX(),
-                    site.siteZ(),
-                    world.getSeaLevel()
-            );
-            ColumnResolver resolver = (x, z, structural) -> {
-                VolcanicArcModel.Column column = model.column(x, z, structural.verticalOffset(0.0));
-                return new ResolvedColumn(
-                        province,
-                        y -> column.sample(y).lithology(),
-                        y -> {
-                            VolcanicArcModel.Sample sample = column.sample(y);
-                            return new ResolvedSample(sample.lithology(), sample.bodyStyle());
-                        }
-                );
-            };
-            return new SiteContext(architectureField, resolver);
+            return volcanicArcSite(world, worldSeed, site, province, architectureField);
         }
         if (province == GeologyProvince.CRATONIC_SHIELD) {
             CratonicShieldModel.Context model = CratonicShieldModel.forSite(
@@ -236,6 +220,53 @@ public final class ProvinceBackgroundRuntime {
                 successions,
                 fieldProfiles
         );
+    }
+
+    private static SiteContext volcanicArcSite(
+            ServerWorld world,
+            long worldSeed,
+            SiteKey site,
+            GeologyProvince province,
+            TerrainAwareStructuralField.Field architectureField
+    ) {
+        LithologyCatalog.Snapshot catalog = LithologyCatalog.current();
+        if (!catalog.loaded()) {
+            throw new IllegalStateException("volcanic arc runtime requires the lithology catalog");
+        }
+        VolcanicArcModel.Context model = VolcanicArcModel.forSite(
+                worldSeed,
+                site.siteX(),
+                site.siteZ(),
+                world.getSeaLevel()
+        );
+        ColumnResolver resolver = (x, z, structural) -> {
+            VolcanicArcModel.Column column = model.column(x, z, structural.verticalOffset(0.0));
+            return new ResolvedColumn(
+                    province,
+                    y -> volcanicLithology(column.sample(y), catalog),
+                    y -> volcanicSample(column.sample(y), catalog)
+            );
+        };
+        return new SiteContext(architectureField, resolver);
+    }
+
+    private static String volcanicLithology(
+            VolcanicArcModel.Sample sample,
+            LithologyCatalog.Snapshot catalog
+    ) {
+        return CONTACT_AUREOLE.equals(sample.bodyStyle())
+                ? ContactMetamorphism.product(sample.lithology(), catalog)
+                : sample.lithology();
+    }
+
+    private static ResolvedSample volcanicSample(
+            VolcanicArcModel.Sample sample,
+            LithologyCatalog.Snapshot catalog
+    ) {
+        String output = volcanicLithology(sample, catalog);
+        return output.equals(sample.lithology())
+                ? new ResolvedSample(output, sample.bodyStyle())
+                : new ResolvedSample(output, sample.bodyStyle(), sample.lithology());
     }
 
     private static SiteContext sedimentarySite(
@@ -357,10 +388,16 @@ public final class ProvinceBackgroundRuntime {
         }
     }
 
-    public record ResolvedSample(String lithology, String bodyStyle) {
+    public record ResolvedSample(String lithology, String bodyStyle, String parentLithology) {
+        public ResolvedSample(String lithology, String bodyStyle) {
+            this(lithology, bodyStyle, null);
+        }
+
         public ResolvedSample {
-            if (lithology == null || lithology.isBlank() || bodyStyle == null || bodyStyle.isBlank()) {
-                throw new IllegalArgumentException("background lithology and body style must not be blank");
+            if (lithology == null || lithology.isBlank()
+                    || bodyStyle == null || bodyStyle.isBlank()
+                    || parentLithology != null && parentLithology.isBlank()) {
+                throw new IllegalArgumentException("background lithology/body style/parent must be valid");
             }
         }
     }
