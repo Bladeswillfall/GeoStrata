@@ -185,7 +185,7 @@ final class OreDebugCommands {
 
         OreDepositGeometry.Body body = binding.body(seed);
         if (scanPlacedOre(world, body, occurrence.id(), STRUCTURAL_SCAN_STRIDE).isEmpty()) {
-            return scanPlacedOre(world, body, occurrence.id(), 1);
+            return Optional.empty();
         }
         return scanPlacedOre(world, body, occurrence.id(), 1);
     }
@@ -207,18 +207,14 @@ final class OreDebugCommands {
         for (int x = bounds.minX(); x <= bounds.maxX(); x += stride) {
             for (int z = bounds.minZ(); z <= bounds.maxZ(); z += stride) {
                 for (int y = minY; y <= maxY; y += stride) {
-                    if (!body.sample(x, y, z).economic()) {
+                    OreGrade grade = placedGrade(world, body, material, mutable, x, y, z);
+                    if (grade == null) {
                         continue;
                     }
-                    mutable.set(x, y, z);
-                    BlockState state = world.getBlockState(mutable);
-                    if (state.getBlock() instanceof GradedOreBlock ore && ore.material().equals(material)) {
-                        OreGrade grade = ore.grade();
-                        counts.merge(grade, 1, Integer::sum);
-                        if (richestGrade == null || grade.ordinal() > richestGrade.ordinal()) {
-                            richestGrade = grade;
-                            richestPos = mutable.toImmutable();
-                        }
+                    counts.merge(grade, 1, Integer::sum);
+                    if (richestGrade == null || grade.ordinal() > richestGrade.ordinal()) {
+                        richestGrade = grade;
+                        richestPos = mutable.toImmutable();
                     }
                 }
             }
@@ -232,6 +228,26 @@ final class OreDebugCommands {
                 body.style(),
                 Map.copyOf(counts)
         ));
+    }
+
+    private static OreGrade placedGrade(
+            ServerWorld world,
+            OreDepositGeometry.Body body,
+            String material,
+            BlockPos.Mutable mutable,
+            int x,
+            int y,
+            int z
+    ) {
+        if (!body.sample(x, y, z).economic()) {
+            return null;
+        }
+        mutable.set(x, y, z);
+        BlockState state = world.getBlockState(mutable);
+        if (state.getBlock() instanceof GradedOreBlock ore && ore.material().equals(material)) {
+            return ore.grade();
+        }
+        return null;
     }
 
     private static String gradeSummary(Map<OreGrade, Integer> counts) {
