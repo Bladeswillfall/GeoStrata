@@ -16,6 +16,8 @@ final class VolcanicArcModelTest {
             "quartzite",
             "basalt",
             "rhyolite",
+            "granite",
+            "diorite",
             "breccia"
     );
 
@@ -64,6 +66,37 @@ final class VolcanicArcModelTest {
                 }
             }
         }
+    }
+
+    @Test
+    void volcanicComplexGradesFromRhyoliteIntoGraniteAndDiorite() {
+        VolcanicArcModel.Context context = VolcanicArcModel.forSite(987654321L, 64, -128, 63.0);
+        VolcanicArcModel.Column center = null;
+
+        for (int x = -256; x <= 256 && center == null; x++) {
+            for (int z = -384; z <= 128 && center == null; z++) {
+                VolcanicArcModel.Column column = context.column(x, z, 0.0);
+                if (column.complexHorizontalRadius() < 0.05 && column.dikeDistance() > 3.25) {
+                    center = column;
+                }
+            }
+        }
+
+        assertNotNull(center, "expected a sampled column near the centre of a volcanic complex");
+        assertEquals("rhyolite", center.sample(center.complexCenterY()).lithology());
+        assertEquals(
+                new VolcanicArcModel.Sample("granite", "plutonic_core"),
+                center.sample(center.complexCenterY() - center.complexRadiusY() * 0.40)
+        );
+        assertEquals(
+                new VolcanicArcModel.Sample("diorite", "plutonic_margin"),
+                center.sample(center.complexCenterY() - center.complexRadiusY() * 0.85)
+        );
+        assertNotEquals(
+                "rhyolite_breccia",
+                center.sample(center.complexCenterY() - center.complexRadiusY() * 1.02).bodyStyle(),
+                "deep plutonic roots must not inherit the shallow volcanic breccia halo"
+        );
     }
 
     @Test
