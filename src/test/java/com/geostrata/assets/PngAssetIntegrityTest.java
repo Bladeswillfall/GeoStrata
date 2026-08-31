@@ -10,11 +10,22 @@ import java.util.List;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 final class PngAssetIntegrityTest {
     private static final Set<String> ECONOMIC_GRADES = Set.of("poor", "medium", "rich", "massive");
+    private static final List<String> SOFT_EARTH_MODELS = List.of(
+            "clay_loam",
+            "sandy_loam",
+            "silty_loam",
+            "peat_soil",
+            "wet_mud",
+            "compacted_mud",
+            "blue_clay",
+            "red_clay"
+    );
 
     @Test
     void bundledPngAssetsAreReadable() throws IOException {
@@ -53,6 +64,17 @@ final class PngAssetIntegrityTest {
                     }
                 }
             }
+        }
+    }
+
+    @Test
+    void softEarthModelsDoNotCollapseToOnePlaceholder() throws IOException {
+        Path models = Path.of("src/main/resources/assets/geostrata/models/block");
+        Set<String> definitions = new java.util.HashSet<>();
+        for (String model : SOFT_EARTH_MODELS) {
+            String definition = Files.readString(models.resolve(model + ".json"));
+            assertFalse(definition.contains("placeholder_earth"), model + " still uses placeholder_earth");
+            assertTrue(definitions.add(definition), model + " duplicates another soft-earth model");
         }
     }
 }
