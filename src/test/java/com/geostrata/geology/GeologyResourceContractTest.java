@@ -110,7 +110,7 @@ final class GeologyResourceContractTest {
 
     private static void assertOrdinaryProvinceMatrixCandidates(GeologyDataReload.State data) {
         List<LithologyCatalog.Entry> ordinary = data.lithologies().entries().stream()
-                .filter(entry -> entry.baselineFeature().endsWith("_ore"))
+                .filter(entry -> entry.baselineFeature() != null && entry.baselineFeature().endsWith("_ore"))
                 .toList();
         assertTrue(ordinary.size() >= 4);
         assertFalse(ordinary.stream().anyMatch(entry -> entry.id().equals("kimberlite") || entry.id().equals("lamproite")));
