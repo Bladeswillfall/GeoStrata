@@ -50,61 +50,11 @@ public final class LithologyCatalog {
         LinkedHashMap<String, Entry> byId = new LinkedHashMap<>();
         Set<String> blocks = new HashSet<>();
         Set<String> baselineFeatures = new HashSet<>();
-
         for (JsonElement element : rawEntries) {
-            if (!element.isJsonObject()) {
-                throw new IllegalArgumentException("lithology entry must be an object");
+            Entry entry = parseEntry(element, blocks, baselineFeatures);
+            if (byId.put(entry.id(), entry) != null) {
+                throw new IllegalArgumentException("duplicate lithology id: " + entry.id());
             }
-            JsonObject object = element.getAsJsonObject();
-            String id = simpleId(object, "id");
-            if (byId.containsKey(id)) {
-                throw new IllegalArgumentException("duplicate lithology id: " + id);
-            }
-
-            String block = namespacedIdentifier(object, "block");
-            if (!blocks.add(block)) {
-                throw new IllegalArgumentException("duplicate lithology block: " + block);
-            }
-
-            String rockClass = requireString(object, "rockClass");
-            if (!ROCK_CLASSES.contains(rockClass)) {
-                throw new IllegalArgumentException(id + " has unsupported rockClass: " + rockClass);
-            }
-
-            String genesis = simpleId(object, "genesis");
-            String bodyStyle = simpleId(object, "bodyStyle");
-            String depthAffinity = simpleId(object, "depthAffinity");
-
-            String continuity = requireString(object, "continuity");
-            if (!CONTINUITIES.contains(continuity)) {
-                throw new IllegalArgumentException(id + " has unsupported continuity: " + continuity);
-            }
-
-            String biomeTag = namespacedIdentifier(object, "biomeTag", "geostrata");
-            String baselineFeature = nullableSimpleId(object, "baselineFeature");
-            boolean geoStrataOwned = block.startsWith("geostrata:");
-            if (geoStrataOwned && baselineFeature == null) {
-                throw new IllegalArgumentException(id + " GeoStrata-owned lithology requires baselineFeature");
-            }
-            if (!geoStrataOwned && baselineFeature != null) {
-                throw new IllegalArgumentException(id + " provider-owned lithology must not declare GeoStrata baselineFeature");
-            }
-            if (baselineFeature != null && !baselineFeatures.add(baselineFeature)) {
-                throw new IllegalArgumentException("duplicate baselineFeature: " + baselineFeature);
-            }
-
-            Entry entry = new Entry(
-                    id,
-                    block,
-                    rockClass,
-                    genesis,
-                    bodyStyle,
-                    depthAffinity,
-                    continuity,
-                    biomeTag,
-                    baselineFeature
-            );
-            byId.put(id, entry);
         }
 
         return new Snapshot(
@@ -112,6 +62,60 @@ public final class LithologyCatalog {
                 List.copyOf(byId.values()),
                 Collections.unmodifiableMap(byId)
         );
+    }
+
+    private static Entry parseEntry(
+            JsonElement element,
+            Set<String> blocks,
+            Set<String> baselineFeatures
+    ) {
+        if (!element.isJsonObject()) {
+            throw new IllegalArgumentException("lithology entry must be an object");
+        }
+        JsonObject object = element.getAsJsonObject();
+        String id = simpleId(object, "id");
+        String block = namespacedIdentifier(object, "block");
+        if (!blocks.add(block)) {
+            throw new IllegalArgumentException("duplicate lithology block: " + block);
+        }
+
+        String rockClass = requireString(object, "rockClass");
+        if (!ROCK_CLASSES.contains(rockClass)) {
+            throw new IllegalArgumentException(id + " has unsupported rockClass: " + rockClass);
+        }
+
+        String continuity = requireString(object, "continuity");
+        if (!CONTINUITIES.contains(continuity)) {
+            throw new IllegalArgumentException(id + " has unsupported continuity: " + continuity);
+        }
+
+        String baselineFeature = nullableSimpleId(object, "baselineFeature");
+        validateOwnership(id, block, baselineFeature);
+        if (baselineFeature != null && !baselineFeatures.add(baselineFeature)) {
+            throw new IllegalArgumentException("duplicate baselineFeature: " + baselineFeature);
+        }
+
+        return new Entry(
+                id,
+                block,
+                rockClass,
+                simpleId(object, "genesis"),
+                simpleId(object, "bodyStyle"),
+                simpleId(object, "depthAffinity"),
+                continuity,
+                namespacedIdentifier(object, "biomeTag", "geostrata"),
+                baselineFeature
+        );
+    }
+
+    private static void validateOwnership(String id, String block, String baselineFeature) {
+        boolean geoStrataOwned = block.startsWith("geostrata:");
+        if (geoStrataOwned && baselineFeature == null) {
+            throw new IllegalArgumentException(id + " GeoStrata-owned lithology requires baselineFeature");
+        }
+        if (!geoStrataOwned && baselineFeature != null) {
+            throw new IllegalArgumentException(id + " provider-owned lithology must not declare GeoStrata baselineFeature");
+        }
     }
 
     private static JsonArray requiredArray(JsonObject object, String key) {
