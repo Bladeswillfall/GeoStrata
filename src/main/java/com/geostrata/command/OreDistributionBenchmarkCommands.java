@@ -132,7 +132,12 @@ public final class OreDistributionBenchmarkCommands {
 
     private static OreSample classify(BlockState state) {
         if (state.getBlock() instanceof GradedOreBlock graded) {
-            return new OreSample(graded.material(), graded.grade(), true);
+            return new OreSample(
+                    graded.material(),
+                    graded.grade(),
+                    true,
+                    state.get(GradedOreBlock.HOST).asString()
+            );
         }
         if (state.isIn(BlockTags.COAL_ORES)) {
             return OreSample.vanilla("coal");
@@ -243,9 +248,9 @@ public final class OreDistributionBenchmarkCommands {
         }
     }
 
-    private record OreSample(String material, OreGrade grade, boolean graded) {
+    private record OreSample(String material, OreGrade grade, boolean graded, String host) {
         private static OreSample vanilla(String material) {
-            return new OreSample(material, null, false);
+            return new OreSample(material, null, false, null);
         }
     }
 
@@ -268,6 +273,7 @@ public final class OreDistributionBenchmarkCommands {
         private int gradedMaxY = Integer.MIN_VALUE;
         private int gradedMinAirDistance = Integer.MAX_VALUE;
         private final EnumMap<OreGrade, Long> grades = new EnumMap<>(OreGrade.class);
+        private final Map<String, EnumMap<OreGrade, Long>> gradesByHost = new LinkedHashMap<>();
         private final Set<Long> exposedChunks = new HashSet<>();
         private final Set<Long> exposedPositions = new HashSet<>();
         private final Set<Long> gradedExposedPositions = new HashSet<>();
@@ -302,6 +308,8 @@ public final class OreDistributionBenchmarkCommands {
                     gradedWithin12Air++;
                 }
                 grades.merge(sample.grade(), 1L, Long::sum);
+                gradesByHost.computeIfAbsent(sample.host(), ignored -> new EnumMap<>(OreGrade.class))
+                        .merge(sample.grade(), 1L, Long::sum);
             } else {
                 vanillaTagged++;
             }
@@ -363,6 +371,15 @@ public final class OreDistributionBenchmarkCommands {
                 gradeJson.addProperty(grade.id(), grades.getOrDefault(grade, 0L));
             }
             json.add("grades", gradeJson);
+            JsonObject hostJson = new JsonObject();
+            gradesByHost.forEach((host, hostGrades) -> {
+                JsonObject hostGradeJson = new JsonObject();
+                for (OreGrade grade : OreGrade.values()) {
+                    hostGradeJson.addProperty(grade.id(), hostGrades.getOrDefault(grade, 0L));
+                }
+                hostJson.add(host, hostGradeJson);
+            });
+            json.add("gradesByHost", hostJson);
             return json;
         }
     }
