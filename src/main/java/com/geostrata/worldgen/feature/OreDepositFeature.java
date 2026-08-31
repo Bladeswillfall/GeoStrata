@@ -297,7 +297,7 @@ public final class OreDepositFeature extends Feature<DefaultFeatureConfig> {
             return false;
         }
         mutable.set(x, y, z);
-        ResolvedHost host = hosts.resolve(mutable);
+        ResolvedHost host = hosts.resolve(mutable, validHosts);
         if (host == null || !OreHost.supports(host.lithology())) {
             return false;
         }
@@ -443,12 +443,13 @@ public final class OreDepositFeature extends Feature<DefaultFeatureConfig> {
             );
         }
 
-        private ResolvedHost resolve(BlockPos pos) {
+        private ResolvedHost resolve(BlockPos pos, Set<String> validHosts) {
             BlockState state = world.getBlockState(pos);
-            Optional<GeologyResolver.Result> semantic = semanticResult(pos);
             String direct = directHosts.get(state.getBlock());
             if (direct != null) {
-                Optional<String> parent = semantic
+                Optional<String> parent = validHosts.contains(direct)
+                        ? Optional.empty()
+                        : semanticResult(pos)
                         .filter(result -> direct.equals(result.lithology()))
                         .flatMap(GeologyResolver.Result::parentLithology);
                 return new ResolvedHost(direct, parent);
@@ -456,7 +457,7 @@ public final class OreDepositFeature extends Feature<DefaultFeatureConfig> {
             if (virtualHostTag.isEmpty() || !state.isIn(virtualHostTag.get())) {
                 return null;
             }
-            return semantic
+            return semanticResult(pos)
                     .map(result -> new ResolvedHost(result.lithology(), result.parentLithology()))
                     .orElse(null);
         }
