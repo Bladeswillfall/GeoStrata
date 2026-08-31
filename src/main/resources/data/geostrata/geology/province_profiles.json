@@ -22,6 +22,8 @@
         "gneiss": 0.05,
         "basalt": 0.2,
         "rhyolite": 0.05,
+        "granite": 0.08,
+        "diorite": 0.06,
         "kimberlite": 0.01,
         "lamproite": 0.01
       }
@@ -43,6 +45,8 @@
         "gneiss": 1.0,
         "basalt": 0.25,
         "rhyolite": 0.08,
+        "granite": 0.85,
+        "diorite": 0.7,
         "kimberlite": 0.65,
         "lamproite": 0.65
       }
@@ -64,6 +68,8 @@
         "gneiss": 0.85,
         "basalt": 0.3,
         "rhyolite": 0.3,
+        "granite": 0.85,
+        "diorite": 0.9,
         "kimberlite": 0.02,
         "lamproite": 0.02
       }
@@ -85,6 +91,8 @@
         "gneiss": 0.4,
         "basalt": 1.0,
         "rhyolite": 0.85,
+        "granite": 0.85,
+        "diorite": 0.9,
         "kimberlite": 0.01,
         "lamproite": 0.03
       }
@@ -106,6 +114,8 @@
         "gneiss": 0.22,
         "basalt": 1.0,
         "rhyolite": 0.3,
+        "granite": 0.12,
+        "diorite": 0.18,
         "kimberlite": 0.01,
         "lamproite": 0.02
       }
