@@ -73,12 +73,14 @@ final class OreDepositGeometryTest {
 
         assertEquals(first, repeated);
         assertNotEquals(first, otherSeed);
-        assertEquals(2, first.branches().size());
+        assertEquals(6, first.branches().size());
         assertEquals(35.782474705575, first.lengthRadius(), 1.0e-12);
         assertEquals(2.818203125585, first.widthRadius(), 1.0e-12);
         assertEquals(2.333116619565, first.thicknessRadius(), 1.0e-12);
         assertEquals(5.983455788356, first.azimuthRadians(), 1.0e-12);
         assertEquals(-1.262883441316, first.dipRadians(), 1.0e-12);
+        assertTrue(first.branches().stream().anyMatch(branch -> branch.endAcross() < 0.0));
+        assertTrue(first.branches().stream().anyMatch(branch -> branch.endAcross() > 0.0));
         assertEquals(
                 first.sample(first.anchorX() - 7, first.anchorY() + 3, first.anchorZ() + 5),
                 repeated.sample(repeated.anchorX() - 7, repeated.anchorY() + 3, repeated.anchorZ() + 5)
