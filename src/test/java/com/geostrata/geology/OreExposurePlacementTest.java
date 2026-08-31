@@ -37,12 +37,12 @@ final class OreExposurePlacementTest {
         OreDepositGeometry.Bounds economic = body.bounds();
         OreDepositGeometry.Bounds placement = OreExposurePlacement.placementBounds(body);
 
-        assertEquals(economic.minX() - 16, placement.minX());
-        assertEquals(economic.minY() - 16, placement.minY());
-        assertEquals(economic.minZ() - 16, placement.minZ());
-        assertEquals(economic.maxX() + 16, placement.maxX());
-        assertEquals(economic.maxY() + 16, placement.maxY());
-        assertEquals(economic.maxZ() + 16, placement.maxZ());
+        assertEquals(economic.minX() - 24, placement.minX());
+        assertEquals(economic.minY() - 24, placement.minY());
+        assertEquals(economic.minZ() - 24, placement.minZ());
+        assertEquals(economic.maxX() + 24, placement.maxX());
+        assertEquals(economic.maxY() + 24, placement.maxY());
+        assertEquals(economic.maxZ() + 24, placement.maxZ());
         assertThrows(IllegalArgumentException.class, () -> OreExposurePlacement.placementBounds(null));
         assertThrows(IllegalArgumentException.class, () -> OreExposurePlacement.placementGrade(null, true));
     }
