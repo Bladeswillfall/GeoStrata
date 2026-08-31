@@ -1,5 +1,6 @@
 package com.geostrata.worldgen.feature;
 
+import com.geostrata.geology.CorrelatedExperimentChunkOwnership;
 import com.geostrata.geology.CorrelatedSedimentaryExperiment;
 import com.geostrata.geology.LithologyCatalog;
 import com.geostrata.geology.ProvinceBackgroundRuntime;
@@ -46,6 +47,9 @@ public final class ProvinceBackgroundFeature extends Feature<DefaultFeatureConfi
         BlockPos origin = context.getOrigin();
         int startX = Math.floorDiv(origin.getX(), CHUNK_SIZE) * CHUNK_SIZE;
         int startZ = Math.floorDiv(origin.getZ(), CHUNK_SIZE) * CHUNK_SIZE;
+        if (CorrelatedExperimentChunkOwnership.ownershipForChunk(world.getSeed(), startX, startZ).owned()) {
+            return false;
+        }
         Optional<ProvinceBackgroundRuntime.Chunk> geology = ProvinceBackgroundRuntime.resolve(
                 world.toServerWorld(),
                 startX,
