@@ -61,7 +61,7 @@ public final class LithologyCatalog {
                 throw new IllegalArgumentException("duplicate lithology id: " + id);
             }
 
-            String block = namespacedIdentifier(object, "block", "geostrata");
+            String block = namespacedIdentifier(object, "block");
             if (!blocks.add(block)) {
                 throw new IllegalArgumentException("duplicate lithology block: " + block);
             }
@@ -81,8 +81,15 @@ public final class LithologyCatalog {
             }
 
             String biomeTag = namespacedIdentifier(object, "biomeTag", "geostrata");
-            String baselineFeature = simpleId(object, "baselineFeature");
-            if (!baselineFeatures.add(baselineFeature)) {
+            String baselineFeature = nullableSimpleId(object, "baselineFeature");
+            boolean geoStrataOwned = block.startsWith("geostrata:");
+            if (geoStrataOwned && baselineFeature == null) {
+                throw new IllegalArgumentException(id + " GeoStrata-owned lithology requires baselineFeature");
+            }
+            if (!geoStrataOwned && baselineFeature != null) {
+                throw new IllegalArgumentException(id + " provider-owned lithology must not declare GeoStrata baselineFeature");
+            }
+            if (baselineFeature != null && !baselineFeatures.add(baselineFeature)) {
                 throw new IllegalArgumentException("duplicate baselineFeature: " + baselineFeature);
             }
 
@@ -162,11 +169,31 @@ public final class LithologyCatalog {
         return value;
     }
 
-    private static String namespacedIdentifier(JsonObject object, String key, String requiredNamespace) {
+    private static String nullableSimpleId(JsonObject object, String key) {
+        JsonElement element = object.get(key);
+        if (element == null || element.isJsonNull()) {
+            return null;
+        }
+        if (!element.isJsonPrimitive() || !element.getAsJsonPrimitive().isString()) {
+            throw new IllegalArgumentException(key + " must be a string or null");
+        }
+        String value = element.getAsString();
+        if (!SIMPLE_ID.matcher(value).matches()) {
+            throw new IllegalArgumentException(key + " must match " + SIMPLE_ID.pattern() + ", found " + value);
+        }
+        return value;
+    }
+
+    private static String namespacedIdentifier(JsonObject object, String key) {
         String value = requireString(object, key);
         if (!IDENTIFIER.matcher(value).matches()) {
             throw new IllegalArgumentException(key + " must be a valid namespaced identifier, found " + value);
         }
+        return value;
+    }
+
+    private static String namespacedIdentifier(JsonObject object, String key, String requiredNamespace) {
+        String value = namespacedIdentifier(object, key);
         int separator = value.indexOf(':');
         if (!value.substring(0, separator).equals(requiredNamespace)) {
             throw new IllegalArgumentException(key + " must use namespace " + requiredNamespace + ", found " + value);
@@ -185,6 +212,9 @@ public final class LithologyCatalog {
             String biomeTag,
             String baselineFeature
     ) {
+        public boolean geoStrataOwned() {
+            return block.startsWith("geostrata:");
+        }
     }
 
     public record Snapshot(String runtimeStatus, List<Entry> entries, Map<String, Entry> byId) {
