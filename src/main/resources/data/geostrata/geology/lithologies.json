@@ -60,6 +60,18 @@
       "baselineFeature": "siltstone_ore"
     },
     {
+      "id": "sandstone",
+      "block": "minecraft:sandstone",
+      "rockClass": "sedimentary",
+      "genesis": "quartz_sandstone",
+      "bodyStyle": "bedded",
+      "depthAffinity": "shallow_to_mid",
+      "continuity": "regional",
+      "biomeTag": "geostrata:has_common_rocks",
+      "baselineFeature": null,
+      "runtimeAuthority": "correlated_stratigraphy"
+    },
+    {
       "id": "conglomerate",
       "block": "geostrata:conglomerate",
       "rockClass": "sedimentary",
