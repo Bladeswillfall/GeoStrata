@@ -69,7 +69,7 @@
       "continuity": "regional",
       "biomeTag": "geostrata:has_common_rocks",
       "baselineFeature": null,
-      "runtimeAuthority": "correlated_stratigraphy"
+      "runtimeAuthority": "sedimentary_stratigraphy"
     },
     {
       "id": "conglomerate",
