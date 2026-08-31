@@ -14,8 +14,8 @@ public final class VolcanicArcModel {
     private static final double DIKE_HALF_THICKNESS = 1.35;
     private static final double DIKE_BRECCIA_HALF_THICKNESS = 3.25;
     private static final double SILL_HALF_THICKNESS = 2.25;
-    private static final double SILL_LONG_RADIUS_SCALE = 2.1;
-    private static final double SILL_SHORT_RADIUS_SCALE = 1.15;
+    private static final double SILL_LONG_RADIUS_SCALE = 1.30;
+    private static final double SILL_SHORT_RADIUS_SCALE = 0.85;
     private static final double METAMORPHIC_BELT_SPACING = 224.0;
     private static final double SCHIST_HALF_WIDTH = 32.0;
     private static final double QUARTZITE_HALF_WIDTH = 7.0;
@@ -156,7 +156,6 @@ public final class VolcanicArcModel {
                     horizontalRadius,
                     centerY,
                     radiusY,
-                    structuralOffset,
                     sillFootprint,
                     sillCenterY
             );
@@ -173,7 +172,6 @@ public final class VolcanicArcModel {
             double rhyoliteHorizontalRadius,
             double rhyoliteCenterY,
             double rhyoliteRadiusY,
-            double structuralOffset,
             double sillFootprint,
             double sillCenterY
     ) {
