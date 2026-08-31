@@ -69,7 +69,7 @@ final class VolcanicArcModelTest {
     }
 
     @Test
-    void volcanicComplexGradesFromRhyoliteIntoGraniteAndDiorite() {
+    void volcanicComplexGradesFromRhyoliteThroughPlutonIntoContactAureole() {
         VolcanicArcModel.Context context = VolcanicArcModel.forSite(987654321L, 64, -128, 63.0);
         VolcanicArcModel.Column center = null;
 
@@ -91,6 +91,11 @@ final class VolcanicArcModelTest {
         assertEquals(
                 new VolcanicArcModel.Sample("diorite", "plutonic_margin"),
                 center.sample(center.complexCenterY() - center.complexRadiusY() * 0.85)
+        );
+        assertEquals(
+                "contact_aureole",
+                center.sample(center.complexCenterY() - center.complexRadiusY() * 1.02).bodyStyle(),
+                "deep country rock just outside the pluton should enter the contact aureole"
         );
         assertNotEquals(
                 "rhyolite_breccia",
