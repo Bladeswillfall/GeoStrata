@@ -12,6 +12,7 @@ import java.util.List;
  */
 public final class OreDiscoveryStringers {
     private static final double TWO_PI = Math.PI * 2.0;
+    private static final double EXPOSED_HALO_BLOCKS = 3.0;
     private static final long STRINGER_SALT = 0x6A09E667F3BCC909L;
     private static final long LENGTH_SALT = 0xBB67AE8584CAA73BL;
     private static final long RADIUS_SALT = 0x3C6EF372FE94F82BL;
@@ -96,7 +97,7 @@ public final class OreDiscoveryStringers {
     ) {
         WorldPoint start = toWorld(body, segment.start());
         WorldPoint end = toWorld(body, segment.end());
-        double radius = segment.radius() + 1.0;
+        double radius = segment.radius() + EXPOSED_HALO_BLOCKS + 1.0;
         return bounds.include(start, radius).include(end, radius);
     }
 
@@ -253,12 +254,21 @@ public final class OreDiscoveryStringers {
         }
 
         public boolean contains(int x, int y, int z) {
+            return contains(x, y, z, 0.0);
+        }
+
+        /** Broadens only cave-facing discovery; underground stringers remain their original thin radius. */
+        public boolean nearStringer(int x, int y, int z) {
+            return contains(x, y, z, EXPOSED_HALO_BLOCKS);
+        }
+
+        private boolean contains(int x, int y, int z, double padding) {
             if (segments.isEmpty() || !bounds.contains(x, y, z)) {
                 return false;
             }
             LocalPoint point = toLocal(body, x, y, z);
             for (Segment segment : segments) {
-                if (distanceToSegment(point, segment) <= segment.radius()) {
+                if (distanceToSegment(point, segment) <= segment.radius() + padding) {
                     return true;
                 }
             }
