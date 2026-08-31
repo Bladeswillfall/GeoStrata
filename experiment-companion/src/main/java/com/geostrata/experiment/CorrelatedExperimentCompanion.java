@@ -29,19 +29,12 @@ public final class CorrelatedExperimentCompanion implements ModInitializer {
             RegistryKeys.PLACED_FEATURE,
             GeoStrata.id("province_background_experiment")
     );
-    private static final List<RegistryKey<PlacedFeature>> REPLACED_VANILLA_OVERWORLD_ORES = List.of(
+    private static final List<RegistryKey<PlacedFeature>> VALIDATED_REPLACED_VANILLA_OVERWORLD_ORES = List.of(
             OrePlacedFeatures.ORE_COAL_UPPER,
             OrePlacedFeatures.ORE_COAL_LOWER,
             OrePlacedFeatures.ORE_IRON_UPPER,
             OrePlacedFeatures.ORE_IRON_MIDDLE,
             OrePlacedFeatures.ORE_IRON_SMALL,
-            OrePlacedFeatures.ORE_GOLD_EXTRA,
-            OrePlacedFeatures.ORE_GOLD,
-            OrePlacedFeatures.ORE_GOLD_LOWER,
-            OrePlacedFeatures.ORE_DIAMOND,
-            OrePlacedFeatures.ORE_DIAMOND_LARGE,
-            OrePlacedFeatures.ORE_DIAMOND_BURIED,
-            OrePlacedFeatures.ORE_EMERALD,
             OrePlacedFeatures.ORE_COPPER,
             OrePlacedFeatures.ORE_COPPER_LARGE
     );
@@ -52,8 +45,11 @@ public final class CorrelatedExperimentCompanion implements ModInitializer {
                 .add(
                         ModificationPhase.REMOVALS,
                         BiomeSelectors.foundInOverworld(),
-                        context -> REPLACED_VANILLA_OVERWORLD_ORES.forEach(feature -> context.getGenerationSettings()
-                                .removeFeature(GenerationStep.Feature.UNDERGROUND_ORES, feature))
+                        context -> VALIDATED_REPLACED_VANILLA_OVERWORLD_ORES.forEach(feature ->
+                                context.getGenerationSettings().removeFeature(
+                                        GenerationStep.Feature.UNDERGROUND_ORES,
+                                        feature
+                                ))
                 );
         BiomeModifications.addFeature(
                 BiomeSelectors.tag(REGISTRATION_BIOMES),
@@ -67,7 +63,7 @@ public final class CorrelatedExperimentCompanion implements ModInitializer {
         );
         OreDebugCommands.register();
         GeoStrata.LOGGER.info(
-                "GeoStrata experimental worldgen companion enabled; replaced vanilla ores suppressed, unsupported vanilla ores preserved"
+                "GeoStrata experimental worldgen companion enabled; validated common vanilla ores suppressed, unvalidated rare vanilla ores preserved"
         );
     }
 }
