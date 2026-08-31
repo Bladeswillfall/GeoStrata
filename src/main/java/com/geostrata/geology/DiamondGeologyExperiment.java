@@ -139,7 +139,7 @@ public final class DiamondGeologyExperiment {
             return new Snapshot(
                     "experimental_runtime",
                     true,
-                    "experimental_companion_overworld",
+                    nativeGenerationSuppression,
                     pipeActivationChancePerCell,
                     structuralActivationChancePerCell
             );
