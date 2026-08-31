@@ -13,8 +13,9 @@ public final class VolcanicArcModel {
     private static final double DIKE_SPACING = 144.0;
     private static final double DIKE_HALF_THICKNESS = 1.35;
     private static final double DIKE_BRECCIA_HALF_THICKNESS = 3.25;
-    private static final double SILL_SPACING = 160.0;
     private static final double SILL_HALF_THICKNESS = 2.25;
+    private static final double SILL_LONG_RADIUS_SCALE = 2.1;
+    private static final double SILL_SHORT_RADIUS_SCALE = 1.15;
     private static final double METAMORPHIC_BELT_SPACING = 224.0;
     private static final double SCHIST_HALF_WIDTH = 32.0;
     private static final double QUARTZITE_HALF_WIDTH = 7.0;
@@ -25,7 +26,6 @@ public final class VolcanicArcModel {
 
     private static final long DIKE_ANGLE_SALT = 0x8EBC6AF09C88C6E3L;
     private static final long DIKE_PHASE_SALT = 0x589965CC75374CC3L;
-    private static final long SILL_PHASE_SALT = 0x1D8E4E27C47D124FL;
     private static final long METAMORPHIC_ANGLE_SALT = 0xA54FF53A5F1D36F1L;
     private static final long METAMORPHIC_PHASE_SALT = 0x510E527FADE682D1L;
     private static final long RHYOLITE_X_SALT = 0xEB44ACCAB455D165L;
@@ -48,7 +48,6 @@ public final class VolcanicArcModel {
                 Math.sin(dikeAngle),
                 Math.cos(dikeAngle),
                 DIKE_SPACING * GeologyDeterminism.unitRoll(worldSeed, siteX, 0, siteZ, DIKE_PHASE_SALT),
-                SILL_SPACING * GeologyDeterminism.unitRoll(worldSeed, siteX, 0, siteZ, SILL_PHASE_SALT),
                 Math.sin(metamorphicAngle),
                 Math.cos(metamorphicAngle),
                 METAMORPHIC_BELT_SPACING
@@ -87,7 +86,6 @@ public final class VolcanicArcModel {
         private final double dikeSin;
         private final double dikeCos;
         private final double dikePhase;
-        private final double sillPhase;
         private final double metamorphicSin;
         private final double metamorphicCos;
         private final double metamorphicPhase;
@@ -100,7 +98,6 @@ public final class VolcanicArcModel {
                 double dikeSin,
                 double dikeCos,
                 double dikePhase,
-                double sillPhase,
                 double metamorphicSin,
                 double metamorphicCos,
                 double metamorphicPhase,
@@ -112,7 +109,6 @@ public final class VolcanicArcModel {
             this.dikeSin = dikeSin;
             this.dikeCos = dikeCos;
             this.dikePhase = dikePhase;
-            this.sillPhase = sillPhase;
             this.metamorphicSin = metamorphicSin;
             this.metamorphicCos = metamorphicCos;
             this.metamorphicPhase = metamorphicPhase;
@@ -143,9 +139,16 @@ public final class VolcanicArcModel {
                     + structuralOffset * 0.25;
             double radiusXZ = 28.0 + 20.0 * roll(worldSeed, cellX, cellZ, RHYOLITE_RADIUS_XZ_SALT);
             double radiusY = 14.0 + 16.0 * roll(worldSeed, cellX, cellZ, RHYOLITE_RADIUS_Y_SALT);
-            double horizontalX = (x - centerX) / radiusXZ;
-            double horizontalZ = (z - centerZ) / radiusXZ;
+            double centerDx = x - centerX;
+            double centerDz = z - centerZ;
+            double horizontalX = centerDx / radiusXZ;
+            double horizontalZ = centerDz / radiusXZ;
             double horizontalRadius = horizontalX * horizontalX + horizontalZ * horizontalZ;
+            double sillAlong = centerDx * dikeCos + centerDz * dikeSin;
+            double sillAcross = -centerDx * dikeSin + centerDz * dikeCos;
+            double sillFootprint = square(sillAlong / (radiusXZ * SILL_LONG_RADIUS_SCALE))
+                    + square(sillAcross / (radiusXZ * SILL_SHORT_RADIUS_SCALE));
+            double sillCenterY = centerY + radiusY * 0.65 + structuralOffset * 0.75;
 
             return new Column(
                     dikeDistance,
@@ -154,9 +157,14 @@ public final class VolcanicArcModel {
                     centerY,
                     radiusY,
                     structuralOffset,
-                    sillPhase
+                    sillFootprint,
+                    sillCenterY
             );
         }
+    }
+
+    private static double square(double value) {
+        return value * value;
     }
 
     public record Column(
@@ -166,7 +174,8 @@ public final class VolcanicArcModel {
             double rhyoliteCenterY,
             double rhyoliteRadiusY,
             double structuralOffset,
-            double sillPhase
+            double sillFootprint,
+            double sillCenterY
     ) {
         public Sample sample(double y) {
             if (dikeDistance <= DIKE_HALF_THICKNESS) {
@@ -185,8 +194,7 @@ public final class VolcanicArcModel {
                 return new Sample("breccia", "rhyolite_breccia");
             }
 
-            double sillDistance = periodicDistance(y - structuralOffset + sillPhase, SILL_SPACING);
-            if (sillDistance <= SILL_HALF_THICKNESS) {
+            if (sillFootprint <= 1.0 && Math.abs(y - sillCenterY) <= SILL_HALF_THICKNESS) {
                 return new Sample("basalt", "sill");
             }
             if (metamorphicDistance <= QUARTZITE_HALF_WIDTH) {
