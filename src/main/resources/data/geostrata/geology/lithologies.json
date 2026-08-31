@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "model": "geostrata:lithology_catalog",
   "runtimeStatus": "metadata_only",
-  "description": "Semantic geology contract for GeoStrata rock types. GeoStrata-owned lithologies keep explicit fallback features; provider-owned lithologies may reference existing registered blocks without duplicating them. Kimberlite and lamproite remain event-only diamond intrusives behind the diamond geology experiment.",
+  "description": "Semantic geology contract for GeoStrata rock types. Block ownership and generation authority are separate: fallback lithologies declare baselineFeature, while runtime-only lithologies declare runtimeAuthority. Kimberlite and lamproite remain event-only diamond intrusives behind the diamond geology experiment.",
   "lithologies": [
     {
       "id": "limestone",
@@ -137,6 +137,18 @@
       "baselineFeature": "gneiss_ore"
     },
     {
+      "id": "hornfels",
+      "block": "geostrata:hornfels",
+      "rockClass": "metamorphic",
+      "genesis": "contact_metamorphic",
+      "bodyStyle": "contact_aureole",
+      "depthAffinity": "broad",
+      "continuity": "local",
+      "biomeTag": "geostrata:has_mountain_rocks",
+      "baselineFeature": null,
+      "runtimeAuthority": "contact_metamorphism"
+    },
+    {
       "id": "basalt",
       "block": "geostrata:basalt",
       "rockClass": "igneous",
@@ -167,7 +179,8 @@
       "depthAffinity": "mid_to_deep",
       "continuity": "regional",
       "biomeTag": "geostrata:has_mountain_rocks",
-      "baselineFeature": null
+      "baselineFeature": null,
+      "runtimeAuthority": "volcanic_arc_complex"
     },
     {
       "id": "diorite",
@@ -178,7 +191,8 @@
       "depthAffinity": "mid_to_deep",
       "continuity": "local",
       "biomeTag": "geostrata:has_mountain_rocks",
-      "baselineFeature": null
+      "baselineFeature": null,
+      "runtimeAuthority": "volcanic_arc_complex"
     },
     {
       "id": "kimberlite",

@@ -102,7 +102,7 @@ public final class GeologyResolver {
         ProvinceBackgroundRuntime.ResolvedSample sample = background.sampleAt(x, y, z);
         return new Result(
                 sample.lithology(),
-                Optional.empty(),
+                Optional.ofNullable(sample.parentLithology()),
                 background.provinceAt(x, y, z),
                 Source.PROVINCE_BACKGROUND,
                 Optional.of(sample.bodyStyle())

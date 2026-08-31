@@ -32,6 +32,7 @@ public final class GeologyDataReload {
             "slate",
             "quartzite",
             "marble",
+            "hornfels",
             "basalt",
             "rhyolite",
             "granite",
