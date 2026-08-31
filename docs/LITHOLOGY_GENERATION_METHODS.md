@@ -4,7 +4,7 @@ GeoStrata no longer uses vanilla `minecraft:ore` blobs as the baseline generator
 
 ## Baseline geometry
 
-The existing `*_ore` feature IDs are retained as stable datapack/worldgen identifiers, but the names are historical. All fourteen GeoStrata-owned ordinary rock baselines use `geostrata:strata_lens` with data-driven geometry suited to their body style and province suitability.
+The existing `*_ore` feature IDs are retained as stable datapack/worldgen identifiers, but the names are historical. All fourteen ordinary GeoStrata rock fallbacks use `geostrata:strata_lens` with data-driven geometry suited to their body style and province suitability.
 
 - Bedded sedimentary rocks use broad, comparatively planar lenses.
 - Coarse clastics use local tapered lenses/beds.
@@ -17,13 +17,20 @@ The replacement predicate remains authoritative: bedrock, air, caves, fluids and
 
 The independent lenses remain conservative compatibility fallbacks: terrain height does not increase their per-chunk attempt count. Coherent full-domain geology is the responsibility of the correlated field where that experiment owns a chunk.
 
-## Provider-owned lithologies
+## Block ownership and generation authority
 
-A semantic lithology does not have to be a block owned by GeoStrata. The block namespace is the provider boundary.
+A semantic lithology does not have to be a block owned by GeoStrata. The block namespace is only the **material ownership** boundary.
 
-GeoStrata-owned entries (`geostrata:*`) must keep their explicit GeoStrata baseline feature and remain covered by the material/asset contract. Provider-owned entries use an existing registered block directly and set `baselineFeature` to `null`; GeoStrata does not create a duplicate block, texture set or fallback feature for them.
+Generation is a separate contract. Every lithology declares exactly one of:
 
-Vanilla granite and diorite are the first bundled examples. The provider-neutral contract gives them semantic identities and province profiles without adding duplicate blocks, textures or fallback features.
+- `baselineFeature`: an explicit configured/placed fallback body; or
+- `runtimeAuthority`: an existing semantic runtime that is solely responsible for producing that lithology.
+
+A provider-owned block cannot claim a GeoStrata fallback feature. A GeoStrata-owned block may be runtime-only, but it still has to satisfy the ordinary GeoStrata material, asset, mining and tag contracts.
+
+Vanilla granite and diorite are the first provider-owned examples. They use `runtimeAuthority: volcanic_arc_complex`, so GeoStrata gives the vanilla blocks geological meaning and coherent placement without creating duplicate granite/diorite blocks or fallback features.
+
+Hornfels is the first GeoStrata-owned runtime-only example. It uses `runtimeAuthority: contact_metamorphism`; there is deliberately no `hornfels_ore` feature and therefore no independent random hornfels body.
 
 The same ownership rule is intended for compatibility adapters: a loaded third-party provider can supply the material while GeoStrata supplies geological meaning and, where appropriate, shared geometry. Optional-mod activation remains an adapter concern; the core catalog must not pretend an absent provider block exists.
 
@@ -40,7 +47,20 @@ Within that same complex:
 - existing basalt dikes retain first precedence and may cross-cut the complex;
 - existing finite basalt sills retain their current geometry and ordering.
 
-The granite/diorite split is therefore compositional zoning inside geometry GeoStrata already calculates. It adds no new noise, cell lattice, random roll or mutable geology state. Contact metamorphism remains separate future work; the plutonic root does not invent a hornfels substitute from an unrelated existing rock.
+The granite/diorite split is therefore compositional zoning inside geometry GeoStrata already calculates. It adds no new noise, cell lattice, random roll or mutable geology state.
+
+### Contact aureole
+
+The deep outer shell of that same volcanic-complex geometry also marks a narrow `contact_aureole` in the surrounding country rock. The geometry layer does **not** choose the metamorphic product. `ContactMetamorphism` resolves the existing parent lithology through the catalog's semantic `genesis`:
+
+- mudrock, silt-rich and low/medium-grade foliated parents → hornfels;
+- carbonate parents → marble;
+- quartz-rich metamorphic parents → quartzite;
+- unsupported/high-grade parents remain unchanged.
+
+This avoids the visibly simple but geologically wrong solution of drawing a universal hornfels donut around every pluton. In the current Volcanic Arc basement, schist portions of the aureole bake to hornfels while quartzite remains quartzite and high-grade gneiss remains gneiss.
+
+The aureole reuses the existing complex radius and adds no second thermal noise field. Basalt dikes and sills keep their existing precedence; this slice does not add separate aureoles around every small dike/sill.
 
 ## Correlated authority
 
@@ -50,12 +70,12 @@ The correlated contract uses the active dimension bounds as its vertical domain 
 
 The field samples the active terrain generator on a shared coarse grid. Positive prominence can strengthen province-specific uplift/folding; increasingly negative prominence attenuates that response so deep ravines primarily expose existing geology rather than bending strata down to the ravine floor.
 
-In owned orogenic chunks, the existing metamorphic band decision transforms mudrock parent beds into slate/schist/gneiss. The same band decision transforms carbonate parent beds into marble. Baseline metamorphic lenses remain a fallback outside correlated ownership.
+In owned orogenic chunks, the existing metamorphic band decision transforms mudrock parent beds into slate/schist/gneiss. The same parent-aware path can transform carbonate parent beds into marble. Baseline metamorphic lenses remain a fallback outside correlated ownership.
 
 Basalt and rhyolite remain independent bodies and may cut sedimentary strata; that is intentional for igneous rock.
 
 ## Known boundary
 
-Quartzite has the correct coherent metamorphic-band fallback geometry, but it is not yet parent-derived because GeoStrata does not currently define a quartz-rich sandstone parent lithology. Do not fake that relationship. When a valid parent exists, route quartzite through the same parent-aware metamorphic runtime.
+Quartzite has the correct coherent metamorphic-band fallback geometry, but the correlated stratigraphic runtime does not yet define a quartz-rich sandstone parent lithology. Do not fake that relationship. When a valid parent exists, route quartzite through the same parent-aware metamorphic runtime.
 
 Sandy loam uses the same native `minecraft:disk` plus terrain/biome suitability approach as the other surface loams rather than an underground ore feature.
