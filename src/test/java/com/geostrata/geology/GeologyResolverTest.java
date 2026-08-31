@@ -65,6 +65,23 @@ final class GeologyResolverTest {
     }
 
     @Test
+    void lithologyOnlyQueryDoesNotResolveBodyProvenance() {
+        ProvinceBackgroundRuntime.ResolvedColumn resolvedColumn = new ProvinceBackgroundRuntime.ResolvedColumn(
+                GeologyProvince.CRATONIC_SHIELD,
+                y -> "gneiss",
+                y -> {
+                    throw new AssertionError("lithology-only query must not resolve body provenance");
+                }
+        );
+        ProvinceBackgroundRuntime.Column column = new ProvinceBackgroundRuntime.Column(resolvedColumn, null, null);
+        ProvinceBackgroundRuntime.Column[] columns = new ProvinceBackgroundRuntime.Column[256];
+        Arrays.fill(columns, column);
+        ProvinceBackgroundRuntime.Chunk background = new ProvinceBackgroundRuntime.Chunk(992, -512, columns);
+
+        assertEquals("gneiss", background.lithologyAt(1000, -20, -500));
+    }
+
+    @Test
     void bodyProvenanceFollowsDepthDependentTerraneOwnership() {
         ProvinceBackgroundRuntime.ResolvedColumn primary = new ProvinceBackgroundRuntime.ResolvedColumn(
                 GeologyProvince.VOLCANIC_ARC,
