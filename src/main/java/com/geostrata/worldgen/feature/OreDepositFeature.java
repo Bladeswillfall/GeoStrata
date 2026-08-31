@@ -145,14 +145,14 @@ public final class OreDepositFeature extends Feature<DefaultFeatureConfig> {
                             structuralCycleThickness
                     );
                     proposal = binding.proposal();
-                    if (!qualifiesLocation(world, worldSeed, occurrence, proposal)) {
-                        continue;
-                    }
 
                     OreDepositGeometry.Body body = binding.body(worldSeed);
                     OreDiscoveryStringers.Field discovery = OreDiscoveryStringers.forBody(body);
                     OreDepositGeometry.Bounds bounds = OreExposurePlacement.placementBounds(body, discovery);
                     if (!intersectsChunk(bounds, startX, endX, startZ, endZ, world)) {
+                        continue;
+                    }
+                    if (!qualifiesLocation(world, worldSeed, occurrence, proposal)) {
                         continue;
                     }
                     placed += placeBody(
