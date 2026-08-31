@@ -14,6 +14,9 @@
       "com.geostrata.experiment.CorrelatedExperimentCompanion"
     ]
   },
+  "mixins": [
+    "geostrata_correlated_experiment.mixins.json"
+  ],
   "depends": {
     "fabricloader": ">=0.15.11",
     "minecraft": "1.20.1",
