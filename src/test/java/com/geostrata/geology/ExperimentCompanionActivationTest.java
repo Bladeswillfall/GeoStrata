@@ -11,13 +11,13 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 final class ExperimentCompanionActivationTest {
     @Test
-    void companionPromotesExperimentsAndBoostsOreValidationChances() {
+    void companionPromotesExperimentsWithoutRetuningOreChances() {
         OreDepositExperiment.Snapshot ore = new OreDepositExperiment.Snapshot(
                 "experimental_opt_in",
                 false,
                 "chunk_local_valid_host_clipping",
                 "not_implemented",
-                Map.of("emerald", 0.004, "coal", 0.04, "iron", 0.08)
+                Map.of("emerald", 0.08, "coal", 0.8, "iron", 1.0)
         );
         DiamondGeologyExperiment.Snapshot diamond = new DiamondGeologyExperiment.Snapshot(
                 "experimental_opt_in",
