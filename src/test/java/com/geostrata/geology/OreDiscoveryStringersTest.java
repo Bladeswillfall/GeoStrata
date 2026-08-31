@@ -22,6 +22,12 @@ final class OreDiscoveryStringersTest {
     }
 
     @Test
+    void copperHasCaveFacingCandidateSpaceOutsideItsThinStringers() {
+        OreDiscoveryStringers.Field field = OreDiscoveryStringers.forBody(body("copper", 8675309L));
+        assertTrue(hasHaloOnlyVoxel(field));
+    }
+
+    @Test
     void otherMaterialsDoNotGainDiscoveryStringersYet() {
         OreDepositGeometry.Body body = body("gold", 8675309L);
         OreDiscoveryStringers.Field field = OreDiscoveryStringers.forBody(body);
@@ -55,6 +61,20 @@ final class OreDiscoveryStringersTest {
                         if (!sample.economic() && !sample.trace()) {
                             return true;
                         }
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
+    private static boolean hasHaloOnlyVoxel(OreDiscoveryStringers.Field field) {
+        OreDepositGeometry.Bounds bounds = field.bounds();
+        for (int x = bounds.minX(); x <= bounds.maxX(); x++) {
+            for (int z = bounds.minZ(); z <= bounds.maxZ(); z++) {
+                for (int y = bounds.minY(); y <= bounds.maxY(); y++) {
+                    if (field.nearStringer(x, y, z) && !field.contains(x, y, z)) {
+                        return true;
                     }
                 }
             }
