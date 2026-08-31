@@ -106,6 +106,24 @@ public final class GeologyResolver {
         );
     }
 
+    static Optional<Result> resolve(
+            long worldSeed,
+            int x,
+            int y,
+            int z,
+            Optional<CorrelatedSedimentaryRuntime.TerrainAwareSite> correlated,
+            Optional<ProvinceBackgroundRuntime.Chunk> background,
+            LithologyCatalog.Snapshot catalog
+    ) {
+        if (correlated == null || background == null || catalog == null || !catalog.loaded()) {
+            throw new IllegalArgumentException("prepared geology sources and loaded catalog are required");
+        }
+        if (correlated.isPresent()) {
+            return Optional.of(resolve(worldSeed, x, y, z, correlated.get(), catalog));
+        }
+        return background.map(value -> resolve(x, y, z, value));
+    }
+
     public enum Source {
         CORRELATED_STRATIGRAPHY,
         PROVINCE_BACKGROUND
@@ -156,17 +174,7 @@ public final class GeologyResolver {
             if (x < startX || x >= startX + CHUNK_SIZE || z < startZ || z >= startZ + CHUNK_SIZE) {
                 throw new IllegalArgumentException("coordinate is outside prepared geology chunk");
             }
-            if (correlated.isPresent()) {
-                return Optional.of(GeologyResolver.resolve(
-                        worldSeed,
-                        x,
-                        y,
-                        z,
-                        correlated.get(),
-                        catalog
-                ));
-            }
-            return background.map(value -> GeologyResolver.resolve(x, y, z, value));
+            return GeologyResolver.resolve(worldSeed, x, y, z, correlated, background, catalog);
         }
     }
 }
