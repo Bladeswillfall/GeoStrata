@@ -28,7 +28,9 @@ Generation is a separate contract. Every lithology declares exactly one of:
 
 A provider-owned block cannot claim a GeoStrata fallback feature. A GeoStrata-owned block may be runtime-only, but it still has to satisfy the ordinary GeoStrata material, asset, mining and tag contracts.
 
-Vanilla granite and diorite are the first provider-owned examples. They use `runtimeAuthority: volcanic_arc_complex`, so GeoStrata gives the vanilla blocks geological meaning and coherent placement without creating duplicate granite/diorite blocks or fallback features.
+Vanilla granite and diorite use `runtimeAuthority: volcanic_arc_complex`, so GeoStrata gives the vanilla blocks geological meaning and coherent placement without creating duplicate granite/diorite blocks or fallback features.
+
+Vanilla sandstone is the first provider-owned sedimentary example. It uses `runtimeAuthority: correlated_stratigraphy`: GeoStrata reuses `minecraft:sandstone` as a quartz-rich bed in the correlated fining-upward succession rather than adding a duplicate sandstone block or an independent sandstone blob feature.
 
 Hornfels is the first GeoStrata-owned runtime-only example. It uses `runtimeAuthority: contact_metamorphism`; there is deliberately no `hornfels_ore` feature and therefore no independent random hornfels body.
 
@@ -55,27 +57,40 @@ The deep outer shell of that same volcanic-complex geometry also marks a narrow 
 
 - mudrock, silt-rich and low/medium-grade foliated parents → hornfels;
 - carbonate parents → marble;
-- quartz-rich metamorphic parents → quartzite;
+- quartz sandstone and quartz-rich metamorphic parents → quartzite;
 - unsupported/high-grade parents remain unchanged.
 
-This avoids the visibly simple but geologically wrong solution of drawing a universal hornfels donut around every pluton. In the current Volcanic Arc basement, schist portions of the aureole bake to hornfels while quartzite remains quartzite and high-grade gneiss remains gneiss.
+This avoids the visibly simple but geologically wrong solution of drawing a universal hornfels donut around every pluton. In the current Volcanic Arc basement, schist portions of the aureole bake to hornfels while quartzite remains quartzite and high-grade gneiss remains gneiss. If correlated or future country rock supplies sandstone at an intrusion contact, the same parent rule yields quartzite without special-casing the block provider.
 
 The aureole reuses the existing complex radius and adds no second thermal noise field. Basalt dikes and sills keep their existing precedence; this slice does not add separate aureoles around every small dike/sill.
 
 ## Correlated authority
 
-With the experiment companion active, the correlated runtime is authoritative for the configured sedimentary-basin, rift and orogenic successions. All seven sedimentary lithologies are suppressed as independent fallback lenses inside experiment-owned chunks and instead come from the shared terrain-aware stratigraphic field.
+With the experiment companion active, the correlated runtime is authoritative for the configured sedimentary-basin, rift and orogenic successions. All target succession lithologies are emitted from the shared terrain-aware stratigraphic field instead of independent fallback bodies where the experiment owns a chunk.
 
 The correlated contract uses the active dimension bounds as its vertical domain rather than a fixed sea-level-relative window. Bed/cycle thickness stays geological rather than scaling with the number of vertical blocks in the world.
 
 The field samples the active terrain generator on a shared coarse grid. Positive prominence can strengthen province-specific uplift/folding; increasingly negative prominence attenuates that response so deep ravines primarily expose existing geology rather than bending strata down to the ravine floor.
 
-In owned orogenic chunks, the existing metamorphic band decision transforms mudrock parent beds into slate/schist/gneiss. The same parent-aware path can transform carbonate parent beds into marble. Baseline metamorphic lenses remain a fallback outside correlated ownership.
+The orogenic fan now follows the more complete fining-upward order:
+
+```text
+breccia → conglomerate → sandstone → siltstone → shale
+```
+
+In owned orogenic chunks, metamorphic suitability combines with the resolved parent lithology:
+
+- mudrock parents → slate/schist/gneiss according to the existing grade-band selector;
+- carbonate parents → marble;
+- quartz-sandstone parents → quartzite;
+- unsupported parents remain unchanged.
+
+Sandstone outside an orogenic metamorphic context remains ordinary vanilla sandstone. Baseline metamorphic lenses remain a compatibility fallback outside correlated ownership.
 
 Basalt and rhyolite remain independent bodies and may cut sedimentary strata; that is intentional for igneous rock.
 
-## Known boundary
+## Remaining boundary
 
-Quartzite has the correct coherent metamorphic-band fallback geometry, but the correlated stratigraphic runtime does not yet define a quartz-rich sandstone parent lithology. Do not fake that relationship. When a valid parent exists, route quartzite through the same parent-aware metamorphic runtime.
+Provider-owned sandstone deliberately has no independent GeoStrata fallback feature. It exists only where the correlated stratigraphic runtime owns the geology. If standalone/non-companion worlds later need coherent sandstone geology, that should reuse native/platform terrain geology rather than reintroducing a random duplicate sandstone body solely to increase coverage.
 
 Sandy loam uses the same native `minecraft:disk` plus terrain/biome suitability approach as the other surface loams rather than an underground ore feature.
