@@ -144,15 +144,19 @@ jobs:
           baseline = json.loads(Path('run/results/vanilla.json').read_text())
           geostrata = json.loads(Path('run/results/geostrata.json').read_text())
           overlapping = ('coal', 'iron', 'copper', 'gold', 'emerald')
+          common = ('coal', 'iron', 'copper')
 
-          def aggregate(data, materials):
+          def aggregate(data, materials, graded=False):
               rows = [data['materials'][material] for material in materials]
+              if graded:
+                  return {
+                      'total': sum(row['gradedBlocks'] for row in rows),
+                      'airExposed': sum(row['gradedAirExposed'] for row in rows),
+                      'airExposedClusters': sum(row['gradedAirExposedClusters'] for row in rows),
+                  }
               return {
                   'total': sum(row['total'] for row in rows),
                   'airExposed': sum(row['airExposed'] for row in rows),
-                  'airFaces': sum(row['airFaces'] for row in rows),
-                  'planeTotal': sum(row['planeTotal'] for row in rows),
-                  'planeAirExposed': sum(row['planeAirExposed'] for row in rows),
                   'airExposedClusters': sum(row['airExposedClusters'] for row in rows),
               }
 
@@ -161,20 +165,32 @@ jobs:
               'chunkCount': baseline['chunkCount'],
               'overlappingMaterials': list(overlapping),
               'vanilla': aggregate(baseline, overlapping),
-              'geostrata': aggregate(geostrata, overlapping),
+              'geostrataGraded': aggregate(geostrata, overlapping, graded=True),
               'materials': {},
           }
+          failures = []
           for material in baseline['materials']:
               before = baseline['materials'][material]
               after = geostrata['materials'][material]
+              vanilla_patches = before['airExposedClusters']
+              graded_patches = after['gradedAirExposedClusters']
+              target = (vanilla_patches + 1) // 2 if material in common else None
+              ratio = 0.0 if vanilla_patches == 0 else graded_patches * 100.0 / vanilla_patches
               summary['materials'][material] = {
                   'vanillaTotal': before['total'],
-                  'geostrataTotal': after['total'],
+                  'geostrataGradedTotal': after['gradedBlocks'],
+                  'residualVanillaTotal': after['vanillaTaggedBlocks'],
                   'vanillaAirExposed': before['airExposed'],
-                  'geostrataAirExposed': after['airExposed'],
-                  'vanillaExposedClusters': before['airExposedClusters'],
-                  'geostrataExposedClusters': after['airExposedClusters'],
+                  'geostrataGradedAirExposed': after['gradedAirExposed'],
+                  'residualVanillaAirExposed': after['vanillaTaggedAirExposed'],
+                  'vanillaExposedClusters': vanilla_patches,
+                  'geostrataGradedExposedClusters': graded_patches,
+                  'residualVanillaExposedClusters': after['vanillaTaggedAirExposedClusters'],
+                  'gradedPatchPercentOfVanilla': ratio,
+                  'commonMinimumTarget': target,
               }
+              if target is not None and graded_patches < target:
+                  failures.append(f"{material}: {graded_patches} < {target} patches")
 
           Path('run/results/paired.json').write_text(json.dumps(summary, indent=2) + '\n')
           lines = [
@@ -182,27 +198,27 @@ jobs:
               '',
               f"Seed: {summary['seed']} | chunks: {summary['chunkCount']} (10x10)",
               '',
-              '| Material | Vanilla total | GeoStrata total | Vanilla air-exposed | GeoStrata air-exposed | Vanilla exposed patches | GeoStrata exposed patches |',
+              '| Material | Vanilla total | GeoStrata graded | Residual vanilla | Vanilla exposed patches | GeoStrata graded patches | % of vanilla patches |',
               '|---|---:|---:|---:|---:|---:|---:|',
           ]
           for material, row in summary['materials'].items():
               lines.append(
-                  f"| {material} | {row['vanillaTotal']} | {row['geostrataTotal']} | "
-                  f"{row['vanillaAirExposed']} | {row['geostrataAirExposed']} | "
-                  f"{row['vanillaExposedClusters']} | {row['geostrataExposedClusters']} |"
+                  f"| {material} | {row['vanillaTotal']} | {row['geostrataGradedTotal']} | "
+                  f"{row['residualVanillaTotal']} | {row['vanillaExposedClusters']} | "
+                  f"{row['geostrataGradedExposedClusters']} | {row['gradedPatchPercentOfVanilla']:.1f}% |"
               )
           lines.extend([
               '',
-              'Overlapping coal/iron/copper/gold/emerald:',
-              f"- vanilla total: {summary['vanilla']['total']}",
-              f"- GeoStrata total: {summary['geostrata']['total']}",
-              f"- vanilla air-exposed: {summary['vanilla']['airExposed']}",
-              f"- GeoStrata air-exposed: {summary['geostrata']['airExposed']}",
-              f"- vanilla exposed patches: {summary['vanilla']['airExposedClusters']}",
-              f"- GeoStrata exposed patches: {summary['geostrata']['airExposedClusters']}",
+              'Common-resource acceptance floor: each of coal, iron and copper must retain at least 50% of the vanilla exposed-patch count.',
+              f"- vanilla overlapping total: {summary['vanilla']['total']}",
+              f"- GeoStrata graded overlapping total: {summary['geostrataGraded']['total']}",
+              f"- vanilla overlapping exposed patches: {summary['vanilla']['airExposedClusters']}",
+              f"- GeoStrata graded overlapping exposed patches: {summary['geostrataGraded']['airExposedClusters']}",
           ])
           Path('run/results/paired.md').write_text('\n'.join(lines) + '\n')
           print('\n'.join(lines))
+          if failures:
+              raise SystemExit('Common ore exposure floor failed: ' + '; '.join(failures))
           PY
 
       - name: Upload benchmark results
