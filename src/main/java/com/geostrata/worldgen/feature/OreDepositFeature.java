@@ -238,42 +238,72 @@ public final class OreDepositFeature extends Feature<DefaultFeatureConfig> {
         int minZ = Math.max(startZ, bounds.minZ());
         int maxZ = Math.min(endZ, bounds.maxZ());
         Set<String> validHosts = Set.copyOf(occurrence.hostLithologies());
-
-        int placed = 0;
         BlockPos.Mutable mutable = new BlockPos.Mutable();
         BlockPos.Mutable neighbor = new BlockPos.Mutable();
+
+        int placed = 0;
         for (int x = minX; x <= maxX; x++) {
             for (int z = minZ; z <= maxZ; z++) {
                 for (int y = minY; y <= maxY; y++) {
-                    if (StructurePieceProtection.contains(protectedStructurePieces, x, y, z)) {
-                        continue;
-                    }
-                    OreDepositGeometry.Sample sample = body.sample(x, y, z);
-                    if (!sample.economic() && !sample.trace()) {
-                        continue;
-                    }
-                    mutable.set(x, y, z);
-                    String host = hosts.resolve(mutable);
-                    if (host == null || !validHosts.contains(host)) {
-                        continue;
-                    }
-                    OreGrade grade = OreExposurePlacement.placementGrade(
-                            sample,
-                            sample.trace() && touchesAir(world, neighbor, x, y, z)
-                    );
-                    if (grade == null) {
-                        continue;
-                    }
-                    world.setBlockState(
+                    if (placeVoxel(
+                            world,
+                            occurrence,
+                            body,
+                            hosts,
+                            protectedStructurePieces,
+                            validHosts,
                             mutable,
-                            GeoStrataBlocks.oreState(occurrence.id(), occurrence.capNaturalGrade(grade), host),
-                            Block.NOTIFY_LISTENERS
-                    );
-                    placed++;
+                            neighbor,
+                            x,
+                            y,
+                            z
+                    )) {
+                        placed++;
+                    }
                 }
             }
         }
         return placed;
+    }
+
+    private static boolean placeVoxel(
+            StructureWorldAccess world,
+            OreOccurrenceCatalog.Occurrence occurrence,
+            OreDepositGeometry.Body body,
+            HostResolver hosts,
+            List<BlockBox> protectedStructurePieces,
+            Set<String> validHosts,
+            BlockPos.Mutable mutable,
+            BlockPos.Mutable neighbor,
+            int x,
+            int y,
+            int z
+    ) {
+        if (StructurePieceProtection.contains(protectedStructurePieces, x, y, z)) {
+            return false;
+        }
+        OreDepositGeometry.Sample sample = body.sample(x, y, z);
+        if (!sample.economic() && !sample.trace()) {
+            return false;
+        }
+        mutable.set(x, y, z);
+        String host = hosts.resolve(mutable);
+        if (host == null || !validHosts.contains(host)) {
+            return false;
+        }
+        OreGrade grade = OreExposurePlacement.placementGrade(
+                sample,
+                sample.trace() && touchesAir(world, neighbor, x, y, z)
+        );
+        if (grade == null) {
+            return false;
+        }
+        world.setBlockState(
+                mutable,
+                GeoStrataBlocks.oreState(occurrence.id(), occurrence.capNaturalGrade(grade), host),
+                Block.NOTIFY_LISTENERS
+        );
+        return true;
     }
 
     private static boolean touchesAir(
