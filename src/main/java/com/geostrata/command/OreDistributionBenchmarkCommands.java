@@ -29,6 +29,7 @@ public final class OreDistributionBenchmarkCommands {
     private static final int GRID_CHUNKS = 10;
     private static final int MIN_CHUNK = -5;
     private static final int MAX_CHUNK = MIN_CHUNK + GRID_CHUNKS - 1;
+    private static final int GENERATION_HALO_CHUNKS = 1;
     private static final int PLANE_LOCAL_X = 8;
     private static final List<String> MATERIALS = List.of(
             "coal",
@@ -72,6 +73,16 @@ public final class OreDistributionBenchmarkCommands {
     }
 
     private static BenchmarkStats scan(ServerWorld world) {
+        for (int chunkX = MIN_CHUNK - GENERATION_HALO_CHUNKS;
+                chunkX <= MAX_CHUNK + GENERATION_HALO_CHUNKS;
+                chunkX++) {
+            for (int chunkZ = MIN_CHUNK - GENERATION_HALO_CHUNKS;
+                    chunkZ <= MAX_CHUNK + GENERATION_HALO_CHUNKS;
+                    chunkZ++) {
+                world.getChunk(chunkX, chunkZ);
+            }
+        }
+
         BenchmarkStats stats = new BenchmarkStats(world.getBottomY(), world.getTopY());
         BlockPos.Mutable pos = new BlockPos.Mutable();
         BlockPos.Mutable neighbor = new BlockPos.Mutable();
@@ -108,7 +119,7 @@ public final class OreDistributionBenchmarkCommands {
                         continue;
                     }
                     int airFaces = airFaces(world, x, y, z, neighbor);
-                    stats.record(sample, plane, airFaces, chunkKey, pos.asLong());
+                    stats.record(sample, plane, airFaces, chunkKey, pos.asLong(), y);
                 }
             }
         }
@@ -206,16 +217,29 @@ public final class OreDistributionBenchmarkCommands {
         private long vanillaTagged;
         private long gradedExposed;
         private long vanillaExposed;
+        private long gradedYSum;
+        private int gradedMinY = Integer.MAX_VALUE;
+        private int gradedMaxY = Integer.MIN_VALUE;
         private final EnumMap<OreGrade, Long> grades = new EnumMap<>(OreGrade.class);
         private final Set<Long> exposedChunks = new HashSet<>();
         private final Set<Long> exposedPositions = new HashSet<>();
         private final Set<Long> gradedExposedPositions = new HashSet<>();
         private final Set<Long> vanillaExposedPositions = new HashSet<>();
 
-        private void record(OreSample sample, boolean plane, int exposedFaces, long chunkKey, long pos) {
+        private void record(
+                OreSample sample,
+                boolean plane,
+                int exposedFaces,
+                long chunkKey,
+                long pos,
+                int y
+        ) {
             total++;
             if (sample.graded()) {
                 graded++;
+                gradedYSum += y;
+                gradedMinY = Math.min(gradedMinY, y);
+                gradedMaxY = Math.max(gradedMaxY, y);
                 grades.merge(sample.grade(), 1L, Long::sum);
             } else {
                 vanillaTagged++;
@@ -262,6 +286,9 @@ public final class OreDistributionBenchmarkCommands {
             json.addProperty("vanillaTaggedAirExposed", vanillaExposed);
             json.addProperty("gradedAirExposedClusters", exposedClusters(gradedExposedPositions));
             json.addProperty("vanillaTaggedAirExposedClusters", exposedClusters(vanillaExposedPositions));
+            json.addProperty("gradedMinY", graded == 0 ? null : gradedMinY);
+            json.addProperty("gradedMaxY", graded == 0 ? null : gradedMaxY);
+            json.addProperty("gradedMeanY", graded == 0 ? null : gradedYSum / (double) graded);
             JsonObject gradeJson = new JsonObject();
             for (OreGrade grade : OreGrade.values()) {
                 gradeJson.addProperty(grade.id(), grades.getOrDefault(grade, 0L));
@@ -285,9 +312,16 @@ public final class OreDistributionBenchmarkCommands {
             }
         }
 
-        private void record(OreSample sample, boolean plane, int airFaces, long chunkKey, long pos) {
+        private void record(
+                OreSample sample,
+                boolean plane,
+                int airFaces,
+                long chunkKey,
+                long pos,
+                int y
+        ) {
             materials.computeIfAbsent(sample.material(), ignored -> new MaterialStats())
-                    .record(sample, plane, airFaces, chunkKey, pos);
+                    .record(sample, plane, airFaces, chunkKey, pos, y);
         }
 
         private void recordProvince(String province) {
@@ -309,6 +343,7 @@ public final class OreDistributionBenchmarkCommands {
             root.addProperty("chunkMin", MIN_CHUNK);
             root.addProperty("chunkMax", MAX_CHUNK);
             root.addProperty("chunkCount", GRID_CHUNKS * GRID_CHUNKS);
+            root.addProperty("generationHaloChunks", GENERATION_HALO_CHUNKS);
             root.addProperty("bottomY", bottomY);
             root.addProperty("topYExclusive", topY);
             root.addProperty("blocksScanned", (long) GRID_CHUNKS * GRID_CHUNKS * 16L * 16L * (topY - bottomY));
