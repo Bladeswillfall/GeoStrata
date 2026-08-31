@@ -20,13 +20,16 @@ import net.minecraft.registry.Registries;
 import net.minecraft.registry.RegistryKeys;
 import net.minecraft.registry.tag.TagKey;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.math.BlockBox;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.StructureWorldAccess;
+import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.gen.feature.DefaultFeatureConfig;
 import net.minecraft.world.gen.feature.Feature;
 import net.minecraft.world.gen.feature.util.FeatureContext;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -73,6 +76,8 @@ public final class OreDepositFeature extends Feature<DefaultFeatureConfig> {
                 .parametersFor(STRUCTURAL_CONTINUITY)
                 .cycleThicknessBlocks();
         HostResolver hosts = HostResolver.forChunk(world, startX, startZ, lithologies);
+        Chunk chunk = world.getChunk(Math.floorDiv(startX, CHUNK_SIZE), Math.floorDiv(startZ, CHUNK_SIZE));
+        List<BlockBox> protectedStructurePieces = StructurePieceProtection.forChunk(world, chunk);
 
         int placed = 0;
         for (OreOccurrenceCatalog.Occurrence occurrence : occurrences.occurrences()) {
@@ -85,7 +90,8 @@ public final class OreDepositFeature extends Feature<DefaultFeatureConfig> {
                     endZ,
                     occurrence,
                     hosts,
-                    structuralCycleThickness
+                    structuralCycleThickness,
+                    protectedStructurePieces
             );
         }
         return placed > 0;
@@ -100,7 +106,8 @@ public final class OreDepositFeature extends Feature<DefaultFeatureConfig> {
             int endZ,
             OreOccurrenceCatalog.Occurrence occurrence,
             HostResolver hosts,
-            double structuralCycleThickness
+            double structuralCycleThickness,
+            List<BlockBox> protectedStructurePieces
     ) {
         int minCellX = Math.floorDiv(startX - SEARCH_PADDING_BLOCKS, OreDepositCandidatePlanner.HORIZONTAL_CELL_SIZE);
         int maxCellX = Math.floorDiv(endX + SEARCH_PADDING_BLOCKS, OreDepositCandidatePlanner.HORIZONTAL_CELL_SIZE);
@@ -153,7 +160,8 @@ public final class OreDepositFeature extends Feature<DefaultFeatureConfig> {
                             occurrence,
                             body,
                             bounds,
-                            hosts
+                            hosts,
+                            protectedStructurePieces
                     );
                 }
             }
@@ -218,7 +226,8 @@ public final class OreDepositFeature extends Feature<DefaultFeatureConfig> {
             OreOccurrenceCatalog.Occurrence occurrence,
             OreDepositGeometry.Body body,
             OreDepositGeometry.Bounds bounds,
-            HostResolver hosts
+            HostResolver hosts,
+            List<BlockBox> protectedStructurePieces
     ) {
         int minX = Math.max(startX, bounds.minX());
         int maxX = Math.min(endX, bounds.maxX());
@@ -233,6 +242,9 @@ public final class OreDepositFeature extends Feature<DefaultFeatureConfig> {
         for (int x = minX; x <= maxX; x++) {
             for (int z = minZ; z <= maxZ; z++) {
                 for (int y = minY; y <= maxY; y++) {
+                    if (StructurePieceProtection.contains(protectedStructurePieces, x, y, z)) {
+                        continue;
+                    }
                     OreDepositGeometry.Sample sample = body.sample(x, y, z);
                     if (!sample.economic()) {
                         continue;
