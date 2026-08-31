@@ -248,13 +248,13 @@ public final class OreDistributionBenchmarkCommands {
         }
     }
 
-    private record OreSample(String material, OreGrade grade, boolean graded, String host) {
+    record OreSample(String material, OreGrade grade, boolean graded, String host) {
         private static OreSample vanilla(String material) {
             return new OreSample(material, null, false, null);
         }
     }
 
-    private static final class MaterialStats {
+    static final class MaterialStats {
         private long total;
         private long exposed;
         private long airFaces;
@@ -279,7 +279,7 @@ public final class OreDistributionBenchmarkCommands {
         private final Set<Long> gradedExposedPositions = new HashSet<>();
         private final Set<Long> vanillaExposedPositions = new HashSet<>();
 
-        private void record(
+        void record(
                 OreSample sample,
                 boolean plane,
                 int exposedFaces,
@@ -339,7 +339,7 @@ public final class OreDistributionBenchmarkCommands {
             }
         }
 
-        private JsonObject toJson() {
+        JsonObject toJson() {
             JsonObject json = new JsonObject();
             json.addProperty("total", total);
             json.addProperty("airExposed", exposed);
