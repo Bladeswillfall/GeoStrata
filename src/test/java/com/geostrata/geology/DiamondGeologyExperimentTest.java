@@ -22,12 +22,12 @@ final class DiamondGeologyExperimentTest {
     }
 
     @Test
-    void companionActivationReportsDiamondSuppression() {
+    void companionActivationKeepsDiamondSuppressionDisabled() {
         DiamondGeologyExperiment.Snapshot snapshot = DiamondGeologyExperiment.parse(valid()).activated(true);
 
         assertTrue(snapshot.enabled());
         assertEquals("experimental_runtime", snapshot.runtimeStatus());
-        assertEquals("experimental_companion_overworld", snapshot.nativeGenerationSuppression());
+        assertEquals("not_implemented", snapshot.nativeGenerationSuppression());
     }
 
     @Test
