@@ -12,7 +12,7 @@ import java.util.List;
  */
 public final class OreDiscoveryStringers {
     private static final double TWO_PI = Math.PI * 2.0;
-    private static final double EXPOSED_HALO_BLOCKS = 3.0;
+    private static final double EXPOSED_HALO_BLOCKS = 0.0;
     private static final long STRINGER_SALT = 0x6A09E667F3BCC909L;
     private static final long LENGTH_SALT = 0xBB67AE8584CAA73BL;
     private static final long RADIUS_SALT = 0x3C6EF372FE94F82BL;
@@ -64,11 +64,19 @@ public final class OreDiscoveryStringers {
         );
 
         double normalComponent = (roll(body, salt ^ (NORMAL_SALT << 1)) - 0.5) * 1.20;
-        double directionLength = Math.sqrt(cos * cos + sin * sin + normalComponent * normalComponent);
+        double upwardBias = "copper".equals(body.material()) && index < 4 ? 1.0 : 0.0;
+        double directionAlong = cos + upwardBias * Math.sin(body.dipRadians());
+        double directionAcross = sin;
+        double directionNormal = normalComponent + upwardBias * Math.cos(body.dipRadians());
+        double directionLength = Math.sqrt(
+                directionAlong * directionAlong
+                        + directionAcross * directionAcross
+                        + directionNormal * directionNormal
+        );
         LocalPoint direction = new LocalPoint(
-                cos / directionLength,
-                sin / directionLength,
-                normalComponent / directionLength
+                directionAlong / directionLength,
+                directionAcross / directionLength,
+                directionNormal / directionLength
         );
         LocalPoint perpendicular = new LocalPoint(-sin, cos, 0.0);
         double length = profile.minLength()
