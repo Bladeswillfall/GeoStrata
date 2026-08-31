@@ -12,6 +12,7 @@ import java.util.List;
  */
 public final class OreDiscoveryStringers {
     private static final double TWO_PI = Math.PI * 2.0;
+    private static final double IRON_EXPOSED_HALO_BLOCKS = 1.0;
     private static final double COPPER_EXPOSED_HALO_BLOCKS = 6.0;
     private static final long STRINGER_SALT = 0x6A09E667F3BCC909L;
     private static final long LENGTH_SALT = 0xBB67AE8584CAA73BL;
@@ -99,7 +100,11 @@ public final class OreDiscoveryStringers {
     }
 
     private static double exposedHaloBlocks(OreDepositGeometry.Body body) {
-        return "copper".equals(body.material()) ? COPPER_EXPOSED_HALO_BLOCKS : 0.0;
+        return switch (body.material()) {
+            case "iron" -> IRON_EXPOSED_HALO_BLOCKS;
+            case "copper" -> COPPER_EXPOSED_HALO_BLOCKS;
+            default -> 0.0;
+        };
     }
 
     private static BoundsAccumulator worldBounds(
