@@ -29,7 +29,7 @@ import java.util.Set;
 public final class OreDistributionBenchmarkCommands {
     private static final int GRID_CHUNKS = OreDepositCandidatePlanner.HORIZONTAL_CELL_SIZE / 16;
     // Scan one complete horizontal candidate cell so deposit cores are represented rather than boundary tails.
-    private static final int MIN_CHUNK = 0;
+    private static final int MIN_CHUNK = -6 * GRID_CHUNKS;
     private static final int MAX_CHUNK = MIN_CHUNK + GRID_CHUNKS - 1;
     private static final int GENERATION_HALO_CHUNKS = 1;
     private static final int AIR_PROXIMITY_RADIUS = 12;
