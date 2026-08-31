@@ -55,7 +55,7 @@ public final class CorrelatedExperimentCompanion implements ModInitializer {
         BiomeModifications.create(GeoStrata.id("experimental_ore_validation"))
                 .add(
                         ModificationPhase.REMOVALS,
-                        BiomeSelectors.tag(REGISTRATION_BIOMES),
+                        BiomeSelectors.foundInOverworld(),
                         context -> VANILLA_OVERWORLD_ORES.forEach(feature -> context.getGenerationSettings()
                                 .removeFeature(GenerationStep.Feature.UNDERGROUND_ORES, feature))
                 );
