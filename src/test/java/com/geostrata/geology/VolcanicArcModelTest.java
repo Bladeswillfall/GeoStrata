@@ -5,6 +5,8 @@ import org.junit.jupiter.api.Test;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 final class VolcanicArcModelTest {
@@ -62,5 +64,30 @@ final class VolcanicArcModelTest {
                 }
             }
         }
+    }
+
+    @Test
+    void basaltSillsTerminateLaterallyAroundVolcanicComplexes() {
+        VolcanicArcModel.Context context = VolcanicArcModel.forSite(987654321L, 64, -128, 63.0);
+        VolcanicArcModel.Column inside = null;
+        VolcanicArcModel.Column outside = null;
+
+        for (int x = -256; x <= 256 && (inside == null || outside == null); x += 4) {
+            for (int z = -384; z <= 128 && (inside == null || outside == null); z += 4) {
+                VolcanicArcModel.Column column = context.column(x, z, 0.0);
+                VolcanicArcModel.Sample atSill = column.sample(column.sillCenterY());
+                if (inside == null && column.sillFootprint() < 0.5 && "sill".equals(atSill.bodyStyle())) {
+                    inside = column;
+                }
+                if (outside == null && column.sillFootprint() > 1.5 && !"sill".equals(atSill.bodyStyle())) {
+                    outside = column;
+                }
+            }
+        }
+
+        assertNotNull(inside, "expected a sampled column inside a finite basalt sill");
+        assertNotNull(outside, "expected a sampled column outside the sill footprint");
+        assertEquals("sill", inside.sample(inside.sillCenterY()).bodyStyle());
+        assertNotEquals("sill", outside.sample(outside.sillCenterY()).bodyStyle());
     }
 }
