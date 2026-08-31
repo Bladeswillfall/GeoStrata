@@ -295,14 +295,17 @@ public final class OreDepositFeature extends Feature<DefaultFeatureConfig> {
         }
         mutable.set(x, y, z);
         String host = hosts.resolve(mutable);
-        if (host == null || !validHosts.contains(host)) {
+        if (host == null) {
             return false;
         }
-        OreGrade grade = OreExposurePlacement.placementGrade(
-                sample,
-                sample.trace() && touchesAir(world, neighbor, x, y, z),
-                stringer
-        );
+        boolean parentHost = validHosts.contains(host);
+        OreGrade grade = parentHost
+                ? OreExposurePlacement.placementGrade(
+                        sample,
+                        sample.trace() && touchesAir(world, neighbor, x, y, z),
+                        stringer
+                )
+                : stringer ? OreGrade.POOR : null;
         if (grade == null) {
             return false;
         }
