@@ -3,14 +3,25 @@ package com.geostrata.block;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 final class OreHostTest {
     @Test
     void everyHostRoundTripsThroughItsStableId() {
         for (OreHost host : OreHost.values()) {
+            assertTrue(OreHost.supports(host.asString()));
             assertEquals(host, OreHost.byId(host.asString()));
         }
+    }
+
+    @Test
+    void semanticLithologyWithoutBakedOreTextureIsNotRenderable() {
+        assertFalse(OreHost.supports("granite"));
+        assertFalse(OreHost.supports("diorite"));
+        assertFalse(OreHost.supports("hornfels"));
+        assertThrows(IllegalArgumentException.class, () -> OreHost.byId("granite"));
     }
 
     @Test

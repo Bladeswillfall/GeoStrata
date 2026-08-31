@@ -1,6 +1,8 @@
 package com.geostrata.block;
 
 import java.util.Arrays;
+import java.util.Map;
+import java.util.stream.Collectors;
 import net.minecraft.util.StringIdentifiable;
 
 /** Stable rock identities stored on graded ore block states for host-aware rendering. */
@@ -20,6 +22,9 @@ public enum OreHost implements StringIdentifiable {
     CONGLOMERATE("conglomerate"),
     BRECCIA("breccia");
 
+    private static final Map<String, OreHost> BY_ID = Arrays.stream(values())
+            .collect(Collectors.toUnmodifiableMap(OreHost::asString, host -> host));
+
     private final String id;
 
     OreHost(String id) {
@@ -31,11 +36,16 @@ public enum OreHost implements StringIdentifiable {
         return id;
     }
 
+    public static boolean supports(String id) {
+        return BY_ID.containsKey(id);
+    }
+
     public static OreHost byId(String id) {
-        return Arrays.stream(values())
-                .filter(host -> host.id.equals(id))
-                .findFirst()
-                .orElseThrow(() -> new IllegalArgumentException("unknown ore host: " + id));
+        OreHost host = BY_ID.get(id);
+        if (host == null) {
+            throw new IllegalArgumentException("unknown ore host: " + id);
+        }
+        return host;
     }
 
     public static OreHost defaultFor(String material) {
