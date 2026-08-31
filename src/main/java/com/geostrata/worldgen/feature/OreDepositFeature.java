@@ -185,12 +185,29 @@ public final class OreDepositFeature extends Feature<DefaultFeatureConfig> {
                 proposal.anchorX(),
                 proposal.anchorZ()
         ).province();
-        return occurrence.provinceContexts().contains(province)
-                && occurrence.terrainFilter().matches(ChunkGeneratorTerrainMorphologySampler.sample(
-                        world.toServerWorld(),
-                        proposal.anchorX(),
-                        proposal.anchorZ()
-                ));
+        if (!occurrence.terrainFilter().matches(ChunkGeneratorTerrainMorphologySampler.sample(
+                world.toServerWorld(),
+                proposal.anchorX(),
+                proposal.anchorZ()
+        ))) {
+            return false;
+        }
+
+        Optional<GeologyResolver.Result> geology = GeologyResolver.resolve(
+                world.toServerWorld(),
+                proposal.anchorX(),
+                proposal.anchorY(),
+                proposal.anchorZ()
+        );
+        if (geology.isEmpty()) {
+            return occurrence.provinceContexts().contains(province);
+        }
+        return OreDepositCandidatePlanner.accept(
+                proposal,
+                occurrence,
+                province,
+                geology.get().lithology()
+        ).isPresent();
     }
 
     private static OreDepositCandidatePlanner.Proposal proposalForCell(
