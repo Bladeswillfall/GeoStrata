@@ -69,6 +69,7 @@ public final class CorrelatedExperimentCompanion implements ModInitializer {
                 GenerationStep.Feature.UNDERGROUND_DECORATION,
                 BACKGROUND_FEATURE
         );
+        OreDebugCommands.register();
         GeoStrata.LOGGER.info(
                 "GeoStrata experimental worldgen companion enabled; vanilla Overworld ores suppressed for validation"
         );
