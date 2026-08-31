@@ -6,6 +6,7 @@ import com.geostrata.geology.DiamondGeologyPlanner;
 import com.geostrata.geology.GeologyDeterminism;
 import com.geostrata.geology.GeologyProvince;
 import com.geostrata.geology.GeologyProvinceSampler;
+import com.geostrata.geology.TerraneSuture;
 import com.mojang.serialization.Codec;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
@@ -35,7 +36,6 @@ import java.util.List;
  */
 public final class DiamondPipeFeature extends Feature<DiamondPipeConfig> {
     private static final int CHUNK_SIZE = 16;
-    private static final int PIPE_PADDING = 16;
     private static final int SURFACE_RING_INNER = 6;
     private static final int SURFACE_RING_OUTER = 8;
     private static final long DIAMOND_BEARING_SALT = 0x94D049BB133111EBL;
@@ -67,14 +67,15 @@ public final class DiamondPipeFeature extends Feature<DiamondPipeConfig> {
         int endX = startX + CHUNK_SIZE - 1;
         int endZ = startZ + CHUNK_SIZE - 1;
         long seed = world.getSeed();
+        int pipePadding = DiamondGeologyPlanner.pipeSearchPaddingBlocks(world.getTopY() - world.getBottomY());
         DiamondGeologyPlanner.PipeKind kind = context.getConfig().kind();
         Chunk chunk = world.getChunk(Math.floorDiv(startX, CHUNK_SIZE), Math.floorDiv(startZ, CHUNK_SIZE));
         List<BlockBox> protectedStructurePieces = StructurePieceProtection.forChunk(world, chunk);
 
-        int minCellX = Math.floorDiv(startX - PIPE_PADDING, DiamondGeologyPlanner.PIPE_CELL_SIZE);
-        int maxCellX = Math.floorDiv(endX + PIPE_PADDING, DiamondGeologyPlanner.PIPE_CELL_SIZE);
-        int minCellZ = Math.floorDiv(startZ - PIPE_PADDING, DiamondGeologyPlanner.PIPE_CELL_SIZE);
-        int maxCellZ = Math.floorDiv(endZ + PIPE_PADDING, DiamondGeologyPlanner.PIPE_CELL_SIZE);
+        int minCellX = Math.floorDiv(startX - pipePadding, DiamondGeologyPlanner.PIPE_CELL_SIZE);
+        int maxCellX = Math.floorDiv(endX + pipePadding, DiamondGeologyPlanner.PIPE_CELL_SIZE);
+        int minCellZ = Math.floorDiv(startZ - pipePadding, DiamondGeologyPlanner.PIPE_CELL_SIZE);
+        int maxCellZ = Math.floorDiv(endZ + pipePadding, DiamondGeologyPlanner.PIPE_CELL_SIZE);
 
         int placed = 0;
         for (int cellX = minCellX; cellX <= maxCellX; cellX++) {
@@ -88,7 +89,7 @@ public final class DiamondPipeFeature extends Feature<DiamondPipeConfig> {
                         candidate.anchorX(),
                         candidate.anchorZ()
                 );
-                if (province.province() != GeologyProvince.CRATONIC_SHIELD || province.distanceToBoundary() < 96.0) {
+                if (province.province() != GeologyProvince.CRATONIC_SHIELD || TerraneSuture.canCross(province)) {
                     continue;
                 }
                 placed += placeCandidate(
