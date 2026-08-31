@@ -1,6 +1,7 @@
 package com.geostrata.worldgen.feature;
 
 import com.geostrata.block.GeoStrataBlocks;
+import com.geostrata.block.OreHost;
 import com.geostrata.geology.CorrelatedSedimentaryExperiment;
 import com.geostrata.geology.ChunkGeneratorTerrainMorphologySampler;
 import com.geostrata.geology.FaultControlledOrePlanner;
@@ -297,7 +298,7 @@ public final class OreDepositFeature extends Feature<DefaultFeatureConfig> {
         }
         mutable.set(x, y, z);
         String host = hosts.resolve(mutable);
-        if (host == null) {
+        if (host == null || !OreHost.supports(host)) {
             return false;
         }
         boolean discoveryOre = stringer || exposedFringe;
