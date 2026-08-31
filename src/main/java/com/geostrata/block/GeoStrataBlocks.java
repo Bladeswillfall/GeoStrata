@@ -36,6 +36,7 @@ public final class GeoStrataBlocks {
     public static final Block QUARTZITE = registerRock("quartzite", rock(Blocks.SMOOTH_QUARTZ, 2.0F, BlockSoundGroup.STONE));
     public static final Block SCHIST = registerRock("schist", rock(Blocks.TUFF, 1.8F, BlockSoundGroup.TUFF));
     public static final Block GNEISS = registerRock("gneiss", rock(Blocks.GRANITE, 1.9F, BlockSoundGroup.STONE));
+    public static final Block HORNFELS = registerRock("hornfels", rock(Blocks.TUFF, 2.0F, BlockSoundGroup.TUFF));
     public static final Block BASALT = registerRock("basalt", rock(Blocks.BASALT, 2.0F, BlockSoundGroup.BASALT));
     public static final Block RHYOLITE = registerRock("rhyolite", rock(Blocks.GRANITE, 1.7F, BlockSoundGroup.STONE));
     public static final Block KIMBERLITE = registerRock("kimberlite", rock(Blocks.TUFF, 2.4F, BlockSoundGroup.TUFF));
