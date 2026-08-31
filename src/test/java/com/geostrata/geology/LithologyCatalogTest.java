@@ -5,12 +5,20 @@ import com.google.gson.JsonParser;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 final class LithologyCatalogTest {
     @Test
     void parsesSemanticLithologyEntry() {
-        LithologyCatalog.Snapshot snapshot = LithologyCatalog.parse(catalog("metadata_only", "sedimentary", "geostrata:limestone"));
+        LithologyCatalog.Snapshot snapshot = LithologyCatalog.parse(catalog(
+                "metadata_only",
+                "sedimentary",
+                "geostrata:limestone",
+                "limestone_ore"
+        ));
 
         assertEquals(1, snapshot.entries().size());
         LithologyCatalog.Entry entry = snapshot.require("limestone");
@@ -21,13 +29,34 @@ final class LithologyCatalogTest {
         assertEquals("regional", entry.continuity());
         assertEquals("geostrata:has_common_rocks", entry.biomeTag());
         assertEquals("limestone_ore", entry.baselineFeature());
+        assertTrue(entry.geoStrataOwned());
+    }
+
+    @Test
+    void parsesProviderOwnedBlockWithoutGeoStrataFallback() {
+        LithologyCatalog.Snapshot snapshot = LithologyCatalog.parse(catalog(
+                "metadata_only",
+                "igneous",
+                "minecraft:granite",
+                null
+        ));
+
+        LithologyCatalog.Entry entry = snapshot.require("limestone");
+        assertEquals("minecraft:granite", entry.block());
+        assertNull(entry.baselineFeature());
+        assertFalse(entry.geoStrataOwned());
     }
 
     @Test
     void rejectsAccidentalRuntimeActivation() {
         assertThrows(
                 IllegalArgumentException.class,
-                () -> LithologyCatalog.parse(catalog("runtime_bias", "sedimentary", "geostrata:limestone"))
+                () -> LithologyCatalog.parse(catalog(
+                        "runtime_bias",
+                        "sedimentary",
+                        "geostrata:limestone",
+                        "limestone_ore"
+                ))
         );
     }
 
@@ -35,15 +64,38 @@ final class LithologyCatalogTest {
     void rejectsUnknownRockClass() {
         assertThrows(
                 IllegalArgumentException.class,
-                () -> LithologyCatalog.parse(catalog("metadata_only", "sedimentary-ish", "geostrata:limestone"))
+                () -> LithologyCatalog.parse(catalog(
+                        "metadata_only",
+                        "sedimentary-ish",
+                        "geostrata:limestone",
+                        "limestone_ore"
+                ))
         );
     }
 
     @Test
-    void rejectsExternalBlockNamespace() {
+    void rejectsMissingGeoStrataFallback() {
         assertThrows(
                 IllegalArgumentException.class,
-                () -> LithologyCatalog.parse(catalog("metadata_only", "sedimentary", "minecraft:stone"))
+                () -> LithologyCatalog.parse(catalog(
+                        "metadata_only",
+                        "sedimentary",
+                        "geostrata:limestone",
+                        null
+                ))
+        );
+    }
+
+    @Test
+    void rejectsGeoStrataFallbackForProviderOwnedBlock() {
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> LithologyCatalog.parse(catalog(
+                        "metadata_only",
+                        "igneous",
+                        "minecraft:granite",
+                        "granite_ore"
+                ))
         );
     }
 
@@ -59,14 +111,22 @@ final class LithologyCatalogTest {
                     %s
                   ]
                 }
-                """.formatted(entry("limestone", "geostrata:limestone"), entry("limestone", "geostrata:chalk"));
+                """.formatted(
+                entry("limestone", "geostrata:limestone", "limestone_ore"),
+                entry("limestone", "geostrata:chalk", "chalk_ore")
+        );
         assertThrows(IllegalArgumentException.class, () -> LithologyCatalog.parse(parse(json)));
 
-        LithologyCatalog.Snapshot snapshot = LithologyCatalog.parse(catalog("metadata_only", "sedimentary", "geostrata:limestone"));
+        LithologyCatalog.Snapshot snapshot = LithologyCatalog.parse(catalog(
+                "metadata_only",
+                "sedimentary",
+                "geostrata:limestone",
+                "limestone_ore"
+        ));
         assertThrows(IllegalArgumentException.class, () -> snapshot.require("gneiss"));
     }
 
-    private static JsonObject catalog(String runtimeStatus, String rockClass, String block) {
+    private static JsonObject catalog(String runtimeStatus, String rockClass, String block, String baselineFeature) {
         String json = """
                 {
                   "schemaVersion": 1,
@@ -82,15 +142,15 @@ final class LithologyCatalogTest {
                       "depthAffinity": "shallow_to_mid",
                       "continuity": "regional",
                       "biomeTag": "geostrata:has_common_rocks",
-                      "baselineFeature": "limestone_ore"
+                      "baselineFeature": %s
                     }
                   ]
                 }
-                """.formatted(runtimeStatus, block, rockClass);
+                """.formatted(runtimeStatus, block, rockClass, jsonStringOrNull(baselineFeature));
         return parse(json);
     }
 
-    private static String entry(String id, String block) {
+    private static String entry(String id, String block, String baselineFeature) {
         return """
                 {
                   "id": "%s",
@@ -101,9 +161,13 @@ final class LithologyCatalogTest {
                   "depthAffinity": "shallow_to_mid",
                   "continuity": "regional",
                   "biomeTag": "geostrata:has_common_rocks",
-                  "baselineFeature": "%s_ore"
+                  "baselineFeature": %s
                 }
-                """.formatted(id, block, id);
+                """.formatted(id, block, jsonStringOrNull(baselineFeature));
+    }
+
+    private static String jsonStringOrNull(String value) {
+        return value == null ? "null" : "\"" + value + "\"";
     }
 
     private static JsonObject parse(String json) {
