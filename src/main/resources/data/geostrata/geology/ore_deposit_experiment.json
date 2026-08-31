@@ -9,7 +9,7 @@
   "activationChancePerCandidate": {
     "coal": 0.8,
     "iron": 0.5,
-    "copper": 0.18,
+    "copper": 0.09,
     "gold": 0.16,
     "emerald": 0.08
   }
