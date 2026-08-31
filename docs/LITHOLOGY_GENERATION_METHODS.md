@@ -4,7 +4,7 @@ GeoStrata no longer uses vanilla `minecraft:ore` blobs as the baseline generator
 
 ## Baseline geometry
 
-The existing `*_ore` feature IDs are retained as stable datapack/worldgen identifiers, but the names are historical. All fourteen catalogued rock baselines now use `geostrata:strata_lens` with data-driven geometry suited to their body style and province suitability.
+The existing `*_ore` feature IDs are retained as stable datapack/worldgen identifiers, but the names are historical. All fourteen GeoStrata-owned ordinary rock baselines use `geostrata:strata_lens` with data-driven geometry suited to their body style and province suitability.
 
 - Bedded sedimentary rocks use broad, comparatively planar lenses.
 - Coarse clastics use local tapered lenses/beds.
@@ -16,6 +16,16 @@ Baseline placed features use `geostrata:subsurface_anchor` instead of a fixed Mi
 The replacement predicate remains authoritative: bedrock, air, caves, fluids and unrelated blocks are skipped rather than overwritten. Body thickness and shape are **not** scaled with either terrain height or dimension height.
 
 The independent lenses remain conservative compatibility fallbacks: terrain height does not increase their per-chunk attempt count. Coherent full-domain geology is the responsibility of the correlated field where that experiment owns a chunk.
+
+## Provider-owned lithologies
+
+A semantic lithology does not have to be a block owned by GeoStrata. The block namespace is the provider boundary.
+
+GeoStrata-owned entries (`geostrata:*`) must keep their explicit GeoStrata baseline feature and remain covered by the material/asset contract. Provider-owned entries use an existing registered block directly and set `baselineFeature` to `null`; GeoStrata does not create a duplicate block, texture set or fallback feature for them.
+
+Vanilla granite and diorite are the first bundled examples. They are now valid igneous lithologies in the semantic catalog and province profiles, but this change alone does not add new pluton geometry or make the province models emit them. Their first runtime use belongs in the existing intrusive architecture rather than a second generator.
+
+The same ownership rule is intended for compatibility adapters: a loaded third-party provider can supply the material while GeoStrata supplies geological meaning and, where appropriate, shared geometry. Optional-mod activation remains an adapter concern; the core catalog must not pretend an absent provider block exists.
 
 ## Correlated authority
 
