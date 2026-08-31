@@ -5,8 +5,8 @@ package com.geostrata.geology;
  *
  * <p>This is deliberately province-specific rather than a generic architecture engine.
  * It supplies a varied metamorphic basement, mafic dikes/sills, zoned volcanic complexes
- * and breccia halos while reusing the shared structural offset supplied by GeoStrata's
- * terrain-aware field.</p>
+ * and their breccia/contact aureoles while reusing the shared structural offset supplied
+ * by GeoStrata's terrain-aware field.</p>
  */
 public final class VolcanicArcModel {
     private static final double TWO_PI = Math.PI * 2.0;
@@ -22,7 +22,7 @@ public final class VolcanicArcModel {
     private static final int COMPLEX_CELL_SIZE = 256;
     private static final double COMPLEX_CELL_MARGIN = 64.0;
     private static final double COMPLEX_CELL_SPAN = COMPLEX_CELL_SIZE - COMPLEX_CELL_MARGIN * 2.0;
-    private static final double RHYOLITE_HALO_SCALE = 1.18;
+    private static final double COMPLEX_HALO_SCALE = 1.18;
     private static final double PLUTON_TOP_NORMALIZED_Y = -0.20;
     private static final double GRANITE_CORE_RADIUS = 0.58;
 
@@ -188,21 +188,32 @@ public final class VolcanicArcModel {
             double vertical = (y - complexCenterY) / complexRadiusY;
             double complexRadius = complexHorizontalRadius + vertical * vertical;
             if (complexRadius <= 1.0) {
-                if (vertical <= PLUTON_TOP_NORMALIZED_Y) {
-                    if (complexRadius <= GRANITE_CORE_RADIUS) {
-                        return new Sample("granite", "plutonic_core");
-                    }
-                    return new Sample("diorite", "plutonic_margin");
-                }
-                return new Sample("rhyolite", "rhyolite_body");
+                return complexRock(vertical, complexRadius);
             }
-            if (vertical > PLUTON_TOP_NORMALIZED_Y && complexRadius <= RHYOLITE_HALO_SCALE) {
+            if (vertical > PLUTON_TOP_NORMALIZED_Y && complexRadius <= COMPLEX_HALO_SCALE) {
                 return new Sample("breccia", "rhyolite_breccia");
             }
-
             if (sillFootprint <= 1.0 && Math.abs(y - sillCenterY) <= SILL_HALF_THICKNESS) {
                 return new Sample("basalt", "sill");
             }
+
+            Sample countryRock = countryRock();
+            if (vertical <= PLUTON_TOP_NORMALIZED_Y && complexRadius <= COMPLEX_HALO_SCALE) {
+                return new Sample(countryRock.lithology(), "contact_aureole");
+            }
+            return countryRock;
+        }
+
+        private Sample complexRock(double vertical, double complexRadius) {
+            if (vertical <= PLUTON_TOP_NORMALIZED_Y) {
+                return complexRadius <= GRANITE_CORE_RADIUS
+                        ? new Sample("granite", "plutonic_core")
+                        : new Sample("diorite", "plutonic_margin");
+            }
+            return new Sample("rhyolite", "rhyolite_body");
+        }
+
+        private Sample countryRock() {
             if (metamorphicDistance <= QUARTZITE_HALF_WIDTH) {
                 return new Sample("quartzite", "metamorphic_belt_core");
             }
