@@ -14,7 +14,7 @@ public final class ContactMetamorphism {
         String product = switch (genesis) {
             case "mudrock", "silt_clastic", "low_grade_foliated", "medium_grade_foliated" -> "hornfels";
             case "carbonate", "carbonate_metamorphic" -> "marble";
-            case "quartz_rich_metamorphic" -> "quartzite";
+            case "quartz_sandstone", "quartz_rich_metamorphic" -> "quartzite";
             default -> parentLithology;
         };
         catalog.require(product);

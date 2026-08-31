@@ -46,6 +46,7 @@
       "beds": [
         {"lithology": "breccia", "relativeThickness": 0.6},
         {"lithology": "conglomerate", "relativeThickness": 0.9},
+        {"lithology": "sandstone", "relativeThickness": 0.9},
         {"lithology": "siltstone", "relativeThickness": 0.8},
         {"lithology": "shale", "relativeThickness": 0.5}
       ]

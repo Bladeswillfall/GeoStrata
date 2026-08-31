@@ -313,7 +313,8 @@ public final class CorrelatedSedimentaryRuntime {
             }
 
             String genesis = catalog.require(parent).genesis();
-            if (!"mudrock".equals(genesis) && !"carbonate".equals(genesis)) {
+            String fixedProduct = fixedMetamorphicProduct(genesis);
+            if (!"mudrock".equals(genesis) && fixedProduct == null) {
                 return cache(y, runEndY, parent);
             }
 
@@ -323,8 +324,8 @@ public final class CorrelatedSedimentaryRuntime {
             if (totalSuitability <= 0.0) {
                 return cache(y, runEndY, parent);
             }
-            if ("carbonate".equals(genesis)) {
-                return cache(y, runEndY, "marble");
+            if (fixedProduct != null) {
+                return cache(y, runEndY, fixedProduct);
             }
 
             Optional<MetamorphicBandPlanner.Selection> selection = MetamorphicBandPlanner.select(
@@ -346,6 +347,14 @@ public final class CorrelatedSedimentaryRuntime {
                 );
             }
             return cache(y, runEndY, selection.get().lithology());
+        }
+
+        private static String fixedMetamorphicProduct(String genesis) {
+            return switch (genesis) {
+                case "carbonate" -> "marble";
+                case "quartz_sandstone" -> "quartzite";
+                default -> null;
+            };
         }
 
         private int sedimentaryRunEndY(
