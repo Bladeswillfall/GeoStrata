@@ -38,6 +38,7 @@ ALLOWED_BODY_STYLES = {
     "flow_or_sheet",
     "volcanic_body",
     "plutonic_body",
+    "contact_aureole",
 }
 ALLOWED_DEPTH_AFFINITIES = {
     "shallow",
@@ -663,6 +664,7 @@ def main() -> None:
         block = entry["block"]
         rock_class = entry["rockClass"]
         feature = entry["baselineFeature"]
+        runtime_authority = entry.get("runtimeAuthority")
 
         if not isinstance(lithology_id, str) or not SIMPLE_ID.fullmatch(lithology_id):
             fail(f"invalid lithology id: {lithology_id!r}")
@@ -670,6 +672,12 @@ def main() -> None:
             fail(f"{lithology_id} has invalid block identifier {block!r}")
         if feature is not None and (not isinstance(feature, str) or not SIMPLE_ID.fullmatch(feature)):
             fail(f"{lithology_id} has invalid baselineFeature {feature!r}")
+        if runtime_authority is not None and (
+            not isinstance(runtime_authority, str) or not SIMPLE_ID.fullmatch(runtime_authority)
+        ):
+            fail(f"{lithology_id} has invalid runtimeAuthority {runtime_authority!r}")
+        if (feature is None) == (runtime_authority is None):
+            fail(f"{lithology_id} must declare exactly one of baselineFeature or runtimeAuthority")
 
         if lithology_id in ids:
             fail(f"duplicate lithology id: {lithology_id}")
@@ -683,12 +691,9 @@ def main() -> None:
             features.add(feature)
 
         geo_strata_owned = block.startswith("geostrata:")
-        if geo_strata_owned:
-            if block != f"geostrata:{lithology_id}":
-                fail(f"{lithology_id} must map to geostrata:{lithology_id}, found {block}")
-            if feature is None:
-                fail(f"{lithology_id} GeoStrata-owned lithology requires baselineFeature")
-        elif feature is not None:
+        if geo_strata_owned and block != f"geostrata:{lithology_id}":
+            fail(f"{lithology_id} must map to geostrata:{lithology_id}, found {block}")
+        if not geo_strata_owned and feature is not None:
             fail(f"{lithology_id} provider-owned lithology must not declare GeoStrata baselineFeature")
 
         if rock_class not in ROCK_CLASSES:
