@@ -37,6 +37,7 @@ ALLOWED_BODY_STYLES = {
     "basement_massif",
     "flow_or_sheet",
     "volcanic_body",
+    "plutonic_body",
 }
 ALLOWED_DEPTH_AFFINITIES = {
     "shallow",
@@ -57,6 +58,8 @@ SEMANTIC_BLOCK_TAGS = (
     "clays",
     "ores",
 )
+IDENTIFIER = re.compile(r"[a-z0-9_.-]+:[a-z0-9/._-]+")
+SIMPLE_ID = re.compile(r"[a-z0-9_]+")
 
 BLOCK_REGISTRATION = re.compile(
     r'register(?P<registration>Rock|Earth|RockVariant)\("(?P<name>[a-z0-9_]+)"'
@@ -139,7 +142,7 @@ def tag_values(path: Path) -> set[str]:
         fail(f"{path.relative_to(ROOT)} must contain a values array")
     direct = {value for value in values if isinstance(value, str) and not value.startswith("#")}
     if len(direct) != len(values):
-        fail(f"{path.relative_to(ROOT)} must use direct GeoStrata block IDs for catalog validation")
+        fail(f"{path.relative_to(ROOT)} must use direct block IDs for catalog validation")
     return direct
 
 
@@ -661,18 +664,33 @@ def main() -> None:
         rock_class = entry["rockClass"]
         feature = entry["baselineFeature"]
 
+        if not isinstance(lithology_id, str) or not SIMPLE_ID.fullmatch(lithology_id):
+            fail(f"invalid lithology id: {lithology_id!r}")
+        if not isinstance(block, str) or not IDENTIFIER.fullmatch(block):
+            fail(f"{lithology_id} has invalid block identifier {block!r}")
+        if feature is not None and (not isinstance(feature, str) or not SIMPLE_ID.fullmatch(feature)):
+            fail(f"{lithology_id} has invalid baselineFeature {feature!r}")
+
         if lithology_id in ids:
             fail(f"duplicate lithology id: {lithology_id}")
         if block in blocks:
             fail(f"duplicate lithology block: {block}")
-        if feature in features:
+        if feature is not None and feature in features:
             fail(f"duplicate baseline feature: {feature}")
         ids.add(lithology_id)
         blocks.add(block)
-        features.add(feature)
+        if feature is not None:
+            features.add(feature)
 
-        if block != f"geostrata:{lithology_id}":
-            fail(f"{lithology_id} must map to geostrata:{lithology_id}, found {block}")
+        geo_strata_owned = block.startswith("geostrata:")
+        if geo_strata_owned:
+            if block != f"geostrata:{lithology_id}":
+                fail(f"{lithology_id} must map to geostrata:{lithology_id}, found {block}")
+            if feature is None:
+                fail(f"{lithology_id} GeoStrata-owned lithology requires baselineFeature")
+        elif feature is not None:
+            fail(f"{lithology_id} provider-owned lithology must not declare GeoStrata baselineFeature")
+
         if rock_class not in ROCK_CLASSES:
             fail(f"{lithology_id} has unsupported rockClass {rock_class}")
         if block not in class_blocks[rock_class]:
@@ -691,23 +709,24 @@ def main() -> None:
         if not biome_path.is_file():
             fail(f"{lithology_id} references missing biome tag {biome_tag}")
 
-        configured_path = CONFIGURED / f"{feature}.json"
-        placed_path = PLACED / f"{feature}.json"
-        if not configured_path.is_file() or not placed_path.is_file():
-            fail(f"{lithology_id} baseline feature {feature} is missing configured or placed data")
+        if feature is not None:
+            configured_path = CONFIGURED / f"{feature}.json"
+            placed_path = PLACED / f"{feature}.json"
+            if not configured_path.is_file() or not placed_path.is_file():
+                fail(f"{lithology_id} baseline feature {feature} is missing configured or placed data")
 
-        configured = load_json(configured_path)
-        target_states = {
-            target.get("state", {}).get("Name")
-            for target in configured.get("config", {}).get("targets", [])
-            if isinstance(target, dict)
-        }
-        if target_states != {block}:
-            fail(f"{feature} must generate exactly {block}, found {sorted(str(v) for v in target_states)}")
+            configured = load_json(configured_path)
+            target_states = {
+                target.get("state", {}).get("Name")
+                for target in configured.get("config", {}).get("targets", [])
+                if isinstance(target, dict)
+            }
+            if target_states != {block}:
+                fail(f"{feature} must generate exactly {block}, found {sorted(str(v) for v in target_states)}")
 
-        placed = load_json(placed_path)
-        if placed.get("feature") != f"geostrata:{feature}":
-            fail(f"placed feature {feature} does not point to geostrata:{feature}")
+            placed = load_json(placed_path)
+            if placed.get("feature") != f"geostrata:{feature}":
+                fail(f"placed feature {feature} does not point to geostrata:{feature}")
 
     if blocks != all_rocks:
         fail(
