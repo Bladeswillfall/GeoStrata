@@ -4,14 +4,15 @@ package com.geostrata.geology;
  * Deterministic background architecture for experimental Orogenic Belt provinces.
  *
  * <p>The belt is a strongly deformed metamorphic gradient rather than a repeating
- * palette: a high-grade gneiss core grades outward through schist into slate, with
- * quartzite ribbons and common elongated marble lenses. Correlated parent-aware
- * strata remain higher authority wherever they already own the host stone.</p>
+ * palette: a high-grade gneiss core grades outward through schist and phyllite into
+ * slate, with quartzite ribbons and common elongated marble lenses. Correlated
+ * parent-aware strata remain higher authority wherever they already own the host stone.</p>
  */
 public final class OrogenicBeltModel {
     private static final double TWO_PI = Math.PI * 2.0;
     private static final double GNEISS_CORE_HALF_WIDTH = 92.0;
     private static final double SCHIST_ZONE_HALF_WIDTH = 225.0;
+    private static final double PHYLLITE_ZONE_HALF_WIDTH = 340.0;
     private static final double QUARTZITE_RIBBON_OFFSET = 155.0;
     private static final double QUARTZITE_RIBBON_HALF_WIDTH = 11.0;
     private static final double BELT_WARP_AMPLITUDE = 64.0;
@@ -172,6 +173,9 @@ public final class OrogenicBeltModel {
             }
             if (distance <= SCHIST_ZONE_HALF_WIDTH) {
                 return new Sample("schist", "schist_zone");
+            }
+            if (distance <= PHYLLITE_ZONE_HALF_WIDTH) {
+                return new Sample("phyllite", "phyllite_zone");
             }
             return new Sample("slate", "outer_metamorphic_zone");
         }
