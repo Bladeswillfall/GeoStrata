@@ -90,7 +90,8 @@ public final class LithologyCatalog {
         }
 
         String baselineFeature = nullableSimpleId(object, "baselineFeature");
-        validateOwnership(id, block, baselineFeature);
+        String runtimeAuthority = nullableSimpleId(object, "runtimeAuthority");
+        validateGeneration(id, block, baselineFeature, runtimeAuthority);
         if (baselineFeature != null && !baselineFeatures.add(baselineFeature)) {
             throw new IllegalArgumentException("duplicate baselineFeature: " + baselineFeature);
         }
@@ -108,12 +109,18 @@ public final class LithologyCatalog {
         );
     }
 
-    private static void validateOwnership(String id, String block, String baselineFeature) {
-        boolean geoStrataOwned = block.startsWith("geostrata:");
-        if (geoStrataOwned && baselineFeature == null) {
-            throw new IllegalArgumentException(id + " GeoStrata-owned lithology requires baselineFeature");
+    private static void validateGeneration(
+            String id,
+            String block,
+            String baselineFeature,
+            String runtimeAuthority
+    ) {
+        if ((baselineFeature == null) == (runtimeAuthority == null)) {
+            throw new IllegalArgumentException(
+                    id + " must declare exactly one of baselineFeature or runtimeAuthority"
+            );
         }
-        if (!geoStrataOwned && baselineFeature != null) {
+        if (!block.startsWith("geostrata:") && baselineFeature != null) {
             throw new IllegalArgumentException(id + " provider-owned lithology must not declare GeoStrata baselineFeature");
         }
     }
