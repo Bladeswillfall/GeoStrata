@@ -2,11 +2,11 @@ package com.geostrata.worldgen.feature;
 
 import com.geostrata.block.GeoStrataBlocks;
 import com.geostrata.geology.CorrelatedSedimentaryExperiment;
-import com.geostrata.geology.CorrelatedSedimentaryRuntime;
 import com.geostrata.geology.ChunkGeneratorTerrainMorphologySampler;
 import com.geostrata.geology.FaultControlledOrePlanner;
 import com.geostrata.geology.GeologyProvince;
 import com.geostrata.geology.GeologyProvinceSampler;
+import com.geostrata.geology.GeologyResolver;
 import com.geostrata.geology.LithologyCatalog;
 import com.geostrata.geology.OreDepositCandidatePlanner;
 import com.geostrata.geology.OreDepositExperiment;
@@ -15,7 +15,6 @@ import com.geostrata.geology.OreDiscoveryStringers;
 import com.geostrata.geology.OreExposurePlacement;
 import com.geostrata.geology.OreGrade;
 import com.geostrata.geology.OreOccurrenceCatalog;
-import com.geostrata.geology.ProvinceBackgroundRuntime;
 import com.geostrata.geology.SedimentaryFieldProfiles;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
@@ -373,8 +372,7 @@ public final class OreDepositFeature extends Feature<DefaultFeatureConfig> {
     private record HostResolver(
             StructureWorldAccess world,
             Map<Block, String> directHosts,
-            Optional<CorrelatedSedimentaryRuntime.TerrainAwareSite> correlatedSite,
-            Optional<ProvinceBackgroundRuntime.Chunk> background,
+            Optional<GeologyResolver.PreparedChunk> semanticGeology,
             Optional<TagKey<Block>> virtualHostTag,
             int virtualMinY,
             int virtualMaxY
@@ -385,21 +383,15 @@ public final class OreDepositFeature extends Feature<DefaultFeatureConfig> {
                 int startZ,
                 LithologyCatalog.Snapshot lithologies
         ) {
-            Optional<CorrelatedSedimentaryRuntime.TerrainAwareSite> correlated = CorrelatedSedimentaryRuntime.resolve(
+            Optional<GeologyResolver.PreparedChunk> semanticGeology = GeologyResolver.prepareChunk(
                     world.toServerWorld(),
                     startX + CHUNK_SIZE / 2,
                     startZ + CHUNK_SIZE / 2
             );
-            Optional<ProvinceBackgroundRuntime.Chunk> background = ProvinceBackgroundRuntime.resolve(
-                    world.toServerWorld(),
-                    startX,
-                    startZ
-            );
-            if (correlated.isEmpty() && background.isEmpty()) {
+            if (semanticGeology.isEmpty()) {
                 return new HostResolver(
                         world,
                         hostBlocks(lithologies),
-                        Optional.empty(),
                         Optional.empty(),
                         Optional.empty(),
                         1,
@@ -419,8 +411,7 @@ public final class OreDepositFeature extends Feature<DefaultFeatureConfig> {
             return new HostResolver(
                     world,
                     hostBlocks(lithologies),
-                    correlated,
-                    background,
+                    semanticGeology,
                     Optional.of(blockTag(experiment.hostBlockTag())),
                     minY,
                     maxY
@@ -439,16 +430,10 @@ public final class OreDepositFeature extends Feature<DefaultFeatureConfig> {
             if (virtualHostTag.isEmpty() || !state.isIn(virtualHostTag.get())) {
                 return null;
             }
-            if (correlatedSite.isPresent()) {
-                return correlatedSite.get().outputLithology(
-                        world.getSeed(),
-                        pos.getX(),
-                        pos.getY(),
-                        pos.getZ(),
-                        LithologyCatalog.current()
-                );
-            }
-            return background.map(value -> value.lithologyAt(pos.getX(), pos.getY(), pos.getZ())).orElse(null);
+            return semanticGeology
+                    .flatMap(value -> value.resolve(pos.getX(), pos.getY(), pos.getZ()))
+                    .map(GeologyResolver.Result::lithology)
+                    .orElse(null);
         }
     }
 }
