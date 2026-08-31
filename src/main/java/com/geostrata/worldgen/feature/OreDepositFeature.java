@@ -11,6 +11,7 @@ import com.geostrata.geology.LithologyCatalog;
 import com.geostrata.geology.OreDepositCandidatePlanner;
 import com.geostrata.geology.OreDepositExperiment;
 import com.geostrata.geology.OreDepositGeometry;
+import com.geostrata.geology.OreDiscoveryStringers;
 import com.geostrata.geology.OreExposurePlacement;
 import com.geostrata.geology.OreGrade;
 import com.geostrata.geology.OreOccurrenceCatalog;
@@ -149,7 +150,8 @@ public final class OreDepositFeature extends Feature<DefaultFeatureConfig> {
                     }
 
                     OreDepositGeometry.Body body = binding.body(worldSeed);
-                    OreDepositGeometry.Bounds bounds = OreExposurePlacement.placementBounds(body);
+                    OreDiscoveryStringers.Field discovery = OreDiscoveryStringers.forBody(body);
+                    OreDepositGeometry.Bounds bounds = OreExposurePlacement.placementBounds(body, discovery);
                     if (!intersectsChunk(bounds, startX, endX, startZ, endZ, world)) {
                         continue;
                     }
@@ -161,6 +163,7 @@ public final class OreDepositFeature extends Feature<DefaultFeatureConfig> {
                             endZ,
                             occurrence,
                             body,
+                            discovery,
                             bounds,
                             hosts,
                             protectedStructurePieces
@@ -227,6 +230,7 @@ public final class OreDepositFeature extends Feature<DefaultFeatureConfig> {
             int endZ,
             OreOccurrenceCatalog.Occurrence occurrence,
             OreDepositGeometry.Body body,
+            OreDiscoveryStringers.Field discovery,
             OreDepositGeometry.Bounds bounds,
             HostResolver hosts,
             List<BlockBox> protectedStructurePieces
@@ -249,6 +253,7 @@ public final class OreDepositFeature extends Feature<DefaultFeatureConfig> {
                             world,
                             occurrence,
                             body,
+                            discovery,
                             hosts,
                             protectedStructurePieces,
                             validHosts,
@@ -270,6 +275,7 @@ public final class OreDepositFeature extends Feature<DefaultFeatureConfig> {
             StructureWorldAccess world,
             OreOccurrenceCatalog.Occurrence occurrence,
             OreDepositGeometry.Body body,
+            OreDiscoveryStringers.Field discovery,
             HostResolver hosts,
             List<BlockBox> protectedStructurePieces,
             Set<String> validHosts,
@@ -283,7 +289,8 @@ public final class OreDepositFeature extends Feature<DefaultFeatureConfig> {
             return false;
         }
         OreDepositGeometry.Sample sample = body.sample(x, y, z);
-        if (!sample.economic() && !sample.trace()) {
+        boolean stringer = discovery.contains(x, y, z);
+        if (!sample.economic() && !sample.trace() && !stringer) {
             return false;
         }
         mutable.set(x, y, z);
@@ -293,7 +300,8 @@ public final class OreDepositFeature extends Feature<DefaultFeatureConfig> {
         }
         OreGrade grade = OreExposurePlacement.placementGrade(
                 sample,
-                sample.trace() && touchesAir(world, neighbor, x, y, z)
+                sample.trace() && touchesAir(world, neighbor, x, y, z),
+                stringer
         );
         if (grade == null) {
             return false;
