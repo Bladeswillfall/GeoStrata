@@ -154,6 +154,18 @@ final class OreDepositGeometryTest {
     }
 
     @Test
+    void coalTraceExtendsNormalToTheSeamWithoutGrowingEconomicCoal() {
+        OreDepositGeometry.Body coal = flatBody("coal");
+        OreDepositGeometry.Body control = flatBody("copper");
+
+        assertTrue(coal.sample(0, 2, 0).economic());
+        assertTrue(control.sample(0, 2, 0).economic());
+        assertFalse(coal.sample(0, 5, 0).economic());
+        assertTrue(coal.sample(0, 5, 0).trace());
+        assertFalse(control.sample(0, 5, 0).trace());
+    }
+
+    @Test
     void disseminatedEnvelopeContainsStableHostGaps() {
         OreDepositGeometry.Body body = OreDepositGeometry.forCandidate(99L, candidate("disseminated"));
         boolean foundEconomic = false;
@@ -176,6 +188,26 @@ final class OreDepositGeometryTest {
         assertThrows(
                 IllegalArgumentException.class,
                 () -> OreDepositGeometry.forCandidate(1L, candidate("unsupported"))
+        );
+    }
+
+    private static OreDepositGeometry.Body flatBody(String material) {
+        return new OreDepositGeometry.Body(
+                1L,
+                material,
+                "coal_seam",
+                0,
+                0,
+                0,
+                56.0,
+                34.0,
+                2.2,
+                0.0,
+                0.0,
+                0.0,
+                56.0,
+                0.0,
+                List.of()
         );
     }
 

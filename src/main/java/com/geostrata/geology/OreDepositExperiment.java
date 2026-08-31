@@ -10,7 +10,6 @@ import java.util.Map;
 /** Disabled-by-default tuning and activation boundary for real ore-deposit placement. */
 public final class OreDepositExperiment {
     private static final long ACTIVATION_SALT = 0xDB4F0B9175AE2165L;
-    private static final double COMPANION_VALIDATION_MULTIPLIER = 20.0;
     private static volatile Snapshot snapshot = Snapshot.unloaded();
 
     private OreDepositExperiment() {
@@ -184,17 +183,12 @@ public final class OreDepositExperiment {
             if (!companionLoaded || "experimental_runtime".equals(runtimeStatus)) {
                 return this;
             }
-            LinkedHashMap<String, Double> boosted = new LinkedHashMap<>();
-            activationChancePerCandidate.forEach((material, chance) -> boosted.put(
-                    material,
-                    Math.min(1.0, chance * COMPANION_VALIDATION_MULTIPLIER)
-            ));
             return new Snapshot(
                     "experimental_runtime",
                     true,
                     placementMode,
                     "experimental_companion_overworld",
-                    boosted
+                    activationChancePerCandidate
             );
         }
 
