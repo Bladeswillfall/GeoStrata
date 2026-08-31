@@ -374,6 +374,14 @@ public final class OreDepositFeature extends Feature<DefaultFeatureConfig> {
         return TagKey.of(RegistryKeys.BLOCK, id);
     }
 
+    static boolean matchesHostLineage(
+            Set<String> validHosts,
+            String lithology,
+            Optional<String> parentLithology
+    ) {
+        return validHosts.contains(lithology) || parentLithology.map(validHosts::contains).orElse(false);
+    }
+
     private record ResolvedHost(String lithology, Optional<String> parentLithology) {
         private ResolvedHost {
             if (lithology == null || lithology.isBlank() || parentLithology == null) {
@@ -382,7 +390,7 @@ public final class OreDepositFeature extends Feature<DefaultFeatureConfig> {
         }
 
         private boolean matches(Set<String> validHosts) {
-            return validHosts.contains(lithology) || parentLithology.map(validHosts::contains).orElse(false);
+            return matchesHostLineage(validHosts, lithology, parentLithology);
         }
     }
 
