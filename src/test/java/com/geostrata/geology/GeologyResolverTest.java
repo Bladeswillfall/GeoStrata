@@ -2,10 +2,13 @@ package com.geostrata.geology;
 
 import org.junit.jupiter.api.Test;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 final class GeologyResolverTest {
     private static final long SEED = 123456789L;
@@ -27,7 +30,7 @@ final class GeologyResolverTest {
             GeologyResolver.Result resolved = GeologyResolver.resolve(SEED, x, y, z, site, catalog);
 
             assertEquals(site.outputLithology(SEED, x, y, z, catalog), resolved.lithology());
-            assertEquals(site.sample(x, y, z).bed().lithology(), resolved.parentLithology());
+            assertEquals(Optional.of(site.sample(x, y, z).bed().lithology()), resolved.parentLithology());
         }
     }
 
@@ -37,10 +40,64 @@ final class GeologyResolverTest {
         LithologyCatalog.Snapshot catalog = catalog("limestone", "carbonate");
         GeologyResolver.Result resolved = GeologyResolver.resolve(SEED, 1000, 0, -500, site, catalog);
 
-        assertEquals(site.sample(1000, 0, -500).bed().lithology(), resolved.parentLithology());
+        assertEquals(Optional.of(site.sample(1000, 0, -500).bed().lithology()), resolved.parentLithology());
         assertEquals(site.outputLithology(SEED, 1000, 0, -500, catalog), resolved.lithology());
         assertEquals(GeologyProvince.OROGENIC_BELT, resolved.province());
         assertEquals(GeologyResolver.Source.CORRELATED_STRATIGRAPHY, resolved.source());
+    }
+
+    @Test
+    void resolverMatchesProvinceBackgroundOutput() {
+        ProvinceBackgroundRuntime.Chunk background = background(GeologyProvince.CRATONIC_SHIELD, "gneiss");
+        GeologyResolver.Result resolved = GeologyResolver.resolve(1000, -20, -500, background);
+
+        assertEquals(background.lithologyAt(1000, -20, -500), resolved.lithology());
+        assertEquals(Optional.empty(), resolved.parentLithology());
+        assertEquals(background.provinceAt(1000, -20, -500), resolved.province());
+        assertEquals(GeologyResolver.Source.PROVINCE_BACKGROUND, resolved.source());
+    }
+
+    @Test
+    void correlatedAuthorityWinsWhenBothSourcesAreAvailable() {
+        CorrelatedSedimentaryRuntime.TerrainAwareSite site = site(GeologyProvince.OROGENIC_BELT, "shale");
+        ProvinceBackgroundRuntime.Chunk background = background(GeologyProvince.CRATONIC_SHIELD, "gneiss");
+        LithologyCatalog.Snapshot catalog = catalog("shale", "mudrock");
+
+        GeologyResolver.Result resolved = GeologyResolver.resolve(
+                SEED,
+                1000,
+                0,
+                -500,
+                Optional.of(site),
+                Optional.of(background),
+                catalog
+        ).orElseThrow();
+
+        assertEquals(site.outputLithology(SEED, 1000, 0, -500, catalog), resolved.lithology());
+        assertEquals(GeologyResolver.Source.CORRELATED_STRATIGRAPHY, resolved.source());
+    }
+
+    @Test
+    void resolverReturnsEmptyWhenNoSemanticRuntimeOwnsCoordinate() {
+        assertTrue(GeologyResolver.resolve(
+                SEED,
+                1000,
+                0,
+                -500,
+                Optional.empty(),
+                Optional.empty(),
+                catalog("shale", "mudrock")
+        ).isEmpty());
+    }
+
+    private static ProvinceBackgroundRuntime.Chunk background(GeologyProvince province, String lithology) {
+        ProvinceBackgroundRuntime.Column[] columns = new ProvinceBackgroundRuntime.Column[256];
+        Arrays.setAll(columns, ignored -> new ProvinceBackgroundRuntime.Column(
+                new ProvinceBackgroundRuntime.ResolvedColumn(province, y -> lithology),
+                null,
+                null
+        ));
+        return new ProvinceBackgroundRuntime.Chunk(992, -512, columns);
     }
 
     private static CorrelatedSedimentaryRuntime.TerrainAwareSite site(
