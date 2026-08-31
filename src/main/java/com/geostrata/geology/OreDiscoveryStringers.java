@@ -12,7 +12,7 @@ import java.util.List;
  */
 public final class OreDiscoveryStringers {
     private static final double TWO_PI = Math.PI * 2.0;
-    private static final double COPPER_EXPOSED_HALO_BLOCKS = 3.0;
+    private static final double COPPER_EXPOSED_HALO_BLOCKS = 6.0;
     private static final long STRINGER_SALT = 0x6A09E667F3BCC909L;
     private static final long LENGTH_SALT = 0xBB67AE8584CAA73BL;
     private static final long RADIUS_SALT = 0x3C6EF372FE94F82BL;
