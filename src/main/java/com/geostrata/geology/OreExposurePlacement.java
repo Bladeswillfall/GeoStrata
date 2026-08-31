@@ -2,7 +2,7 @@ package com.geostrata.geology;
 
 /** Placement policy for discoverable cave/ravine margins around graded ore bodies. */
 public final class OreExposurePlacement {
-    private static final int TRACE_PADDING_BLOCKS = 16;
+    private static final int TRACE_PADDING_BLOCKS = 24;
 
     private OreExposurePlacement() {
     }
