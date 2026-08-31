@@ -22,9 +22,11 @@ final class OreDiscoveryStringersTest {
     }
 
     @Test
-    void copperHasCaveFacingCandidateSpaceOutsideItsThinStringers() {
-        OreDiscoveryStringers.Field field = OreDiscoveryStringers.forBody(body("copper", 8675309L));
-        assertTrue(hasHaloOnlyVoxel(field));
+    void commonMetalsHaveCaveFacingCandidateSpaceOutsideTheirThinStringers() {
+        for (String material : new String[]{"iron", "copper"}) {
+            OreDiscoveryStringers.Field field = OreDiscoveryStringers.forBody(body(material, 8675309L));
+            assertTrue(hasHaloOnlyVoxel(field));
+        }
     }
 
     @Test
