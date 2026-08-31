@@ -32,7 +32,9 @@ Vanilla granite and diorite use `runtimeAuthority: volcanic_arc_complex`, so Geo
 
 Vanilla sandstone is the first provider-owned sedimentary example. It uses `runtimeAuthority: sedimentary_stratigraphy`: GeoStrata reuses `minecraft:sandstone` in the shared succession/stratigraphic runtime rather than adding a duplicate sandstone block or an independent sandstone blob feature. Correlated owned chunks and the advanced province-background sedimentary path can therefore share the same parent semantics.
 
-Hornfels is the first GeoStrata-owned runtime-only example. It uses `runtimeAuthority: contact_metamorphism`; there is deliberately no `hornfels_ore` feature and therefore no independent random hornfels body.
+Hornfels is a GeoStrata-owned runtime-only contact product. It uses `runtimeAuthority: contact_metamorphism`; there is deliberately no `hornfels_ore` feature and therefore no independent random hornfels body.
+
+Phyllite follows the same ownership rule for regional metamorphism. It uses `runtimeAuthority: regional_metamorphism`; the existing metamorphic field and Orogenic background gradient produce it between slate and schist, with no `phyllite_ore` feature or separate generator.
 
 The same ownership rule is intended for compatibility adapters: a loaded third-party provider can supply the material while GeoStrata supplies geological meaning and, where appropriate, shared geometry. Optional-mod activation remains an adapter concern; the core catalog must not pretend an absent provider block exists.
 
@@ -80,12 +82,12 @@ breccia → conglomerate → sandstone → siltstone → shale
 
 In owned orogenic chunks, metamorphic suitability combines with the resolved parent lithology:
 
-- mudrock parents → slate/schist/gneiss according to the existing grade-band selector;
+- mudrock parents → slate/phyllite/schist/gneiss according to the existing grade-band selector;
 - carbonate parents → marble;
 - quartz-sandstone parents → quartzite;
 - unsupported parents remain unchanged.
 
-Sandstone outside an orogenic metamorphic context remains ordinary vanilla sandstone. Baseline metamorphic lenses remain a compatibility fallback outside correlated ownership.
+Sandstone outside an orogenic metamorphic context remains ordinary vanilla sandstone. Baseline metamorphic lenses remain a compatibility fallback outside correlated ownership; phyllite is runtime-only and therefore does not add another baseline lens.
 
 Basalt and rhyolite remain independent bodies and may cut sedimentary strata; that is intentional for igneous rock.
 
