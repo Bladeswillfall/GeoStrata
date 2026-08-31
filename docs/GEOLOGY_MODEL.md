@@ -60,9 +60,12 @@ Uses metamorphic basement cut by igneous/volcanic bodies:
 - varied gneiss/schist basement;
 - narrower quartzite cores;
 - steep basalt dikes;
-- basalt sills;
-- local rhyolite bodies;
-- breccia halos around intrusive/volcanic bodies.
+- finite basalt sills;
+- zoned volcanic complexes with shallow rhyolite above granite/diorite plutonic roots;
+- shallow volcanic breccia halos;
+- deep parent-aware contact aureoles around the plutonic root.
+
+The plutonic root reuses the same deterministic complex geometry as the rhyolite body rather than adding a second intrusion engine. Contact aureole geometry likewise reuses that complex and lets parent lithology decide the thermal product.
 
 The rejected one-rock-per-province fill and later repeated four-lithology background matrix are no longer part of the advanced runtime.
 
@@ -164,13 +167,20 @@ Terrain-mod compatibility is semantic: a mod can make its natural stone eligible
 
 In correlated Orogenic chunks the parent rock is resolved before metamorphic output:
 
-- mudrock → slate / schist / gneiss when the metamorphic band selects an output;
+- mudrock → slate / schist / gneiss through the existing grade-band selector;
 - carbonate → marble;
+- quartz-rich sandstone → quartzite;
 - unsupported parents remain unchanged.
 
-The same transformed stratigraphic coordinate is used for parent bedding and metamorphic selection on overturned limbs.
+The quartz-rich parent is the provider-owned semantic `sandstone`, backed by vanilla `minecraft:sandstone` and emitted by the shared sedimentary-stratigraphy runtime. The orogenic fining-upward succession therefore reads:
 
-Quartzite remains fallback-only until a legitimate quartz-rich sandstone parent exists.
+```text
+breccia → conglomerate → sandstone → siltstone → shale
+```
+
+The same transformed stratigraphic coordinate is used for parent bedding and metamorphic selection on overturned limbs. Outside an eligible orogenic metamorphic context, sandstone remains sandstone.
+
+Contact metamorphism is separately geometry-driven but uses the same parent-first rule. In the volcanic-arc plutonic aureole, suitable pelitic/silty material becomes hornfels, carbonate becomes marble, quartz sandstone becomes quartzite, and unsupported/high-grade country rock remains unchanged.
 
 ## Diagnostics
 
@@ -183,10 +193,13 @@ Useful commands:
 /geostrata structure
 /geostrata metamorphism
 /geostrata experiment
+/geostrata resolve
 /geostrata ore <material> candidate
 ```
 
 `/geostrata structure` reports the active authority, structural components, correlated polarity when applicable, current-Y fault position/distance/dip, damage-zone state, total displacement and near-boundary suture information.
+
+`/geostrata resolve` reports the authoritative semantic lithology, province, body/process provenance and parent lithology when available alongside the actual world block.
 
 `/geostrata ore <material> candidate` uses the same fault binding and host precedence as runtime generation.
 
