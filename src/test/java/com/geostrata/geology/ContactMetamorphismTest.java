@@ -28,11 +28,16 @@ final class ContactMetamorphismTest {
     }
 
     @Test
-    void QuartzRichAndUnsupportedParentsRemainCompositionallyStable() {
+    void quartzRichParentsResolveToQuartzite() {
         LithologyCatalog.Snapshot catalog = catalog();
 
+        assertEquals("quartzite", ContactMetamorphism.product("sandstone", catalog));
         assertEquals("quartzite", ContactMetamorphism.product("quartzite", catalog));
-        assertEquals("gneiss", ContactMetamorphism.product("gneiss", catalog));
+    }
+
+    @Test
+    void unsupportedHighGradeParentRemainsStable() {
+        assertEquals("gneiss", ContactMetamorphism.product("gneiss", catalog()));
     }
 
     @Test
@@ -44,6 +49,7 @@ final class ContactMetamorphismTest {
         List<LithologyCatalog.Entry> entries = List.of(
                 entry("shale", "sedimentary", "mudrock"),
                 entry("siltstone", "sedimentary", "silt_clastic"),
+                entry("sandstone", "sedimentary", "quartz_sandstone"),
                 entry("limestone", "sedimentary", "carbonate"),
                 entry("slate", "metamorphic", "low_grade_foliated"),
                 entry("schist", "metamorphic", "medium_grade_foliated"),
