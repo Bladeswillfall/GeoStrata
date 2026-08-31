@@ -290,7 +290,10 @@ public final class OreDepositFeature extends Feature<DefaultFeatureConfig> {
         }
         OreDepositGeometry.Sample sample = body.sample(x, y, z);
         boolean stringer = discovery.contains(x, y, z);
-        if (!sample.economic() && !sample.trace() && !stringer) {
+        boolean exposedFringe = !stringer
+                && discovery.nearStringer(x, y, z)
+                && touchesAir(world, neighbor, x, y, z);
+        if (!sample.economic() && !sample.trace() && !stringer && !exposedFringe) {
             return false;
         }
         mutable.set(x, y, z);
@@ -298,14 +301,13 @@ public final class OreDepositFeature extends Feature<DefaultFeatureConfig> {
         if (host == null) {
             return false;
         }
+        boolean discoveryOre = stringer || exposedFringe;
+        boolean exposedTrace = sample.trace()
+                && (exposedFringe || touchesAir(world, neighbor, x, y, z));
         boolean parentHost = validHosts.contains(host);
         OreGrade grade = parentHost
-                ? OreExposurePlacement.placementGrade(
-                        sample,
-                        sample.trace() && touchesAir(world, neighbor, x, y, z),
-                        stringer
-                )
-                : stringer ? OreGrade.POOR : null;
+                ? OreExposurePlacement.placementGrade(sample, exposedTrace, discoveryOre)
+                : discoveryOre ? OreGrade.POOR : null;
         if (grade == null) {
             return false;
         }
