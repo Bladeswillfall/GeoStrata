@@ -21,7 +21,6 @@ import net.minecraft.world.StructureWorldAccess;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.chunk.ChunkSection;
 import net.minecraft.world.chunk.PalettedContainer;
-import net.minecraft.world.gen.StructureAccessor;
 import net.minecraft.world.gen.feature.DefaultFeatureConfig;
 import net.minecraft.world.gen.feature.Feature;
 import net.minecraft.world.gen.feature.util.FeatureContext;
@@ -119,11 +118,7 @@ public final class CorrelatedSedimentaryFeature extends Feature<DefaultFeatureCo
                 Math.floorDiv(startX, CHUNK_SIZE),
                 Math.floorDiv(startZ, CHUNK_SIZE)
         );
-        StructureAccessor structures = world.toServerWorld().getStructureAccessor();
-        List<BlockBox> protectedStructurePieces = structures.getStructureStarts(chunk.getPos(), structure -> true).stream()
-                .flatMap(start -> start.getChildren().stream())
-                .map(piece -> piece.getBoundingBox())
-                .toList();
+        List<BlockBox> protectedStructurePieces = StructurePieceProtection.forChunk(world, chunk);
         ColumnCache[] columns = new ColumnCache[CHUNK_SIZE * CHUNK_SIZE];
         GeologyProvinceSampler.Context provinceContext = provinceContext(world.getSeed(), startX, startZ, site);
         int placed = 0;
@@ -272,7 +267,7 @@ public final class CorrelatedSedimentaryFeature extends Feature<DefaultFeatureCo
             }
 
             int y = sectionBottomY + localY;
-            if (insideStructurePiece(protectedStructurePieces, x, y, z)) {
+            if (StructurePieceProtection.contains(protectedStructurePieces, x, y, z)) {
                 continue;
             }
             if (column == null) {
@@ -292,15 +287,6 @@ public final class CorrelatedSedimentaryFeature extends Feature<DefaultFeatureCo
             }
         }
         return placed;
-    }
-
-    private static boolean insideStructurePiece(List<BlockBox> boxes, int x, int y, int z) {
-        for (BlockBox box : boxes) {
-            if (box.contains(x, y, z)) {
-                return true;
-            }
-        }
-        return false;
     }
 
     private static BlockState replacementState(
