@@ -15,17 +15,20 @@ import net.minecraft.registry.Registries;
 import net.minecraft.registry.RegistryKeys;
 import net.minecraft.registry.tag.TagKey;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.math.BlockBox;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.StructureWorldAccess;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.chunk.ChunkSection;
 import net.minecraft.world.chunk.PalettedContainer;
+import net.minecraft.world.gen.StructureAccessor;
 import net.minecraft.world.gen.feature.DefaultFeatureConfig;
 import net.minecraft.world.gen.feature.Feature;
 import net.minecraft.world.gen.feature.util.FeatureContext;
 
 import java.util.HashMap;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -116,6 +119,11 @@ public final class CorrelatedSedimentaryFeature extends Feature<DefaultFeatureCo
                 Math.floorDiv(startX, CHUNK_SIZE),
                 Math.floorDiv(startZ, CHUNK_SIZE)
         );
+        StructureAccessor structures = world.toServerWorld().getStructureAccessor();
+        List<BlockBox> protectedStructurePieces = structures.getStructureStarts(chunk.getPos(), structure -> true).stream()
+                .flatMap(start -> start.getChildren().stream())
+                .map(piece -> piece.getBoundingBox())
+                .toList();
         ColumnCache[] columns = new ColumnCache[CHUNK_SIZE * CHUNK_SIZE];
         GeologyProvinceSampler.Context provinceContext = provinceContext(world.getSeed(), startX, startZ, site);
         int placed = 0;
@@ -147,7 +155,8 @@ public final class CorrelatedSedimentaryFeature extends Feature<DefaultFeatureCo
                     catalog,
                     outputStates,
                     columns,
-                    provinceContext
+                    provinceContext,
+                    protectedStructurePieces
             );
         }
         if (placed > 0) {
@@ -193,7 +202,8 @@ public final class CorrelatedSedimentaryFeature extends Feature<DefaultFeatureCo
             LithologyCatalog.Snapshot catalog,
             Map<String, BlockState> outputStates,
             ColumnCache[] columns,
-            GeologyProvinceSampler.Context provinceContext
+            GeologyProvinceSampler.Context provinceContext,
+            List<BlockBox> protectedStructurePieces
     ) {
         int minLocalY = minY - sectionBottomY;
         int maxLocalY = maxY - sectionBottomY;
@@ -218,7 +228,8 @@ public final class CorrelatedSedimentaryFeature extends Feature<DefaultFeatureCo
                             catalog,
                             outputStates,
                             columns,
-                            provinceContext
+                            provinceContext,
+                            protectedStructurePieces
                     );
                 }
             }
@@ -246,7 +257,8 @@ public final class CorrelatedSedimentaryFeature extends Feature<DefaultFeatureCo
             LithologyCatalog.Snapshot catalog,
             Map<String, BlockState> outputStates,
             ColumnCache[] columns,
-            GeologyProvinceSampler.Context provinceContext
+            GeologyProvinceSampler.Context provinceContext,
+            List<BlockBox> protectedStructurePieces
     ) {
         int x = startX + localX;
         int z = startZ + localZ;
@@ -259,6 +271,10 @@ public final class CorrelatedSedimentaryFeature extends Feature<DefaultFeatureCo
                 continue;
             }
 
+            int y = sectionBottomY + localY;
+            if (insideStructurePiece(protectedStructurePieces, x, y, z)) {
+                continue;
+            }
             if (column == null) {
                 column = new ColumnCache(
                         site.column(worldSeed, x, z, provinceContext),
@@ -266,7 +282,6 @@ public final class CorrelatedSedimentaryFeature extends Feature<DefaultFeatureCo
                 );
                 columns[columnIndex] = column;
             }
-            int y = sectionBottomY + localY;
             String lithology = FaultDamageZone.contains(site.ownership().province(), column.tectonic(), y)
                     ? "breccia"
                     : column.geology().outputLithology(y, catalog);
@@ -277,6 +292,15 @@ public final class CorrelatedSedimentaryFeature extends Feature<DefaultFeatureCo
             }
         }
         return placed;
+    }
+
+    private static boolean insideStructurePiece(List<BlockBox> boxes, int x, int y, int z) {
+        for (BlockBox box : boxes) {
+            if (box.contains(x, y, z)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private static BlockState replacementState(
