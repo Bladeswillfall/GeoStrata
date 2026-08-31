@@ -155,6 +155,7 @@ jobs:
           geostrata = json.loads(Path('run/results/geostrata.json').read_text())
           overlapping = ('coal', 'iron', 'copper', 'gold', 'emerald')
           common = ('coal', 'iron', 'copper')
+          preserved = ('redstone', 'lapis')
 
           def aggregate(data, materials, graded=False):
               rows = [data['materials'][material] for material in materials]
@@ -174,6 +175,7 @@ jobs:
               'seed': baseline['seed'],
               'chunkCount': baseline['chunkCount'],
               'overlappingMaterials': list(overlapping),
+              'preservedVanillaMaterials': list(preserved),
               'vanilla': aggregate(baseline, overlapping),
               'geostrataGraded': aggregate(geostrata, overlapping, graded=True),
               'materials': {},
@@ -201,6 +203,8 @@ jobs:
               }
               if target is not None and graded_patches < target:
                   failures.append(f"{material}: {graded_patches} < {target} patches")
+              if material in preserved and before['total'] > 0 and after['vanillaTaggedBlocks'] == 0:
+                  failures.append(f"{material}: unsupported vanilla resource disappeared")
 
           Path('run/results/paired.json').write_text(json.dumps(summary, indent=2) + '\n')
           lines = [
@@ -220,6 +224,7 @@ jobs:
           lines.extend([
               '',
               'Common-resource acceptance floor: each of coal, iron and copper must retain at least 50% of the vanilla exposed-patch count.',
+              'Unsupported-resource preservation: redstone and lapis must remain present when the vanilla reference contains them.',
               f"- vanilla overlapping total: {summary['vanilla']['total']}",
               f"- GeoStrata graded overlapping total: {summary['geostrataGraded']['total']}",
               f"- vanilla overlapping exposed patches: {summary['vanilla']['airExposedClusters']}",
@@ -228,7 +233,7 @@ jobs:
           Path('run/results/paired.md').write_text('\n'.join(lines) + '\n')
           print('\n'.join(lines))
           if failures:
-              raise SystemExit('Common ore exposure floor failed: ' + '; '.join(failures))
+              raise SystemExit('Ore benchmark acceptance failed: ' + '; '.join(failures))
           PY
 
       - name: Upload benchmark results

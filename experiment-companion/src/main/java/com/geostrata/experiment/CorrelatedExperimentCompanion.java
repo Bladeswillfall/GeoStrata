@@ -29,7 +29,7 @@ public final class CorrelatedExperimentCompanion implements ModInitializer {
             RegistryKeys.PLACED_FEATURE,
             GeoStrata.id("province_background_experiment")
     );
-    private static final List<RegistryKey<PlacedFeature>> VANILLA_OVERWORLD_ORES = List.of(
+    private static final List<RegistryKey<PlacedFeature>> REPLACED_VANILLA_OVERWORLD_ORES = List.of(
             OrePlacedFeatures.ORE_COAL_UPPER,
             OrePlacedFeatures.ORE_COAL_LOWER,
             OrePlacedFeatures.ORE_IRON_UPPER,
@@ -38,13 +38,9 @@ public final class CorrelatedExperimentCompanion implements ModInitializer {
             OrePlacedFeatures.ORE_GOLD_EXTRA,
             OrePlacedFeatures.ORE_GOLD,
             OrePlacedFeatures.ORE_GOLD_LOWER,
-            OrePlacedFeatures.ORE_REDSTONE,
-            OrePlacedFeatures.ORE_REDSTONE_LOWER,
             OrePlacedFeatures.ORE_DIAMOND,
             OrePlacedFeatures.ORE_DIAMOND_LARGE,
             OrePlacedFeatures.ORE_DIAMOND_BURIED,
-            OrePlacedFeatures.ORE_LAPIS,
-            OrePlacedFeatures.ORE_LAPIS_BURIED,
             OrePlacedFeatures.ORE_EMERALD,
             OrePlacedFeatures.ORE_COPPER,
             OrePlacedFeatures.ORE_COPPER_LARGE
@@ -56,7 +52,7 @@ public final class CorrelatedExperimentCompanion implements ModInitializer {
                 .add(
                         ModificationPhase.REMOVALS,
                         BiomeSelectors.foundInOverworld(),
-                        context -> VANILLA_OVERWORLD_ORES.forEach(feature -> context.getGenerationSettings()
+                        context -> REPLACED_VANILLA_OVERWORLD_ORES.forEach(feature -> context.getGenerationSettings()
                                 .removeFeature(GenerationStep.Feature.UNDERGROUND_ORES, feature))
                 );
         BiomeModifications.addFeature(
@@ -71,7 +67,7 @@ public final class CorrelatedExperimentCompanion implements ModInitializer {
         );
         OreDebugCommands.register();
         GeoStrata.LOGGER.info(
-                "GeoStrata experimental worldgen companion enabled; vanilla Overworld ores suppressed for validation"
+                "GeoStrata experimental worldgen companion enabled; replaced vanilla ores suppressed, unsupported vanilla ores preserved"
         );
     }
 }
