@@ -16,7 +16,6 @@ import net.minecraft.world.StructureWorldAccess;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.chunk.ChunkSection;
 import net.minecraft.world.chunk.PalettedContainer;
-import net.minecraft.world.gen.StructureAccessor;
 import net.minecraft.world.gen.feature.DefaultFeatureConfig;
 import net.minecraft.world.gen.feature.Feature;
 import net.minecraft.world.gen.feature.util.FeatureContext;
@@ -97,11 +96,7 @@ public final class ProvinceBackgroundFeature extends Feature<DefaultFeatureConfi
                 Math.floorDiv(startX, CHUNK_SIZE),
                 Math.floorDiv(startZ, CHUNK_SIZE)
         );
-        StructureAccessor structures = world.toServerWorld().getStructureAccessor();
-        List<BlockBox> protectedStructurePieces = structures.getStructureStarts(chunk.getPos(), structure -> true).stream()
-                .flatMap(start -> start.getChildren().stream())
-                .map(piece -> piece.getBoundingBox())
-                .toList();
+        List<BlockBox> protectedStructurePieces = StructurePieceProtection.forChunk(world, chunk);
 
         int placed = 0;
         ChunkSection[] sections = chunk.getSectionArray();
@@ -191,7 +186,7 @@ public final class ProvinceBackgroundFeature extends Feature<DefaultFeatureConfi
                 continue;
             }
             int worldY = context.sectionBottomY() + localY;
-            if (insideStructurePiece(context.protectedStructurePieces(), worldX, worldY, worldZ)) {
+            if (StructurePieceProtection.contains(context.protectedStructurePieces(), worldX, worldY, worldZ)) {
                 continue;
             }
 
@@ -203,15 +198,6 @@ public final class ProvinceBackgroundFeature extends Feature<DefaultFeatureConfi
             }
         }
         return placed;
-    }
-
-    private static boolean insideStructurePiece(List<BlockBox> boxes, int x, int y, int z) {
-        for (BlockBox box : boxes) {
-            if (box.contains(x, y, z)) {
-                return true;
-            }
-        }
-        return false;
     }
 
     private static Map<String, BlockState> outputStates(LithologyCatalog.Snapshot catalog) {
