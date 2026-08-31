@@ -7,6 +7,7 @@ import com.geostrata.geology.GeologyProvince;
 import com.geostrata.geology.GeologyProvinceSampler;
 import com.geostrata.geology.SedimentaryFieldProfiles;
 import com.geostrata.geology.TectonicStructuralField;
+import com.geostrata.geology.TerraneSuture;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.StructureWorldAccess;
 import net.minecraft.world.gen.feature.DefaultFeatureConfig;
@@ -71,7 +72,7 @@ public final class DiamondStructuralFeature extends Feature<DefaultFeatureConfig
                         candidate.anchorX(),
                         candidate.anchorZ()
                 );
-                if (province.province() != GeologyProvince.CRATONIC_SHIELD || province.distanceToBoundary() < 64.0) {
+                if (province.province() != GeologyProvince.CRATONIC_SHIELD || TerraneSuture.canCross(province)) {
                     continue;
                 }
 
