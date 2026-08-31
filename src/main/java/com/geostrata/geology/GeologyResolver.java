@@ -90,7 +90,8 @@ public final class GeologyResolver {
                 lithology,
                 Optional.of(parentLithology),
                 site.ownership().province(),
-                Source.CORRELATED_STRATIGRAPHY
+                Source.CORRELATED_STRATIGRAPHY,
+                Optional.empty()
         );
     }
 
@@ -98,11 +99,13 @@ public final class GeologyResolver {
         if (background == null) {
             throw new IllegalArgumentException("province background must not be null");
         }
+        ProvinceBackgroundRuntime.ResolvedSample sample = background.sampleAt(x, y, z);
         return new Result(
-                background.lithologyAt(x, y, z),
+                sample.lithology(),
                 Optional.empty(),
                 background.provinceAt(x, y, z),
-                Source.PROVINCE_BACKGROUND
+                Source.PROVINCE_BACKGROUND,
+                Optional.of(sample.bodyStyle())
         );
     }
 
@@ -133,13 +136,16 @@ public final class GeologyResolver {
             String lithology,
             Optional<String> parentLithology,
             GeologyProvince province,
-            Source source
+            Source source,
+            Optional<String> bodyStyle
     ) {
         public Result {
             if (lithology == null || lithology.isBlank()
                     || parentLithology == null
                     || parentLithology.map(String::isBlank).orElse(false)
-                    || province == null || source == null) {
+                    || province == null || source == null
+                    || bodyStyle == null
+                    || bodyStyle.map(String::isBlank).orElse(false)) {
                 throw new IllegalArgumentException("resolved geology must be complete");
             }
         }

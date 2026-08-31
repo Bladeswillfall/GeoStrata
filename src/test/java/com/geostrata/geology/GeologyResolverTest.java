@@ -31,6 +31,7 @@ final class GeologyResolverTest {
 
             assertEquals(site.outputLithology(SEED, x, y, z, catalog), resolved.lithology());
             assertEquals(Optional.of(site.sample(x, y, z).bed().lithology()), resolved.parentLithology());
+            assertEquals(Optional.empty(), resolved.bodyStyle());
         }
     }
 
@@ -44,23 +45,83 @@ final class GeologyResolverTest {
         assertEquals(site.outputLithology(SEED, 1000, 0, -500, catalog), resolved.lithology());
         assertEquals(GeologyProvince.OROGENIC_BELT, resolved.province());
         assertEquals(GeologyResolver.Source.CORRELATED_STRATIGRAPHY, resolved.source());
+        assertEquals(Optional.empty(), resolved.bodyStyle());
     }
 
     @Test
     void resolverMatchesProvinceBackgroundOutput() {
-        ProvinceBackgroundRuntime.Chunk background = background(GeologyProvince.CRATONIC_SHIELD, "gneiss");
+        ProvinceBackgroundRuntime.Chunk background = background(
+                GeologyProvince.CRATONIC_SHIELD,
+                "gneiss",
+                "basement_terrane"
+        );
         GeologyResolver.Result resolved = GeologyResolver.resolve(1000, -20, -500, background);
 
         assertEquals(background.lithologyAt(1000, -20, -500), resolved.lithology());
         assertEquals(Optional.empty(), resolved.parentLithology());
         assertEquals(background.provinceAt(1000, -20, -500), resolved.province());
         assertEquals(GeologyResolver.Source.PROVINCE_BACKGROUND, resolved.source());
+        assertEquals(Optional.of(background.sampleAt(1000, -20, -500).bodyStyle()), resolved.bodyStyle());
+    }
+
+    @Test
+    void lithologyOnlyQueryDoesNotResolveBodyProvenance() {
+        ProvinceBackgroundRuntime.ResolvedColumn resolvedColumn = new ProvinceBackgroundRuntime.ResolvedColumn(
+                GeologyProvince.CRATONIC_SHIELD,
+                y -> "gneiss",
+                y -> {
+                    throw new AssertionError("lithology-only query must not resolve body provenance");
+                }
+        );
+        ProvinceBackgroundRuntime.Column column = new ProvinceBackgroundRuntime.Column(resolvedColumn, null, null);
+        ProvinceBackgroundRuntime.Column[] columns = new ProvinceBackgroundRuntime.Column[256];
+        Arrays.fill(columns, column);
+        ProvinceBackgroundRuntime.Chunk background = new ProvinceBackgroundRuntime.Chunk(992, -512, columns);
+
+        assertEquals("gneiss", background.lithologyAt(1000, -20, -500));
+    }
+
+    @Test
+    void bodyProvenanceFollowsDepthDependentTerraneOwnership() {
+        ProvinceBackgroundRuntime.ResolvedColumn primary = new ProvinceBackgroundRuntime.ResolvedColumn(
+                GeologyProvince.VOLCANIC_ARC,
+                y -> "basalt",
+                y -> new ProvinceBackgroundRuntime.ResolvedSample("basalt", "dike")
+        );
+        ProvinceBackgroundRuntime.ResolvedColumn neighbor = new ProvinceBackgroundRuntime.ResolvedColumn(
+                GeologyProvince.CRATONIC_SHIELD,
+                y -> "gneiss",
+                y -> new ProvinceBackgroundRuntime.ResolvedSample("gneiss", "basement_terrane")
+        );
+        ProvinceBackgroundRuntime.Column column = new ProvinceBackgroundRuntime.Column(
+                primary,
+                neighbor,
+                new TerraneSuture.Contact(true, 0.0, 1.0, 0.0)
+        );
+        ProvinceBackgroundRuntime.Column[] columns = new ProvinceBackgroundRuntime.Column[256];
+        Arrays.fill(columns, column);
+        ProvinceBackgroundRuntime.Chunk background = new ProvinceBackgroundRuntime.Chunk(992, -512, columns);
+
+        GeologyResolver.Result surface = GeologyResolver.resolve(1000, 0, -500, background);
+        GeologyResolver.Result belowContact = GeologyResolver.resolve(1000, 1, -500, background);
+
+        assertEquals("basalt", surface.lithology());
+        assertEquals(GeologyProvince.VOLCANIC_ARC, surface.province());
+        assertEquals(Optional.of("dike"), surface.bodyStyle());
+
+        assertEquals("gneiss", belowContact.lithology());
+        assertEquals(GeologyProvince.CRATONIC_SHIELD, belowContact.province());
+        assertEquals(Optional.of("basement_terrane"), belowContact.bodyStyle());
     }
 
     @Test
     void correlatedAuthorityWinsWhenBothSourcesAreAvailable() {
         CorrelatedSedimentaryRuntime.TerrainAwareSite site = site(GeologyProvince.OROGENIC_BELT, "shale");
-        ProvinceBackgroundRuntime.Chunk background = background(GeologyProvince.CRATONIC_SHIELD, "gneiss");
+        ProvinceBackgroundRuntime.Chunk background = background(
+                GeologyProvince.CRATONIC_SHIELD,
+                "gneiss",
+                "basement_terrane"
+        );
         LithologyCatalog.Snapshot catalog = catalog("shale", "mudrock");
 
         GeologyResolver.Result resolved = GeologyResolver.resolve(
@@ -75,6 +136,7 @@ final class GeologyResolverTest {
 
         assertEquals(site.outputLithology(SEED, 1000, 0, -500, catalog), resolved.lithology());
         assertEquals(GeologyResolver.Source.CORRELATED_STRATIGRAPHY, resolved.source());
+        assertEquals(Optional.empty(), resolved.bodyStyle());
     }
 
     @Test
@@ -90,10 +152,18 @@ final class GeologyResolverTest {
         ).isEmpty());
     }
 
-    private static ProvinceBackgroundRuntime.Chunk background(GeologyProvince province, String lithology) {
+    private static ProvinceBackgroundRuntime.Chunk background(
+            GeologyProvince province,
+            String lithology,
+            String bodyStyle
+    ) {
         ProvinceBackgroundRuntime.Column[] columns = new ProvinceBackgroundRuntime.Column[256];
         Arrays.setAll(columns, ignored -> new ProvinceBackgroundRuntime.Column(
-                new ProvinceBackgroundRuntime.ResolvedColumn(province, y -> lithology),
+                new ProvinceBackgroundRuntime.ResolvedColumn(
+                        province,
+                        y -> lithology,
+                        y -> new ProvinceBackgroundRuntime.ResolvedSample(lithology, bodyStyle)
+                ),
                 null,
                 null
         ));
