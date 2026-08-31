@@ -30,7 +30,7 @@ A provider-owned block cannot claim a GeoStrata fallback feature. A GeoStrata-ow
 
 Vanilla granite and diorite use `runtimeAuthority: volcanic_arc_complex`, so GeoStrata gives the vanilla blocks geological meaning and coherent placement without creating duplicate granite/diorite blocks or fallback features.
 
-Vanilla sandstone is the first provider-owned sedimentary example. It uses `runtimeAuthority: correlated_stratigraphy`: GeoStrata reuses `minecraft:sandstone` as a quartz-rich bed in the correlated fining-upward succession rather than adding a duplicate sandstone block or an independent sandstone blob feature.
+Vanilla sandstone is the first provider-owned sedimentary example. It uses `runtimeAuthority: sedimentary_stratigraphy`: GeoStrata reuses `minecraft:sandstone` in the shared succession/stratigraphic runtime rather than adding a duplicate sandstone block or an independent sandstone blob feature. Correlated owned chunks and the advanced province-background sedimentary path can therefore share the same parent semantics.
 
 Hornfels is the first GeoStrata-owned runtime-only example. It uses `runtimeAuthority: contact_metamorphism`; there is deliberately no `hornfels_ore` feature and therefore no independent random hornfels body.
 
@@ -60,7 +60,7 @@ The deep outer shell of that same volcanic-complex geometry also marks a narrow 
 - quartz sandstone and quartz-rich metamorphic parents → quartzite;
 - unsupported/high-grade parents remain unchanged.
 
-This avoids the visibly simple but geologically wrong solution of drawing a universal hornfels donut around every pluton. In the current Volcanic Arc basement, schist portions of the aureole bake to hornfels while quartzite remains quartzite and high-grade gneiss remains gneiss. If correlated or future country rock supplies sandstone at an intrusion contact, the same parent rule yields quartzite without special-casing the block provider.
+This avoids the visibly simple but geologically wrong solution of drawing a universal hornfels donut around every pluton. In the current Volcanic Arc basement, schist portions of the aureole bake to hornfels while quartzite remains quartzite and high-grade gneiss remains gneiss. If future country rock supplies sandstone at an intrusion contact, the same parent rule yields quartzite without special-casing the block provider.
 
 The aureole reuses the existing complex radius and adds no second thermal noise field. Basalt dikes and sills keep their existing precedence; this slice does not add separate aureoles around every small dike/sill.
 
@@ -91,6 +91,6 @@ Basalt and rhyolite remain independent bodies and may cut sedimentary strata; th
 
 ## Remaining boundary
 
-Provider-owned sandstone deliberately has no independent GeoStrata fallback feature. It exists only where the correlated stratigraphic runtime owns the geology. If standalone/non-companion worlds later need coherent sandstone geology, that should reuse native/platform terrain geology rather than reintroducing a random duplicate sandstone body solely to increase coverage.
+Provider-owned sandstone deliberately has no independent GeoStrata fallback feature. It exists only where the advanced sedimentary-stratigraphy runtime owns the geology. If standalone/non-companion worlds later need coherent sandstone geology, that should reuse native/platform terrain geology rather than reintroducing a random duplicate sandstone body solely to increase coverage.
 
 Sandy loam uses the same native `minecraft:disk` plus terrain/biome suitability approach as the other surface loams rather than an underground ore feature.
