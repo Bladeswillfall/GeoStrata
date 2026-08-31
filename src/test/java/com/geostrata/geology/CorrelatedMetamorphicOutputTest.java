@@ -31,6 +31,13 @@ final class CorrelatedMetamorphicOutputTest {
     }
 
     @Test
+    void orogenicQuartzSandstoneResolvesToQuartzite() {
+        CorrelatedSedimentaryRuntime.TerrainAwareSite site = site(GeologyProvince.OROGENIC_BELT, "sandstone");
+
+        assertEquals("quartzite", site.outputLithology(SEED, X, 0, Z, catalog()));
+    }
+
+    @Test
     void nonMetamorphicParentIsPreserved() {
         CorrelatedSedimentaryRuntime.TerrainAwareSite site = site(GeologyProvince.OROGENIC_BELT, "siltstone");
 
@@ -38,10 +45,12 @@ final class CorrelatedMetamorphicOutputTest {
     }
 
     @Test
-    void mudrockOutsideOrogenicExperimentIsPreserved() {
-        CorrelatedSedimentaryRuntime.TerrainAwareSite site = site(GeologyProvince.SEDIMENTARY_BASIN, "shale");
+    void metamorphicParentsOutsideOrogenicExperimentArePreserved() {
+        CorrelatedSedimentaryRuntime.TerrainAwareSite mudrock = site(GeologyProvince.SEDIMENTARY_BASIN, "shale");
+        CorrelatedSedimentaryRuntime.TerrainAwareSite sandstone = site(GeologyProvince.SEDIMENTARY_BASIN, "sandstone");
 
-        assertEquals("shale", site.outputLithology(SEED, X, 0, Z, catalog()));
+        assertEquals("shale", mudrock.outputLithology(SEED, X, 0, Z, catalog()));
+        assertEquals("sandstone", sandstone.outputLithology(SEED, X, 0, Z, catalog()));
     }
 
     @Test
@@ -153,11 +162,17 @@ final class CorrelatedMetamorphicOutputTest {
     private static LithologyCatalog.Snapshot catalog() {
         LithologyCatalog.Entry shale = entry("shale", "mudrock");
         LithologyCatalog.Entry siltstone = entry("siltstone", "silt_clastic");
+        LithologyCatalog.Entry sandstone = entry("sandstone", "quartz_sandstone");
         LithologyCatalog.Entry limestone = entry("limestone", "carbonate");
         return new LithologyCatalog.Snapshot(
                 "metadata_only",
-                List.of(shale, siltstone, limestone),
-                Map.of("shale", shale, "siltstone", siltstone, "limestone", limestone)
+                List.of(shale, siltstone, sandstone, limestone),
+                Map.of(
+                        "shale", shale,
+                        "siltstone", siltstone,
+                        "sandstone", sandstone,
+                        "limestone", limestone
+                )
         );
     }
 
