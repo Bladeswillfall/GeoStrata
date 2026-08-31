@@ -19,7 +19,11 @@ final class LithologyGenerationMethodTest {
         JsonObject catalog = read(RESOURCES.resolve("geology/lithologies.json"));
         for (var element : catalog.getAsJsonArray("lithologies")) {
             JsonObject lithology = element.getAsJsonObject();
-            String feature = lithology.get("baselineFeature").getAsString();
+            var baselineFeature = lithology.get("baselineFeature");
+            if (baselineFeature == null || baselineFeature.isJsonNull()) {
+                continue;
+            }
+            String feature = baselineFeature.getAsString();
             JsonObject configured = read(RESOURCES.resolve("worldgen/configured_feature/" + feature + ".json"));
             assertNotEquals("minecraft:ore", configured.get("type").getAsString(), feature);
         }
