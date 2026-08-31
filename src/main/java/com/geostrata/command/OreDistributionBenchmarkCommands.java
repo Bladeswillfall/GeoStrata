@@ -204,9 +204,13 @@ public final class OreDistributionBenchmarkCommands {
         private long planeExposed;
         private long graded;
         private long vanillaTagged;
+        private long gradedExposed;
+        private long vanillaExposed;
         private final EnumMap<OreGrade, Long> grades = new EnumMap<>(OreGrade.class);
         private final Set<Long> exposedChunks = new HashSet<>();
         private final Set<Long> exposedPositions = new HashSet<>();
+        private final Set<Long> gradedExposedPositions = new HashSet<>();
+        private final Set<Long> vanillaExposedPositions = new HashSet<>();
 
         private void record(OreSample sample, boolean plane, int exposedFaces, long chunkKey, long pos) {
             total++;
@@ -226,8 +230,19 @@ public final class OreDistributionBenchmarkCommands {
             airFaces += exposedFaces;
             exposedChunks.add(chunkKey);
             exposedPositions.add(pos);
+            recordSourceExposure(sample, pos);
             if (plane) {
                 planeExposed++;
+            }
+        }
+
+        private void recordSourceExposure(OreSample sample, long pos) {
+            if (sample.graded()) {
+                gradedExposed++;
+                gradedExposedPositions.add(pos);
+            } else {
+                vanillaExposed++;
+                vanillaExposedPositions.add(pos);
             }
         }
 
@@ -243,6 +258,10 @@ public final class OreDistributionBenchmarkCommands {
             json.addProperty("planeAirExposed", planeExposed);
             json.addProperty("gradedBlocks", graded);
             json.addProperty("vanillaTaggedBlocks", vanillaTagged);
+            json.addProperty("gradedAirExposed", gradedExposed);
+            json.addProperty("vanillaTaggedAirExposed", vanillaExposed);
+            json.addProperty("gradedAirExposedClusters", exposedClusters(gradedExposedPositions));
+            json.addProperty("vanillaTaggedAirExposedClusters", exposedClusters(vanillaExposedPositions));
             JsonObject gradeJson = new JsonObject();
             for (OreGrade grade : OreGrade.values()) {
                 gradeJson.addProperty(grade.id(), grades.getOrDefault(grade, 0L));
