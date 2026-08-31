@@ -313,7 +313,9 @@ public final class CorrelatedSedimentaryRuntime {
             }
 
             String genesis = catalog.require(parent).genesis();
-            if (!"mudrock".equals(genesis) && !"carbonate".equals(genesis)) {
+            if (!"mudrock".equals(genesis)
+                    && !"carbonate".equals(genesis)
+                    && !"quartz_sandstone".equals(genesis)) {
                 return cache(y, runEndY, parent);
             }
 
@@ -325,6 +327,9 @@ public final class CorrelatedSedimentaryRuntime {
             }
             if ("carbonate".equals(genesis)) {
                 return cache(y, runEndY, "marble");
+            }
+            if ("quartz_sandstone".equals(genesis)) {
+                return cache(y, runEndY, "quartzite");
             }
 
             Optional<MetamorphicBandPlanner.Selection> selection = MetamorphicBandPlanner.select(
