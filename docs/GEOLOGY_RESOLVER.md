@@ -13,42 +13,55 @@ It is deliberately **not** a second geology generator.
 Geological geometry remains owned by the existing model:
 
 1. province/context selection;
-2. succession/contact planning;
-3. stratigraphic fields;
-4. terrain-aware drape/fold deformation;
-5. metamorphic transformation;
-6. future queryable fault, intrusion and other body fields.
+2. correlated succession/contact planning where that runtime owns the chunk;
+3. province-background architecture everywhere else in the advanced runtime;
+4. terrain-aware structural deformation and sutures;
+5. metamorphic and fault-damage transformations already owned by those runtimes;
+6. future queryable intrusion and other body fields.
 
-The resolver only composes those answers and returns semantic provenance.
-
-It must not introduce its own noise, layer thickness, fold equations, replacement order or material-placement rules.
+The resolver only composes those answers and returns semantic provenance. It must not introduce its own noise, layer thickness, fold equations, replacement order or material-placement rules.
 
 ## Current scope
 
-The first implementation resolves only geology owned by `CorrelatedSedimentaryRuntime.TerrainAwareSite` because that system is already deterministic and queryable without reading placed world blocks.
+The resolver now covers both queryable authorities used by the advanced companion runtime:
 
-The returned result currently contains:
+- `CorrelatedSedimentaryRuntime.TerrainAwareSite` has first authority in chunks it owns;
+- `ProvinceBackgroundRuntime.Chunk` supplies the remaining province architecture.
+
+The returned result contains:
 
 - final lithology;
-- parent lithology;
-- geological province;
-- resolver source (`CORRELATED_STRATIGRAPHY`).
+- optional parent lithology;
+- geological province at that depth;
+- resolver source (`CORRELATED_STRATIGRAPHY` or `PROVINCE_BACKGROUND`).
 
-Coordinates not owned by a queryable semantic field return `Optional.empty()`.
+Parent lithology is present for correlated stratigraphy because that runtime explicitly resolves a parent bed before metamorphism. Province-background models currently expose their final lithology but do not claim a universal parent relationship, so their parent is empty rather than guessed.
 
-This is intentional. Baseline fallback lenses/bodies still exist and still generate exactly as before, but the resolver does not reverse-engineer them from placed blocks or create replacement geometry. Each fallback/body system should join the resolver only when its existing geometry can be exposed as a deterministic query.
+Province provenance follows the same depth-dependent suture ownership as the background lithology. A terrane projected beneath its neighbour therefore reports the terrane that actually supplied the resolved rock, not merely the surface province.
 
-## Generation safety
+Coordinates not owned by either queryable semantic runtime return `Optional.empty()`.
 
-The current worldgen placement paths are unchanged by the first resolver slice. Resolver tests compare its answers directly against the existing terrain-aware stratigraphic and metamorphic runtime.
+Baseline fallback lenses/bodies still exist and still generate as before. The resolver does not reverse-engineer those from placed blocks or create replacement geometry. Each body system should join the resolver only when its existing geometry can be exposed as a deterministic query.
 
-This gives us an explicit parity gate before any generator is switched to consume the facade directly:
+## Prepared chunk queries
+
+One-off callers may use `GeologyResolver.resolve(world, x, y, z)` directly.
+
+Worldgen paths that inspect many blocks should call `GeologyResolver.prepareChunk(...)` once and reuse the returned `PreparedChunk`. This preserves the existing chunk-level terrain/province work instead of rebuilding semantic geology for every voxel.
+
+The experimental ore host resolver is the first production consumer. It still gives already-placed GeoStrata host blocks first priority, but virtual host qualification now asks one prepared `GeologyResolver` context instead of independently knowing about correlated and province-background runtimes.
+
+## Parity rule
+
+Resolver tests compare its answers directly with the existing authoritative runtimes:
 
 ```text
-existing geological field answer == resolver answer
+existing geological runtime answer == resolver answer
 ```
 
-If that invariant fails, the resolver is wrong; the underlying geology should not be changed to accommodate it.
+They also verify that correlated authority wins when both sources are supplied and that no semantic owner remains an empty result.
+
+If those invariants fail, the resolver is wrong; the underlying geology should not be changed to accommodate it.
 
 ## Compatibility role
 
@@ -74,8 +87,7 @@ Extend the resolver only as existing systems become queryable:
 
 - baseline strata/lens bodies;
 - intrusive bodies;
-- fault/displacement fields;
 - special event geology such as kimberlite/lamproite;
-- ore/mineral host context where a semantic query is preferable to reading placed blocks.
+- additional process provenance where a real consumer needs it.
 
-Do not build these systems inside `GeologyResolver` itself.
+Do not build those systems inside `GeologyResolver` itself.
