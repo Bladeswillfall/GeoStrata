@@ -112,8 +112,9 @@ public final class OreDepositFeature extends Feature<DefaultFeatureConfig> {
             double structuralCycleThickness,
             List<BlockBox> protectedStructurePieces
     ) {
-        int minCellX = Math.floorDiv(startX - SEARCH_PADDING_BLOCKS, OreDepositCandidatePlanner.HORIZONTAL_CELL_SIZE);
-        int maxCellX = Math.floorDiv(endX + SEARCH_PADDING_BLOCKS, OreDepositCandidatePlanner.HORIZONTAL_CELL_SIZE);
+        int horizontalCellSize = OreDepositCandidatePlanner.horizontalCellSize(occurrence.id());
+        int minCellX = Math.floorDiv(startX - SEARCH_PADDING_BLOCKS, horizontalCellSize);
+        int maxCellX = Math.floorDiv(endX + SEARCH_PADDING_BLOCKS, horizontalCellSize);
         int minCellY = Math.floorDiv(
                 world.getBottomY() - SEARCH_PADDING_BLOCKS,
                 OreDepositCandidatePlanner.VERTICAL_CELL_SIZE
@@ -122,8 +123,8 @@ public final class OreDepositFeature extends Feature<DefaultFeatureConfig> {
                 world.getTopY() - 1 + SEARCH_PADDING_BLOCKS,
                 OreDepositCandidatePlanner.VERTICAL_CELL_SIZE
         );
-        int minCellZ = Math.floorDiv(startZ - SEARCH_PADDING_BLOCKS, OreDepositCandidatePlanner.HORIZONTAL_CELL_SIZE);
-        int maxCellZ = Math.floorDiv(endZ + SEARCH_PADDING_BLOCKS, OreDepositCandidatePlanner.HORIZONTAL_CELL_SIZE);
+        int minCellZ = Math.floorDiv(startZ - SEARCH_PADDING_BLOCKS, horizontalCellSize);
+        int maxCellZ = Math.floorDiv(endZ + SEARCH_PADDING_BLOCKS, horizontalCellSize);
 
         int placed = 0;
         for (int cellX = minCellX; cellX <= maxCellX; cellX++) {
@@ -200,11 +201,12 @@ public final class OreDepositFeature extends Feature<DefaultFeatureConfig> {
             int cellZ,
             OreOccurrenceCatalog.Occurrence occurrence
     ) {
+        int horizontalCellSize = OreDepositCandidatePlanner.horizontalCellSize(occurrence.id());
         return OreDepositCandidatePlanner.propose(
                 worldSeed,
-                cellX * OreDepositCandidatePlanner.HORIZONTAL_CELL_SIZE,
+                cellX * horizontalCellSize,
                 cellY * OreDepositCandidatePlanner.VERTICAL_CELL_SIZE,
-                cellZ * OreDepositCandidatePlanner.HORIZONTAL_CELL_SIZE,
+                cellZ * horizontalCellSize,
                 occurrence
         );
     }
