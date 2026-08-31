@@ -7,7 +7,6 @@ public final class OreDepositCandidatePlanner {
     public static final int HORIZONTAL_CELL_SIZE = 256;
     public static final int VERTICAL_CELL_SIZE = 64;
 
-    private static final int COAL_HORIZONTAL_CELL_SIZE = 128;
     private static final int HORIZONTAL_MARGIN = 16;
     private static final int VERTICAL_MARGIN = 8;
     private static final long MATERIAL_SALT = 0xA24BAED4963EE407L;
@@ -17,10 +16,6 @@ public final class OreDepositCandidatePlanner {
     private static final long STYLE_SALT = 0xD6E8FEB86659FD93L;
 
     private OreDepositCandidatePlanner() {
-    }
-
-    public static int horizontalCellSize(String material) {
-        return "coal".equals(material) ? COAL_HORIZONTAL_CELL_SIZE : HORIZONTAL_CELL_SIZE;
     }
 
     /**
@@ -41,14 +36,13 @@ public final class OreDepositCandidatePlanner {
             throw new IllegalArgumentException("ore occurrence must declare at least one deposit style");
         }
 
-        int horizontalCellSize = horizontalCellSize(occurrence.id());
-        int cellX = Math.floorDiv(blockX, horizontalCellSize);
+        int cellX = Math.floorDiv(blockX, HORIZONTAL_CELL_SIZE);
         int cellY = Math.floorDiv(blockY, VERTICAL_CELL_SIZE);
-        int cellZ = Math.floorDiv(blockZ, horizontalCellSize);
+        int cellZ = Math.floorDiv(blockZ, HORIZONTAL_CELL_SIZE);
         long salt = MATERIAL_SALT ^ Integer.toUnsignedLong(occurrence.id().hashCode());
         int anchorX = anchor(
                 cellX,
-                horizontalCellSize,
+                HORIZONTAL_CELL_SIZE,
                 HORIZONTAL_MARGIN,
                 GeologyDeterminism.unitRoll(worldSeed, cellX, cellY, cellZ, salt ^ ANCHOR_X_SALT)
         );
@@ -60,7 +54,7 @@ public final class OreDepositCandidatePlanner {
         );
         int anchorZ = anchor(
                 cellZ,
-                horizontalCellSize,
+                HORIZONTAL_CELL_SIZE,
                 HORIZONTAL_MARGIN,
                 GeologyDeterminism.unitRoll(worldSeed, cellX, cellY, cellZ, salt ^ ANCHOR_Z_SALT)
         );
