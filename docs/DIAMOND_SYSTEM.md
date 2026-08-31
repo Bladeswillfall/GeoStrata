@@ -1,8 +1,8 @@
 # Diamond geology
 
-GeoStrata keeps vanilla diamond generation intact by default. The geology-driven diamond system is an **experimental opt-in** while abundance, readability and progression are tested in fresh worlds.
+GeoStrata keeps vanilla diamond generation intact by default. The geology-driven diamond system is an **experimental opt-in** while abundance, readability and progression are tested in fresh worlds. Installing the experiment companion promotes that prototype to runtime and selectively suppresses vanilla Overworld diamond placed features so the replacement can be evaluated without duplicate diamond generation.
 
-The activation contract is `data/geostrata/geology/diamond_geology_experiment.json`. The bundled file ships with `enabled: false` and `nativeGenerationSuppression: not_implemented`, so installing GeoStrata alone does not remove or rebalance vanilla diamonds.
+The activation contract is `data/geostrata/geology/diamond_geology_experiment.json`. The bundled file ships with `enabled: false` and `nativeGenerationSuppression: not_implemented`, so installing GeoStrata alone does not remove or rebalance vanilla diamonds. When the companion activates the snapshot, runtime diagnostics report `nativeGenerationSuppression: experimental_companion_overworld` to match the adapter behavior.
 
 ## Design goals
 
@@ -91,14 +91,21 @@ Structural clusters and the rich intrusive halo are expressed as fractions/margi
 
 ## Ownership boundary
 
-For now:
+Standalone GeoStrata remains conservative:
 
 - vanilla diamond generation remains enabled;
 - GeoStrata's diamond experiment is disabled by default;
 - no vanilla/provider diamond feature is suppressed; and
-- the existing bulk ore grade economy remains limited to coal, iron, copper and gold.
+- the existing bulk ore grade economy remains separate from diamond geology.
 
-Native diamond suppression should only be considered after fresh-world tests demonstrate that the structural and intrusive routes provide acceptable progression, rarity and compatibility.
+With the optional experiment companion installed:
+
+- the diamond experiment is activated;
+- vanilla Overworld diamond placed features are suppressed for replacement validation;
+- structural and intrusive GeoStrata diamond geology become the active experimental routes; and
+- unrelated vanilla resources such as redstone and lapis remain under Minecraft generation ownership.
+
+This companion-only suppression is still an experimental validation boundary, not a general provider-suppression framework or a change to normal GeoStrata installs. Fresh-world tests must continue to demonstrate acceptable diamond progression, rarity and compatibility before this behavior can move toward production defaults.
 
 ## What this intentionally does not add
 
