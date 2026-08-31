@@ -27,9 +27,11 @@ import java.util.Set;
 /** Developer-only distribution scan for comparing vanilla and GeoStrata ore visibility. */
 public final class OreDistributionBenchmarkCommands {
     private static final int GRID_CHUNKS = 10;
-    private static final int MIN_CHUNK = -5;
+    // Keep the measured square outside vanilla's automatically generated spawn chunks.
+    private static final int MIN_CHUNK = 32;
     private static final int MAX_CHUNK = MIN_CHUNK + GRID_CHUNKS - 1;
     private static final int GENERATION_HALO_CHUNKS = 1;
+    private static final int AIR_PROXIMITY_RADIUS = 12;
     private static final int PLANE_LOCAL_X = 8;
     private static final List<String> MATERIALS = List.of(
             "coal",
@@ -119,7 +121,10 @@ public final class OreDistributionBenchmarkCommands {
                         continue;
                     }
                     int airFaces = airFaces(world, x, y, z, neighbor);
-                    stats.record(sample, plane, airFaces, chunkKey, pos.asLong(), y);
+                    int nearestAir = sample.graded()
+                            ? nearestAirDistance(world, x, y, z, neighbor)
+                            : AIR_PROXIMITY_RADIUS + 1;
+                    stats.record(sample, plane, airFaces, chunkKey, pos.asLong(), y, nearestAir);
                 }
             }
         }
@@ -171,6 +176,43 @@ public final class OreDistributionBenchmarkCommands {
         return count;
     }
 
+    private static int nearestAirDistance(
+            ServerWorld world,
+            int x,
+            int y,
+            int z,
+            BlockPos.Mutable neighbor
+    ) {
+        for (int distance = 1; distance <= AIR_PROXIMITY_RADIUS; distance++) {
+            for (int dx = -distance; dx <= distance; dx++) {
+                int remainingAfterX = distance - Math.abs(dx);
+                for (int dy = -remainingAfterX; dy <= remainingAfterX; dy++) {
+                    int sampleY = y + dy;
+                    if (sampleY < world.getBottomY() || sampleY >= world.getTopY()) {
+                        continue;
+                    }
+                    int dz = remainingAfterX - Math.abs(dy);
+                    if (isAir(world, neighbor, x + dx, sampleY, z + dz)
+                            || (dz != 0 && isAir(world, neighbor, x + dx, sampleY, z - dz))) {
+                        return distance;
+                    }
+                }
+            }
+        }
+        return AIR_PROXIMITY_RADIUS + 1;
+    }
+
+    private static boolean isAir(
+            ServerWorld world,
+            BlockPos.Mutable pos,
+            int x,
+            int y,
+            int z
+    ) {
+        pos.set(x, y, z);
+        return world.getBlockState(pos).isAir();
+    }
+
     private static long chunkKey(int chunkX, int chunkZ) {
         return ((long) chunkX << 32) ^ (chunkZ & 0xFFFFFFFFL);
     }
@@ -218,8 +260,13 @@ public final class OreDistributionBenchmarkCommands {
         private long gradedExposed;
         private long vanillaExposed;
         private long gradedYSum;
+        private long gradedWithin2Air;
+        private long gradedWithin4Air;
+        private long gradedWithin8Air;
+        private long gradedWithin12Air;
         private int gradedMinY = Integer.MAX_VALUE;
         private int gradedMaxY = Integer.MIN_VALUE;
+        private int gradedMinAirDistance = Integer.MAX_VALUE;
         private final EnumMap<OreGrade, Long> grades = new EnumMap<>(OreGrade.class);
         private final Set<Long> exposedChunks = new HashSet<>();
         private final Set<Long> exposedPositions = new HashSet<>();
@@ -232,7 +279,8 @@ public final class OreDistributionBenchmarkCommands {
                 int exposedFaces,
                 long chunkKey,
                 long pos,
-                int y
+                int y,
+                int nearestAir
         ) {
             total++;
             if (sample.graded()) {
@@ -240,6 +288,19 @@ public final class OreDistributionBenchmarkCommands {
                 gradedYSum += y;
                 gradedMinY = Math.min(gradedMinY, y);
                 gradedMaxY = Math.max(gradedMaxY, y);
+                gradedMinAirDistance = Math.min(gradedMinAirDistance, nearestAir);
+                if (nearestAir <= 2) {
+                    gradedWithin2Air++;
+                }
+                if (nearestAir <= 4) {
+                    gradedWithin4Air++;
+                }
+                if (nearestAir <= 8) {
+                    gradedWithin8Air++;
+                }
+                if (nearestAir <= 12) {
+                    gradedWithin12Air++;
+                }
                 grades.merge(sample.grade(), 1L, Long::sum);
             } else {
                 vanillaTagged++;
@@ -289,6 +350,14 @@ public final class OreDistributionBenchmarkCommands {
             json.addProperty("gradedMinY", graded == 0 ? null : gradedMinY);
             json.addProperty("gradedMaxY", graded == 0 ? null : gradedMaxY);
             json.addProperty("gradedMeanY", graded == 0 ? null : gradedYSum / (double) graded);
+            json.addProperty(
+                    "gradedMinAirDistance",
+                    graded == 0 || gradedMinAirDistance > AIR_PROXIMITY_RADIUS ? null : gradedMinAirDistance
+            );
+            json.addProperty("gradedWithin2Air", gradedWithin2Air);
+            json.addProperty("gradedWithin4Air", gradedWithin4Air);
+            json.addProperty("gradedWithin8Air", gradedWithin8Air);
+            json.addProperty("gradedWithin12Air", gradedWithin12Air);
             JsonObject gradeJson = new JsonObject();
             for (OreGrade grade : OreGrade.values()) {
                 gradeJson.addProperty(grade.id(), grades.getOrDefault(grade, 0L));
@@ -318,10 +387,11 @@ public final class OreDistributionBenchmarkCommands {
                 int airFaces,
                 long chunkKey,
                 long pos,
-                int y
+                int y,
+                int nearestAir
         ) {
             materials.computeIfAbsent(sample.material(), ignored -> new MaterialStats())
-                    .record(sample, plane, airFaces, chunkKey, pos, y);
+                    .record(sample, plane, airFaces, chunkKey, pos, y, nearestAir);
         }
 
         private void recordProvince(String province) {
@@ -344,6 +414,7 @@ public final class OreDistributionBenchmarkCommands {
             root.addProperty("chunkMax", MAX_CHUNK);
             root.addProperty("chunkCount", GRID_CHUNKS * GRID_CHUNKS);
             root.addProperty("generationHaloChunks", GENERATION_HALO_CHUNKS);
+            root.addProperty("airProximityRadius", AIR_PROXIMITY_RADIUS);
             root.addProperty("bottomY", bottomY);
             root.addProperty("topYExclusive", topY);
             root.addProperty("blocksScanned", (long) GRID_CHUNKS * GRID_CHUNKS * 16L * 16L * (topY - bottomY));
