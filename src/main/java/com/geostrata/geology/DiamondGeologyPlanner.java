@@ -4,6 +4,9 @@ package com.geostrata.geology;
 public final class DiamondGeologyPlanner {
     public static final int PIPE_CELL_SIZE = GeologyProvinceSampler.CELL_SIZE;
     public static final int STRUCTURAL_CELL_SIZE = 256;
+    public static final double PIPE_MAX_ABS_TILT_PER_VERTICAL_BLOCK = 0.035;
+
+    private static final double PIPE_FIXED_MAX_HORIZONTAL_REACH_BLOCKS = 14.0;
 
     private static final long PIPE_X_SALT = 0x8CB92BA72F3D8DD7L;
     private static final long PIPE_Z_SALT = 0x58F38DED09D2C7A9L;
@@ -27,10 +30,24 @@ public final class DiamondGeologyPlanner {
         int span = PIPE_CELL_SIZE / 2;
         int anchorX = minX + (int) Math.floor(roll(worldSeed, cellX, cellZ, PIPE_X_SALT ^ kind.salt()) * span);
         int anchorZ = minZ + (int) Math.floor(roll(worldSeed, cellX, cellZ, PIPE_Z_SALT ^ kind.salt()) * span);
-        double tiltX = signed(roll(worldSeed, cellX, cellZ, PIPE_TILT_X_SALT ^ kind.salt())) * 0.035;
-        double tiltZ = signed(roll(worldSeed, cellX, cellZ, PIPE_TILT_Z_SALT ^ kind.salt())) * 0.035;
+        double tiltX = signed(roll(worldSeed, cellX, cellZ, PIPE_TILT_X_SALT ^ kind.salt()))
+                * PIPE_MAX_ABS_TILT_PER_VERTICAL_BLOCK;
+        double tiltZ = signed(roll(worldSeed, cellX, cellZ, PIPE_TILT_Z_SALT ^ kind.salt()))
+                * PIPE_MAX_ABS_TILT_PER_VERTICAL_BLOCK;
         double baseRadius = 1.8 + roll(worldSeed, cellX, cellZ, PIPE_RADIUS_SALT ^ kind.salt()) * 1.2;
         return new PipeCandidate(cellX, cellZ, anchorX, anchorZ, tiltX, tiltZ, baseRadius, kind);
+    }
+
+    /** Conservative horizontal reach for candidate discovery in a dimension of the given height. */
+    public static int pipeSearchPaddingBlocks(int worldHeight) {
+        if (worldHeight < 1) {
+            throw new IllegalArgumentException("world height must be positive");
+        }
+        double maximumTiltReach = Math.hypot(
+                PIPE_MAX_ABS_TILT_PER_VERTICAL_BLOCK,
+                PIPE_MAX_ABS_TILT_PER_VERTICAL_BLOCK
+        ) * worldHeight;
+        return (int) Math.ceil(PIPE_FIXED_MAX_HORIZONTAL_REACH_BLOCKS + maximumTiltReach);
     }
 
     /**
