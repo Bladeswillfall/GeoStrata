@@ -39,8 +39,8 @@ public final class OreDiscoveryStringers {
 
     private static Profile profile(String material) {
         return switch (material) {
-            case "iron" -> new Profile(10, 32.0, 62.0, 0.62, 0.92);
-            case "copper" -> new Profile(8, 28.0, 54.0, 0.58, 0.86);
+            case "iron" -> new Profile(14, 52.0, 96.0, 0.62, 0.88);
+            case "copper" -> new Profile(12, 48.0, 88.0, 0.58, 0.84);
             default -> null;
         };
     }
@@ -62,7 +62,7 @@ public final class OreDiscoveryStringers {
                 body.thicknessRadius() * (roll(body, salt ^ NORMAL_SALT) - 0.5) * 0.70
         );
 
-        double normalComponent = (roll(body, salt ^ (NORMAL_SALT << 1)) - 0.5) * 0.42;
+        double normalComponent = (roll(body, salt ^ (NORMAL_SALT << 1)) - 0.5) * 1.20;
         double directionLength = Math.sqrt(cos * cos + sin * sin + normalComponent * normalComponent);
         LocalPoint direction = new LocalPoint(
                 cos / directionLength,
