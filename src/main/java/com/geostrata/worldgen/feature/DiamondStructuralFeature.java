@@ -8,11 +8,15 @@ import com.geostrata.geology.GeologyProvinceSampler;
 import com.geostrata.geology.SedimentaryFieldProfiles;
 import com.geostrata.geology.TectonicStructuralField;
 import com.geostrata.geology.TerraneSuture;
+import net.minecraft.util.math.BlockBox;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.StructureWorldAccess;
+import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.gen.feature.DefaultFeatureConfig;
 import net.minecraft.world.gen.feature.Feature;
 import net.minecraft.world.gen.feature.util.FeatureContext;
+
+import java.util.List;
 
 /**
  * Experimental common diamond route: small deep clusters following the same
@@ -50,6 +54,8 @@ public final class DiamondStructuralFeature extends Feature<DefaultFeatureConfig
         int endZ = startZ + CHUNK_SIZE - 1;
         long seed = world.getSeed();
         double cycleThickness = fieldProfiles.parametersFor(STRUCTURAL_CONTINUITY).cycleThicknessBlocks();
+        Chunk chunk = world.getChunk(Math.floorDiv(startX, CHUNK_SIZE), Math.floorDiv(startZ, CHUNK_SIZE));
+        List<BlockBox> protectedStructurePieces = StructurePieceProtection.forChunk(world, chunk);
 
         int minCellX = Math.floorDiv(startX - SEARCH_PADDING, DiamondGeologyPlanner.STRUCTURAL_CELL_SIZE);
         int maxCellX = Math.floorDiv(endX + SEARCH_PADDING, DiamondGeologyPlanner.STRUCTURAL_CELL_SIZE);
@@ -99,7 +105,8 @@ public final class DiamondStructuralFeature extends Feature<DefaultFeatureConfig
                         startX,
                         endX,
                         startZ,
-                        endZ
+                        endZ,
+                        protectedStructurePieces
                 );
             }
         }
@@ -114,7 +121,8 @@ public final class DiamondStructuralFeature extends Feature<DefaultFeatureConfig
             int startX,
             int endX,
             int startZ,
-            int endZ
+            int endZ,
+            List<BlockBox> protectedStructurePieces
     ) {
         int worldHeight = world.getTopY() - world.getBottomY();
         int minY = world.getBottomY() + 5;
@@ -157,7 +165,8 @@ public final class DiamondStructuralFeature extends Feature<DefaultFeatureConfig
                     startX,
                     endX,
                     startZ,
-                    endZ
+                    endZ,
+                    protectedStructurePieces
             );
         }
         return placed;
