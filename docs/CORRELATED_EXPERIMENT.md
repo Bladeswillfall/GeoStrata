@@ -31,7 +31,7 @@ Allowed provinces are Sedimentary Basin, Rift Province and Orogenic Belt. Owned 
 
 `CorrelatedExperimentChunkOwnership` normalizes ownership to the 16×16 chunk. The same decision suppresses superseded fallback lenses and clips fallback bodies that would otherwise cross into correlated authority.
 
-The authoritative correlated bed union is limestone, chalk, shale, mudstone, siltstone, breccia and conglomerate. Parent-aware Orogenic metamorphism may transform supported parents into slate/schist/gneiss or marble. Quartzite remains fallback-only until a legitimate quartz-rich sandstone parent exists.
+The authoritative correlated bed union is limestone, chalk, shale, mudstone, siltstone, breccia and conglomerate. Parent-aware Orogenic metamorphism may transform supported mudrock parents into slate/phyllite/schist/gneiss, carbonate into marble and quartz-rich sandstone into quartzite.
 
 ## Province architecture
 
@@ -42,8 +42,10 @@ Architecture is province-specific:
 - **Sedimentary Basin** — existing succession selector + its field profile;
 - **Rift Province** — existing succession selector + stronger extensional structure and narrow fault-damage breccia;
 - **Cratonic Shield** — broad gneiss/schist basement terranes, narrow quartzite belts and occasional marble lenses;
-- **Orogenic Belt** — deformed metamorphic gradient with gneiss core, schist/slate outward, quartzite ribbons and marble lenses;
+- **Orogenic Belt** — deformed metamorphic gradient with gneiss core, then schist, phyllite and outer slate, plus quartzite ribbons and marble lenses;
 - **Volcanic Arc** — varied metamorphic basement cut by basalt dikes/sills, local rhyolite bodies and breccia halos.
+
+Phyllite is runtime-only. It reuses the existing regional metamorphic field and Orogenic background geometry and does not add a separate fallback feature or another worldgen pass.
 
 The rejected one-rock-per-province fill and the later temporary repeated four-lithology matrix are no longer part of the runtime.
 
@@ -118,6 +120,8 @@ Useful live-test commands:
 ```
 
 `/geostrata field` uses the exact correlated runtime where correlated geology is authoritative. Outside that ownership it remains a virtual sedimentary diagnostic, so use `/geostrata structure`/`province` and the actual exposed blocks when inspecting province-background geology.
+
+The metamorphism diagnostic reports slate, phyllite, schist and gneiss suitability from the same regional field used by the correlated runtime.
 
 The ore candidate preview uses the same fault binding and semantic host precedence as runtime: existing GeoStrata host first, then eligible virtual correlated/background host. It does not assign a future host to air, caves or unrelated blocks.
 

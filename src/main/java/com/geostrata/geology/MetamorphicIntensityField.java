@@ -108,8 +108,9 @@ public final class MetamorphicIntensityField {
         }
         double clamped = clamp01(intensity);
         return new Suitability(
-                window(clamped, 0.12, 0.22, 0.40, 0.56),
-                window(clamped, 0.36, 0.48, 0.68, 0.82),
+                window(clamped, 0.12, 0.22, 0.36, 0.50),
+                window(clamped, 0.30, 0.40, 0.52, 0.66),
+                window(clamped, 0.48, 0.58, 0.70, 0.82),
                 rise(clamped, 0.64, 0.84)
         );
     }
@@ -213,15 +214,18 @@ public final class MetamorphicIntensityField {
     ) {
     }
 
-    public record Suitability(double slate, double schist, double gneiss) {
+    public record Suitability(double slate, double phyllite, double schist, double gneiss) {
         public String dominantLithology() {
-            if (slate <= 0.0 && schist <= 0.0 && gneiss <= 0.0) {
+            if (slate <= 0.0 && phyllite <= 0.0 && schist <= 0.0 && gneiss <= 0.0) {
                 return "none";
             }
-            if (gneiss >= schist && gneiss >= slate) {
+            if (gneiss >= schist && gneiss >= phyllite && gneiss >= slate) {
                 return "gneiss";
             }
-            return schist >= slate ? "schist" : "slate";
+            if (schist >= phyllite && schist >= slate) {
+                return "schist";
+            }
+            return phyllite >= slate ? "phyllite" : "slate";
         }
     }
 }

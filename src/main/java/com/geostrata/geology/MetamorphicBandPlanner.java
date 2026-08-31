@@ -8,7 +8,7 @@ import java.util.Optional;
  * <p>The caller supplies the existing structural field's vertical offset; this
  * class does not invent another dip/fold model. Points sharing the same
  * structure-adjusted band use the same seed-derived roll, while local
- * metamorphic suitability still controls whether slate, schist or gneiss wins.</p>
+ * metamorphic suitability still controls whether slate, phyllite, schist or gneiss wins.</p>
  */
 public final class MetamorphicBandPlanner {
     private static final long BAND_SELECTION_SALT = 0xB7E151628AED2A6BL;
@@ -35,10 +35,14 @@ public final class MetamorphicBandPlanner {
             throw new IllegalArgumentException("metamorphic suitability must not be null");
         }
         validateWeight(suitability.slate());
+        validateWeight(suitability.phyllite());
         validateWeight(suitability.schist());
         validateWeight(suitability.gneiss());
 
-        double total = suitability.slate() + suitability.schist() + suitability.gneiss();
+        double total = suitability.slate()
+                + suitability.phyllite()
+                + suitability.schist()
+                + suitability.gneiss();
         if (total <= 0.0) {
             return Optional.empty();
         }
@@ -60,10 +64,15 @@ public final class MetamorphicBandPlanner {
                 BAND_SELECTION_SALT
         );
         double choice = roll * total;
+        double slateEnd = suitability.slate();
+        double phylliteEnd = slateEnd + suitability.phyllite();
+        double schistEnd = phylliteEnd + suitability.schist();
         String lithology;
-        if (choice < suitability.slate()) {
+        if (choice < slateEnd) {
             lithology = "slate";
-        } else if (choice < suitability.slate() + suitability.schist()) {
+        } else if (choice < phylliteEnd) {
+            lithology = "phyllite";
+        } else if (choice < schistEnd) {
             lithology = "schist";
         } else {
             lithology = "gneiss";

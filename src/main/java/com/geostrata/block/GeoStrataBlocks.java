@@ -30,6 +30,7 @@ public final class GeoStrataBlocks {
     public static final Block CHALK = registerRock("chalk", rock(Blocks.CALCITE, 1.0F, BlockSoundGroup.CALCITE));
     public static final Block SHALE = registerRock("shale", rock(Blocks.TUFF, 1.4F, BlockSoundGroup.TUFF));
     public static final Block SLATE = registerRock("slate", rock(Blocks.DEEPSLATE, 2.8F, BlockSoundGroup.DEEPSLATE));
+    public static final Block PHYLLITE = registerRock("phyllite", rock(Blocks.DEEPSLATE, 2.3F, BlockSoundGroup.DEEPSLATE));
     public static final Block MUDSTONE = registerRock("mudstone", rock(Blocks.STONE, 1.3F, BlockSoundGroup.STONE));
     public static final Block SILTSTONE = registerRock("siltstone", rock(Blocks.SANDSTONE, 1.2F, BlockSoundGroup.STONE));
     public static final Block MARBLE = registerRock("marble", rock(Blocks.CALCITE, 1.7F, BlockSoundGroup.CALCITE));

@@ -9,7 +9,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 final class OrogenicBeltModelTest {
-    private static final Set<String> LITHOLOGIES = Set.of("gneiss", "schist", "slate", "quartzite", "marble");
+    private static final Set<String> LITHOLOGIES = Set.of(
+            "gneiss", "schist", "phyllite", "slate", "quartzite", "marble"
+    );
 
     @Test
     void samplingIsDeterministic() {
@@ -37,6 +39,7 @@ final class OrogenicBeltModelTest {
 
         assertTrue(found.contains("gneiss"), found.toString());
         assertTrue(found.contains("schist"), found.toString());
+        assertTrue(found.contains("phyllite"), found.toString());
         assertTrue(found.contains("slate"), found.toString());
         assertTrue(found.contains("quartzite"), found.toString());
         assertTrue(found.contains("marble"), found.toString());

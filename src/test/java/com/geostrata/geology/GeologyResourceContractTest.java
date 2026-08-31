@@ -15,6 +15,7 @@ import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 final class GeologyResourceContractTest {
@@ -81,6 +82,33 @@ final class GeologyResourceContractTest {
         assertCorrelatedWorldgenStaging();
         assertOreDepositWorldgenStaging();
         assertCompanionMetadata();
+    }
+
+    @Test
+    void companionRejectsCatalogMissingPhyllite() throws IOException {
+        JsonObject lithologies = read(GEOLOGY.resolve("lithologies.json"));
+        JsonArray entries = lithologies.getAsJsonArray("lithologies");
+        for (int index = 0; index < entries.size(); index++) {
+            if ("phyllite".equals(string(entries.get(index).getAsJsonObject(), "id"))) {
+                entries.remove(index);
+                break;
+            }
+        }
+
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> GeologyDataReload.parse(
+                        lithologies,
+                        read(GEOLOGY.resolve("ore_occurrences.json")),
+                        read(GEOLOGY.resolve("ore_deposit_experiment.json")),
+                        read(GEOLOGY.resolve("province_profiles.json")),
+                        read(GEOLOGY.resolve("sedimentary_successions.json")),
+                        read(GEOLOGY.resolve("sedimentary_field_profiles.json")),
+                        read(GEOLOGY.resolve("correlated_sedimentary_experiment.json")),
+                        true
+                )
+        );
+        assertTrue(exception.getMessage().contains("phyllite"));
     }
 
     private static GeologyDataReload.State parseGeology(boolean companionLoaded) throws IOException {

@@ -19,7 +19,7 @@ final class MetamorphicBandPlannerTest {
                 64,
                 0.0,
                 12.0,
-                new MetamorphicIntensityField.Suitability(0.0, 0.0, 0.0)
+                new MetamorphicIntensityField.Suitability(0.0, 0.0, 0.0, 0.0)
         );
 
         assertTrue(selection.isEmpty());
@@ -28,7 +28,7 @@ final class MetamorphicBandPlannerTest {
     @Test
     void structuralOffsetMovesBandsWithoutChangingTheirOwnership() {
         MetamorphicIntensityField.Suitability suitability =
-                new MetamorphicIntensityField.Suitability(0.3, 0.7, 0.2);
+                new MetamorphicIntensityField.Suitability(0.3, 0.4, 0.7, 0.2);
 
         MetamorphicBandPlanner.Selection base = MetamorphicBandPlanner.select(
                 42L,
@@ -57,7 +57,7 @@ final class MetamorphicBandPlannerTest {
     @Test
     void bandRollHasStableRegressionVectors() {
         MetamorphicIntensityField.Suitability suitability =
-                new MetamorphicIntensityField.Suitability(1.0, 1.0, 1.0);
+                new MetamorphicIntensityField.Suitability(1.0, 1.0, 1.0, 1.0);
 
         assertEquals(
                 0.6914742562727322,
@@ -93,7 +93,19 @@ final class MetamorphicBandPlannerTest {
                         -24,
                         0.0,
                         12.0,
-                        new MetamorphicIntensityField.Suitability(0.9, 0.1, 0.0)
+                        new MetamorphicIntensityField.Suitability(1.0, 0.0, 0.0, 0.0)
+                ).orElseThrow().lithology()
+        );
+        assertEquals(
+                "phyllite",
+                MetamorphicBandPlanner.select(
+                        42L,
+                        100,
+                        -200,
+                        -24,
+                        0.0,
+                        12.0,
+                        new MetamorphicIntensityField.Suitability(0.0, 1.0, 0.0, 0.0)
                 ).orElseThrow().lithology()
         );
         assertEquals(
@@ -105,7 +117,7 @@ final class MetamorphicBandPlannerTest {
                         0,
                         0.0,
                         12.0,
-                        new MetamorphicIntensityField.Suitability(0.0, 0.1, 0.9)
+                        new MetamorphicIntensityField.Suitability(0.0, 0.0, 0.0, 1.0)
                 ).orElseThrow().lithology()
         );
     }

@@ -54,17 +54,18 @@ This means terrain can help expose or reinforce a plausible mountain-belt core, 
 
 The correlated runtime reuses the terrain patch already sampled for `TerrainAwareStructuralField`. `TerrainPatch.morphologyAt(x,z)` bilinearly interpolates height, gradients, relief and prominence from that same fixed 128-block grid. Metamorphism therefore does not perform a second set of chunk-generator height queries and inherits the structural field's continuous cross-chunk terrain evidence.
 
-## Slate, schist and gneiss suitability
+## Slate, phyllite, schist and gneiss suitability
 
 The intensity value is converted into overlapping suitability curves rather than hard thresholds.
 
-- **Slate** rises from low grade, is strongest around roughly 0.22–0.40, and fades by about 0.56.
-- **Schist** begins overlapping slate around 0.36, dominates the middle grades, and fades by about 0.82.
+- **Slate** rises from low grade, is strongest around roughly 0.22–0.36, and fades by about 0.50.
+- **Phyllite** overlaps slate from about 0.30, is strongest around roughly 0.40–0.52, and fades by about 0.66.
+- **Schist** overlaps phyllite from about 0.48, is strongest around roughly 0.58–0.70, and fades by about 0.82.
 - **Gneiss** begins appearing around 0.64 and reaches full high-grade suitability around 0.84.
 
-The overlap is intentional. Natural geological contacts are transitional, and body ownership should not create a perfectly straight invisible line where every slate block suddenly becomes schist.
+The overlap is intentional. Natural geological contacts are transitional, and body ownership should not create a perfectly straight invisible line where every block abruptly changes grade. Phyllite fills the previously oversized jump between slate and schist without introducing another regional field or random system.
 
-At very low intensity all three suitability values may be zero. That represents unmetamorphosed or weakly altered parent material rather than forcing a metamorphic rock everywhere.
+At very low intensity all four suitability values may be zero. That represents unmetamorphosed or weakly altered parent material rather than forcing a metamorphic rock everywhere.
 
 ## Live diagnostic
 
@@ -73,8 +74,8 @@ Use `/geostrata metamorphism` in a server world to inspect the field at the comm
 The diagnostic reports:
 
 - final metamorphic intensity;
-- the currently dominant slate/schist/gneiss suitability;
-- all three suitability weights;
+- the currently dominant slate/phyllite/schist/gneiss suitability;
+- all four suitability weights;
 - the seed-derived regional adjustment;
 - the active terrain generator's adjustment;
 - the primary and neighboring geological provinces.
@@ -91,10 +92,10 @@ The caller supplies the existing structural field's vertical offset, a structura
 band = floor((Y - existing structural vertical offset) / band thickness)
 ```
 
-Each site/band pair receives one stable `GeologyDeterminism` roll. The local slate/schist/gneiss suitability values then act as weights for that band. This has two useful properties:
+Each site/band pair receives one stable `GeologyDeterminism` roll. The local slate/phyllite/schist/gneiss suitability values then act as weights for that band. This has two useful properties:
 
 - nearby blocks in the same folded/draped structural band do not independently roll into salt-and-pepper metamorphic blocks;
-- broad metamorphic intensity still controls the geological outcome, so a structural band cannot create gneiss where gneiss suitability is zero.
+- broad metamorphic intensity still controls the geological outcome, so a structural band cannot create a grade whose suitability is zero.
 
 The experimental runtime introduces no second band-scale tuning value. It reuses the active correlated succession's existing cycle thickness as the band thickness. If playtesting later proves that grade zones need a different scale, that should become an explicit tuning decision rather than an accidental constant now.
 
@@ -102,7 +103,7 @@ The experimental runtime introduces no second band-scale tuning value. It reuses
 
 `CorrelatedSedimentaryRuntime.TerrainAwareSite.outputLithology(...)` first resolves the exact virtual parent bed from the correlated structural field. In an experiment-owned **orogenic belt** chunk, metamorphic suitability only enables transformations that are valid for that parent's catalog `genesis`:
 
-- `mudrock` → slate/schist/gneiss through the grade-band selector;
+- `mudrock` → slate/phyllite/schist/gneiss through the grade-band selector;
 - `carbonate` → marble;
 - `quartz_sandstone` → quartzite;
 - unsupported parents remain unchanged.
@@ -119,7 +120,7 @@ When the optional correlated experiment companion is installed and the experimen
 
 1. the correlated structural field resolves the virtual sedimentary parent bed;
 2. the same terrain-aware structural offset determines metamorphic suitability and, for mudrock, the grade band;
-3. mudrock parents emit slate/schist/gneiss selected from the existing suitability curves;
+3. mudrock parents emit slate/phyllite/schist/gneiss selected from the existing suitability curves;
 4. carbonate parents emit marble when metamorphic suitability is present;
 5. quartz-sandstone parents emit quartzite when metamorphic suitability is present;
 6. unsupported parents emit their ordinary correlated lithology.
@@ -130,7 +131,7 @@ The correlated feature still runs at `UNDERGROUND_DECORATION` and preserves ordi
 
 ### Legacy metamorphic cleanup inside owned chunks
 
-Standalone GeoStrata still has old independent baseline features for slate, marble, quartzite, schist and gneiss. Those may already have run before the correlated experiment's decoration pass.
+Standalone GeoStrata still has old independent baseline features for slate, marble, quartzite, schist and gneiss. Those may already have run before the correlated experiment's decoration pass. Phyllite is deliberately different: it is runtime-only and has no independent `phyllite_ore` fallback feature.
 
 Inside an experiment-owned orogenic chunk only, the correlated pass therefore also treats an existing GeoStrata lithology-catalog block with `rockClass=metamorphic` as replaceable legacy placeholder material. The position is then rewritten from the authoritative correlated parent/output model.
 
@@ -148,18 +149,19 @@ regional history + metamorphic intensity + parent lithology
               plausible metamorphic product
 ```
 
-The intensity field answers whether meaningful metamorphism is plausible at the location. Parent composition then constrains the product. Only mudrock needs the slate/schist/gneiss grade selector; carbonate and quartz-rich sandstone have compositionally constrained products in this simplified gameplay model.
+The intensity field answers whether meaningful metamorphism is plausible at the location. Parent composition then constrains the product. Only mudrock needs the slate/phyllite/schist/gneiss grade selector; carbonate and quartz-rich sandstone have compositionally constrained products in this simplified gameplay model.
 
-The same principle is reused by contact metamorphism around plutonic roots. Its thermal geometry can mark an aureole, but `ContactMetamorphism` still resolves the product from parent genesis: quartz sandstone becomes quartzite, carbonate becomes marble, suitable pelitic/silty parents become hornfels, and unsupported high-grade material remains unchanged.
+The same principle is reused by contact metamorphism around plutonic roots. Its thermal geometry can mark an aureole, but `ContactMetamorphism` still resolves the product from parent genesis: quartz sandstone becomes quartzite, carbonate becomes marble, suitable pelitic/silty/low-grade foliated parents become hornfels, and unsupported high-grade material remains unchanged. Because phyllite reuses the existing `low_grade_foliated` genesis, it participates in that rule without special-case code.
 
 ## Runtime boundary
 
-Standalone GeoStrata remains unchanged: installing only the core mod does not add the correlated feature to biome generation and does not activate the parent-aware replacement path.
+Standalone GeoStrata remains unchanged: installing only the core mod does not add the correlated feature to biome generation and does not activate the parent-aware replacement path. Phyllite has no standalone random fallback body.
 
 With the optional experiment companion installed:
 
 - sedimentary-basin and rift correlated chunks preserve sandstone and other sedimentary parents unless another valid process transforms them;
-- orogenic correlated chunks may transform mudrock parents into slate/schist/gneiss, carbonate into marble, and quartz sandstone into quartzite;
+- orogenic correlated chunks may transform mudrock parents into slate/phyllite/schist/gneiss, carbonate into marble, and quartz sandstone into quartzite;
+- the Orogenic province-background gradient also places phyllite between its schist zone and outer slate zone;
 - the transformation is deterministic from world seed, coordinates/site identity, structural field, terrain-generator evidence and loaded geology data;
 - no runtime UUID, first-visited state or process-local random source participates;
 - no new feature type or second metamorphic worldgen registration is introduced.

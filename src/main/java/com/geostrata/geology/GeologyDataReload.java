@@ -29,6 +29,7 @@ public final class GeologyDataReload {
     private static final List<String> COMPANION_ARCHITECTURE_LITHOLOGIES = List.of(
             "gneiss",
             "schist",
+            "phyllite",
             "slate",
             "quartzite",
             "marble",

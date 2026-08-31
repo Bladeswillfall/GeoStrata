@@ -41,15 +41,19 @@ final class MetamorphicIntensityFieldTest {
     }
 
     @Test
-    void slateSchistAndGneissOccupyOverlappingGradeWindows() {
-        MetamorphicIntensityField.Suitability slate = MetamorphicIntensityField.suitability(0.30);
-        MetamorphicIntensityField.Suitability overlap = MetamorphicIntensityField.suitability(0.45);
-        MetamorphicIntensityField.Suitability schist = MetamorphicIntensityField.suitability(0.60);
+    void metamorphicGradesOccupyOverlappingWindows() {
+        MetamorphicIntensityField.Suitability slate = MetamorphicIntensityField.suitability(0.26);
+        MetamorphicIntensityField.Suitability slatePhyllite = MetamorphicIntensityField.suitability(0.34);
+        MetamorphicIntensityField.Suitability phyllite = MetamorphicIntensityField.suitability(0.44);
+        MetamorphicIntensityField.Suitability phylliteSchist = MetamorphicIntensityField.suitability(0.54);
+        MetamorphicIntensityField.Suitability schist = MetamorphicIntensityField.suitability(0.62);
         MetamorphicIntensityField.Suitability highGradeOverlap = MetamorphicIntensityField.suitability(0.72);
         MetamorphicIntensityField.Suitability gneiss = MetamorphicIntensityField.suitability(0.90);
 
         assertEquals("slate", slate.dominantLithology());
-        assertTrue(overlap.slate() > 0.0 && overlap.schist() > 0.0);
+        assertTrue(slatePhyllite.slate() > 0.0 && slatePhyllite.phyllite() > 0.0);
+        assertEquals("phyllite", phyllite.dominantLithology());
+        assertTrue(phylliteSchist.phyllite() > 0.0 && phylliteSchist.schist() > 0.0);
         assertEquals("schist", schist.dominantLithology());
         assertTrue(highGradeOverlap.schist() > 0.0 && highGradeOverlap.gneiss() > 0.0);
         assertEquals("gneiss", gneiss.dominantLithology());
@@ -73,6 +77,7 @@ final class MetamorphicIntensityFieldTest {
                 assertEquals(first, second);
                 assertTrue(first.intensity() >= 0.0 && first.intensity() <= 1.0);
                 assertTrue(first.suitability().slate() >= 0.0 && first.suitability().slate() <= 1.0);
+                assertTrue(first.suitability().phyllite() >= 0.0 && first.suitability().phyllite() <= 1.0);
                 assertTrue(first.suitability().schist() >= 0.0 && first.suitability().schist() <= 1.0);
                 assertTrue(first.suitability().gneiss() >= 0.0 && first.suitability().gneiss() <= 1.0);
             }
