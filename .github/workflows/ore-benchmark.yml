@@ -8,6 +8,7 @@ on:
       - 'src/main/java/com/geostrata/block/GeoStrataBlocks.java'
       - 'src/main/java/com/geostrata/block/GradedOreBlock.java'
       - 'src/main/java/com/geostrata/block/OreHost.java'
+      - 'src/main/java/com/geostrata/command/OreDistributionBenchmarkCommands.java'
       - 'src/main/java/com/geostrata/geology/**'
       - 'src/main/java/com/geostrata/worldgen/feature/OreDepositFeature.java'
       - 'src/main/resources/data/geostrata/geology/**'
