@@ -61,17 +61,19 @@ final class GeologyResolverTest {
         assertEquals(Optional.empty(), resolved.parentLithology());
         assertEquals(background.provinceAt(1000, -20, -500), resolved.province());
         assertEquals(GeologyResolver.Source.PROVINCE_BACKGROUND, resolved.source());
-        assertEquals(Optional.of(background.bodyStyleAt(1000, -20, -500)), resolved.bodyStyle());
+        assertEquals(Optional.of(background.sampleAt(1000, -20, -500).bodyStyle()), resolved.bodyStyle());
     }
 
     @Test
     void bodyProvenanceFollowsDepthDependentTerraneOwnership() {
         ProvinceBackgroundRuntime.ResolvedColumn primary = new ProvinceBackgroundRuntime.ResolvedColumn(
                 GeologyProvince.VOLCANIC_ARC,
+                y -> "basalt",
                 y -> new ProvinceBackgroundRuntime.ResolvedSample("basalt", "dike")
         );
         ProvinceBackgroundRuntime.ResolvedColumn neighbor = new ProvinceBackgroundRuntime.ResolvedColumn(
                 GeologyProvince.CRATONIC_SHIELD,
+                y -> "gneiss",
                 y -> new ProvinceBackgroundRuntime.ResolvedSample("gneiss", "basement_terrane")
         );
         ProvinceBackgroundRuntime.Column column = new ProvinceBackgroundRuntime.Column(
@@ -142,6 +144,7 @@ final class GeologyResolverTest {
         Arrays.setAll(columns, ignored -> new ProvinceBackgroundRuntime.Column(
                 new ProvinceBackgroundRuntime.ResolvedColumn(
                         province,
+                        y -> lithology,
                         y -> new ProvinceBackgroundRuntime.ResolvedSample(lithology, bodyStyle)
                 ),
                 null,
