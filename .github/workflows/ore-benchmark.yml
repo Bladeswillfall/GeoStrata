@@ -2,13 +2,23 @@ name: Ore distribution benchmark
 
 on:
   pull_request:
+    paths:
+      - '.github/workflows/ore-benchmark.yml'
+      - 'experiment-companion/**'
+      - 'src/main/java/com/geostrata/block/GeoStrataBlocks.java'
+      - 'src/main/java/com/geostrata/block/GradedOreBlock.java'
+      - 'src/main/java/com/geostrata/block/OreHost.java'
+      - 'src/main/java/com/geostrata/geology/**'
+      - 'src/main/java/com/geostrata/worldgen/feature/OreDepositFeature.java'
+      - 'src/main/resources/data/geostrata/geology/**'
+      - 'src/main/resources/data/geostrata/materials/ore_texture_matrix.json'
+      - 'src/main/resources/data/geostrata/worldgen/**'
 
 permissions:
   contents: read
 
 jobs:
   ore-benchmark:
-    if: github.head_ref == 'fix/runtime-textures-stone-coverage-20260830'
     runs-on: ubuntu-latest
     timeout-minutes: 25
     steps:
