@@ -60,6 +60,36 @@ final class OreDebugCommands {
             return 0;
         }
 
+        Optional<LocatedOre> found = findNearby(source, occurrence, fieldProfiles);
+        if (found.isEmpty()) {
+            source.sendError(Text.literal(
+                    "No placed GeoStrata " + material + " ore found within ~"
+                            + (SEARCH_RADIUS_CELLS * OreDepositCandidatePlanner.HORIZONTAL_CELL_SIZE)
+                            + " blocks. Move ~512 blocks and run the locate command again."
+            ));
+            return 0;
+        }
+
+        LocatedOre ore = found.get();
+        BlockPos pos = ore.pos();
+        source.sendFeedback(
+                () -> Text.literal(
+                        "GeoStrata ore locate " + material
+                                + ": FOUND " + ore.grade()
+                                + " at " + pos.getX() + "," + pos.getY() + "," + pos.getZ()
+                                + " | actual placed block"
+                                + " | teleport: /tp @s " + pos.getX() + " " + pos.getY() + " " + pos.getZ()
+                ),
+                false
+        );
+        return 1;
+    }
+
+    private static Optional<LocatedOre> findNearby(
+            ServerCommandSource source,
+            OreOccurrenceCatalog.Occurrence occurrence,
+            SedimentaryFieldProfiles.Snapshot fieldProfiles
+    ) {
         ServerWorld world = source.getWorld();
         long seed = world.getSeed();
         int originX = MathHelper.floor(source.getPosition().x);
@@ -87,31 +117,13 @@ final class OreDebugCommands {
                                 structuralCycle
                         );
                         if (found.isPresent()) {
-                            LocatedOre ore = found.get();
-                            BlockPos pos = ore.pos();
-                            source.sendFeedback(
-                                    () -> Text.literal(
-                                            "GeoStrata ore locate " + material
-                                                    + ": FOUND " + ore.grade()
-                                                    + " at " + pos.getX() + "," + pos.getY() + "," + pos.getZ()
-                                                    + " | actual placed block"
-                                                    + " | teleport: /tp @s " + pos.getX() + " " + pos.getY() + " " + pos.getZ()
-                                    ),
-                                    false
-                            );
-                            return 1;
+                            return found;
                         }
                     }
                 }
             }
         }
-
-        source.sendError(Text.literal(
-                "No placed GeoStrata " + material + " ore found within ~"
-                        + (SEARCH_RADIUS_CELLS * OreDepositCandidatePlanner.HORIZONTAL_CELL_SIZE)
-                        + " blocks. Move ~512 blocks and run the locate command again."
-        ));
-        return 0;
+        return Optional.empty();
     }
 
     private static Optional<LocatedOre> inspectCandidate(
