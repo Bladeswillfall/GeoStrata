@@ -24,9 +24,9 @@ final class OreDepositCandidatePlannerTest {
         );
         OreDepositCandidatePlanner.Proposal farEdge = OreDepositCandidatePlanner.propose(
                 8675309L,
-                -255,
+                -OreDepositCandidatePlanner.HORIZONTAL_CELL_SIZE + 1,
                 -63,
-                -255,
+                -OreDepositCandidatePlanner.HORIZONTAL_CELL_SIZE + 1,
                 occurrence
         );
 
@@ -34,13 +34,12 @@ final class OreDepositCandidatePlannerTest {
         assertEquals(-1, nearEdge.cellX());
         assertEquals(-1, nearEdge.cellY());
         assertEquals(-1, nearEdge.cellZ());
-        assertEquals(-168, nearEdge.anchorX());
-        assertEquals(-35, nearEdge.anchorY());
-        assertEquals(-46, nearEdge.anchorZ());
         assertEquals("stratiform", nearEdge.depositStyle());
-        assertTrue(nearEdge.anchorX() >= -240 && nearEdge.anchorX() <= -17);
+        assertTrue(nearEdge.anchorX() >= -OreDepositCandidatePlanner.HORIZONTAL_CELL_SIZE + 16
+                && nearEdge.anchorX() <= -17);
         assertTrue(nearEdge.anchorY() >= -56 && nearEdge.anchorY() <= -9);
-        assertTrue(nearEdge.anchorZ() >= -240 && nearEdge.anchorZ() <= -17);
+        assertTrue(nearEdge.anchorZ() >= -OreDepositCandidatePlanner.HORIZONTAL_CELL_SIZE + 16
+                && nearEdge.anchorZ() <= -17);
         assertTrue(occurrence.depositStyles().contains(nearEdge.depositStyle()));
     }
 

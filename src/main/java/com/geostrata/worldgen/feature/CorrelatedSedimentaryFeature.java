@@ -3,16 +3,19 @@ package com.geostrata.worldgen.feature;
 import com.geostrata.GeoStrata;
 import com.geostrata.geology.CorrelatedSedimentaryExperiment;
 import com.geostrata.geology.CorrelatedSedimentaryRuntime;
+import com.geostrata.geology.FaultDamageZone;
 import com.geostrata.geology.GeologyProvince;
 import com.geostrata.geology.GeologyProvinceSampler;
 import com.geostrata.geology.LithologyCatalog;
 import com.geostrata.geology.SedimentarySuccessions;
+import com.geostrata.geology.TectonicStructuralField;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.registry.Registries;
 import net.minecraft.registry.RegistryKeys;
 import net.minecraft.registry.tag.TagKey;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.math.BlockBox;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.StructureWorldAccess;
 import net.minecraft.world.chunk.Chunk;
@@ -24,6 +27,7 @@ import net.minecraft.world.gen.feature.util.FeatureContext;
 
 import java.util.HashMap;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -114,7 +118,8 @@ public final class CorrelatedSedimentaryFeature extends Feature<DefaultFeatureCo
                 Math.floorDiv(startX, CHUNK_SIZE),
                 Math.floorDiv(startZ, CHUNK_SIZE)
         );
-        CorrelatedSedimentaryRuntime.Column[] columns = new CorrelatedSedimentaryRuntime.Column[CHUNK_SIZE * CHUNK_SIZE];
+        List<BlockBox> protectedStructurePieces = StructurePieceProtection.forChunk(world, chunk);
+        ColumnCache[] columns = new ColumnCache[CHUNK_SIZE * CHUNK_SIZE];
         GeologyProvinceSampler.Context provinceContext = provinceContext(world.getSeed(), startX, startZ, site);
         int placed = 0;
         ChunkSection[] sections = chunk.getSectionArray();
@@ -145,7 +150,8 @@ public final class CorrelatedSedimentaryFeature extends Feature<DefaultFeatureCo
                     catalog,
                     outputStates,
                     columns,
-                    provinceContext
+                    provinceContext,
+                    protectedStructurePieces
             );
         }
         if (placed > 0) {
@@ -190,8 +196,9 @@ public final class CorrelatedSedimentaryFeature extends Feature<DefaultFeatureCo
             CorrelatedSedimentaryRuntime.TerrainAwareSite site,
             LithologyCatalog.Snapshot catalog,
             Map<String, BlockState> outputStates,
-            CorrelatedSedimentaryRuntime.Column[] columns,
-            GeologyProvinceSampler.Context provinceContext
+            ColumnCache[] columns,
+            GeologyProvinceSampler.Context provinceContext,
+            List<BlockBox> protectedStructurePieces
     ) {
         int minLocalY = minY - sectionBottomY;
         int maxLocalY = maxY - sectionBottomY;
@@ -216,7 +223,8 @@ public final class CorrelatedSedimentaryFeature extends Feature<DefaultFeatureCo
                             catalog,
                             outputStates,
                             columns,
-                            provinceContext
+                            provinceContext,
+                            protectedStructurePieces
                     );
                 }
             }
@@ -243,13 +251,14 @@ public final class CorrelatedSedimentaryFeature extends Feature<DefaultFeatureCo
             CorrelatedSedimentaryRuntime.TerrainAwareSite site,
             LithologyCatalog.Snapshot catalog,
             Map<String, BlockState> outputStates,
-            CorrelatedSedimentaryRuntime.Column[] columns,
-            GeologyProvinceSampler.Context provinceContext
+            ColumnCache[] columns,
+            GeologyProvinceSampler.Context provinceContext,
+            List<BlockBox> protectedStructurePieces
     ) {
         int x = startX + localX;
         int z = startZ + localZ;
         int columnIndex = localX * CHUNK_SIZE + localZ;
-        CorrelatedSedimentaryRuntime.Column column = columns[columnIndex];
+        ColumnCache column = columns[columnIndex];
         int placed = 0;
         for (int localY = minLocalY; localY <= maxLocalY; localY++) {
             BlockState existing = states.get(localX, localY, localZ);
@@ -257,12 +266,20 @@ public final class CorrelatedSedimentaryFeature extends Feature<DefaultFeatureCo
                 continue;
             }
 
+            int y = sectionBottomY + localY;
+            if (StructurePieceProtection.contains(protectedStructurePieces, x, y, z)) {
+                continue;
+            }
             if (column == null) {
-                column = site.column(worldSeed, x, z, provinceContext);
+                column = new ColumnCache(
+                        site.column(worldSeed, x, z, provinceContext),
+                        site.field().tectonicField().column(x, z)
+                );
                 columns[columnIndex] = column;
             }
-            int y = sectionBottomY + localY;
-            String lithology = column.outputLithology(y, catalog);
+            String lithology = FaultDamageZone.contains(site.ownership().province(), column.tectonic(), y)
+                    ? "breccia"
+                    : column.geology().outputLithology(y, catalog);
             BlockState replacement = replacementState(lithology, catalog, outputStates);
             if (!existing.equals(replacement)) {
                 states.swapUnsafe(localX, localY, localZ, replacement);
@@ -339,5 +356,11 @@ public final class CorrelatedSedimentaryFeature extends Feature<DefaultFeatureCo
         Block block = Registries.BLOCK.getOrEmpty(blockId)
                 .orElseThrow(() -> new IllegalStateException("Missing correlated lithology block: " + blockId));
         return block.getDefaultState();
+    }
+
+    private record ColumnCache(
+            CorrelatedSedimentaryRuntime.Column geology,
+            TectonicStructuralField.Column tectonic
+    ) {
     }
 }

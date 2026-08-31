@@ -1,1 +1,1 @@
-{"parent":"minecraft:block/cube_all","textures":{"all":"geostrata:block/placeholder_earth"}}
+{"parent":"minecraft:block/cube_all","textures":{"all":"geostrata:block/soft_earth/peat_soil"}}

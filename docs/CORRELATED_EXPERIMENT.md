@@ -1,112 +1,142 @@
 # Correlated sedimentary experiment
 
-GeoStrata carries an experimental correlated geology consumer without making it part of standalone worldgen. The normal mod remains on the compatibility baseline unless the separate `experiment-companion` artifact explicitly activates and biome-registers the correlated feature.
+GeoStrata keeps its advanced geology behind the separate `experiment-companion` artifact. Standalone GeoStrata retains the compatibility/fallback worldgen path; installing `geostrata_correlated_experiment` promotes the already-validated experiment metadata to `experimental_runtime` and registers the companion consumers.
 
-`data/geostrata/geology/correlated_sedimentary_experiment.json` is the contract. Core ships schema 2 as `metadata_only` with `enabled: false`. Fabric mod presence for `geostrata_correlated_experiment` promotes that already-validated snapshot to `experimental_runtime`; the companion does not replace the JSON resource.
+Existing chunks are not retroactively rewritten. Use fresh chunks or fresh worlds when evaluating worldgen changes.
 
-## Current experiment scope
+## Runtime authority
 
-The experiment currently targets four succession models:
+The companion does not use one universal rock matrix. Authority is layered:
+
+1. the active terrain generator establishes terrain shape;
+2. `GeologyProvinceSampler` resolves deterministic regional province/site context;
+3. `CorrelatedSedimentaryRuntime` owns eligible ordered sedimentary host where the correlated experiment claims a chunk;
+4. `ProvinceBackgroundRuntime` resolves the remaining province architecture;
+5. the shared structural field deforms both authorities;
+6. metamorphism, fault damage, diamonds and ore deposits consume the same geology/structure;
+7. mutation features replace only eligible natural host and preserve caves, fluids, ores, structures and unrelated blocks.
+
+The semantic runtimes are authoritative; block-mutation feature order is not. This is important for ore generation: ore host qualification can resolve the future correlated or province-background lithology before the late background pass has physically replaced vanilla host stone.
+
+## Correlated ownership
+
+The correlated experiment currently targets:
 
 - `basin_mudrock_carbonate_cycle`;
 - `shelf_chalk_carbonate_cycle`;
 - `rift_fining_upward_clastics`;
 - `orogenic_fan_fining_upward`.
 
-The allowed provinces are sedimentary basin, rift province and orogenic belt. `CorrelatedSedimentaryExperimentParser` validates every target and requires `supersededLithologies` to equal the exact union of target-bed lithologies: limestone, chalk, shale, mudstone, siltstone, breccia and conglomerate.
+Allowed provinces are Sedimentary Basin, Rift Province and Orogenic Belt. Owned chunks must remain at least 96 blocks from the nearest province boundary; the transition zone is left to province-background/suture handling while the correlated model is experimental.
 
-All seven have coherent `StrataLensFeature` fallbacks. When the experiment owns a chunk those independent sedimentary lenses are suppressed and the shared correlated field becomes authoritative there. Basalt and rhyolite remain independent igneous bodies and may cut the correlated strata.
+`CorrelatedExperimentChunkOwnership` normalizes ownership to the 16×16 chunk. The same decision suppresses superseded fallback lenses and clips fallback bodies that would otherwise cross into correlated authority.
 
-## Shared ownership handoff
+The authoritative correlated bed union is limestone, chalk, shale, mudstone, siltstone, breccia and conglomerate. Parent-aware Orogenic metamorphism may transform supported parents into slate/schist/gneiss or marble. Quartzite remains fallback-only until a legitimate quartz-rich sandstone parent exists.
 
-One chunk-normalized ownership decision controls both sides of the handoff:
+## Province architecture
 
-- `CorrelatedSedimentaryFeature` mutates only experiment-owned chunks;
-- superseded fallback lenses do not start in owned chunks;
-- a fallback lens starting outside an owned chunk clips candidate blocks that cross into it.
+`ProvinceBackgroundRuntime` is the shared semantic resolver used by both the late background mutation and pre-generation consumers such as experimental ore host qualification.
 
-`CorrelatedExperimentChunkOwnership` normalizes X/Z to the owning 16×16 chunk before evaluating province, boundary distance and succession. Generation order therefore cannot make neighboring feature invocations disagree about ownership.
+Architecture is province-specific:
 
-Owned chunks must select an allowed target succession and remain at least 96 blocks from the nearest province boundary. Province blending is 192 blocks wide, so the experiment deliberately avoids the most ambiguous transition zone during testing.
+- **Sedimentary Basin** — existing succession selector + its field profile;
+- **Rift Province** — existing succession selector + stronger extensional structure and narrow fault-damage breccia;
+- **Cratonic Shield** — broad gneiss/schist basement terranes, narrow quartzite belts and occasional marble lenses;
+- **Orogenic Belt** — deformed metamorphic gradient with gneiss core, schist/slate outward, quartzite ribbons and marble lenses;
+- **Volcanic Arc** — varied metamorphic basement cut by basalt dikes/sills, local rhyolite bodies and breccia halos.
 
-## Dimension-relative vertical domain
+The rejected one-rock-per-province fill and the later temporary repeated four-lithology matrix are no longer part of the runtime.
 
-Schema 2 replaces the old sea-level-relative test window with:
+## Province boundaries and sutures
 
-```json
-"verticalDomain": "dimension_bounds"
+Province sampling is evaluated per world column, not once at the chunk centre. This removes the former 16×16 staircase where a curved province edge could become a chunk-shaped wall.
+
+Within 96 blocks of a real province boundary, `TerraneSuture` gives the contact a deterministic steep dip through depth. At the terrain/sea-level reference the X/Z boundary remains where the province sampler places it; with depth the neighbouring terrane can project beneath the surface province. The horizontal shift is bounded so a suture cannot consume a whole province.
+
+The suture selects between the two already-existing province architectures. It does not invent a third blended lithology palette or a new noise field.
+
+`/geostrata structure` reports the surface boundary distance and, where applicable, the local suture dip and the terrane occupying the player's current Y.
+
+## Structural field
+
+`TectonicStructuralField` is the shared tectonic primitive. It composes with the existing base dip/warp and terrain-responsive field rather than replacing them.
+
+Current structure includes:
+
+- long-wavelength folds with restrained second harmonic;
+- along-strike fold closures;
+- sparse real stratigraphic-polarity reversal on correlated Orogenic folds;
+- province-specific fault regimes;
+- genuinely dipping Basin/Rift normal faults and Orogenic reverse/thrust-style faults;
+- restrained listric curvature in Rift faults;
+- restrained along-strike fault meander;
+- narrow fault-damage breccia where justified.
+
+Fault meander, curvature and fold closures reuse already-derived structural phases/parameters instead of adding independent voxel-scale noise fields.
+
+## Shared structural consumers
+
+Structural diamonds and fracture-controlled ore veins consume the same fault family that displaces the surrounding geology.
+
+`FaultControlledOrePlanner` projects eligible `vein` candidates onto the fault trace at the candidate's actual Y and aligns the existing branched vein body's azimuth with the local meandering strike. Candidate cells still own rarity; the structural field owns geometry. Non-vein deposit styles are unchanged.
+
+Ore activation remains keyed to material + original deterministic candidate cell. Moving a captured vein onto a fault cannot reroll whether the deposit exists.
+
+## Terrain compatibility
+
+`ChunkGeneratorTerrainMorphologySampler` samples the active chunk generator through `OCEAN_FLOOR_WG` on a shared 128-block grid and interpolates between shared points. GeoStrata therefore responds to compatible terrain generators without hard-coding their biome IDs or mountain heights.
+
+Terrain response remains partial and province-dependent. Positive prominence acts as uplift/ridge evidence; strong negative prominence attenuates response so ravines mostly expose existing geology instead of dragging the geological field to the ravine floor.
+
+Geological thickness is not scaled to dimension height. The companion evaluates the same field across the active dimension bounds.
+
+## Mutation safety
+
+Late background mutation only targets the configured natural-host tag. It preserves:
+
+- existing GeoStrata geology bodies;
+- graded ores;
+- caves and air;
+- fluids;
+- bedrock and unrelated blocks;
+- known structure-piece bounding volumes.
+
+Third-party natural stone can participate by extending `geostrata:worldgen/base_stone_replaceables` rather than requiring a Java integration.
+
+## Diagnostics
+
+Useful live-test commands:
+
+```text
+/geostrata province
+/geostrata terrain
+/geostrata field
+/geostrata structure
+/geostrata metamorphism
+/geostrata experiment
+/geostrata ore <material> candidate
 ```
 
-The correlated pass therefore clamps against the active world's actual `bottomY` and `topY`, not vanilla Y coordinates and not sea level ± fixed offsets. A taller or deeper dimension exposes more of the same stratigraphic field; GeoStrata does **not** multiply cycle thickness, bed thickness, warp wavelength or metamorphic band scale merely because the dimension is taller.
+`/geostrata field` uses the exact correlated runtime where correlated geology is authoritative. Outside that ownership it remains a virtual sedimentary diagnostic, so use `/geostrata structure`/`province` and the actual exposed blocks when inspecting province-background geology.
 
-The mutation predicate still controls what can actually change. Normal correlated generation replaces only `geostrata:worldgen/base_stone_replaceables`, so bedrock, caves, fluids, structures, ores and unrelated blocks remain untouched. Third-party natural stone can participate by extending that tag from a compatibility datapack.
+The ore candidate preview uses the same fault binding and semantic host precedence as runtime: existing GeoStrata host first, then eligible virtual correlated/background host. It does not assign a future host to air, caves or unrelated blocks.
 
-The experimental ore resolver uses the same correlated vertical domain when it needs the virtual host identity beneath an ore body, preventing deep or high ore candidates from falling back to a second height model.
+## Determinism and performance
 
-## Terrain-mod response
+Worldgen identity remains a pure function of stable world inputs. There is no mutable plate simulation or first-visited state.
 
-`ChunkGeneratorTerrainMorphologySampler` asks the **active** chunk generator for `OCEAN_FLOOR_WG` heights. GeoStrata therefore sees terrain produced by compatible terrain mods without hard-coding their biome IDs, mountain heights or world presets.
+The hot path remains bounded:
 
-The structural field samples that terrain on a fixed 128-block world grid and interpolates between shared corners. Province archetypes decide how strongly the stratigraphy responds:
+- terrain evidence is coarse/cached;
+- province context is cached per chunk;
+- province model contexts are cached per unique geological site in a chunk;
+- structural X/Z work resolves once per generated column;
+- only near-boundary columns resolve both terranes;
+- correlated runs cache through ordinary geological/structural boundaries;
+- sparse polarity-transformed columns deliberately use conservative one-block runs until profiling justifies a more complex reversed-boundary cache.
 
-- stable cratonic and basin settings drape only weakly;
-- volcanic arcs and rifts respond moderately;
-- orogenic belts respond most strongly.
+## Current validation target
 
-Positive terrain prominence remains strong ridge/uplift evidence. Increasingly negative prominence is treated primarily as erosional evidence: both drape and prominence-driven folding are smoothly attenuated, down to 20% of their normal province response. A deep ravine should therefore cut through and expose existing strata rather than pull the geological field down to follow the ravine floor.
-
-Fold amplification remains capped at 25% of one succession cycle. Extreme mountains can expose uplifted/deformed geology without stretching ordinary bed thickness to match mountain height.
-
-## Correlated mutation
-
-When the companion is installed and the experiment owns a chunk, `CorrelatedSedimentaryFeature`:
-
-- reuses the selected succession, contact plan and deterministic stratigraphic field;
-- samples the active terrain generator through the shared terrain patch;
-- applies province-aware drape/open-fold response with erosional attenuation;
-- evaluates the field across the active dimension's real vertical bounds;
-- resolves output blocks only at the world-mutation boundary;
-- preserves caves and non-host material;
-- uses one coherent field across chunk boundaries instead of independent random deposits.
-
-## Orogenic metamorphism
-
-Orogenic experiment chunks consume the staged metamorphic model inside the same correlated pass rather than registering another competing feature.
-
-`CorrelatedSedimentaryRuntime.TerrainAwareSite.outputLithology(...)` first resolves the sedimentary parent bed. In an owned orogenic belt:
-
-- mudrock parents may become slate, schist or gneiss according to the existing metamorphic intensity/band model;
-- carbonate parents may become marble using the same band ownership decision;
-- other parents remain unchanged.
-
-Quartzite remains a coherent fallback body because GeoStrata does not yet define the quartz-rich sandstone parent needed for a legitimate parent-derived rule. Do not invent that parent relationship solely to eliminate the fallback.
-
-Inside owned orogenic chunks the correlated pass may also replace earlier GeoStrata metamorphic fallback blocks with the authoritative parent-derived result. Graded ore blocks are unaffected because they are not lithology-catalog rock entries.
-
-## Exact runtime inspection
-
-`CorrelatedSedimentaryRuntime` is the shared resolver for mutation and diagnostics. It evaluates ownership, succession, contact plan, structural field and terrain transform from the same deterministic inputs.
-
-`/geostrata experiment` reports ownership, field lithology, actual block, cycle position, structural offsets and the effective mutation domain. Because the domain is dimension-relative, that reported range should match the current world's bottom through top-1.
-
-`/geostrata terrain`, `/geostrata field` and `/geostrata metamorphism` remain read-only diagnostics for inspecting the terrain evidence and geological response.
-
-## Determinism
-
-The experiment follows `docs/DETERMINISM.md`:
-
-- province and succession selection derive from world seed and stable site coordinates;
-- chunk ownership is normalized before evaluation;
-- structural fields and metamorphic bands use stable salts and coordinates;
-- terrain evidence comes from the unchanged active deterministic chunk generator;
-- no first-visited state, runtime UUID or process-local random source creates geological identity.
-
-Changing the terrain generator, GeoStrata version, datapacks or other worldgen inputs is still a changed generation input. With identical inputs and seed, the experiment is reproducible.
-
-## Validation and status
-
-`GeologyResourceContractTest` validates the bundled graph, requires natural-rock fallback placements to use dimension-relative vertical anchors, checks the full-dimension correlated contract and verifies companion staging. Behavior tests cover deterministic ownership, structural interpolation, erosional attenuation, metamorphic band selection and parent-rock boundaries.
-
-The remaining work is empirical rather than architectural: evaluate abundance, contacts, cliff/ravine exposure, extreme-height terrain, performance and compatibility in fresh worlds before considering promotion into standalone worldgen.
+The next live-test priority is geometry rather than rock count: inspect fresh cave/cliff exposures that cross province boundaries and confirm that sutures read as steep regional contacts rather than chunk seams or vertical walls. Also verify that Volcanic, Cratonic and Orogenic provinces retain their distinct body architecture through those contacts.
 
 Standalone GeoStrata remains on the fallback baseline unless the companion is deliberately installed.

@@ -1,0 +1,230 @@
+name: Ore distribution benchmark
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  ore-benchmark:
+    if: github.head_ref == 'fix/runtime-textures-stone-coverage-20260830'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Java 21 for Gradle and Loom
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Set up Gradle 9.4
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: 9.4.0
+
+      - name: Build mod and experiment companion
+        run: gradle build :experiment-companion:build --stacktrace
+
+      - name: Prepare dedicated server
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p run/mods run/results
+          printf 'eula=true\n' > run/eula.txt
+          cat > run/server.properties <<'EOF'
+          level-name=geostrata-ore-benchmark
+          level-seed=8675309
+          level-type=minecraft:normal
+          online-mode=false
+          spawn-protection=0
+          view-distance=2
+          simulation-distance=2
+          max-tick-time=-1
+          enable-command-block=false
+          EOF
+
+      - name: Benchmark vanilla and GeoStrata ore visibility
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          run_scenario() {
+              scenario="$1"
+              rm -rf run/geostrata-ore-benchmark run/logs
+              rm -f run/mods/geostrata-correlated-experiment-*.jar
+              if [ "$scenario" = geostrata ]; then
+                  cp experiment-companion/build/libs/geostrata-correlated-experiment-0.2.0.jar run/mods/
+              fi
+
+              fifo="run/${scenario}.console"
+              rm -f "$fifo"
+              mkfifo "$fifo"
+              exec 3<>"$fifo"
+              setsid gradle runServer --stacktrace <"$fifo" >"run/results/${scenario}.stdout.log" 2>&1 &
+              pid=$!
+
+              started=0
+              for _ in $(seq 1 240); do
+                  if [ -f run/logs/latest.log ] && grep -q 'Done (' run/logs/latest.log; then
+                      started=1
+                      break
+                  fi
+                  if ! kill -0 "$pid" 2>/dev/null; then
+                      echo "Minecraft server exited before startup for ${scenario}."
+                      cat "run/results/${scenario}.stdout.log"
+                      [ -f run/logs/latest.log ] && cat run/logs/latest.log
+                      exit 1
+                  fi
+                  sleep 2
+              done
+              if [ "$started" -ne 1 ]; then
+                  echo "Minecraft server did not reach Done for ${scenario}."
+                  kill -TERM -- "-$pid" 2>/dev/null || true
+                  exit 1
+              fi
+
+              printf 'geostrata ore benchmark\n' >&3
+              found=0
+              for _ in $(seq 1 360); do
+                  if grep -q 'GEOSTRATA_ORE_BENCHMARK ' run/logs/latest.log; then
+                      found=1
+                      break
+                  fi
+                  if ! kill -0 "$pid" 2>/dev/null; then
+                      echo "Minecraft server exited during benchmark for ${scenario}."
+                      cat "run/results/${scenario}.stdout.log"
+                      cat run/logs/latest.log
+                      exit 1
+                  fi
+                  sleep 2
+              done
+              if [ "$found" -ne 1 ]; then
+                  echo "Ore benchmark did not complete for ${scenario}."
+                  cat run/logs/latest.log
+                  kill -TERM -- "-$pid" 2>/dev/null || true
+                  exit 1
+              fi
+
+              python3 - "$scenario" <<'PY'
+          import json
+          import pathlib
+          import sys
+
+          scenario = sys.argv[1]
+          lines = pathlib.Path('run/logs/latest.log').read_text(errors='replace').splitlines()
+          marker = 'GEOSTRATA_ORE_BENCHMARK '
+          payload = next(line.split(marker, 1)[1] for line in reversed(lines) if marker in line)
+          data = json.loads(payload)
+          pathlib.Path(f'run/results/{scenario}.json').write_text(json.dumps(data, indent=2) + '\n')
+          print(scenario, json.dumps(data, separators=(',', ':')))
+          PY
+
+              cp run/logs/latest.log "run/results/${scenario}.latest.log"
+              printf 'stop\n' >&3
+              wait "$pid" || true
+              exec 3>&-
+              rm -f "$fifo"
+          }
+
+          run_scenario vanilla
+          run_scenario geostrata
+
+      - name: Summarize paired benchmark
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          baseline = json.loads(Path('run/results/vanilla.json').read_text())
+          geostrata = json.loads(Path('run/results/geostrata.json').read_text())
+          overlapping = ('coal', 'iron', 'copper', 'gold', 'emerald')
+          common = ('coal', 'iron', 'copper')
+
+          def aggregate(data, materials, graded=False):
+              rows = [data['materials'][material] for material in materials]
+              if graded:
+                  return {
+                      'total': sum(row['gradedBlocks'] for row in rows),
+                      'airExposed': sum(row['gradedAirExposed'] for row in rows),
+                      'airExposedClusters': sum(row['gradedAirExposedClusters'] for row in rows),
+                  }
+              return {
+                  'total': sum(row['total'] for row in rows),
+                  'airExposed': sum(row['airExposed'] for row in rows),
+                  'airExposedClusters': sum(row['airExposedClusters'] for row in rows),
+              }
+
+          summary = {
+              'seed': baseline['seed'],
+              'chunkCount': baseline['chunkCount'],
+              'overlappingMaterials': list(overlapping),
+              'vanilla': aggregate(baseline, overlapping),
+              'geostrataGraded': aggregate(geostrata, overlapping, graded=True),
+              'materials': {},
+          }
+          failures = []
+          for material in baseline['materials']:
+              before = baseline['materials'][material]
+              after = geostrata['materials'][material]
+              vanilla_patches = before['airExposedClusters']
+              graded_patches = after['gradedAirExposedClusters']
+              target = (vanilla_patches + 1) // 2 if material in common else None
+              ratio = 0.0 if vanilla_patches == 0 else graded_patches * 100.0 / vanilla_patches
+              summary['materials'][material] = {
+                  'vanillaTotal': before['total'],
+                  'geostrataGradedTotal': after['gradedBlocks'],
+                  'residualVanillaTotal': after['vanillaTaggedBlocks'],
+                  'vanillaAirExposed': before['airExposed'],
+                  'geostrataGradedAirExposed': after['gradedAirExposed'],
+                  'residualVanillaAirExposed': after['vanillaTaggedAirExposed'],
+                  'vanillaExposedClusters': vanilla_patches,
+                  'geostrataGradedExposedClusters': graded_patches,
+                  'residualVanillaExposedClusters': after['vanillaTaggedAirExposedClusters'],
+                  'gradedPatchPercentOfVanilla': ratio,
+                  'commonMinimumTarget': target,
+              }
+              if target is not None and graded_patches < target:
+                  failures.append(f"{material}: {graded_patches} < {target} patches")
+
+          Path('run/results/paired.json').write_text(json.dumps(summary, indent=2) + '\n')
+          lines = [
+              '# Ore distribution benchmark',
+              '',
+              f"Seed: {summary['seed']} | chunks: {summary['chunkCount']} (10x10)",
+              '',
+              '| Material | Vanilla total | GeoStrata graded | Residual vanilla | Vanilla exposed patches | GeoStrata graded patches | % of vanilla patches |',
+              '|---|---:|---:|---:|---:|---:|---:|',
+          ]
+          for material, row in summary['materials'].items():
+              lines.append(
+                  f"| {material} | {row['vanillaTotal']} | {row['geostrataGradedTotal']} | "
+                  f"{row['residualVanillaTotal']} | {row['vanillaExposedClusters']} | "
+                  f"{row['geostrataGradedExposedClusters']} | {row['gradedPatchPercentOfVanilla']:.1f}% |"
+              )
+          lines.extend([
+              '',
+              'Common-resource acceptance floor: each of coal, iron and copper must retain at least 50% of the vanilla exposed-patch count.',
+              f"- vanilla overlapping total: {summary['vanilla']['total']}",
+              f"- GeoStrata graded overlapping total: {summary['geostrataGraded']['total']}",
+              f"- vanilla overlapping exposed patches: {summary['vanilla']['airExposedClusters']}",
+              f"- GeoStrata graded overlapping exposed patches: {summary['geostrataGraded']['airExposedClusters']}",
+          ])
+          Path('run/results/paired.md').write_text('\n'.join(lines) + '\n')
+          print('\n'.join(lines))
+          if failures:
+              raise SystemExit('Common ore exposure floor failed: ' + '; '.join(failures))
+          PY
+
+      - name: Upload benchmark results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: geostrata-ore-distribution-benchmark
+          path: run/results/*
+          if-no-files-found: warn

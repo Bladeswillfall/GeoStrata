@@ -180,14 +180,14 @@ public final class OreDepositExperiment {
         }
 
         Snapshot activated(boolean companionLoaded) {
-            if (!companionLoaded) {
+            if (!companionLoaded || "experimental_runtime".equals(runtimeStatus)) {
                 return this;
             }
             return new Snapshot(
                     "experimental_runtime",
                     true,
                     placementMode,
-                    nativeGenerationSuppression,
+                    "experimental_companion_overworld",
                     activationChancePerCandidate
             );
         }

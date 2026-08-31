@@ -2,6 +2,7 @@ package com.geostrata.geology;
 
 import org.junit.jupiter.api.Test;
 
+import java.util.EnumSet;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -35,6 +36,26 @@ final class OreDepositGeometryTest {
     }
 
     @Test
+    void depositContainsEveryEconomicGradeFromMarginToCore() {
+        OreDepositGeometry.Body body = OreDepositGeometry.forCandidate(8675309L, candidate("massive_lens_or_pocket"));
+        OreDepositGeometry.Bounds bounds = body.bounds();
+        EnumSet<OreGrade> grades = EnumSet.noneOf(OreGrade.class);
+
+        for (int x = bounds.minX(); x <= bounds.maxX() && grades.size() < OreGrade.values().length; x++) {
+            for (int y = bounds.minY(); y <= bounds.maxY() && grades.size() < OreGrade.values().length; y++) {
+                for (int z = bounds.minZ(); z <= bounds.maxZ() && grades.size() < OreGrade.values().length; z++) {
+                    OreGrade grade = body.sample(x, y, z).grade();
+                    if (grade != null) {
+                        grades.add(grade);
+                    }
+                }
+            }
+        }
+
+        assertEquals(EnumSet.allOf(OreGrade.class), grades);
+    }
+
+    @Test
     void proposalGeometryMatchesTheLegacyQualifiedCandidatePath() {
         OreDepositCandidatePlanner.Candidate candidate = candidate("stratiform");
         assertEquals(
@@ -52,12 +73,14 @@ final class OreDepositGeometryTest {
 
         assertEquals(first, repeated);
         assertNotEquals(first, otherSeed);
-        assertEquals(2, first.branches().size());
+        assertEquals(6, first.branches().size());
         assertEquals(35.782474705575, first.lengthRadius(), 1.0e-12);
         assertEquals(2.818203125585, first.widthRadius(), 1.0e-12);
         assertEquals(2.333116619565, first.thicknessRadius(), 1.0e-12);
         assertEquals(5.983455788356, first.azimuthRadians(), 1.0e-12);
         assertEquals(-1.262883441316, first.dipRadians(), 1.0e-12);
+        assertTrue(first.branches().stream().anyMatch(branch -> branch.endAcross() < 0.0));
+        assertTrue(first.branches().stream().anyMatch(branch -> branch.endAcross() > 0.0));
         assertEquals(
                 first.sample(first.anchorX() - 7, first.anchorY() + 3, first.anchorZ() + 5),
                 repeated.sample(repeated.anchorX() - 7, repeated.anchorY() + 3, repeated.anchorZ() + 5)
@@ -131,6 +154,18 @@ final class OreDepositGeometryTest {
     }
 
     @Test
+    void coalTraceExtendsNormalToTheSeamWithoutGrowingEconomicCoal() {
+        OreDepositGeometry.Body coal = flatBody("coal");
+        OreDepositGeometry.Body control = flatBody("copper");
+
+        assertTrue(coal.sample(0, 2, 0).economic());
+        assertTrue(control.sample(0, 2, 0).economic());
+        assertFalse(coal.sample(0, 5, 0).economic());
+        assertTrue(coal.sample(0, 5, 0).trace());
+        assertFalse(control.sample(0, 5, 0).trace());
+    }
+
+    @Test
     void disseminatedEnvelopeContainsStableHostGaps() {
         OreDepositGeometry.Body body = OreDepositGeometry.forCandidate(99L, candidate("disseminated"));
         boolean foundEconomic = false;
@@ -153,6 +188,26 @@ final class OreDepositGeometryTest {
         assertThrows(
                 IllegalArgumentException.class,
                 () -> OreDepositGeometry.forCandidate(1L, candidate("unsupported"))
+        );
+    }
+
+    private static OreDepositGeometry.Body flatBody(String material) {
+        return new OreDepositGeometry.Body(
+                1L,
+                material,
+                "coal_seam",
+                0,
+                0,
+                0,
+                56.0,
+                34.0,
+                2.2,
+                0.0,
+                0.0,
+                0.0,
+                56.0,
+                0.0,
+                List.of()
         );
     }
 

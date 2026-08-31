@@ -25,6 +25,16 @@ public final class TerrainAwareStructuralField {
             TerrainPatch localPatch,
             double anchorHeight
     ) {
+        return apply(baseField, province, localPatch, anchorHeight, TectonicStructuralField.flat());
+    }
+
+    public static Field apply(
+            SedimentaryStratigraphicField.Field baseField,
+            GeologyProvince province,
+            TerrainPatch localPatch,
+            double anchorHeight,
+            TectonicStructuralField.Context tectonicField
+    ) {
         if (baseField == null) {
             throw new IllegalArgumentException("base stratigraphic field must not be null");
         }
@@ -37,7 +47,10 @@ public final class TerrainAwareStructuralField {
         if (!Double.isFinite(anchorHeight)) {
             throw new IllegalArgumentException("terrain anchor height must be finite");
         }
-        return new Field(baseField, responseFor(province), localPatch, anchorHeight);
+        if (tectonicField == null) {
+            throw new IllegalArgumentException("tectonic field must not be null");
+        }
+        return new Field(baseField, responseFor(province), localPatch, anchorHeight, tectonicField);
     }
 
     public static Response responseFor(GeologyProvince province) {
@@ -182,10 +195,11 @@ public final class TerrainAwareStructuralField {
             SedimentaryStratigraphicField.Field baseField,
             Response response,
             TerrainPatch localPatch,
-            double anchorHeight
+            double anchorHeight,
+            TectonicStructuralField.Context tectonicField
     ) {
         public Field {
-            if (baseField == null || response == null || localPatch == null) {
+            if (baseField == null || response == null || localPatch == null || tectonicField == null) {
                 throw new IllegalArgumentException("terrain-aware field components must not be null");
             }
             if (!Double.isFinite(anchorHeight)) {
@@ -218,6 +232,7 @@ public final class TerrainAwareStructuralField {
             return Math.min(reliefAmplitude, maximumAmplitude);
         }
 
+        /** Terrain-evidence fold component retained from the original field. */
         public double foldOffset(int x, int z) {
             return foldAmplitude(x, z) * baseField.warpShape(x, z);
         }
@@ -226,8 +241,52 @@ public final class TerrainAwareStructuralField {
             return drapeOffset(x, z) + foldOffset(x, z);
         }
 
+        public TectonicStructuralField.Sample tectonicSample(int x, int z) {
+            return tectonicSample(x, 0.0, z);
+        }
+
+        public TectonicStructuralField.Sample tectonicSample(int x, double y, int z) {
+            TectonicStructuralField.Sample raw = tectonicField.sample(x, y, z);
+            return new TectonicStructuralField.Sample(
+                    TectonicFoldClosures.offset(tectonicField, x, z),
+                    raw.faultOffset(),
+                    raw.distanceToFault(),
+                    raw.faultRegime()
+            );
+        }
+
+        public double tectonicFoldOffset(int x, int z) {
+            return TectonicFoldClosures.offset(tectonicField, x, z);
+        }
+
+        public double faultOffset(int x, int z) {
+            return tectonicSample(x, z).faultOffset();
+        }
+
+        public double faultOffset(int x, double y, int z) {
+            return tectonicSample(x, y, z).faultOffset();
+        }
+
+        public double tectonicOffset(int x, int z) {
+            return tectonicSample(x, z).totalOffset();
+        }
+
+        /** Legacy X/Z total, equivalent to sampling dipping faults at Y=0. */
         public double verticalOffset(int x, int z) {
-            return baseField.verticalOffset(x, z) + terrainOffset(x, z);
+            return column(x, z).verticalOffset(0.0);
+        }
+
+        public double verticalOffset(int x, double y, int z) {
+            return column(x, z).verticalOffset(y);
+        }
+
+        /** Resolves all X/Z-only structural work once for a vertical worldgen column. */
+        public Column column(int x, int z) {
+            return new Column(
+                    baseField.verticalOffset(x, z) + terrainOffset(x, z),
+                    tectonicFoldOffset(x, z),
+                    tectonicField.column(x, z)
+            );
         }
 
         public SedimentaryStratigraphicField.Sample sample(
@@ -236,7 +295,33 @@ public final class TerrainAwareStructuralField {
                 int z,
                 SedimentaryContactPlanner.Plan plan
         ) {
-            return baseField.sample(x, y, z, plan, terrainOffset(x, z));
+            return baseField.sampleAtVerticalOffset(y, plan, verticalOffset(x, y, z));
+        }
+    }
+
+    public record Column(
+            double baseAndTerrainOffset,
+            double tectonicFoldOffset,
+            TectonicStructuralField.Column tectonicColumn
+    ) {
+        public Column {
+            if (!Double.isFinite(baseAndTerrainOffset)
+                    || !Double.isFinite(tectonicFoldOffset)
+                    || tectonicColumn == null) {
+                throw new IllegalArgumentException("terrain-aware structural column must be valid");
+            }
+        }
+
+        public double verticalOffset(double y) {
+            return baseAndTerrainOffset + tectonicFoldOffset + tectonicColumn.faultOffset(y);
+        }
+
+        public double faultOffset(double y) {
+            return tectonicColumn.faultOffset(y);
+        }
+
+        public int faultRunEndY(int y) {
+            return tectonicColumn.faultRunEndY(y);
         }
     }
 

@@ -30,8 +30,11 @@ generation order.
 
 `OreDepositGeometry` gives each declared style a distinct body: low-dip coal
 sheets, branched tubular veins, broad stratiform lenses, sparse disseminated
-envelopes and compact massive lenses/pockets. The seed derives orientation,
-scale, warp and the two restrained side branches used by veins. The body sampler
+envelopes and compact massive lenses/pockets. The seed derives the baseline
+orientation, scale, warp and the two restrained side branches used by veins. A
+nearby fracture-style vein may subsequently have its anchor and main-axis
+azimuth bound to the shared tectonic fault field; its dimensions, warp, branches,
+concentration and grade logic remain the existing body geometry. The body sampler
 grades economic blocks from edge to core, applies stable block-coordinate
 dithering at grade boundaries and represents the surrounding halo or
 disseminated host gaps as non-economic Trace.
@@ -78,15 +81,38 @@ shape.
 
 Direct GeoStrata rock blocks resolve their lithology from the loaded catalog. If
 the separate correlated sedimentary experiment owns a chunk, ore placement can
-also resolve the correlated field against its vanilla host-replacement tag. That
-allows an ore voxel to acquire the correct future host identity even when ore
-placement runs before the companion sedimentary replacement feature; the later
-sedimentary pass will not overwrite the graded ore block.
+also resolve the correlated field against its vanilla host-replacement tag. The
+virtual result is the authoritative final correlated output, including
+parent-aware metamorphism and overturned stratigraphy, rather than merely the
+parent sedimentary bed. That allows an ore voxel to acquire the correct future
+host identity even when ore placement runs before the companion sedimentary
+replacement feature; the later sedimentary pass will not overwrite the graded
+ore block.
 
 Trace remains evidence-only and does not place a block. Vanilla/provider-native
 ore generation is still **not suppressed**. This experiment exists to measure
 body abundance, readability, performance and economic coverage before GeoStrata
 is allowed to become the exclusive generation owner.
+
+### Shared fault-controlled veins
+
+`FaultControlledOrePlanner` is the single structural binding for experimental
+`vein` proposals. Candidate cells continue to own abundance: activation is
+resolved from material plus cell coordinates before structural binding, so
+moving a vein onto a fault cannot reroll whether that deposit exists.
+
+A vein whose original anchor lies within 96 blocks of the shared fault family,
+and safely inside its owning province rather than near a province boundary, is
+projected onto the nearest fault trace at the candidate's actual Y. The planner
+then projects two nearby points through the same `TectonicStructuralField`
+`nearestFault` primitive and uses their secant as the local strike of the
+meandering trace. The existing vein body is re-oriented along that strike.
+
+This deliberately does not create a second ore-specific fracture simulator. The
+same fault trace displaces strata, exposes damage-zone breccia, controls
+structural diamonds and anchors nearby fracture-style veins. Non-vein deposit
+styles bypass this binding unchanged. `/geostrata ore <material> candidate`
+uses the same planner and reports when a preview is `fault-aligned`.
 
 ### Emerald occurrence
 
@@ -103,14 +129,15 @@ lets shale/carbonate systems continue into slate/schist/gneiss and marble in oro
 
 The shared grade contract still registers Poor/Medium/Rich/Massive blocks for consistent loot,
 Silk Touch and assets, but emerald declares `maximumNaturalGrade=rich`. Massive emerald is thus
-asset/economy compatible but is not placed by ordinary generation. If a future shared fault or
-structural-intersection field justifies exceptional massive pockets, that can lift the cap in a
-generic structural rule rather than an emerald-only special case.
+asset/economy compatible but is not placed by ordinary generation. If a future generic
+structural-intersection rule justifies exceptional massive pockets, that can lift the cap
+without adding an emerald-only structural system.
 
-The current `vein` geometry represents fracture-controlled mineralization, but it is not yet
-bound to a first-class shared fault/shear field because GeoStrata does not currently expose one.
-That binding should be added when faults become a shared geological primitive; emerald should
-not invent a parallel fault simulator just for itself.
+Emerald uses the same `FaultControlledOrePlanner` as other fracture-style veins.
+A qualifying candidate near a real Orogenic fault therefore snaps to that shared
+fault trace and follows its local meandering strike; a candidate too far from a
+fault retains the ordinary deterministic vein geometry. Emerald does not own a
+parallel fault simulator.
 
 ## Grade contract
 

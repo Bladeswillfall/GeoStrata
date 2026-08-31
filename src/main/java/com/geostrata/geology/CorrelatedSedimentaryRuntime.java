@@ -138,15 +138,30 @@ public final class CorrelatedSedimentaryRuntime {
             return base.plan();
         }
 
+        public TectonicFoldPolarity.Profile foldPolarity() {
+            return TectonicFoldPolarity.forField(
+                    ownership().province(),
+                    field.tectonicField(),
+                    field.baseField().cycleThicknessBlocks(),
+                    field.anchorHeight()
+            );
+        }
+
         public SedimentaryStratigraphicField.Sample sample(int x, double y, int z) {
-            return field.sample(x, y, z, base.plan());
+            TerrainAwareStructuralField.Column structuralColumn = field.column(x, z);
+            double verticalOffset = structuralColumn.verticalOffset(y);
+            TectonicFoldPolarity.Transform polarity = foldPolarity().transform(field.tectonicField(), x, z);
+            return field.baseField().sampleAtVerticalOffset(
+                    polarity.stratigraphicY(y, verticalOffset),
+                    base.plan(),
+                    verticalOffset
+            );
         }
 
         /**
          * Resolves all X/Z-only structural work once for a vertical worldgen column.
-         * The returned column also caches contiguous Y-runs with identical output,
-         * so solid rock does not repeat stratigraphic and metamorphic selection for
-         * every block inside the same bed/band.
+         * Dipping fault state remains a cheap Y-only lookup on that column. The returned
+         * column also caches contiguous Y-runs with identical output where polarity is normal.
          */
         public Column column(long worldSeed, int x, int z) {
             return column(worldSeed, x, z, null);
@@ -159,7 +174,8 @@ public final class CorrelatedSedimentaryRuntime {
                 int z,
                 GeologyProvinceSampler.Context provinceContext
         ) {
-            double verticalOffset = field.verticalOffset(x, z);
+            TerrainAwareStructuralField.Column structuralColumn = field.column(x, z);
+            TectonicFoldPolarity.Transform polarity = foldPolarity().transform(field.tectonicField(), x, z);
             MetamorphicIntensityField.Suitability suitability = null;
             if (ownership().province() == GeologyProvince.OROGENIC_BELT) {
                 TerrainMorphologySample morphology = field.localPatch().morphologyAt(x, z);
@@ -180,7 +196,7 @@ public final class CorrelatedSedimentaryRuntime {
                                 provinceContext.sample(x, z)
                         ).suitability();
             }
-            return new Column(this, worldSeed, x, z, verticalOffset, suitability);
+            return new Column(this, worldSeed, x, z, structuralColumn, polarity, suitability);
         }
 
         public String outputLithology(
@@ -200,7 +216,8 @@ public final class CorrelatedSedimentaryRuntime {
         private final long worldSeed;
         private final int x;
         private final int z;
-        private final double verticalOffset;
+        private final TerrainAwareStructuralField.Column structuralColumn;
+        private final TectonicFoldPolarity.Transform foldPolarity;
         private final MetamorphicIntensityField.Suitability metamorphicSuitability;
         private int cachedFromY = 1;
         private int cachedThroughY = 0;
@@ -211,17 +228,19 @@ public final class CorrelatedSedimentaryRuntime {
                 long worldSeed,
                 int x,
                 int z,
-                double verticalOffset,
+                TerrainAwareStructuralField.Column structuralColumn,
+                TectonicFoldPolarity.Transform foldPolarity,
                 MetamorphicIntensityField.Suitability metamorphicSuitability
         ) {
-            if (site == null || !Double.isFinite(verticalOffset)) {
+            if (site == null || structuralColumn == null || foldPolarity == null) {
                 throw new IllegalArgumentException("correlated column context must be valid");
             }
             this.site = site;
             this.worldSeed = worldSeed;
             this.x = x;
             this.z = z;
-            this.verticalOffset = verticalOffset;
+            this.structuralColumn = structuralColumn;
+            this.foldPolarity = foldPolarity;
             this.metamorphicSuitability = metamorphicSuitability;
         }
 
@@ -241,8 +260,17 @@ public final class CorrelatedSedimentaryRuntime {
             return z;
         }
 
+        /** Legacy Y=0 structural offset. */
         public double verticalOffset() {
-            return verticalOffset;
+            return verticalOffset(0.0);
+        }
+
+        public double verticalOffset(double y) {
+            return structuralColumn.verticalOffset(y);
+        }
+
+        public TectonicFoldPolarity.Transform foldPolarity() {
+            return foldPolarity;
         }
 
         public MetamorphicIntensityField.Suitability metamorphicSuitability() {
@@ -250,8 +278,9 @@ public final class CorrelatedSedimentaryRuntime {
         }
 
         public SedimentaryStratigraphicField.Sample sample(double y) {
+            double verticalOffset = verticalOffset(y);
             return site.field().baseField().sampleAtVerticalOffset(
-                    y,
+                    foldPolarity.stratigraphicY(y, verticalOffset),
                     site.plan(),
                     verticalOffset
             );
@@ -265,9 +294,20 @@ public final class CorrelatedSedimentaryRuntime {
                 return cachedLithology;
             }
 
-            SedimentaryStratigraphicField.Sample sample = sample(y);
+            double verticalOffset = verticalOffset(y);
+            double stratigraphicY = foldPolarity.stratigraphicY(y, verticalOffset);
+            SedimentaryStratigraphicField.Sample sample = site.field().baseField().sampleAtVerticalOffset(
+                    stratigraphicY,
+                    site.plan(),
+                    verticalOffset
+            );
             String parent = sample.bed().lithology();
-            int runEndY = sedimentaryRunEndY(sample, y);
+            int runEndY = foldPolarity.preservesVerticalScale()
+                    ? Math.min(
+                            sedimentaryRunEndY(sample, y, verticalOffset),
+                            structuralColumn.faultRunEndY(y)
+                    )
+                    : y;
             if (metamorphicSuitability == null) {
                 return cache(y, runEndY, parent);
             }
@@ -291,7 +331,7 @@ public final class CorrelatedSedimentaryRuntime {
                     worldSeed,
                     site.field().baseField().siteX(),
                     site.field().baseField().siteZ(),
-                    y,
+                    stratigraphicY,
                     verticalOffset,
                     site.field().baseField().cycleThicknessBlocks(),
                     metamorphicSuitability
@@ -299,11 +339,20 @@ public final class CorrelatedSedimentaryRuntime {
             if (selection.isEmpty()) {
                 return cache(y, runEndY, parent);
             }
-            runEndY = Math.min(runEndY, metamorphicRunEndY(selection.get().bandIndex(), y));
+            if (foldPolarity.preservesVerticalScale()) {
+                runEndY = Math.min(
+                        runEndY,
+                        metamorphicRunEndY(selection.get().bandIndex(), y, verticalOffset)
+                );
+            }
             return cache(y, runEndY, selection.get().lithology());
         }
 
-        private int sedimentaryRunEndY(SedimentaryStratigraphicField.Sample sample, int y) {
+        private int sedimentaryRunEndY(
+                SedimentaryStratigraphicField.Sample sample,
+                int y,
+                double verticalOffset
+        ) {
             double nextContactCoordinate = sample.cycleIndex() + sample.bed().upperFraction();
             double nextContactY = verticalOffset
                     + site.field().baseField().cycleThicknessBlocks()
@@ -311,7 +360,7 @@ public final class CorrelatedSedimentaryRuntime {
             return integerBeforeBoundary(nextContactY, y);
         }
 
-        private int metamorphicRunEndY(int bandIndex, int y) {
+        private int metamorphicRunEndY(int bandIndex, int y, double verticalOffset) {
             double nextBandY = verticalOffset
                     + site.field().baseField().cycleThicknessBlocks() * ((double) bandIndex + 1.0);
             return integerBeforeBoundary(nextBandY, y);

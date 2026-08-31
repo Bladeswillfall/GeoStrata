@@ -94,6 +94,7 @@
         "rift_province"
       ],
       "depositStyles": [
+        "vein",
         "stratiform",
         "disseminated",
         "massive_lens_or_pocket"

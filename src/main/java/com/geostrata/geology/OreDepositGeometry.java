@@ -6,6 +6,7 @@ import java.util.List;
 public final class OreDepositGeometry {
     private static final double TWO_PI = Math.PI * 2.0;
     private static final double TRACE_LIMIT = 1.25;
+    private static final double COAL_TRACE_NORMAL_SCALE = 3.0;
     private static final double GRADE_DITHER = 0.12;
 
     private static final long AZIMUTH_SALT = 0x243F6A8885A308D3L;
@@ -84,7 +85,11 @@ public final class OreDepositGeometry {
     ) {
         return List.of(
                 branch(worldSeed, proposal, length, 0, -1.0),
-                branch(worldSeed, proposal, length, 1, 1.0)
+                branch(worldSeed, proposal, length, 1, 1.0),
+                branch(worldSeed, proposal, length, 2, -1.0),
+                branch(worldSeed, proposal, length, 3, 1.0),
+                branch(worldSeed, proposal, length, 4, -1.0),
+                branch(worldSeed, proposal, length, 5, 1.0)
         );
     }
 
@@ -184,7 +189,7 @@ public final class OreDepositGeometry {
             if (normalizedDistance <= 1.0) {
                 return economicSample(x, y, z, normalizedDistance);
             }
-            if (normalizedDistance <= TRACE_LIMIT) {
+            if (traceDistance(point, normalizedDistance) <= TRACE_LIMIT) {
                 return new Sample(0.0, null, true);
             }
             return new Sample(0.0, null, false);
@@ -332,6 +337,17 @@ public final class OreDepositGeometry {
                     square(point.along() / lengthRadius)
                             + square(point.across() / widthRadius)
                             + square(point.normal() / thicknessRadius)
+            );
+        }
+
+        private double traceDistance(LocalPoint point, double normalizedDistance) {
+            if (!"coal".equals(material)) {
+                return normalizedDistance;
+            }
+            return Math.sqrt(
+                    square(point.along() / lengthRadius)
+                            + square(point.across() / widthRadius)
+                            + square(point.normal() / (thicknessRadius * COAL_TRACE_NORMAL_SCALE))
             );
         }
 

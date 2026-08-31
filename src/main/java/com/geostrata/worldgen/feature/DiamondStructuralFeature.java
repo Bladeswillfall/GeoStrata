@@ -5,23 +5,30 @@ import com.geostrata.geology.DiamondGeologyPlanner;
 import com.geostrata.geology.GeologyDeterminism;
 import com.geostrata.geology.GeologyProvince;
 import com.geostrata.geology.GeologyProvinceSampler;
+import com.geostrata.geology.SedimentaryFieldProfiles;
+import com.geostrata.geology.TectonicStructuralField;
+import com.geostrata.geology.TerraneSuture;
+import net.minecraft.util.math.BlockBox;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.StructureWorldAccess;
+import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.gen.feature.DefaultFeatureConfig;
 import net.minecraft.world.gen.feature.Feature;
 import net.minecraft.world.gen.feature.util.FeatureContext;
 
+import java.util.List;
+
 /**
- * Experimental common diamond route: small deep clusters aligned to rare,
- * steep structural corridors in stable cratonic interiors.
- *
- * <p>The corridor is intentionally not rendered as a new fault block. It is a
- * deterministic placement field that can later be replaced by an explicit
- * fault-plane model without changing the diamond gameplay contract.</p>
+ * Experimental common diamond route: small deep clusters following the same
+ * ancient fault traces that displace GeoStrata geology in stable cratonic interiors.
  */
 public final class DiamondStructuralFeature extends Feature<DefaultFeatureConfig> {
     private static final int CHUNK_SIZE = 16;
-    private static final int SEARCH_PADDING = 20;
+    private static final int SEARCH_PADDING = 224;
+    private static final String STRUCTURAL_CONTINUITY = "regional";
+    private static final double MAX_FAULT_CAPTURE_DISTANCE = DiamondGeologyPlanner.STRUCTURAL_CELL_SIZE * 0.65;
+    private static final double ALONG_FAULT_SPREAD = 28.0;
+    private static final double ACROSS_FAULT_JITTER = 2.5;
     private static final long CLUSTER_Y_SALT = 0x8CB92BA72F3D8DD7L;
     private static final long CLUSTER_X_SALT = 0x58F38DED09D2C7A9L;
     private static final long CLUSTER_Z_SALT = 0xA24BAED4963EE407L;
@@ -34,7 +41,8 @@ public final class DiamondStructuralFeature extends Feature<DefaultFeatureConfig
     @Override
     public boolean generate(FeatureContext<DefaultFeatureConfig> context) {
         DiamondGeologyExperiment.Snapshot experiment = DiamondGeologyExperiment.current();
-        if (!experiment.loaded() || !experiment.enabled()) {
+        SedimentaryFieldProfiles.Snapshot fieldProfiles = SedimentaryFieldProfiles.current();
+        if (!experiment.loaded() || !experiment.enabled() || !fieldProfiles.loaded()) {
             return false;
         }
 
@@ -45,6 +53,9 @@ public final class DiamondStructuralFeature extends Feature<DefaultFeatureConfig
         int endX = startX + CHUNK_SIZE - 1;
         int endZ = startZ + CHUNK_SIZE - 1;
         long seed = world.getSeed();
+        double cycleThickness = fieldProfiles.parametersFor(STRUCTURAL_CONTINUITY).cycleThicknessBlocks();
+        Chunk chunk = world.getChunk(Math.floorDiv(startX, CHUNK_SIZE), Math.floorDiv(startZ, CHUNK_SIZE));
+        List<BlockBox> protectedStructurePieces = StructurePieceProtection.forChunk(world, chunk);
 
         int minCellX = Math.floorDiv(startX - SEARCH_PADDING, DiamondGeologyPlanner.STRUCTURAL_CELL_SIZE);
         int maxCellX = Math.floorDiv(endX + SEARCH_PADDING, DiamondGeologyPlanner.STRUCTURAL_CELL_SIZE);
@@ -61,11 +72,42 @@ public final class DiamondStructuralFeature extends Feature<DefaultFeatureConfig
                 )) {
                     continue;
                 }
-                GeologyProvinceSampler.Sample province = GeologyProvinceSampler.sample(seed, candidate.anchorX(), candidate.anchorZ());
-                if (province.province() != GeologyProvince.CRATONIC_SHIELD || province.distanceToBoundary() < 64.0) {
+
+                GeologyProvinceSampler.Sample province = GeologyProvinceSampler.sample(
+                        seed,
+                        candidate.anchorX(),
+                        candidate.anchorZ()
+                );
+                if (province.province() != GeologyProvince.CRATONIC_SHIELD || TerraneSuture.canCross(province)) {
                     continue;
                 }
-                placed += placeCandidate(world, candidate, startX, endX, startZ, endZ);
+
+                TectonicStructuralField.Context tectonics = TectonicStructuralField.forSite(
+                        seed,
+                        province.province(),
+                        province.siteX(),
+                        province.siteZ(),
+                        cycleThickness
+                );
+                TectonicStructuralField.FaultTrace trace = tectonics.nearestFault(
+                        candidate.anchorX(),
+                        candidate.anchorZ()
+                );
+                if (trace.distanceToFault() > MAX_FAULT_CAPTURE_DISTANCE) {
+                    continue;
+                }
+
+                placed += placeCandidate(
+                        world,
+                        candidate,
+                        tectonics,
+                        trace,
+                        startX,
+                        endX,
+                        startZ,
+                        endZ,
+                        protectedStructurePieces
+                );
             }
         }
         return placed > 0;
@@ -74,10 +116,13 @@ public final class DiamondStructuralFeature extends Feature<DefaultFeatureConfig
     private static int placeCandidate(
             StructureWorldAccess world,
             DiamondGeologyPlanner.StructuralCandidate candidate,
+            TectonicStructuralField.Context tectonics,
+            TectonicStructuralField.FaultTrace trace,
             int startX,
             int endX,
             int startZ,
-            int endZ
+            int endZ,
+            List<BlockBox> protectedStructurePieces
     ) {
         int worldHeight = world.getTopY() - world.getBottomY();
         int minY = world.getBottomY() + 5;
@@ -90,16 +135,27 @@ public final class DiamondStructuralFeature extends Feature<DefaultFeatureConfig
         }
 
         long seed = world.getSeed();
+        double normalX = -tectonics.faultSin();
+        double normalZ = tectonics.faultCos();
         int placed = 0;
         for (int cluster = 0; cluster < candidate.clusterCount(); cluster++) {
             double yRoll = DiamondGeologyPlanner.structuralClusterRoll(seed, candidate, cluster, CLUSTER_Y_SALT);
             int y = minY + (int) Math.floor(yRoll * (maxY - minY + 1));
-            double along = y - minY;
-            double xJitter = signed(DiamondGeologyPlanner.structuralClusterRoll(seed, candidate, cluster, CLUSTER_X_SALT)) * 2.5;
-            double zJitter = signed(DiamondGeologyPlanner.structuralClusterRoll(seed, candidate, cluster, CLUSTER_Z_SALT)) * 2.5;
-            double centerX = candidate.anchorX() + candidate.tiltX() * along + xJitter;
-            double centerZ = candidate.anchorZ() + candidate.tiltZ() * along + zJitter;
-            int radius = DiamondGeologyPlanner.structuralClusterRoll(seed, candidate, cluster, CLUSTER_SIZE_SALT) < 0.12 ? 2 : 1;
+            double alongJitter = signed(
+                    DiamondGeologyPlanner.structuralClusterRoll(seed, candidate, cluster, CLUSTER_X_SALT)
+            ) * ALONG_FAULT_SPREAD;
+            double acrossJitter = signed(
+                    DiamondGeologyPlanner.structuralClusterRoll(seed, candidate, cluster, CLUSTER_Z_SALT)
+            ) * ACROSS_FAULT_JITTER;
+            double centerX = trace.x()
+                    + tectonics.faultCos() * alongJitter
+                    + normalX * acrossJitter;
+            double centerZ = trace.z()
+                    + tectonics.faultSin() * alongJitter
+                    + normalZ * acrossJitter;
+            int radius = DiamondGeologyPlanner.structuralClusterRoll(seed, candidate, cluster, CLUSTER_SIZE_SALT) < 0.12
+                    ? 2
+                    : 1;
             placed += DiamondPipeFeature.placeDiamondCluster(
                     world,
                     centerX,
@@ -109,7 +165,8 @@ public final class DiamondStructuralFeature extends Feature<DefaultFeatureConfig
                     startX,
                     endX,
                     startZ,
-                    endZ
+                    endZ,
+                    protectedStructurePieces
             );
         }
         return placed;

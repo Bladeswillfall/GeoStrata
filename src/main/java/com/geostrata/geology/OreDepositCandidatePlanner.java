@@ -4,7 +4,7 @@ import java.util.Optional;
 
 /** Pure, non-mutating proposal and eligibility planner for staged ore deposits. */
 public final class OreDepositCandidatePlanner {
-    public static final int HORIZONTAL_CELL_SIZE = 256;
+    public static final int HORIZONTAL_CELL_SIZE = 160;
     public static final int VERTICAL_CELL_SIZE = 64;
 
     private static final int HORIZONTAL_MARGIN = 16;

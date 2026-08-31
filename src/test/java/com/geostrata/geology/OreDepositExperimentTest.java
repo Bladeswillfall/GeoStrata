@@ -21,6 +21,17 @@ final class OreDepositExperimentTest {
     }
 
     @Test
+    void companionActivationKeepsTheConfiguredChance() {
+        OreDepositExperiment.Snapshot configured = experiment(false, 0.36);
+        OreDepositExperiment.Snapshot activated = configured.activated(true);
+
+        assertTrue(activated.enabled());
+        assertEquals("experimental_runtime", activated.runtimeStatus());
+        assertEquals("experimental_companion_overworld", activated.nativeGenerationSuppression());
+        assertEquals(0.36, activated.activationChance("copper"));
+    }
+
+    @Test
     void unknownMaterialAndNullInputsDoNotSilentlyActivate() {
         OreDepositExperiment.Snapshot experiment = experiment(true, 1.0);
         OreDepositCandidatePlanner.Proposal gold = new OreDepositCandidatePlanner.Proposal(

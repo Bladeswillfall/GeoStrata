@@ -4,6 +4,7 @@ import com.geostrata.geology.CorrelatedExperimentChunkOwnership;
 import com.geostrata.geology.CorrelatedSedimentaryExperiment;
 import com.geostrata.geology.CorrelatedSedimentaryRuntime;
 import com.geostrata.geology.ChunkGeneratorTerrainMorphologySampler;
+import com.geostrata.geology.FaultControlledOrePlanner;
 import com.geostrata.geology.GeologyProvinceProfiles;
 import com.geostrata.geology.GeologyProvinceSampler;
 import com.geostrata.geology.GeologySurvey;
@@ -12,6 +13,7 @@ import com.geostrata.geology.OreDepositCandidatePlanner;
 import com.geostrata.geology.OreDepositExperiment;
 import com.geostrata.geology.OreDepositGeometry;
 import com.geostrata.geology.OreOccurrenceCatalog;
+import com.geostrata.geology.ProvinceBackgroundRuntime;
 import com.geostrata.geology.SedimentaryContactPlanner;
 import com.geostrata.geology.SedimentaryFieldProfiles;
 import com.geostrata.geology.SedimentaryStratigraphicField;
@@ -21,10 +23,14 @@ import com.geostrata.geology.TerrainMorphologySample;
 import com.geostrata.geology.TerrainAwareStructuralField;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
+import net.minecraft.block.Block;
 import net.minecraft.registry.Registries;
+import net.minecraft.registry.RegistryKeys;
+import net.minecraft.registry.tag.TagKey;
 import net.minecraft.server.command.CommandManager;
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.text.Text;
+import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
@@ -174,7 +180,7 @@ public final class GeoStrataCommands {
                                 + " | beds lower→upper: " + sequence(primary.succession())
                                 + " | neighbor: " + neighbor.succession().id()
                                 + " [" + sample.neighborProvince().displayName() + "]"
-                                + " | diagnostic model only; chunk generation still uses independent features"
+                                + " | correlated companion reuses this selector where it owns generation"
                 ),
                 false
         );
@@ -220,6 +226,36 @@ public final class GeoStrataCommands {
     }
 
     private static int showField(ServerCommandSource source) {
+        Vec3d position = source.getPosition();
+        int x = MathHelper.floor(position.x);
+        int z = MathHelper.floor(position.z);
+        Optional<CorrelatedSedimentaryRuntime.TerrainAwareSite> correlated =
+                CorrelatedSedimentaryRuntime.resolve(source.getWorld(), x, z);
+        if (correlated.isPresent()) {
+            CorrelatedSedimentaryRuntime.TerrainAwareSite site = correlated.get();
+            SedimentaryStratigraphicField.Sample fieldSample = site.sample(x, position.y, z);
+            TerrainAwareStructuralField.Field structuralField = site.field();
+            source.sendFeedback(
+                    () -> Text.literal(
+                            "GeoStrata field: " + fieldSample.bed().lithology()
+                                    + " | succession " + site.succession().id()
+                                    + " [" + site.ownership().province().displayName() + "]"
+                                    + " | authority correlated"
+                                    + " | cycle " + fieldSample.cycleIndex()
+                                    + ", position " + Math.round(fieldSample.fraction() * 100.0) + "%"
+                                    + " | structural offset " + Math.round(fieldSample.verticalOffset()) + " blocks"
+                                    + " (drape " + Math.round(structuralField.drapeOffset(x, z))
+                                    + ", terrain fold " + Math.round(structuralField.foldOffset(x, z))
+                                    + ", tectonic fold " + Math.round(structuralField.tectonicFoldOffset(x, z)) + ")"
+                                    + " | " + site.succession().continuity() + " profile, cycle "
+                                    + Math.round(structuralField.baseField().cycleThicknessBlocks()) + " blocks"
+                                    + " | active worldgen field"
+                    ),
+                    false
+            );
+            return 1;
+        }
+
         GeologyProvinceProfiles.Snapshot profiles = GeologyProvinceProfiles.current();
         SedimentarySuccessions.Snapshot successions = SedimentarySuccessions.current();
         SedimentaryFieldProfiles.Snapshot fieldProfiles = SedimentaryFieldProfiles.current();
@@ -228,9 +264,6 @@ public final class GeoStrataCommands {
             return 0;
         }
 
-        Vec3d position = source.getPosition();
-        int x = MathHelper.floor(position.x);
-        int z = MathHelper.floor(position.z);
         long seed = source.getWorld().getSeed();
         GeologyProvinceSampler.Sample province = GeologyProvinceSampler.sample(seed, x, z);
         SedimentarySuccessionSelector.Selection selection = SedimentarySuccessionSelector.selectForSite(
@@ -270,6 +303,7 @@ public final class GeoStrataCommands {
                         "GeoStrata field: " + fieldSample.bed().lithology()
                                 + " | succession " + plan.successionId()
                                 + " [" + province.province().displayName() + "]"
+                                + " | authority virtual"
                                 + " | cycle " + fieldSample.cycleIndex()
                                 + ", position " + Math.round(fieldSample.fraction() * 100.0) + "%"
                                 + " | structural offset " + Math.round(fieldSample.verticalOffset()) + " blocks"
@@ -281,7 +315,7 @@ public final class GeoStrataCommands {
                                 + Math.round(structuralField.response().drapeCoupling() * 100.0) + "%"
                                 + ", fold "
                                 + Math.round(structuralField.response().foldCoupling() * 100.0) + "%"
-                                + " | virtual model; active in opt-in correlated generation"
+                                + " | virtual model outside correlated ownership"
                 ),
                 false
         );
@@ -477,8 +511,9 @@ public final class GeoStrataCommands {
     private static int showOreCandidate(ServerCommandSource source, String material) {
         OreOccurrenceCatalog.Snapshot catalog = OreOccurrenceCatalog.current();
         LithologyCatalog.Snapshot lithologies = LithologyCatalog.current();
-        if (!catalog.loaded() || !lithologies.loaded()) {
-            source.sendError(Text.literal("GeoStrata ore and lithology catalogs have not been loaded yet."));
+        SedimentaryFieldProfiles.Snapshot fieldProfiles = SedimentaryFieldProfiles.current();
+        if (!catalog.loaded() || !lithologies.loaded() || !fieldProfiles.loaded()) {
+            source.sendError(Text.literal("GeoStrata ore, lithology and field metadata have not been loaded yet."));
             return 0;
         }
 
@@ -495,13 +530,19 @@ public final class GeoStrataCommands {
         int y = MathHelper.floor(position.y);
         int z = MathHelper.floor(position.z);
         long seed = source.getWorld().getSeed();
-        OreDepositCandidatePlanner.Proposal proposal = OreDepositCandidatePlanner.propose(
+        OreDepositCandidatePlanner.Proposal rawProposal = OreDepositCandidatePlanner.propose(
                 seed,
                 x,
                 y,
                 z,
                 occurrence
         );
+        FaultControlledOrePlanner.Binding binding = FaultControlledOrePlanner.bind(
+                seed,
+                rawProposal,
+                fieldProfiles.parametersFor("regional").cycleThicknessBlocks()
+        );
+        OreDepositCandidatePlanner.Proposal proposal = binding.proposal();
         GeologyProvinceSampler.Sample province = GeologyProvinceSampler.sample(
                 seed,
                 proposal.anchorX(),
@@ -517,9 +558,9 @@ public final class GeoStrataCommands {
         String status = candidate.isPresent()
                 ? "anchor-qualified geometry preview"
                 : "anchor diagnostic: " + candidateRejection(source, proposal, occurrence, province, host);
-        String geometry = candidate
-                .map(value -> bodySummary(seed, value, x, y, z))
-                .orElse("anchor-preview unavailable until host and province qualify");
+        String geometry = candidate.isPresent()
+                ? bodySummary(binding.body(seed), binding.faultAligned(), x, y, z)
+                : "anchor-preview unavailable until host and province qualify";
 
         source.sendFeedback(
                 () -> Text.literal(
@@ -541,18 +582,19 @@ public final class GeoStrataCommands {
     }
 
     private static String bodySummary(
-            long worldSeed,
-            OreDepositCandidatePlanner.Candidate candidate,
+            OreDepositGeometry.Body body,
+            boolean faultAligned,
             int x,
             int y,
             int z
     ) {
-        OreDepositGeometry.Body body = OreDepositGeometry.forCandidate(worldSeed, candidate);
         OreDepositGeometry.Sample sample = body.sample(x, y, z);
         return "body " + Math.round(body.lengthRadius() * 2.0)
                 + "x" + Math.round(body.widthRadius() * 2.0)
                 + "x" + Math.round(body.thicknessRadius() * 2.0)
                 + " blocks, dip " + Math.round(Math.toDegrees(body.dipRadians())) + "deg"
+                + ", bearing " + Math.round(Math.toDegrees(body.azimuthRadians())) + "deg"
+                + (faultAligned ? " fault-aligned" : "")
                 + ", branches " + body.branches().size()
                 + " | here " + sample.zone()
                 + " at " + Math.round(sample.concentration() * 100.0) + "% concentration";
@@ -575,21 +617,50 @@ public final class GeoStrataCommands {
             OreDepositCandidatePlanner.Proposal proposal,
             LithologyCatalog.Snapshot lithologies
     ) {
-        Optional<CorrelatedSedimentaryRuntime.TerrainAwareSite> site = CorrelatedSedimentaryRuntime.resolve(
+        BlockPos anchor = new BlockPos(proposal.anchorX(), proposal.anchorY(), proposal.anchorZ());
+        String block = Registries.BLOCK.getId(source.getWorld().getBlockState(anchor).getBlock()).toString();
+        Optional<String> direct = lithologies.entries().stream()
+                .filter(entry -> entry.block().equals(block))
+                .map(LithologyCatalog.Entry::id)
+                .findFirst();
+        if (direct.isPresent()) {
+            return direct.get();
+        }
+        if (!insideCorrelatedWindow(source, proposal.anchorY()) || !isVirtualHost(source, anchor)) {
+            return null;
+        }
+
+        Optional<CorrelatedSedimentaryRuntime.TerrainAwareSite> correlated = CorrelatedSedimentaryRuntime.resolve(
                 source.getWorld(),
                 proposal.anchorX(),
                 proposal.anchorZ()
         );
-        if (site.isPresent() && insideCorrelatedWindow(source, proposal.anchorY())) {
-            return site.get().sample(proposal.anchorX(), proposal.anchorY(), proposal.anchorZ()).bed().lithology();
+        if (correlated.isPresent()) {
+            return correlated.get().outputLithology(
+                    source.getWorld().getSeed(),
+                    proposal.anchorX(),
+                    proposal.anchorY(),
+                    proposal.anchorZ(),
+                    lithologies
+            );
         }
+        return ProvinceBackgroundRuntime.resolve(
+                source.getWorld(),
+                proposal.anchorX(),
+                proposal.anchorZ()
+        ).map(background -> background.lithologyAt(
+                proposal.anchorX(),
+                proposal.anchorY(),
+                proposal.anchorZ()
+        )).orElse(null);
+    }
 
-        String block = blockAt(source, proposal);
-        return lithologies.entries().stream()
-                .filter(entry -> entry.block().equals(block))
-                .map(LithologyCatalog.Entry::id)
-                .findFirst()
-                .orElse(null);
+    private static boolean isVirtualHost(ServerCommandSource source, BlockPos anchor) {
+        Identifier id = Identifier.tryParse(CorrelatedSedimentaryExperiment.current().hostBlockTag());
+        if (id == null) {
+            throw new IllegalStateException("Invalid correlated host block tag");
+        }
+        return source.getWorld().getBlockState(anchor).isIn(TagKey.of(RegistryKeys.BLOCK, id));
     }
 
     private static boolean insideCorrelatedWindow(ServerCommandSource source, int y) {

@@ -6,6 +6,7 @@ import com.geostrata.geology.DiamondGeologyPlanner;
 import com.geostrata.geology.GeologyDeterminism;
 import com.geostrata.geology.GeologyProvince;
 import com.geostrata.geology.GeologyProvinceSampler;
+import com.geostrata.geology.TerraneSuture;
 import com.mojang.serialization.Codec;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
@@ -13,13 +14,17 @@ import net.minecraft.block.Blocks;
 import net.minecraft.registry.RegistryKeys;
 import net.minecraft.registry.tag.BlockTags;
 import net.minecraft.registry.tag.TagKey;
+import net.minecraft.util.math.BlockBox;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.random.Random;
 import net.minecraft.world.Heightmap;
 import net.minecraft.world.StructureWorldAccess;
+import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.gen.feature.Feature;
 import net.minecraft.world.gen.feature.OreFeatureConfig;
 import net.minecraft.world.gen.feature.util.FeatureContext;
+
+import java.util.List;
 
 /**
  * Experimental, very rare kimberlite/lamproite feeder body with a restrained
@@ -31,7 +36,6 @@ import net.minecraft.world.gen.feature.util.FeatureContext;
  */
 public final class DiamondPipeFeature extends Feature<DiamondPipeConfig> {
     private static final int CHUNK_SIZE = 16;
-    private static final int PIPE_PADDING = 16;
     private static final int SURFACE_RING_INNER = 6;
     private static final int SURFACE_RING_OUTER = 8;
     private static final long DIAMOND_BEARING_SALT = 0x94D049BB133111EBL;
@@ -63,12 +67,15 @@ public final class DiamondPipeFeature extends Feature<DiamondPipeConfig> {
         int endX = startX + CHUNK_SIZE - 1;
         int endZ = startZ + CHUNK_SIZE - 1;
         long seed = world.getSeed();
+        int pipePadding = DiamondGeologyPlanner.pipeSearchPaddingBlocks(world.getTopY() - world.getBottomY());
         DiamondGeologyPlanner.PipeKind kind = context.getConfig().kind();
+        Chunk chunk = world.getChunk(Math.floorDiv(startX, CHUNK_SIZE), Math.floorDiv(startZ, CHUNK_SIZE));
+        List<BlockBox> protectedStructurePieces = StructurePieceProtection.forChunk(world, chunk);
 
-        int minCellX = Math.floorDiv(startX - PIPE_PADDING, DiamondGeologyPlanner.PIPE_CELL_SIZE);
-        int maxCellX = Math.floorDiv(endX + PIPE_PADDING, DiamondGeologyPlanner.PIPE_CELL_SIZE);
-        int minCellZ = Math.floorDiv(startZ - PIPE_PADDING, DiamondGeologyPlanner.PIPE_CELL_SIZE);
-        int maxCellZ = Math.floorDiv(endZ + PIPE_PADDING, DiamondGeologyPlanner.PIPE_CELL_SIZE);
+        int minCellX = Math.floorDiv(startX - pipePadding, DiamondGeologyPlanner.PIPE_CELL_SIZE);
+        int maxCellX = Math.floorDiv(endX + pipePadding, DiamondGeologyPlanner.PIPE_CELL_SIZE);
+        int minCellZ = Math.floorDiv(startZ - pipePadding, DiamondGeologyPlanner.PIPE_CELL_SIZE);
+        int maxCellZ = Math.floorDiv(endZ + pipePadding, DiamondGeologyPlanner.PIPE_CELL_SIZE);
 
         int placed = 0;
         for (int cellX = minCellX; cellX <= maxCellX; cellX++) {
@@ -82,10 +89,20 @@ public final class DiamondPipeFeature extends Feature<DiamondPipeConfig> {
                         candidate.anchorX(),
                         candidate.anchorZ()
                 );
-                if (province.province() != GeologyProvince.CRATONIC_SHIELD || province.distanceToBoundary() < 96.0) {
+                if (province.province() != GeologyProvince.CRATONIC_SHIELD || TerraneSuture.canCross(province)) {
                     continue;
                 }
-                placed += placeCandidate(world, context.getConfig(), context.getRandom(), candidate, startX, endX, startZ, endZ);
+                placed += placeCandidate(
+                        world,
+                        context.getConfig(),
+                        context.getRandom(),
+                        candidate,
+                        startX,
+                        endX,
+                        startZ,
+                        endZ,
+                        protectedStructurePieces
+                );
             }
         }
         return placed > 0;
@@ -110,7 +127,8 @@ public final class DiamondPipeFeature extends Feature<DiamondPipeConfig> {
             int startX,
             int endX,
             int startZ,
-            int endZ
+            int endZ,
+            List<BlockBox> protectedStructurePieces
     ) {
         int surfaceY = world.getTopY(Heightmap.Type.OCEAN_FLOOR_WG, candidate.anchorX(), candidate.anchorZ()) - 1;
         if (surfaceY < world.getSeaLevel() - 4) {
@@ -123,9 +141,41 @@ public final class DiamondPipeFeature extends Feature<DiamondPipeConfig> {
             return 0;
         }
 
-        int placed = placePipe(world, config, random, candidate, deepY, surfaceY, startX, endX, startZ, endZ);
-        placed += placeSurfaceIndicator(world, config, random, candidate, startX, endX, startZ, endZ);
-        placed += placeDeepDiamondHalo(world, candidate, deepY, surfaceY, startX, endX, startZ, endZ);
+        int placed = placePipe(
+                world,
+                config,
+                random,
+                candidate,
+                deepY,
+                surfaceY,
+                startX,
+                endX,
+                startZ,
+                endZ,
+                protectedStructurePieces
+        );
+        placed += placeSurfaceIndicator(
+                world,
+                config,
+                random,
+                candidate,
+                startX,
+                endX,
+                startZ,
+                endZ,
+                protectedStructurePieces
+        );
+        placed += placeDeepDiamondHalo(
+                world,
+                candidate,
+                deepY,
+                surfaceY,
+                startX,
+                endX,
+                startZ,
+                endZ,
+                protectedStructurePieces
+        );
         return placed;
     }
 
@@ -139,7 +189,8 @@ public final class DiamondPipeFeature extends Feature<DiamondPipeConfig> {
             int startX,
             int endX,
             int startZ,
-            int endZ
+            int endZ,
+            List<BlockBox> protectedStructurePieces
     ) {
         int placed = 0;
         BlockPos.Mutable mutable = new BlockPos.Mutable();
@@ -158,7 +209,8 @@ public final class DiamondPipeFeature extends Feature<DiamondPipeConfig> {
                 for (int z = minZ; z <= maxZ; z++) {
                     double dx = x + 0.5 - centerX;
                     double dz = z + 0.5 - centerZ;
-                    if (dx * dx + dz * dz > radius * radius) {
+                    if (dx * dx + dz * dz > radius * radius
+                            || StructurePieceProtection.contains(protectedStructurePieces, x, y, z)) {
                         continue;
                     }
                     mutable.set(x, y, z);
@@ -195,7 +247,8 @@ public final class DiamondPipeFeature extends Feature<DiamondPipeConfig> {
             int startX,
             int endX,
             int startZ,
-            int endZ
+            int endZ,
+            List<BlockBox> protectedStructurePieces
     ) {
         int placed = 0;
         BlockPos.Mutable mutable = new BlockPos.Mutable();
@@ -215,7 +268,9 @@ public final class DiamondPipeFeature extends Feature<DiamondPipeConfig> {
 
                 int y = world.getTopY(Heightmap.Type.OCEAN_FLOOR_WG, x, z) - 1;
                 mutable.set(x, y, z);
-                if (world.isOutOfHeightLimit(mutable) || !world.getBlockState(mutable).isIn(SURFACE_REPLACEABLES)) {
+                if (world.isOutOfHeightLimit(mutable)
+                        || StructurePieceProtection.contains(protectedStructurePieces, x, y, z)
+                        || !world.getBlockState(mutable).isIn(SURFACE_REPLACEABLES)) {
                     continue;
                 }
                 if (ring) {
@@ -240,7 +295,8 @@ public final class DiamondPipeFeature extends Feature<DiamondPipeConfig> {
             int startX,
             int endX,
             int startZ,
-            int endZ
+            int endZ,
+            List<BlockBox> protectedStructurePieces
     ) {
         long seed = world.getSeed();
         double bearingChance = candidate.kind() == DiamondGeologyPlanner.PipeKind.KIMBERLITE ? 0.75 : 0.55;
@@ -266,7 +322,18 @@ public final class DiamondPipeFeature extends Feature<DiamondPipeConfig> {
             double centerX = candidate.anchorX() + candidate.tiltX() * (y - deepY) + Math.cos(angle) * offset;
             double centerZ = candidate.anchorZ() + candidate.tiltZ() * (y - deepY) + Math.sin(angle) * offset;
             int radius = DiamondGeologyPlanner.pipeClusterRoll(seed, candidate, cluster, CLUSTER_SIZE_SALT) < 0.22 ? 2 : 1;
-            placed += placeDiamondCluster(world, centerX, y, centerZ, radius, startX, endX, startZ, endZ);
+            placed += placeDiamondCluster(
+                    world,
+                    centerX,
+                    y,
+                    centerZ,
+                    radius,
+                    startX,
+                    endX,
+                    startZ,
+                    endZ,
+                    protectedStructurePieces
+            );
         }
         return placed;
     }
@@ -280,7 +347,8 @@ public final class DiamondPipeFeature extends Feature<DiamondPipeConfig> {
             int startX,
             int endX,
             int startZ,
-            int endZ
+            int endZ,
+            List<BlockBox> protectedStructurePieces
     ) {
         int placed = 0;
         BlockPos.Mutable mutable = new BlockPos.Mutable();
@@ -298,7 +366,8 @@ public final class DiamondPipeFeature extends Feature<DiamondPipeConfig> {
                     double dx = x + 0.5 - centerX;
                     double dy = y + 0.5 - centerY;
                     double dz = z + 0.5 - centerZ;
-                    if (dx * dx + dy * dy + dz * dz > radiusSq) {
+                    if (dx * dx + dy * dy + dz * dz > radiusSq
+                            || StructurePieceProtection.contains(protectedStructurePieces, x, y, z)) {
                         continue;
                     }
                     mutable.set(x, y, z);

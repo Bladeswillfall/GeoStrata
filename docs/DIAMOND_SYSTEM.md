@@ -8,7 +8,7 @@ The activation contract is `data/geostrata/geology/diamond_geology_experiment.js
 
 Diamond gameplay has two geological routes without turning every fault or every unusual rock into a treasure marker:
 
-1. **Deep structural occurrences** are the commoner GeoStrata route. Small vanilla diamond-ore clusters are aligned vertically along rare steep structural corridors in old cratonic interiors.
+1. **Deep structural occurrences** are the commoner GeoStrata route. Small vanilla diamond-ore clusters follow selected ancient fault traces in old cratonic interiors.
 2. **Kimberlite/lamproite intrusives** are very rare exploration events. A restrained tuff ring at the surface can indicate a narrow intrusive feeder extending downward into a potentially richer deep diamond halo.
 
 The two new rocks are first-class blocks and lithologies:
@@ -20,18 +20,23 @@ They are **event-only**. They do not receive ordinary `strata_lens` background g
 
 ## Structural route
 
-The prototype divides X/Z into deterministic 256-block cells. A candidate is accepted only when:
+The structural route now reuses GeoStrata's authoritative tectonic fault field rather than maintaining a second diamond-only corridor model.
+
+X/Z is still divided into deterministic 256-block candidate cells to control abundance. A candidate is accepted only when:
 
 - the diamond experiment is enabled;
 - its deterministic activation roll passes the configured chance;
-- the candidate lies in a `cratonic_shield` province; and
-- it is at least 64 blocks inside the province boundary.
+- the candidate lies in a `cratonic_shield` province;
+- it is at least 64 blocks inside the province boundary; and
+- its sparse candidate anchor is close enough to one of the craton's actual `TectonicStructuralField` fault traces.
 
-Accepted candidates define a steep, slightly tilted structural corridor with two or three small diamond clusters distributed through the deepest part of the active dimension. The depth window is relative to the dimension bottom rather than hard-coded to vanilla Y values.
+Accepted anchors are projected onto the nearest qualifying fault. Two or three compact diamond clusters are then distributed through the deepest part of the active dimension with small along-fault and across-fault jitter. Because the current first-pass faults are vertical planes, the resulting diamond occurrence is strongly vertical as well. The depth window remains relative to the active dimension bottom rather than hard-coded to vanilla Y values.
 
-The corridor itself has no new visible "fault block". It is currently a deterministic placement field. This keeps the feature small and lets a future explicit fault-plane model replace the proxy without changing the player-facing diamond rule.
+The bundled `structuralActivationChancePerCell` is currently 45%. This is intentionally higher than the old proxy-corridor value because the activation roll now occurs in addition to the real-fault proximity gate; most candidate cells are not close enough to a fault to qualify. The resulting world abundance therefore remains much lower than the raw 45% suggests.
 
-Most clusters are compact. A small minority use the larger prototype radius. The intent is vertical follow-up mining rather than broad horizontal diamond blankets.
+This removes the old duplicated fault direction/tilt salts from `DiamondGeologyPlanner`: candidate cells own rarity, while `TectonicStructuralField` owns structural geometry. A visible faulted contact and a structural diamond occurrence can therefore refer to the same deterministic geological structure.
+
+Most clusters are compact. A small minority use the larger prototype radius. The intent is vertical follow-up mining along geological structure rather than broad horizontal diamond blankets.
 
 ## Rare intrusive route
 
@@ -97,7 +102,7 @@ Native diamond suppression should only be considered after fresh-world tests dem
 
 ## What this intentionally does not add
 
-- generic diamonds on every fault;
+- diamonds on every fault;
 - giant common kimberlite/lamproite columns;
 - guaranteed diamonds under every surface indicator;
 - Poor/Medium/Rich/Massive diamond ore;
