@@ -156,7 +156,7 @@ jobs:
           geostrata = json.loads(Path('run/results/geostrata.json').read_text())
           overlapping = ('coal', 'iron', 'copper', 'gold', 'emerald')
           common = ('coal', 'iron', 'copper')
-          preserved = ('redstone', 'lapis')
+          preserved = ('gold', 'emerald', 'diamond', 'redstone', 'lapis')
 
           def aggregate(data, materials, graded=False):
               rows = [data['materials'][material] for material in materials]
@@ -205,7 +205,7 @@ jobs:
               if target is not None and graded_patches < target:
                   failures.append(f"{material}: {graded_patches} < {target} patches")
               if material in preserved and before['total'] > 0 and after['vanillaTaggedBlocks'] == 0:
-                  failures.append(f"{material}: unsupported vanilla resource disappeared")
+                  failures.append(f"{material}: vanilla fallback disappeared")
 
           Path('run/results/paired.json').write_text(json.dumps(summary, indent=2) + '\n')
           lines = [
@@ -225,7 +225,7 @@ jobs:
           lines.extend([
               '',
               'Common-resource acceptance floor: each of coal, iron and copper must retain at least 50% of the vanilla exposed-patch count.',
-              'Unsupported-resource preservation: redstone and lapis must remain present when the vanilla reference contains them.',
+              'Vanilla fallback preservation: gold, emerald, diamond, redstone and lapis must remain present when the vanilla reference contains them.',
               f"- vanilla overlapping total: {summary['vanilla']['total']}",
               f"- GeoStrata graded overlapping total: {summary['geostrataGraded']['total']}",
               f"- vanilla overlapping exposed patches: {summary['vanilla']['airExposedClusters']}",
