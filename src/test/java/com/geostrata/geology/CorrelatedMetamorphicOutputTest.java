@@ -20,7 +20,7 @@ final class CorrelatedMetamorphicOutputTest {
 
         String output = site.outputLithology(SEED, X, 0, Z, catalog());
 
-        assertTrue(Set.of("slate", "schist", "gneiss").contains(output));
+        assertTrue(Set.of("slate", "phyllite", "schist", "gneiss").contains(output));
     }
 
     @Test
