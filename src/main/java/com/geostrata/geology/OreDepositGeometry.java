@@ -84,7 +84,11 @@ public final class OreDepositGeometry {
     ) {
         return List.of(
                 branch(worldSeed, proposal, length, 0, -1.0),
-                branch(worldSeed, proposal, length, 1, 1.0)
+                branch(worldSeed, proposal, length, 1, 1.0),
+                branch(worldSeed, proposal, length, 2, -1.0),
+                branch(worldSeed, proposal, length, 3, 1.0),
+                branch(worldSeed, proposal, length, 4, -1.0),
+                branch(worldSeed, proposal, length, 5, 1.0)
         );
     }
 
