@@ -10,7 +10,7 @@ try:
 except ImportError as exc:
     raise SystemExit("Pillow is required: python -m pip install Pillow") from exc
 
-from generate_ore_texture_matrix import ASSETS, load_rgba
+from generate_ore_texture_matrix import ASSETS, GRADES, load_matrix, load_rgba
 
 HOST_ROOT = ASSETS / "textures" / "block" / "host"
 PROPERTIES_ROOT = ASSETS / "optifine" / "ctm" / "_host_transitions"
@@ -44,8 +44,41 @@ def host_ids() -> tuple[str, ...]:
     return tuple(sorted(path.stem for path in HOST_ROOT.glob("*.png")))
 
 
-def property_text(host: str, hosts: tuple[str, ...]) -> str:
-    match_blocks = " ".join(f"geostrata:{name}" for name in hosts)
+def ore_states_by_host(hosts: tuple[str, ...]) -> dict[str, tuple[str, ...]]:
+    matrix = load_matrix()
+    states: dict[str, list[str]] = {host: [] for host in hosts}
+    for material, ore in matrix["ores"].items():
+        for host in ore["validHosts"]:
+            if host not in states:
+                continue
+            states[host].extend(
+                f"geostrata:{grade}_{material}_ore:host={host}"
+                for grade in GRADES
+            )
+    return {host: tuple(values) for host, values in states.items()}
+
+
+def geological_states(hosts: tuple[str, ...], ore_states: dict[str, tuple[str, ...]]) -> tuple[str, ...]:
+    return tuple(
+        state
+        for host in hosts
+        for state in (f"geostrata:{host}", *ore_states[host])
+    )
+
+
+def property_text(
+    host: str,
+    hosts: tuple[str, ...],
+    ore_states: dict[str, tuple[str, ...]],
+) -> str:
+    own_states = (f"geostrata:{host}", *ore_states[host])
+    own_set = set(own_states)
+    match_blocks = " ".join(
+        state
+        for state in geological_states(hosts, ore_states)
+        if state not in own_set
+    )
+    connect_blocks = " ".join(own_states)
     tiles = " ".join(
         f"geostrata:textures/optifine/ctm/host_transition/{host}/{index}"
         for index in range(TILE_COUNT)
@@ -53,7 +86,7 @@ def property_text(host: str, hosts: tuple[str, ...]) -> str:
     return (
         "method=overlay\n"
         f"matchBlocks={match_blocks}\n"
-        f"connectBlocks=geostrata:{host}\n"
+        f"connectBlocks={connect_blocks}\n"
         "connect=block\n"
         f"tiles={tiles}\n"
         "layer=cutout\n"
@@ -108,6 +141,7 @@ def generate() -> tuple[int, int]:
     hosts = host_ids()
     if not hosts:
         raise SystemExit("no GeoStrata host textures found")
+    ore_states = ore_states_by_host(hosts)
 
     expected_properties: set[Path] = set()
     expected_textures: set[Path] = set()
@@ -115,7 +149,7 @@ def generate() -> tuple[int, int]:
         source = load_rgba(HOST_ROOT / f"{host}.png", 16)
         property_path = PROPERTIES_ROOT / f"{host}.properties"
         property_path.parent.mkdir(parents=True, exist_ok=True)
-        property_path.write_text(property_text(host, hosts), encoding="utf-8")
+        property_path.write_text(property_text(host, hosts, ore_states), encoding="utf-8")
         expected_properties.add(property_path)
 
         texture_dir = TEXTURE_ROOT / host
