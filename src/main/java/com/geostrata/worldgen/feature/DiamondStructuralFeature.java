@@ -2,6 +2,7 @@ package com.geostrata.worldgen.feature;
 
 import com.geostrata.geology.DiamondGeologyExperiment;
 import com.geostrata.geology.DiamondGeologyPlanner;
+import com.geostrata.geology.FaultControlledOrePlanner;
 import com.geostrata.geology.GeologyDeterminism;
 import com.geostrata.geology.GeologyProvince;
 import com.geostrata.geology.GeologyProvinceSampler;
@@ -20,15 +21,13 @@ import java.util.List;
 
 /**
  * Experimental common diamond route: small deep clusters following the same
- * ancient fault traces that displace GeoStrata geology in stable cratonic interiors.
+ * ancient fault zones that displace GeoStrata geology in stable cratonic interiors.
  */
 public final class DiamondStructuralFeature extends Feature<DefaultFeatureConfig> {
     private static final int CHUNK_SIZE = 16;
-    private static final int SEARCH_PADDING = 160;
     private static final String STRUCTURAL_CONTINUITY = "regional";
-    private static final double MAX_FAULT_CAPTURE_DISTANCE = 128.0;
-    private static final double ALONG_FAULT_SPREAD = 28.0;
-    private static final double ACROSS_FAULT_JITTER = 2.5;
+    private static final double ALONG_FAULT_SPREAD = 12.0;
+    private static final double ACROSS_FAULT_JITTER = 6.0;
     private static final long CLUSTER_Y_SALT = 0x8CB92BA72F3D8DD7L;
     private static final long CLUSTER_X_SALT = 0x58F38DED09D2C7A9L;
     private static final long CLUSTER_Z_SALT = 0xA24BAED4963EE407L;
@@ -57,67 +56,58 @@ public final class DiamondStructuralFeature extends Feature<DefaultFeatureConfig
         Chunk chunk = world.getChunk(Math.floorDiv(startX, CHUNK_SIZE), Math.floorDiv(startZ, CHUNK_SIZE));
         List<BlockBox> protectedStructurePieces = StructurePieceProtection.forChunk(world, chunk);
 
-        int minCellX = Math.floorDiv(startX - SEARCH_PADDING, DiamondGeologyPlanner.STRUCTURAL_CELL_SIZE);
-        int maxCellX = Math.floorDiv(endX + SEARCH_PADDING, DiamondGeologyPlanner.STRUCTURAL_CELL_SIZE);
-        int minCellZ = Math.floorDiv(startZ - SEARCH_PADDING, DiamondGeologyPlanner.STRUCTURAL_CELL_SIZE);
-        int maxCellZ = Math.floorDiv(endZ + SEARCH_PADDING, DiamondGeologyPlanner.STRUCTURAL_CELL_SIZE);
-
-        int placed = 0;
-        for (int cellX = minCellX; cellX <= maxCellX; cellX++) {
-            for (int cellZ = minCellZ; cellZ <= maxCellZ; cellZ++) {
-                DiamondGeologyPlanner.StructuralCandidate candidate = DiamondGeologyPlanner.structural(seed, cellX, cellZ);
-                if (!GeologyDeterminism.passesChance(
-                        experiment.structuralActivationChancePerCell(),
-                        DiamondGeologyPlanner.structuralActivationRoll(seed, candidate)
-                )) {
-                    continue;
-                }
-
-                GeologyProvinceSampler.Sample province = GeologyProvinceSampler.sample(
-                        seed,
-                        candidate.anchorX(),
-                        candidate.anchorZ()
-                );
-                if (province.province() != GeologyProvince.CRATONIC_SHIELD || TerraneSuture.canCross(province)) {
-                    continue;
-                }
-
-                TectonicStructuralField.Context tectonics = TectonicStructuralField.forSite(
-                        seed,
-                        province.province(),
-                        province.siteX(),
-                        province.siteZ(),
-                        cycleThickness
-                );
-                TectonicStructuralField.FaultTrace trace = tectonics.nearestFault(
-                        candidate.anchorX(),
-                        candidate.anchorZ()
-                );
-                if (trace.distanceToFault() > MAX_FAULT_CAPTURE_DISTANCE) {
-                    continue;
-                }
-
-                placed += placeCandidate(
-                        world,
-                        candidate,
-                        tectonics,
-                        trace,
-                        startX,
-                        endX,
-                        startZ,
-                        endZ,
-                        protectedStructurePieces
-                );
-            }
+        DiamondGeologyPlanner.StructuralCandidate candidate = DiamondGeologyPlanner.structural(
+                seed,
+                Math.floorDiv(startX, DiamondGeologyPlanner.STRUCTURAL_CELL_SIZE),
+                Math.floorDiv(startZ, DiamondGeologyPlanner.STRUCTURAL_CELL_SIZE)
+        );
+        if (!GeologyDeterminism.passesChance(
+                experiment.structuralActivationChancePerCell(),
+                DiamondGeologyPlanner.structuralActivationRoll(seed, candidate)
+        )) {
+            return false;
         }
-        return placed > 0;
+
+        GeologyProvinceSampler.Sample province = GeologyProvinceSampler.sample(
+                seed,
+                candidate.anchorX(),
+                candidate.anchorZ()
+        );
+        if (province.province() != GeologyProvince.CRATONIC_SHIELD || TerraneSuture.canCross(province)) {
+            return false;
+        }
+
+        TectonicStructuralField.Context tectonics = TectonicStructuralField.forSite(
+                seed,
+                province.province(),
+                province.siteX(),
+                province.siteZ(),
+                cycleThickness
+        );
+        TectonicStructuralField.FaultTrace trace = tectonics.nearestFault(
+                candidate.anchorX(),
+                candidate.anchorZ()
+        );
+        if (trace.distanceToFault() > FaultControlledOrePlanner.CAPTURE_DISTANCE_BLOCKS) {
+            return false;
+        }
+
+        return placeCandidate(
+                world,
+                candidate,
+                tectonics,
+                startX,
+                endX,
+                startZ,
+                endZ,
+                protectedStructurePieces
+        ) > 0;
     }
 
     private static int placeCandidate(
             StructureWorldAccess world,
             DiamondGeologyPlanner.StructuralCandidate candidate,
             TectonicStructuralField.Context tectonics,
-            TectonicStructuralField.FaultTrace trace,
             int startX,
             int endX,
             int startZ,
@@ -147,10 +137,10 @@ public final class DiamondStructuralFeature extends Feature<DefaultFeatureConfig
             double acrossJitter = signed(
                     DiamondGeologyPlanner.structuralClusterRoll(seed, candidate, cluster, CLUSTER_Z_SALT)
             ) * ACROSS_FAULT_JITTER;
-            double centerX = trace.x()
+            double centerX = candidate.anchorX()
                     + tectonics.faultCos() * alongJitter
                     + normalX * acrossJitter;
-            double centerZ = trace.z()
+            double centerZ = candidate.anchorZ()
                     + tectonics.faultSin() * alongJitter
                     + normalZ * acrossJitter;
             int radius = DiamondGeologyPlanner.structuralClusterRoll(seed, candidate, cluster, CLUSTER_SIZE_SALT) < 0.12
