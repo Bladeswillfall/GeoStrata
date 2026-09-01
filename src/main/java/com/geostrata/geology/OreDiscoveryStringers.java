@@ -280,14 +280,8 @@ public final class OreDiscoveryStringers {
         private final double maxAcross;
         private final double minNormal;
         private final double maxNormal;
-        private final double minWorldX;
-        private final double maxWorldX;
-        private final double minWorldY;
-        private final double maxWorldY;
-        private final double minWorldZ;
-        private final double maxWorldZ;
 
-        private SegmentSampler(OreDepositGeometry.Body body, Segment segment, double exposedHalo) {
+        private SegmentSampler(Segment segment, double exposedHalo) {
             startAlong = segment.start().along();
             startAcross = segment.start().across();
             startNormal = segment.start().normal();
@@ -305,21 +299,6 @@ public final class OreDiscoveryStringers {
             maxAcross = Math.max(startAcross, segment.end().across()) + haloRadius;
             minNormal = Math.min(startNormal, segment.end().normal()) - haloRadius;
             maxNormal = Math.max(startNormal, segment.end().normal()) + haloRadius;
-
-            WorldPoint worldStart = toWorld(body, segment.start());
-            WorldPoint worldEnd = toWorld(body, segment.end());
-            minWorldX = Math.min(worldStart.x(), worldEnd.x()) - haloRadius;
-            maxWorldX = Math.max(worldStart.x(), worldEnd.x()) + haloRadius;
-            minWorldY = Math.min(worldStart.y(), worldEnd.y()) - haloRadius;
-            maxWorldY = Math.max(worldStart.y(), worldEnd.y()) + haloRadius;
-            minWorldZ = Math.min(worldStart.z(), worldEnd.z()) - haloRadius;
-            maxWorldZ = Math.max(worldStart.z(), worldEnd.z()) + haloRadius;
-        }
-
-        private boolean canReachWorld(int x, int y, int z) {
-            return x >= minWorldX && x <= maxWorldX
-                    && y >= minWorldY && y <= maxWorldY
-                    && z >= minWorldZ && z <= maxWorldZ;
         }
 
         private boolean canReach(double along, double across, double normal) {
@@ -356,7 +335,7 @@ public final class OreDiscoveryStringers {
             double exposedHalo = exposedHaloBlocks(field.body());
             segments = new SegmentSampler[field.segments().size()];
             for (int index = 0; index < segments.length; index++) {
-                segments[index] = new SegmentSampler(field.body(), field.segments().get(index), exposedHalo);
+                segments[index] = new SegmentSampler(field.segments().get(index), exposedHalo);
             }
             cosAzimuth = Math.cos(field.body().azimuthRadians());
             sinAzimuth = Math.sin(field.body().azimuthRadians());
@@ -370,24 +349,14 @@ public final class OreDiscoveryStringers {
             }
 
             OreDepositGeometry.Body body = field.body();
-            boolean transformed = false;
-            double along = 0.0;
-            double across = 0.0;
-            double normal = 0.0;
+            double dx = (double) x - body.anchorX();
+            double dy = (double) y - body.anchorY();
+            double dz = (double) z - body.anchorZ();
+            double along = dx * cosAzimuth * cosDip + dy * sinDip + dz * sinAzimuth * cosDip;
+            double across = -dx * sinAzimuth + dz * cosAzimuth;
+            double normal = -dx * cosAzimuth * sinDip + dy * cosDip - dz * sinAzimuth * sinDip;
             boolean near = false;
             for (SegmentSampler segment : segments) {
-                if (!segment.canReachWorld(x, y, z)) {
-                    continue;
-                }
-                if (!transformed) {
-                    double dx = (double) x - body.anchorX();
-                    double dy = (double) y - body.anchorY();
-                    double dz = (double) z - body.anchorZ();
-                    along = dx * cosAzimuth * cosDip + dy * sinDip + dz * sinAzimuth * cosDip;
-                    across = -dx * sinAzimuth + dz * cosAzimuth;
-                    normal = -dx * cosAzimuth * sinDip + dy * cosDip - dz * sinAzimuth * sinDip;
-                    transformed = true;
-                }
                 if (!segment.canReach(along, across, normal)) {
                     continue;
                 }
