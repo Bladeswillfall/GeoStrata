@@ -181,6 +181,10 @@ public final class OreDiscoveryStringers {
     }
 
     private static double distanceToSegment(LocalPoint point, Segment segment) {
+        return Math.sqrt(distanceSquaredToSegment(point, segment));
+    }
+
+    private static double distanceSquaredToSegment(LocalPoint point, Segment segment) {
         double along = segment.end().along() - segment.start().along();
         double across = segment.end().across() - segment.start().across();
         double normal = segment.end().normal() - segment.start().normal();
@@ -192,7 +196,7 @@ public final class OreDiscoveryStringers {
         double deltaAlong = point.along() - (segment.start().along() + along * fraction);
         double deltaAcross = point.across() - (segment.start().across() + across * fraction);
         double deltaNormal = point.normal() - (segment.start().normal() + normal * fraction);
-        return Math.sqrt(deltaAlong * deltaAlong + deltaAcross * deltaAcross + deltaNormal * deltaNormal);
+        return deltaAlong * deltaAlong + deltaAcross * deltaAcross + deltaNormal * deltaNormal;
     }
 
     private static LocalPoint scale(LocalPoint point, double factor) {
@@ -294,11 +298,13 @@ public final class OreDiscoveryStringers {
             );
             boolean near = false;
             for (Segment segment : field.segments()) {
-                double distance = distanceToSegment(point, segment);
-                if (distance <= segment.radius()) {
+                double distanceSquared = distanceSquaredToSegment(point, segment);
+                double radius = segment.radius();
+                if (distanceSquared <= radius * radius) {
                     return Proximity.STRINGER;
                 }
-                near |= distance <= segment.radius() + exposedHalo;
+                double haloRadius = radius + exposedHalo;
+                near |= distanceSquared <= haloRadius * haloRadius;
             }
             return near ? Proximity.NEAR_STRINGER : Proximity.OUTSIDE;
         }
