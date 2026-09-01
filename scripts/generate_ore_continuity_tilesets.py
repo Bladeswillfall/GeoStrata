@@ -174,7 +174,7 @@ def properties_text(material: str, grade: str, host: str) -> str:
     return (
         "method=ctm_compact\n"
         f"matchBlocks=geostrata:{grade}_{material}_ore:host={host}\n"
-        "connect=state\n"
+        "connect=block\n"
         f"tiles={tiles}\n"
         "innerSeams=false\n"
     )

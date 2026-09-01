@@ -57,12 +57,13 @@ def png_size(path: Path) -> tuple[int, int]:
 
 def host_properties_text(host: str) -> str:
     tiles = " ".join(
-        f"geostrata:optifine/ctm/host/{host}/{index}"
+        f"geostrata:textures/optifine/ctm/host/{host}/{index}"
         for index in range(HOST_VARIANT_COUNT)
     )
     return (
         "method=random\n"
         f"matchTiles=geostrata:block/host/{host}\n"
+        "prioritize=false\n"
         f"tiles={tiles}\n"
     )
 
@@ -75,7 +76,7 @@ def properties_text(material: str, grade: str, host: str) -> str:
     return (
         "method=ctm_compact\n"
         f"matchBlocks=geostrata:{grade}_{material}_ore:host={host}\n"
-        "connect=state\n"
+        "connect=block\n"
         f"tiles={tiles}\n"
         "innerSeams=false\n"
     )

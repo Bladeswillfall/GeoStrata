@@ -109,12 +109,13 @@ def validate_continuity_hosts(hosts: list[str]) -> None:
         )
     for host in hosts:
         tiles = " ".join(
-            f"geostrata:optifine/ctm/host/{host}/{index}"
+            f"geostrata:textures/optifine/ctm/host/{host}/{index}"
             for index in range(CONTINUITY_VARIANTS)
         )
         expected = (
             "method=random\n"
             f"matchTiles=geostrata:block/host/{host}\n"
+            "prioritize=false\n"
             f"tiles={tiles}\n"
         )
         path = CONTINUITY_ROOT / f"{host}.properties"
