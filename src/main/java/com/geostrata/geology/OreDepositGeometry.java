@@ -384,6 +384,7 @@ public final class OreDepositGeometry {
     /** Reusable body-local transform for high-volume worldgen sampling. */
     public static final class Sampler {
         private final Body body;
+        private final Bounds placementBounds;
         private final double cosAzimuth;
         private final double sinAzimuth;
         private final double cosDip;
@@ -393,6 +394,7 @@ public final class OreDepositGeometry {
 
         private Sampler(Body body) {
             this.body = body;
+            placementBounds = OreExposurePlacement.placementBounds(body);
             cosAzimuth = Math.cos(body.azimuthRadians());
             sinAzimuth = Math.sin(body.azimuthRadians());
             cosDip = Math.cos(body.dipRadians());
@@ -402,6 +404,9 @@ public final class OreDepositGeometry {
         }
 
         public Sample sample(int x, int y, int z) {
+            if (!placementBounds.contains(x, y, z)) {
+                return OUTSIDE_SAMPLE;
+            }
             double dx = (double) x - body.anchorX();
             double dy = (double) y - body.anchorY();
             double dz = (double) z - body.anchorZ();
