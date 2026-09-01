@@ -279,6 +279,7 @@ public final class OreDistributionBenchmarkCommands {
         private final EnumMap<OreGrade, Long> grades = new EnumMap<>(OreGrade.class);
         private final Map<String, EnumMap<OreGrade, Long>> gradesByHost = new LinkedHashMap<>();
         private final Map<Integer, Long> yBands = new LinkedHashMap<>();
+        private final Map<String, Map<Integer, Long>> gradedYBandsByHost = new LinkedHashMap<>();
         private final Set<Long> exposedChunks = new HashSet<>();
         private final Set<Long> exposedPositions = new HashSet<>();
         private final Set<Long> gradedExposedPositions = new HashSet<>();
@@ -297,7 +298,8 @@ public final class OreDistributionBenchmarkCommands {
             ySum += y;
             minY = Math.min(minY, y);
             maxY = Math.max(maxY, y);
-            yBands.merge(Math.floorDiv(y, Y_BAND_HEIGHT) * Y_BAND_HEIGHT, 1L, Long::sum);
+            int yBand = Math.floorDiv(y, Y_BAND_HEIGHT) * Y_BAND_HEIGHT;
+            yBands.merge(yBand, 1L, Long::sum);
             if (sample.graded()) {
                 graded++;
                 gradedYSum += y;
@@ -319,6 +321,8 @@ public final class OreDistributionBenchmarkCommands {
                 grades.merge(sample.grade(), 1L, Long::sum);
                 gradesByHost.computeIfAbsent(sample.host(), ignored -> new EnumMap<>(OreGrade.class))
                         .merge(sample.grade(), 1L, Long::sum);
+                gradedYBandsByHost.computeIfAbsent(sample.host(), ignored -> new LinkedHashMap<>())
+                        .merge(yBand, 1L, Long::sum);
             } else {
                 vanillaTagged++;
             }
@@ -393,6 +397,7 @@ public final class OreDistributionBenchmarkCommands {
                 hostJson.add(host, hostGradeJson);
             });
             json.add("gradesByHost", hostJson);
+            json.add("gradedYBandsByHost", gradedYBandsByHostJson());
             return json;
         }
 
@@ -405,6 +410,17 @@ public final class OreDistributionBenchmarkCommands {
                 bands.add(startY + ".." + (startY + Y_BAND_HEIGHT - 1), band);
             });
             return bands;
+        }
+
+        private JsonObject gradedYBandsByHostJson() {
+            JsonObject hosts = new JsonObject();
+            gradedYBandsByHost.forEach((host, hostBands) -> {
+                JsonObject bands = new JsonObject();
+                hostBands.forEach((startY, count) ->
+                        bands.addProperty(startY + ".." + (startY + Y_BAND_HEIGHT - 1), count));
+                hosts.add(host, bands);
+            });
+            return hosts;
         }
     }
 
