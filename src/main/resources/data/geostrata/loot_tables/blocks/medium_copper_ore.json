@@ -41,7 +41,7 @@
               "functions": [
                 {
                   "function": "minecraft:set_count",
-                  "count": 2
+                  "count": 8
                 },
                 {
                   "function": "minecraft:apply_bonus",
