@@ -112,13 +112,14 @@ public final class OreDepositFeature extends Feature<DefaultFeatureConfig> {
             List<BlockBox> protectedStructurePieces
     ) {
         OreDepositCandidatePlanner.Frequency frequency = OreDepositCandidatePlanner.frequency(occurrence);
-        int padding = frequency.searchPaddingBlocks();
-        int minCellX = Math.floorDiv(startX - padding, frequency.horizontalCellSize());
-        int maxCellX = Math.floorDiv(endX + padding, frequency.horizontalCellSize());
-        int minCellY = Math.floorDiv(world.getBottomY() - padding, frequency.verticalCellSize());
-        int maxCellY = Math.floorDiv(world.getTopY() - 1 + padding, frequency.verticalCellSize());
-        int minCellZ = Math.floorDiv(startZ - padding, frequency.horizontalCellSize());
-        int maxCellZ = Math.floorDiv(endZ + padding, frequency.horizontalCellSize());
+        int horizontalPadding = frequency.horizontalSearchPaddingBlocks();
+        int verticalPadding = frequency.verticalSearchPaddingBlocks();
+        int minCellX = Math.floorDiv(startX - horizontalPadding, frequency.horizontalCellSize());
+        int maxCellX = Math.floorDiv(endX + horizontalPadding, frequency.horizontalCellSize());
+        int minCellY = Math.floorDiv(world.getBottomY() - verticalPadding, frequency.verticalCellSize());
+        int maxCellY = Math.floorDiv(world.getTopY() - 1 + verticalPadding, frequency.verticalCellSize());
+        int minCellZ = Math.floorDiv(startZ - horizontalPadding, frequency.horizontalCellSize());
+        int maxCellZ = Math.floorDiv(endZ + horizontalPadding, frequency.horizontalCellSize());
 
         int placed = 0;
         for (int cellX = minCellX; cellX <= maxCellX; cellX++) {
