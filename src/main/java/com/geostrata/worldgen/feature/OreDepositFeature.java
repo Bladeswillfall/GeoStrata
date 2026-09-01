@@ -210,12 +210,18 @@ public final class OreDepositFeature extends Feature<DefaultFeatureConfig> {
             GeologyProvinceSampler.Context provinceContext
     ) {
         GeologyProvince province = provinceContext.sample(proposal.anchorX(), proposal.anchorZ()).province();
-        return occurrence.provinceContexts().contains(province)
-                && occurrence.terrainFilter().matches(ChunkGeneratorTerrainMorphologySampler.sample(
-                        world.toServerWorld(),
-                        proposal.anchorX(),
-                        proposal.anchorZ()
-                ));
+        if (!occurrence.provinceContexts().contains(province)) {
+            return false;
+        }
+        OreOccurrenceCatalog.TerrainFilter terrainFilter = occurrence.terrainFilter();
+        if (terrainFilter.minimumReliefBlocks() == 0 && !terrainFilter.requirePositiveProminence()) {
+            return true;
+        }
+        return terrainFilter.matches(ChunkGeneratorTerrainMorphologySampler.sample(
+                world.toServerWorld(),
+                proposal.anchorX(),
+                proposal.anchorZ()
+        ));
     }
 
     private static OreDepositCandidatePlanner.Proposal proposalForCell(
