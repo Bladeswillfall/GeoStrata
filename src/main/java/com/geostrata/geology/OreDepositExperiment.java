@@ -92,10 +92,10 @@ public final class OreDepositExperiment {
             return 0.5;
         }
         if (proposal.anchorY() < 64) {
-            return 2.0;
+            return 1.5;
         }
         if (proposal.anchorY() < 128) {
-            return 1.5;
+            return 1.9;
         }
         return 1.0;
     }
