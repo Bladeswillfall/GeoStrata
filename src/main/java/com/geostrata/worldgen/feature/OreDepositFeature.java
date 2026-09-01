@@ -129,6 +129,15 @@ public final class OreDepositFeature extends Feature<DefaultFeatureConfig> {
         for (int cellX = minCellX; cellX <= maxCellX; cellX++) {
             for (int cellZ = minCellZ; cellZ <= maxCellZ; cellZ++) {
                 for (int cellY = minCellY; cellY <= maxCellY; cellY++) {
+                    if (!OreDepositExperiment.active(
+                            worldSeed,
+                            occurrence.id(),
+                            cellX,
+                            cellY,
+                            cellZ
+                    )) {
+                        continue;
+                    }
                     OreDepositCandidatePlanner.Proposal proposal = proposalForCell(
                             worldSeed,
                             cellX,
@@ -136,9 +145,6 @@ public final class OreDepositFeature extends Feature<DefaultFeatureConfig> {
                             cellZ,
                             occurrence
                     );
-                    if (!OreDepositExperiment.active(worldSeed, proposal)) {
-                        continue;
-                    }
                     FaultControlledOrePlanner.Binding binding = FaultControlledOrePlanner.bind(
                             worldSeed,
                             proposal,
