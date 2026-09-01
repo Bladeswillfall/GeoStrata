@@ -69,7 +69,6 @@ public final class CorrelatedExperimentCompanion implements ModInitializer {
                 BACKGROUND_FEATURE
         );
         OreDebugCommands.register();
-        EmeraldBenchmarkLocator.register();
         GeoStrata.LOGGER.info(
                 "GeoStrata experimental worldgen companion enabled; GeoStrata owns overworld coal, iron, copper, gold, emerald and diamond generation"
         );
