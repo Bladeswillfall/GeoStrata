@@ -54,7 +54,7 @@ final class OreDepositCandidatePlannerTest {
         assertEquals(224, common.horizontalSearchPaddingBlocks());
         assertEquals(224, common.verticalSearchPaddingBlocks());
         assertEquals(64, gold.horizontalCellSize());
-        assertEquals(32, gold.verticalCellSize());
+        assertEquals(64, gold.verticalCellSize());
         assertEquals(160, gold.horizontalSearchPaddingBlocks());
         assertEquals(64, gold.verticalSearchPaddingBlocks());
         assertEquals(32, emerald.horizontalCellSize());
