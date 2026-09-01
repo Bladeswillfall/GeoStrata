@@ -362,7 +362,7 @@ public final class OreDepositGeometry {
         private double veinDistance(LocalPoint point) {
             double acrossScale = thicknessRadius / widthRadius;
             LocalPoint scaled = new LocalPoint(point.along(), point.across() * acrossScale, point.normal());
-            double best = distanceToSegment(
+            double bestSquared = distanceSquaredToSegment(
                     scaled,
                     -lengthRadius,
                     0.0,
@@ -370,15 +370,15 @@ public final class OreDepositGeometry {
                     lengthRadius,
                     0.0,
                     0.0
-            ) / thicknessRadius;
+            ) / square(thicknessRadius);
             for (Branch branch : branches) {
-                best = Math.min(
-                        best,
-                        distanceToSegment(scaled, branch, acrossScale)
-                                / (thicknessRadius * branch.radiusScale())
+                double radius = thicknessRadius * branch.radiusScale();
+                bestSquared = Math.min(
+                        bestSquared,
+                        distanceSquaredToSegment(scaled, branch, acrossScale) / square(radius)
                 );
             }
-            return best;
+            return Math.sqrt(bestSquared);
         }
     }
 
@@ -459,8 +459,8 @@ public final class OreDepositGeometry {
     ) {
     }
 
-    private static double distanceToSegment(LocalPoint point, Branch segment, double acrossScale) {
-        return distanceToSegment(
+    private static double distanceSquaredToSegment(LocalPoint point, Branch segment, double acrossScale) {
+        return distanceSquaredToSegment(
                 point,
                 segment.startAlong(),
                 segment.startAcross() * acrossScale,
@@ -471,7 +471,7 @@ public final class OreDepositGeometry {
         );
     }
 
-    private static double distanceToSegment(
+    private static double distanceSquaredToSegment(
             LocalPoint point,
             double startAlong,
             double startAcross,
@@ -491,7 +491,7 @@ public final class OreDepositGeometry {
         double deltaAlong = point.along() - (startAlong + along * fraction);
         double deltaAcross = point.across() - (startAcross + across * fraction);
         double deltaNormal = point.normal() - (startNormal + normal * fraction);
-        return Math.sqrt(square(deltaAlong) + square(deltaAcross) + square(deltaNormal));
+        return square(deltaAlong) + square(deltaAcross) + square(deltaNormal);
     }
 
     private static OreGrade grade(double concentration) {
