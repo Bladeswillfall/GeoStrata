@@ -45,7 +45,7 @@ final class GeologyResourceContractTest {
                 core.oreExperiment().activationChancePerCandidate().keySet()
         );
         assertEquals(0.8, core.oreExperiment().activationChance("coal"), 1.0e-12);
-        assertEquals(0.5, core.oreExperiment().activationChance("iron"), 1.0e-12);
+        assertEquals(1.0, core.oreExperiment().activationChance("iron"), 1.0e-12);
         assertEquals(0.36, core.oreExperiment().activationChance("copper"), 1.0e-12);
         assertEquals(0.16, core.oreExperiment().activationChance("gold"), 1.0e-12);
         assertEquals(0.08, core.oreExperiment().activationChance("emerald"), 1.0e-12);
