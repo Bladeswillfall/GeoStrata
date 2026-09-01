@@ -44,20 +44,23 @@ final class OreDepositCandidatePlannerTest {
     }
 
     @Test
-    void rareOresUseDenserCandidateProfilesWithoutWideningChunkSearch() {
+    void rareOresUseDenserCandidateProfilesWithoutExcessVerticalSearch() {
         OreDepositCandidatePlanner.Frequency common = OreDepositCandidatePlanner.frequency(iron());
         OreDepositCandidatePlanner.Frequency gold = OreDepositCandidatePlanner.frequency(gold());
         OreDepositCandidatePlanner.Frequency emerald = OreDepositCandidatePlanner.frequency(emerald());
 
         assertEquals(160, common.horizontalCellSize());
         assertEquals(64, common.verticalCellSize());
-        assertEquals(224, common.searchPaddingBlocks());
+        assertEquals(224, common.horizontalSearchPaddingBlocks());
+        assertEquals(224, common.verticalSearchPaddingBlocks());
         assertEquals(64, gold.horizontalCellSize());
         assertEquals(32, gold.verticalCellSize());
-        assertEquals(96, gold.searchPaddingBlocks());
+        assertEquals(160, gold.horizontalSearchPaddingBlocks());
+        assertEquals(64, gold.verticalSearchPaddingBlocks());
         assertEquals(32, emerald.horizontalCellSize());
         assertEquals(32, emerald.verticalCellSize());
-        assertEquals(16, emerald.searchPaddingBlocks());
+        assertEquals(16, emerald.horizontalSearchPaddingBlocks());
+        assertEquals(16, emerald.verticalSearchPaddingBlocks());
     }
 
     @Test
