@@ -14,6 +14,16 @@ public final class FaultControlledOrePlanner {
             OreDepositCandidatePlanner.Proposal proposal,
             double cycleThicknessBlocks
     ) {
+        return bind(worldSeed, proposal, cycleThicknessBlocks, null);
+    }
+
+    /** Reuses precomputed province sites when a worldgen caller already owns a regional context. */
+    public static Binding bind(
+            long worldSeed,
+            OreDepositCandidatePlanner.Proposal proposal,
+            double cycleThicknessBlocks,
+            GeologyProvinceSampler.Context provinceContext
+    ) {
         if (proposal == null) {
             throw new IllegalArgumentException("ore proposal must not be null");
         }
@@ -24,11 +34,9 @@ public final class FaultControlledOrePlanner {
             return Binding.unbound(proposal);
         }
 
-        GeologyProvinceSampler.Sample province = GeologyProvinceSampler.sample(
-                worldSeed,
-                proposal.anchorX(),
-                proposal.anchorZ()
-        );
+        GeologyProvinceSampler.Sample province = provinceContext == null
+                ? GeologyProvinceSampler.sample(worldSeed, proposal.anchorX(), proposal.anchorZ())
+                : provinceContext.sample(proposal.anchorX(), proposal.anchorZ());
         TectonicStructuralField.Context tectonics = TectonicStructuralField.forSite(
                 worldSeed,
                 province.province(),
