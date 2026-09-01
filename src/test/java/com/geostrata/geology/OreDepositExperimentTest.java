@@ -24,6 +24,15 @@ final class OreDepositExperimentTest {
     }
 
     @Test
+    void ironActivationUsesBroadDepthBiasWithoutChangingOtherMaterials() {
+        assertEquals(0.5, OreDepositExperiment.activationDepthMultiplier(ironProposal(-8)));
+        assertEquals(2.0, OreDepositExperiment.activationDepthMultiplier(ironProposal(20)));
+        assertEquals(1.5, OreDepositExperiment.activationDepthMultiplier(ironProposal(80)));
+        assertEquals(1.0, OreDepositExperiment.activationDepthMultiplier(ironProposal(160)));
+        assertEquals(1.0, OreDepositExperiment.activationDepthMultiplier(proposal()));
+    }
+
+    @Test
     void companionActivationKeepsTheConfiguredChance() {
         OreDepositExperiment.Snapshot configured = experiment(false, 0.36);
         OreDepositExperiment.Snapshot activated = configured.activated(true);
@@ -73,6 +82,12 @@ final class OreDepositExperimentTest {
     private static OreDepositCandidatePlanner.Proposal proposal() {
         return new OreDepositCandidatePlanner.Proposal(
                 "copper", "vein", -1, 0, 2, -48, 20, 96
+        );
+    }
+
+    private static OreDepositCandidatePlanner.Proposal ironProposal(int anchorY) {
+        return new OreDepositCandidatePlanner.Proposal(
+                "iron", "vein", 0, Math.floorDiv(anchorY, 64), 0, 0, anchorY, 0
         );
     }
 }
