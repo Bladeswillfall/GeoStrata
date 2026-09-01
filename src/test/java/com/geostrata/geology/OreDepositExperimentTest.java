@@ -18,8 +18,15 @@ final class OreDepositExperimentTest {
         OreDepositCandidatePlanner.Proposal proposal = proposal();
 
         assertEquals(0.8735449029866489, OreDepositExperiment.activationRoll(8675309L, proposal), 1.0e-16);
+        assertEquals(
+                OreDepositExperiment.activationRoll(8675309L, proposal),
+                OreDepositExperiment.activationRoll(8675309L, "copper", -1, 0, 2),
+                0.0
+        );
         assertTrue(OreDepositExperiment.active(8675309L, proposal, experiment(true, 0.90)));
+        assertTrue(OreDepositExperiment.active(8675309L, "copper", -1, 0, 2, experiment(true, 0.90)));
         assertFalse(OreDepositExperiment.active(8675309L, proposal, experiment(true, 0.80)));
+        assertFalse(OreDepositExperiment.active(8675309L, "copper", -1, 0, 2, experiment(true, 0.80)));
         assertFalse(OreDepositExperiment.active(8675309L, proposal, experiment(false, 1.0)));
     }
 
@@ -56,8 +63,13 @@ final class OreDepositExperimentTest {
         );
 
         assertFalse(OreDepositExperiment.active(8675309L, gold, experiment));
+        assertFalse(OreDepositExperiment.active(8675309L, "gold", -1, 0, 2, experiment));
         assertThrows(IllegalArgumentException.class, () -> OreDepositExperiment.active(1L, null, experiment));
         assertThrows(IllegalArgumentException.class, () -> OreDepositExperiment.active(1L, proposal(), null));
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> OreDepositExperiment.active(1L, null, -1, 0, 2, experiment)
+        );
     }
 
     private static OreDepositExperiment.Snapshot experiment(boolean enabled, double chance) {
