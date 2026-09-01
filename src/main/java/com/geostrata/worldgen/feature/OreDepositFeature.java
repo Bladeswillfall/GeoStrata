@@ -300,9 +300,8 @@ public final class OreDepositFeature extends Feature<DefaultFeatureConfig> {
         String host = null;
         boolean parentHost = false;
         if (sample.economic()) {
-            mutable.set(x, y, z);
-            host = hosts.resolve(mutable);
-            if (host == null || !OreHost.supports(host)) {
+            host = supportedHost(hosts, mutable, x, y, z);
+            if (host == null) {
                 return false;
             }
             parentHost = validHosts.contains(host);
@@ -320,9 +319,8 @@ public final class OreDepositFeature extends Feature<DefaultFeatureConfig> {
         }
 
         if (host == null) {
-            mutable.set(x, y, z);
-            host = hosts.resolve(mutable);
-            if (host == null || !OreHost.supports(host)) {
+            host = supportedHost(hosts, mutable, x, y, z);
+            if (host == null) {
                 return false;
             }
             parentHost = validHosts.contains(host);
@@ -342,6 +340,18 @@ public final class OreDepositFeature extends Feature<DefaultFeatureConfig> {
                 Block.NOTIFY_LISTENERS
         );
         return true;
+    }
+
+    private static String supportedHost(
+            LazyHostResolver hosts,
+            BlockPos.Mutable mutable,
+            int x,
+            int y,
+            int z
+    ) {
+        mutable.set(x, y, z);
+        String host = hosts.resolve(mutable);
+        return host != null && OreHost.supports(host) ? host : null;
     }
 
     private static boolean touchesAir(
