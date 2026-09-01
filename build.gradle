@@ -55,14 +55,6 @@ processResources {
     filesMatching('fabric.mod.json') {
         expand(version: project.version)
     }
-
-    // Continuity treats namespaced optifine/... CTM tile references as raw resources,
-    // while GeoStrata keeps the canonical generated sprites in the normal texture tree.
-    // Publish lightweight aliases into the processed resource pack so the redirector can
-    // resolve them without duplicating source assets or changing the generated CTM matrix.
-    from('src/main/resources/assets/geostrata/textures/optifine') {
-        into 'assets/geostrata/optifine'
-    }
 }
 
 def worldgenTargetContracts = [
