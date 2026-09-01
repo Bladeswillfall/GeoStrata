@@ -47,7 +47,8 @@ import java.util.Set;
  */
 public final class OreDepositFeature extends Feature<DefaultFeatureConfig> {
     private static final int CHUNK_SIZE = 16;
-    private static final int SEARCH_PADDING_BLOCKS = 224;
+    private static final int HORIZONTAL_SEARCH_PADDING_BLOCKS = 224;
+    private static final int VERTICAL_SEARCH_PADDING_BLOCKS = 192;
     private static final String STRUCTURAL_CONTINUITY = "regional";
 
     public OreDepositFeature() {
@@ -112,18 +113,30 @@ public final class OreDepositFeature extends Feature<DefaultFeatureConfig> {
             double structuralCycleThickness,
             List<BlockBox> protectedStructurePieces
     ) {
-        int minCellX = Math.floorDiv(startX - SEARCH_PADDING_BLOCKS, OreDepositCandidatePlanner.HORIZONTAL_CELL_SIZE);
-        int maxCellX = Math.floorDiv(endX + SEARCH_PADDING_BLOCKS, OreDepositCandidatePlanner.HORIZONTAL_CELL_SIZE);
+        int minCellX = Math.floorDiv(
+                startX - HORIZONTAL_SEARCH_PADDING_BLOCKS,
+                OreDepositCandidatePlanner.HORIZONTAL_CELL_SIZE
+        );
+        int maxCellX = Math.floorDiv(
+                endX + HORIZONTAL_SEARCH_PADDING_BLOCKS,
+                OreDepositCandidatePlanner.HORIZONTAL_CELL_SIZE
+        );
         int minCellY = Math.floorDiv(
-                world.getBottomY() - SEARCH_PADDING_BLOCKS,
+                world.getBottomY() - VERTICAL_SEARCH_PADDING_BLOCKS,
                 OreDepositCandidatePlanner.VERTICAL_CELL_SIZE
         );
         int maxCellY = Math.floorDiv(
-                world.getTopY() - 1 + SEARCH_PADDING_BLOCKS,
+                world.getTopY() - 1 + VERTICAL_SEARCH_PADDING_BLOCKS,
                 OreDepositCandidatePlanner.VERTICAL_CELL_SIZE
         );
-        int minCellZ = Math.floorDiv(startZ - SEARCH_PADDING_BLOCKS, OreDepositCandidatePlanner.HORIZONTAL_CELL_SIZE);
-        int maxCellZ = Math.floorDiv(endZ + SEARCH_PADDING_BLOCKS, OreDepositCandidatePlanner.HORIZONTAL_CELL_SIZE);
+        int minCellZ = Math.floorDiv(
+                startZ - HORIZONTAL_SEARCH_PADDING_BLOCKS,
+                OreDepositCandidatePlanner.HORIZONTAL_CELL_SIZE
+        );
+        int maxCellZ = Math.floorDiv(
+                endZ + HORIZONTAL_SEARCH_PADDING_BLOCKS,
+                OreDepositCandidatePlanner.HORIZONTAL_CELL_SIZE
+        );
 
         int placed = 0;
         for (int cellX = minCellX; cellX <= maxCellX; cellX++) {
