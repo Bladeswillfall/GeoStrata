@@ -176,10 +176,14 @@ jobs:
           run_scenario() {
               scenario="$1"
               rm -rf run/geostrata-runtime-smoke run/logs
-              if [ "$scenario" = experiment ]; then
-                  cp experiment-companion/build/libs/geostrata-correlated-experiment-0.2.0.jar run/mods/
-              else
+              rm -f run/geostrata-diagnostic-skip-background.flag
+              if [ "$scenario" = baseline ]; then
                   rm -f run/mods/geostrata-correlated-experiment-*.jar
+              else
+                  cp experiment-companion/build/libs/geostrata-correlated-experiment-0.2.0.jar run/mods/
+                  if [ "$scenario" = no_background ]; then
+                      touch run/geostrata-diagnostic-skip-background.flag
+                  fi
               fi
 
               started_at=$(date +%s)
@@ -220,18 +224,23 @@ jobs:
 
           run_scenario baseline
           run_scenario experiment
+          run_scenario no_background
 
           baseline=$(cat run/results/baseline.elapsed-seconds.txt)
           experiment=$(cat run/results/experiment.elapsed-seconds.txt)
+          no_background=$(cat run/results/no_background.elapsed-seconds.txt)
           overhead=$((experiment - baseline))
-          printf 'baseline_seconds=%s\nexperiment_seconds=%s\noverhead_seconds=%s\n' \
-              "$baseline" "$experiment" "$overhead" | tee run/results/paired-summary.txt
+          background_cost=$((experiment - no_background))
+          non_background_overhead=$((no_background - baseline))
+          printf 'baseline_seconds=%s\nexperiment_seconds=%s\nno_background_seconds=%s\noverhead_seconds=%s\nbackground_cost_seconds=%s\nnon_background_overhead_seconds=%s\n' \
+              "$baseline" "$experiment" "$no_background" "$overhead" "$background_cost" "$non_background_overhead" \
+              | tee run/results/paired-summary.txt
 
       - name: Assert clean worldgen logs
         shell: bash
         run: |
           set -euo pipefail
-          for scenario in baseline experiment; do
+          for scenario in baseline experiment no_background; do
               log="run/results/${scenario}.latest.log"
               test -f "$log"
               grep -q 'Done (' "$log"
