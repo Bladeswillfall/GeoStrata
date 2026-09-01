@@ -148,6 +148,21 @@ public final class ProvinceBackgroundRuntime {
             SedimentaryFieldProfiles.Snapshot fieldProfiles
     ) {
         GeologyProvince province = site.province();
+        if (province != GeologyProvince.VOLCANIC_ARC
+                && province != GeologyProvince.CRATONIC_SHIELD
+                && province != GeologyProvince.OROGENIC_BELT) {
+            return sedimentarySite(
+                    world,
+                    worldSeed,
+                    centerX,
+                    centerZ,
+                    site,
+                    profiles,
+                    successions,
+                    fieldProfiles
+            );
+        }
+
         SedimentaryStratigraphicField.Field architectureBase = SedimentaryStratigraphicField.forSite(
                 worldSeed,
                 site.siteX(),
@@ -185,41 +200,30 @@ public final class ProvinceBackgroundRuntime {
             };
             return new SiteContext(architectureField, resolver);
         }
-        if (province == GeologyProvince.OROGENIC_BELT) {
-            OrogenicBeltModel.Context model = OrogenicBeltModel.forSite(
-                    worldSeed,
-                    site.siteX(),
-                    site.siteZ(),
-                    world.getSeaLevel()
-            );
-            ColumnResolver resolver = (x, z, structural) -> {
-                OrogenicBeltModel.Column column = model.column(x, z, 0.0);
-                return new ResolvedColumn(
-                        province,
-                        y -> FaultDamageZone.contains(province, structural.tectonicColumn(), y)
-                                ? "breccia"
-                                : column.sample(y, structural.verticalOffset(y)).lithology(),
-                        y -> {
-                            if (FaultDamageZone.contains(province, structural.tectonicColumn(), y)) {
-                                return new ResolvedSample("breccia", "fault_damage");
-                            }
-                            OrogenicBeltModel.Sample sample = column.sample(y, structural.verticalOffset(y));
-                            return new ResolvedSample(sample.lithology(), sample.bodyStyle());
-                        }
-                );
-            };
-            return new SiteContext(architectureField, resolver);
-        }
-        return sedimentarySite(
-                world,
+
+        OrogenicBeltModel.Context model = OrogenicBeltModel.forSite(
                 worldSeed,
-                centerX,
-                centerZ,
-                site,
-                profiles,
-                successions,
-                fieldProfiles
+                site.siteX(),
+                site.siteZ(),
+                world.getSeaLevel()
         );
+        ColumnResolver resolver = (x, z, structural) -> {
+            OrogenicBeltModel.Column column = model.column(x, z, 0.0);
+            return new ResolvedColumn(
+                    province,
+                    y -> FaultDamageZone.contains(province, structural.tectonicColumn(), y)
+                            ? "breccia"
+                            : column.sample(y, structural.verticalOffset(y)).lithology(),
+                    y -> {
+                        if (FaultDamageZone.contains(province, structural.tectonicColumn(), y)) {
+                            return new ResolvedSample("breccia", "fault_damage");
+                        }
+                        OrogenicBeltModel.Sample sample = column.sample(y, structural.verticalOffset(y));
+                        return new ResolvedSample(sample.lithology(), sample.bodyStyle());
+                    }
+            );
+        };
+        return new SiteContext(architectureField, resolver);
     }
 
     private static SiteContext volcanicArcSite(
