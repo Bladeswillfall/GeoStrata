@@ -6,6 +6,7 @@ import java.util.List;
 public final class OreDepositGeometry {
     private static final double TWO_PI = Math.PI * 2.0;
     private static final double TRACE_LIMIT = 1.25;
+    private static final double TRACE_LIMIT_SQUARED = TRACE_LIMIT * TRACE_LIMIT;
     private static final double COAL_TRACE_NORMAL_SCALE = 3.0;
     private static final double GRADE_DITHER = 0.12;
 
@@ -19,6 +20,8 @@ public final class OreDepositGeometry {
     private static final long BRANCH_SALT = 0x3F84D5B5B5470917L;
     private static final long FILL_SALT = 0x9216D5D98979FB1BL;
     private static final long GRADE_SALT = 0xD1310BA698DFB5ACL;
+    private static final Sample TRACE_SAMPLE = new Sample(0.0, null, true);
+    private static final Sample OUTSIDE_SAMPLE = new Sample(0.0, null, false);
 
     private OreDepositGeometry() {
     }
@@ -193,14 +196,14 @@ public final class OreDepositGeometry {
         }
 
         private Sample sample(int x, int y, int z, LocalPoint point) {
-            double normalizedDistance = normalizedDistance(point);
-            if (normalizedDistance <= 1.0) {
-                return economicSample(x, y, z, normalizedDistance);
+            double normalizedDistanceSquared = normalizedDistanceSquared(point);
+            if (normalizedDistanceSquared <= 1.0) {
+                return economicSample(x, y, z, Math.sqrt(normalizedDistanceSquared));
             }
-            if (traceDistance(point, normalizedDistance) <= TRACE_LIMIT) {
-                return new Sample(0.0, null, true);
+            if (traceDistanceSquared(point, normalizedDistanceSquared) <= TRACE_LIMIT_SQUARED) {
+                return TRACE_SAMPLE;
             }
-            return new Sample(0.0, null, false);
+            return OUTSIDE_SAMPLE;
         }
 
         /** Conservative inclusive AABB for every economic voxel in this body. */
@@ -337,29 +340,25 @@ public final class OreDepositGeometry {
             );
         }
 
-        private double normalizedDistance(LocalPoint point) {
+        private double normalizedDistanceSquared(LocalPoint point) {
             if ("vein".equals(style)) {
-                return veinDistance(point);
+                return veinDistanceSquared(point);
             }
-            return Math.sqrt(
-                    square(point.along() / lengthRadius)
-                            + square(point.across() / widthRadius)
-                            + square(point.normal() / thicknessRadius)
-            );
+            return square(point.along() / lengthRadius)
+                    + square(point.across() / widthRadius)
+                    + square(point.normal() / thicknessRadius);
         }
 
-        private double traceDistance(LocalPoint point, double normalizedDistance) {
+        private double traceDistanceSquared(LocalPoint point, double normalizedDistanceSquared) {
             if (!"coal".equals(material)) {
-                return normalizedDistance;
+                return normalizedDistanceSquared;
             }
-            return Math.sqrt(
-                    square(point.along() / lengthRadius)
-                            + square(point.across() / widthRadius)
-                            + square(point.normal() / (thicknessRadius * COAL_TRACE_NORMAL_SCALE))
-            );
+            return square(point.along() / lengthRadius)
+                    + square(point.across() / widthRadius)
+                    + square(point.normal() / (thicknessRadius * COAL_TRACE_NORMAL_SCALE));
         }
 
-        private double veinDistance(LocalPoint point) {
+        private double veinDistanceSquared(LocalPoint point) {
             double acrossScale = thicknessRadius / widthRadius;
             LocalPoint scaled = new LocalPoint(point.along(), point.across() * acrossScale, point.normal());
             double bestSquared = distanceSquaredToSegment(
@@ -378,7 +377,7 @@ public final class OreDepositGeometry {
                         distanceSquaredToSegment(scaled, branch, acrossScale) / square(radius)
                 );
             }
-            return Math.sqrt(bestSquared);
+            return bestSquared;
         }
     }
 
