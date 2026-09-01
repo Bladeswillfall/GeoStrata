@@ -160,11 +160,49 @@ public final class SedimentaryStratigraphicField {
         }
 
         /**
+         * Returns only the owning bed when callers do not need the full sample metadata.
+         * This keeps high-volume worldgen from allocating a Sample for every stone voxel.
+         */
+        public SedimentaryContactPlanner.Interval bedAtVerticalOffset(
+                double y,
+                SedimentaryContactPlanner.Plan plan,
+                double verticalOffset
+        ) {
+            double coordinate = coordinateAtVerticalOffset(y, plan, verticalOffset);
+            double fraction = coordinate - Math.floor(coordinate);
+            if (fraction >= 1.0) {
+                fraction = 0.0;
+            }
+            return plan.bedAt(fraction);
+        }
+
+        /**
          * Samples a column when its total structural vertical offset has already
          * been resolved. Worldgen can compute that X/Z-only value once per column
          * rather than repeating dip, warp, and terrain interpolation for every Y.
          */
         public Sample sampleAtVerticalOffset(
+                double y,
+                SedimentaryContactPlanner.Plan plan,
+                double verticalOffset
+        ) {
+            double coordinate = coordinateAtVerticalOffset(y, plan, verticalOffset);
+            double floor = Math.floor(coordinate);
+            if (floor < Long.MIN_VALUE || floor > Long.MAX_VALUE) {
+                throw new IllegalArgumentException("stratigraphic cycle index is outside long range");
+            }
+            long cycleIndex = (long) floor;
+            double fraction = coordinate - floor;
+            if (fraction >= 1.0) {
+                fraction = 0.0;
+                cycleIndex++;
+            }
+
+            SedimentaryContactPlanner.Interval bed = plan.bedAt(fraction);
+            return new Sample(coordinate, cycleIndex, fraction, verticalOffset, bed);
+        }
+
+        private double coordinateAtVerticalOffset(
                 double y,
                 SedimentaryContactPlanner.Plan plan,
                 double verticalOffset
@@ -183,20 +221,7 @@ public final class SedimentaryStratigraphicField {
             if (!Double.isFinite(coordinate)) {
                 throw new IllegalArgumentException("stratigraphic coordinate must be finite");
             }
-
-            double floor = Math.floor(coordinate);
-            if (floor < Long.MIN_VALUE || floor > Long.MAX_VALUE) {
-                throw new IllegalArgumentException("stratigraphic cycle index is outside long range");
-            }
-            long cycleIndex = (long) floor;
-            double fraction = coordinate - floor;
-            if (fraction >= 1.0) {
-                fraction = 0.0;
-                cycleIndex++;
-            }
-
-            SedimentaryContactPlanner.Interval bed = plan.bedAt(fraction);
-            return new Sample(coordinate, cycleIndex, fraction, verticalOffset, bed);
+            return coordinate;
         }
     }
 
