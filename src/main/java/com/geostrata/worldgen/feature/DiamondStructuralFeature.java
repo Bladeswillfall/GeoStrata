@@ -96,6 +96,7 @@ public final class DiamondStructuralFeature extends Feature<DefaultFeatureConfig
                 world,
                 candidate,
                 tectonics,
+                trace,
                 startX,
                 endX,
                 startZ,
@@ -108,6 +109,7 @@ public final class DiamondStructuralFeature extends Feature<DefaultFeatureConfig
             StructureWorldAccess world,
             DiamondGeologyPlanner.StructuralCandidate candidate,
             TectonicStructuralField.Context tectonics,
+            TectonicStructuralField.FaultTrace trace,
             int startX,
             int endX,
             int startZ,
@@ -137,10 +139,10 @@ public final class DiamondStructuralFeature extends Feature<DefaultFeatureConfig
             double acrossJitter = signed(
                     DiamondGeologyPlanner.structuralClusterRoll(seed, candidate, cluster, CLUSTER_Z_SALT)
             ) * ACROSS_FAULT_JITTER;
-            double centerX = candidate.anchorX()
+            double centerX = trace.x()
                     + tectonics.faultCos() * alongJitter
                     + normalX * acrossJitter;
-            double centerZ = candidate.anchorZ()
+            double centerZ = trace.z()
                     + tectonics.faultSin() * alongJitter
                     + normalZ * acrossJitter;
             int radius = DiamondGeologyPlanner.structuralClusterRoll(seed, candidate, cluster, CLUSTER_SIZE_SALT) < 0.12
