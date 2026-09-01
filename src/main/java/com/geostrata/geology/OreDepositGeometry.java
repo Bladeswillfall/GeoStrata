@@ -73,6 +73,7 @@ public final class OreDepositGeometry {
         return switch (style) {
             case "coal_seam" -> new Profile(56.0, 34.0, 2.2, Math.toRadians(12.0), 1.0);
             case "vein" -> new Profile(36.0, 2.8, 2.4, Math.toRadians(75.0), 1.8);
+            case "micro_vein" -> new Profile(2.0, 0.85, 0.85, Math.toRadians(70.0), 0.12);
             case "stratiform" -> new Profile(46.0, 30.0, 4.5, Math.toRadians(18.0), 1.6);
             case "disseminated" -> new Profile(26.0, 20.0, 13.0, Math.toRadians(35.0), 2.4);
             case "massive_lens_or_pocket" -> new Profile(20.0, 15.0, 9.0, Math.toRadians(45.0), 1.8);
