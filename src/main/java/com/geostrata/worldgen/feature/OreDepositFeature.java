@@ -27,6 +27,7 @@ import net.minecraft.util.math.BlockBox;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.StructureWorldAccess;
 import net.minecraft.world.chunk.Chunk;
+import net.minecraft.world.chunk.ChunkSection;
 import net.minecraft.world.gen.feature.DefaultFeatureConfig;
 import net.minecraft.world.gen.feature.Feature;
 import net.minecraft.world.gen.feature.util.FeatureContext;
@@ -47,6 +48,7 @@ import java.util.Set;
  */
 public final class OreDepositFeature extends Feature<DefaultFeatureConfig> {
     private static final int CHUNK_SIZE = 16;
+    private static final int SECTION_SIZE = 16;
     private static final int SEARCH_PADDING_BLOCKS = 224;
     private static final String STRUCTURAL_CONTINUITY = "regional";
 
@@ -80,6 +82,10 @@ public final class OreDepositFeature extends Feature<DefaultFeatureConfig> {
                 .cycleThicknessBlocks();
         LazyHostResolver hosts = new LazyHostResolver(world, startX, startZ, lithologies);
         Chunk chunk = world.getChunk(Math.floorDiv(startX, CHUNK_SIZE), Math.floorDiv(startZ, CHUNK_SIZE));
+        VerticalEnvelope occupied = occupiedEnvelope(chunk);
+        if (occupied == null) {
+            return false;
+        }
         List<BlockBox> protectedStructurePieces = StructurePieceProtection.forChunk(world, chunk);
 
         int placed = 0;
@@ -94,6 +100,7 @@ public final class OreDepositFeature extends Feature<DefaultFeatureConfig> {
                     occurrence,
                     hosts,
                     structuralCycleThickness,
+                    occupied,
                     protectedStructurePieces
             );
         }
@@ -110,16 +117,17 @@ public final class OreDepositFeature extends Feature<DefaultFeatureConfig> {
             OreOccurrenceCatalog.Occurrence occurrence,
             LazyHostResolver hosts,
             double structuralCycleThickness,
+            VerticalEnvelope occupied,
             List<BlockBox> protectedStructurePieces
     ) {
         int minCellX = Math.floorDiv(startX - SEARCH_PADDING_BLOCKS, OreDepositCandidatePlanner.HORIZONTAL_CELL_SIZE);
         int maxCellX = Math.floorDiv(endX + SEARCH_PADDING_BLOCKS, OreDepositCandidatePlanner.HORIZONTAL_CELL_SIZE);
         int minCellY = Math.floorDiv(
-                world.getBottomY() - SEARCH_PADDING_BLOCKS,
+                occupied.minY() - SEARCH_PADDING_BLOCKS,
                 OreDepositCandidatePlanner.VERTICAL_CELL_SIZE
         );
         int maxCellY = Math.floorDiv(
-                world.getTopY() - 1 + SEARCH_PADDING_BLOCKS,
+                occupied.maxY() + SEARCH_PADDING_BLOCKS,
                 OreDepositCandidatePlanner.VERTICAL_CELL_SIZE
         );
         int minCellZ = Math.floorDiv(startZ - SEARCH_PADDING_BLOCKS, OreDepositCandidatePlanner.HORIZONTAL_CELL_SIZE);
@@ -155,7 +163,7 @@ public final class OreDepositFeature extends Feature<DefaultFeatureConfig> {
                     OreDepositGeometry.Body body = binding.body(worldSeed);
                     OreDiscoveryStringers.Field discovery = OreDiscoveryStringers.forBody(body);
                     OreDepositGeometry.Bounds bounds = OreExposurePlacement.placementBounds(body, discovery);
-                    if (!intersectsChunk(bounds, startX, endX, startZ, endZ, world)) {
+                    if (!intersectsChunk(bounds, startX, endX, startZ, endZ, occupied)) {
                         continue;
                     }
                     if (!qualifiesLocation(world, worldSeed, occurrence, proposal)) {
@@ -172,12 +180,40 @@ public final class OreDepositFeature extends Feature<DefaultFeatureConfig> {
                             discovery,
                             bounds,
                             hosts,
+                            occupied,
                             protectedStructurePieces
                     );
                 }
             }
         }
         return placed;
+    }
+
+    private static int placeMaterial(
+            StructureWorldAccess world,
+            long worldSeed,
+            int startX,
+            int endX,
+            int startZ,
+            int endZ,
+            OreOccurrenceCatalog.Occurrence occurrence,
+            LazyHostResolver hosts,
+            double structuralCycleThickness,
+            List<BlockBox> protectedStructurePieces
+    ) {
+        return placeMaterial(
+                world,
+                worldSeed,
+                startX,
+                endX,
+                startZ,
+                endZ,
+                occurrence,
+                hosts,
+                structuralCycleThickness,
+                new VerticalEnvelope(world.getBottomY(), world.getTopY() - 1),
+                protectedStructurePieces
+        );
     }
 
     private static boolean qualifiesLocation(
@@ -221,11 +257,11 @@ public final class OreDepositFeature extends Feature<DefaultFeatureConfig> {
             int endX,
             int startZ,
             int endZ,
-            StructureWorldAccess world
+            VerticalEnvelope occupied
     ) {
         return bounds.maxX() >= startX && bounds.minX() <= endX
                 && bounds.maxZ() >= startZ && bounds.minZ() <= endZ
-                && bounds.maxY() >= world.getBottomY() && bounds.minY() < world.getTopY();
+                && bounds.maxY() >= occupied.minY() && bounds.minY() <= occupied.maxY();
     }
 
     private static int placeBody(
@@ -239,12 +275,13 @@ public final class OreDepositFeature extends Feature<DefaultFeatureConfig> {
             OreDiscoveryStringers.Field discovery,
             OreDepositGeometry.Bounds bounds,
             LazyHostResolver hosts,
+            VerticalEnvelope occupied,
             List<BlockBox> protectedStructurePieces
     ) {
         int minX = Math.max(startX, bounds.minX());
         int maxX = Math.min(endX, bounds.maxX());
-        int minY = Math.max(world.getBottomY(), bounds.minY());
-        int maxY = Math.min(world.getTopY() - 1, bounds.maxY());
+        int minY = Math.max(occupied.minY(), bounds.minY());
+        int maxY = Math.min(occupied.maxY(), bounds.maxY());
         int minZ = Math.max(startZ, bounds.minZ());
         int maxZ = Math.min(endZ, bounds.maxZ());
         Set<String> validHosts = Set.copyOf(occurrence.hostLithologies());
@@ -277,6 +314,35 @@ public final class OreDepositFeature extends Feature<DefaultFeatureConfig> {
             }
         }
         return placed;
+    }
+
+    private static int placeBody(
+            StructureWorldAccess world,
+            int startX,
+            int endX,
+            int startZ,
+            int endZ,
+            OreOccurrenceCatalog.Occurrence occurrence,
+            OreDepositGeometry.Body body,
+            OreDiscoveryStringers.Field discovery,
+            OreDepositGeometry.Bounds bounds,
+            LazyHostResolver hosts,
+            List<BlockBox> protectedStructurePieces
+    ) {
+        return placeBody(
+                world,
+                startX,
+                endX,
+                startZ,
+                endZ,
+                occurrence,
+                body,
+                discovery,
+                bounds,
+                hosts,
+                new VerticalEnvelope(world.getBottomY(), world.getTopY() - 1),
+                protectedStructurePieces
+        );
     }
 
     private static boolean placeVoxel(
@@ -354,6 +420,22 @@ public final class OreDepositFeature extends Feature<DefaultFeatureConfig> {
         return host != null && OreHost.supports(host) ? host : null;
     }
 
+    private static VerticalEnvelope occupiedEnvelope(Chunk chunk) {
+        int minY = Integer.MAX_VALUE;
+        int maxY = Integer.MIN_VALUE;
+        ChunkSection[] sections = chunk.getSectionArray();
+        for (int sectionIndex = 0; sectionIndex < sections.length; sectionIndex++) {
+            ChunkSection section = sections[sectionIndex];
+            if (section == null || section.isEmpty()) {
+                continue;
+            }
+            int sectionBottomY = chunk.sectionIndexToCoord(sectionIndex) * SECTION_SIZE;
+            minY = Math.min(minY, sectionBottomY);
+            maxY = Math.max(maxY, sectionBottomY + SECTION_SIZE - 1);
+        }
+        return minY <= maxY ? new VerticalEnvelope(minY, maxY) : null;
+    }
+
     private static boolean touchesAir(
             StructureWorldAccess world,
             BlockPos.Mutable neighbor,
@@ -403,6 +485,9 @@ public final class OreDepositFeature extends Feature<DefaultFeatureConfig> {
             throw new IllegalStateException("Invalid block tag id: " + rawIdentifier);
         }
         return TagKey.of(RegistryKeys.BLOCK, id);
+    }
+
+    private record VerticalEnvelope(int minY, int maxY) {
     }
 
     private static final class LazyHostResolver {
