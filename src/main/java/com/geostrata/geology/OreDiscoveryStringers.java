@@ -254,6 +254,56 @@ public final class OreDiscoveryStringers {
         }
     }
 
+    public enum Proximity {
+        OUTSIDE,
+        NEAR_STRINGER,
+        STRINGER
+    }
+
+    /** Reuses the immutable body's orientation and evaluates stringer/halo distance in one pass. */
+    public static final class Sampler {
+        private final Field field;
+        private final double exposedHalo;
+        private final double cosAzimuth;
+        private final double sinAzimuth;
+        private final double cosDip;
+        private final double sinDip;
+
+        private Sampler(Field field) {
+            this.field = field;
+            exposedHalo = exposedHaloBlocks(field.body());
+            cosAzimuth = Math.cos(field.body().azimuthRadians());
+            sinAzimuth = Math.sin(field.body().azimuthRadians());
+            cosDip = Math.cos(field.body().dipRadians());
+            sinDip = Math.sin(field.body().dipRadians());
+        }
+
+        public Proximity proximity(int x, int y, int z) {
+            if (field.segments().isEmpty() || !field.bounds().contains(x, y, z)) {
+                return Proximity.OUTSIDE;
+            }
+
+            OreDepositGeometry.Body body = field.body();
+            double dx = (double) x - body.anchorX();
+            double dy = (double) y - body.anchorY();
+            double dz = (double) z - body.anchorZ();
+            LocalPoint point = new LocalPoint(
+                    dx * cosAzimuth * cosDip + dy * sinDip + dz * sinAzimuth * cosDip,
+                    -dx * sinAzimuth + dz * cosAzimuth,
+                    -dx * cosAzimuth * sinDip + dy * cosDip - dz * sinAzimuth * sinDip
+            );
+            boolean near = false;
+            for (Segment segment : field.segments()) {
+                double distance = distanceToSegment(point, segment);
+                if (distance <= segment.radius()) {
+                    return Proximity.STRINGER;
+                }
+                near |= distance <= segment.radius() + exposedHalo;
+            }
+            return near ? Proximity.NEAR_STRINGER : Proximity.OUTSIDE;
+        }
+    }
+
     public record Field(
             OreDepositGeometry.Body body,
             List<Segment> segments,
@@ -268,6 +318,10 @@ public final class OreDiscoveryStringers {
 
         public boolean enabled() {
             return !segments.isEmpty();
+        }
+
+        public Sampler sampler() {
+            return new Sampler(this);
         }
 
         public boolean contains(int x, int y, int z) {
