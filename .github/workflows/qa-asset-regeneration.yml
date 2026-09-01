@@ -33,6 +33,8 @@ jobs:
 
       - name: Commit regenerated assets
         run: |
+          git restore -- .github/workflows/build.yml .github/workflows/qa-asset-regeneration.yml scripts/regenerate_in_game_qa_assets.py
+          rm -rf scripts/__pycache__
           if git diff --quiet && git diff --cached --quiet; then
             echo "No generated changes"
             exit 0
