@@ -8,6 +8,7 @@ public final class OreDepositGeometry {
     private static final double TRACE_LIMIT = 1.25;
     private static final double COAL_TRACE_NORMAL_SCALE = 3.0;
     private static final double GRADE_DITHER = 0.12;
+    private static final double IRON_BODY_SCALE = 1.21;
 
     private static final long AZIMUTH_SALT = 0x243F6A8885A308D3L;
     private static final long DIP_SALT = 0x13198A2E03707344L;
@@ -37,12 +38,13 @@ public final class OreDepositGeometry {
         }
 
         Profile profile = profile(proposal.depositStyle());
+        double bodyScale = "iron".equals(proposal.material()) ? IRON_BODY_SCALE : 1.0;
         double azimuth = TWO_PI * roll(worldSeed, proposal, AZIMUTH_SALT);
         double dip = profile.maximumDipRadians() * (roll(worldSeed, proposal, DIP_SALT) * 2.0 - 1.0);
-        double length = varied(profile.lengthRadius(), roll(worldSeed, proposal, LENGTH_SALT), 0.20);
-        double width = varied(profile.widthRadius(), roll(worldSeed, proposal, WIDTH_SALT), 0.20);
-        double thickness = varied(profile.thicknessRadius(), roll(worldSeed, proposal, THICKNESS_SALT), 0.15);
-        double warp = varied(profile.warpAmplitude(), roll(worldSeed, proposal, WARP_SALT), 0.25);
+        double length = varied(profile.lengthRadius(), roll(worldSeed, proposal, LENGTH_SALT), 0.20) * bodyScale;
+        double width = varied(profile.widthRadius(), roll(worldSeed, proposal, WIDTH_SALT), 0.20) * bodyScale;
+        double thickness = varied(profile.thicknessRadius(), roll(worldSeed, proposal, THICKNESS_SALT), 0.15) * bodyScale;
+        double warp = varied(profile.warpAmplitude(), roll(worldSeed, proposal, WARP_SALT), 0.25) * bodyScale;
         double phase = TWO_PI * roll(worldSeed, proposal, PHASE_SALT);
         List<Branch> branches = "vein".equals(proposal.depositStyle())
                 ? veinBranches(worldSeed, proposal, length)
