@@ -164,9 +164,6 @@ public final class OreDepositFeature extends Feature<DefaultFeatureConfig> {
                             provinces.contextFor(proposal.anchorX(), proposal.anchorZ())
                     );
                     proposal = binding.proposal();
-                    if (!qualifiesProvince(occurrence, proposal, provinces)) {
-                        continue;
-                    }
 
                     OreDepositGeometry.Body body = binding.body(worldSeed);
                     OreDiscoveryStringers.Field discovery = OreDiscoveryStringers.forBody(body);
@@ -174,7 +171,7 @@ public final class OreDepositFeature extends Feature<DefaultFeatureConfig> {
                     if (!intersectsChunk(bounds, startX, endX, startZ, endZ, occupied)) {
                         continue;
                     }
-                    if (!qualifiesTerrain(world, occurrence, proposal)) {
+                    if (!qualifiesLocation(world, occurrence, proposal, provinces)) {
                         continue;
                     }
                     placed += placeBody(
@@ -197,20 +194,16 @@ public final class OreDepositFeature extends Feature<DefaultFeatureConfig> {
         return placed;
     }
 
-    private static boolean qualifiesProvince(
+    private static boolean qualifiesLocation(
+            StructureWorldAccess world,
             OreOccurrenceCatalog.Occurrence occurrence,
             OreDepositCandidatePlanner.Proposal proposal,
             ProvinceSampleCache provinces
     ) {
         GeologyProvince province = provinces.sample(proposal.anchorX(), proposal.anchorZ()).province();
-        return occurrence.provinceContexts().contains(province);
-    }
-
-    private static boolean qualifiesTerrain(
-            StructureWorldAccess world,
-            OreOccurrenceCatalog.Occurrence occurrence,
-            OreDepositCandidatePlanner.Proposal proposal
-    ) {
+        if (!occurrence.provinceContexts().contains(province)) {
+            return false;
+        }
         OreOccurrenceCatalog.TerrainFilter terrainFilter = occurrence.terrainFilter();
         if (terrainFilter.minimumReliefBlocks() == 0 && !terrainFilter.requirePositiveProminence()) {
             return true;
