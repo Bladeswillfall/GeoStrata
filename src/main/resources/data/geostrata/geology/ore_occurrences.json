@@ -110,6 +110,7 @@
       "id": "copper",
       "providerMod": "minecraft",
       "outputItem": "minecraft:raw_copper",
+      "baseYieldMultiplier": 4,
       "hostLithologies": [
         "shale",
         "limestone",
