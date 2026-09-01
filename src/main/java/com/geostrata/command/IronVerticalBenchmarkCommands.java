@@ -69,26 +69,36 @@ public final class IronVerticalBenchmarkCommands {
         Stats stats = new Stats();
         BlockPos.Mutable pos = new BlockPos.Mutable();
         for (int chunkX = MIN_CHUNK; chunkX <= MAX_CHUNK; chunkX++) {
-            int startX = chunkX << 4;
             for (int chunkZ = MIN_CHUNK; chunkZ <= MAX_CHUNK; chunkZ++) {
-                var chunk = world.getChunk(chunkX, chunkZ);
-                int startZ = chunkZ << 4;
-                for (int localX = 0; localX < 16; localX++) {
-                    int x = startX + localX;
-                    for (int localZ = 0; localZ < 16; localZ++) {
-                        int z = startZ + localZ;
-                        for (int y = world.getBottomY(); y < world.getTopY(); y++) {
-                            pos.set(x, y, z);
-                            Source oreSource = ironSource(chunk.getBlockState(pos));
-                            if (oreSource != null) {
-                                stats.record(y, oreSource);
-                            }
-                        }
+                scanChunk(world, chunkX, chunkZ, stats, pos);
+            }
+        }
+        return stats;
+    }
+
+    private static void scanChunk(
+            ServerWorld world,
+            int chunkX,
+            int chunkZ,
+            Stats stats,
+            BlockPos.Mutable pos
+    ) {
+        var chunk = world.getChunk(chunkX, chunkZ);
+        int startX = chunkX << 4;
+        int startZ = chunkZ << 4;
+        for (int localX = 0; localX < 16; localX++) {
+            int x = startX + localX;
+            for (int localZ = 0; localZ < 16; localZ++) {
+                int z = startZ + localZ;
+                for (int y = world.getBottomY(); y < world.getTopY(); y++) {
+                    pos.set(x, y, z);
+                    Source oreSource = ironSource(chunk.getBlockState(pos));
+                    if (oreSource != null) {
+                        stats.record(y, oreSource);
                     }
                 }
             }
         }
-        return stats;
     }
 
     private static Source ironSource(BlockState state) {
