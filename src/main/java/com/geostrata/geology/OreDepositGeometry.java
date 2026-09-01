@@ -184,7 +184,15 @@ public final class OreDepositGeometry {
         }
 
         public Sample sample(int x, int y, int z) {
-            LocalPoint point = localPoint(x, y, z);
+            return sample(x, y, z, localPoint(x, y, z));
+        }
+
+        /** Creates one reusable evaluator for the hot voxel loop of this immutable body. */
+        public Sampler sampler() {
+            return new Sampler(this);
+        }
+
+        private Sample sample(int x, int y, int z, LocalPoint point) {
             double normalizedDistance = normalizedDistance(point);
             if (normalizedDistance <= 1.0) {
                 return economicSample(x, y, z, normalizedDistance);
@@ -371,6 +379,49 @@ public final class OreDepositGeometry {
                 );
             }
             return best;
+        }
+    }
+
+    /** Reusable body-local transform for high-volume worldgen sampling. */
+    public static final class Sampler {
+        private final Body body;
+        private final double cosAzimuth;
+        private final double sinAzimuth;
+        private final double cosDip;
+        private final double sinDip;
+        private final double sinWarpPhase;
+        private final double cosWarpPhase;
+
+        private Sampler(Body body) {
+            this.body = body;
+            cosAzimuth = Math.cos(body.azimuthRadians());
+            sinAzimuth = Math.sin(body.azimuthRadians());
+            cosDip = Math.cos(body.dipRadians());
+            sinDip = Math.sin(body.dipRadians());
+            sinWarpPhase = Math.sin(body.warpPhase());
+            cosWarpPhase = Math.cos(body.warpPhase());
+        }
+
+        public Sample sample(int x, int y, int z) {
+            double dx = (double) x - body.anchorX();
+            double dy = (double) y - body.anchorY();
+            double dz = (double) z - body.anchorZ();
+            double along = dx * cosAzimuth * cosDip + dy * sinDip + dz * sinAzimuth * cosDip;
+            double across = -dx * sinAzimuth + dz * cosAzimuth;
+            double normal = -dx * cosAzimuth * sinDip + dy * cosDip - dz * sinAzimuth * sinDip;
+            double phase = TWO_PI * along / body.warpWavelength() + body.warpPhase();
+            double wave = Math.sin(phase) - sinWarpPhase;
+            double crossWave = Math.cos(phase) - cosWarpPhase;
+            return body.sample(
+                    x,
+                    y,
+                    z,
+                    new LocalPoint(
+                            along,
+                            across - body.warpAmplitude() * wave,
+                            normal - body.warpAmplitude() * 0.5 * crossWave
+                    )
+            );
         }
     }
 
