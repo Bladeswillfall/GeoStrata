@@ -189,33 +189,6 @@ public final class OreDepositFeature extends Feature<DefaultFeatureConfig> {
         return placed;
     }
 
-    private static int placeMaterial(
-            StructureWorldAccess world,
-            long worldSeed,
-            int startX,
-            int endX,
-            int startZ,
-            int endZ,
-            OreOccurrenceCatalog.Occurrence occurrence,
-            LazyHostResolver hosts,
-            double structuralCycleThickness,
-            List<BlockBox> protectedStructurePieces
-    ) {
-        return placeMaterial(
-                world,
-                worldSeed,
-                startX,
-                endX,
-                startZ,
-                endZ,
-                occurrence,
-                hosts,
-                structuralCycleThickness,
-                new VerticalEnvelope(world.getBottomY(), world.getTopY() - 1),
-                protectedStructurePieces
-        );
-    }
-
     private static boolean qualifiesLocation(
             StructureWorldAccess world,
             long worldSeed,
@@ -314,35 +287,6 @@ public final class OreDepositFeature extends Feature<DefaultFeatureConfig> {
             }
         }
         return placed;
-    }
-
-    private static int placeBody(
-            StructureWorldAccess world,
-            int startX,
-            int endX,
-            int startZ,
-            int endZ,
-            OreOccurrenceCatalog.Occurrence occurrence,
-            OreDepositGeometry.Body body,
-            OreDiscoveryStringers.Field discovery,
-            OreDepositGeometry.Bounds bounds,
-            LazyHostResolver hosts,
-            List<BlockBox> protectedStructurePieces
-    ) {
-        return placeBody(
-                world,
-                startX,
-                endX,
-                startZ,
-                endZ,
-                occurrence,
-                body,
-                discovery,
-                bounds,
-                hosts,
-                new VerticalEnvelope(world.getBottomY(), world.getTopY() - 1),
-                protectedStructurePieces
-        );
     }
 
     private static boolean placeVoxel(
