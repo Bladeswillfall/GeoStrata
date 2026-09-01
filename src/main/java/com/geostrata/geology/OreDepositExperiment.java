@@ -64,9 +64,15 @@ public final class OreDepositExperiment {
         return active(worldSeed, proposal, current());
     }
 
-    /** Checks activation before proposal geometry/style work is needed. */
-    public static boolean active(long worldSeed, String material, int cellX, int cellY, int cellZ) {
-        return active(worldSeed, material, cellX, cellY, cellZ, current());
+    /** Checks activation using only the deterministic Y anchor needed by depth-aware tuning. */
+    public static boolean active(
+            long worldSeed,
+            OreOccurrenceCatalog.Occurrence occurrence,
+            int cellX,
+            int cellY,
+            int cellZ
+    ) {
+        return active(worldSeed, occurrence, cellX, cellY, cellZ, current());
     }
 
     static boolean active(
@@ -83,32 +89,74 @@ public final class OreDepositExperiment {
                 proposal.cellX(),
                 proposal.cellY(),
                 proposal.cellZ(),
+                proposal.anchorY(),
                 experiment
         );
     }
 
     static boolean active(
             long worldSeed,
-            String material,
+            OreOccurrenceCatalog.Occurrence occurrence,
             int cellX,
             int cellY,
             int cellZ,
             Snapshot experiment
     ) {
-        if (material == null || experiment == null) {
-            throw new IllegalArgumentException("ore material and experiment must not be null");
+        if (occurrence == null || experiment == null) {
+            throw new IllegalArgumentException("ore occurrence and experiment must not be null");
         }
-        if (!experiment.loaded() || !experiment.enabled()) {
-            return false;
-        }
+        int anchorY = OreDepositCandidatePlanner.anchorYForCell(
+                worldSeed,
+                cellX,
+                cellY,
+                cellZ,
+                occurrence
+        );
+        return active(worldSeed, occurrence.id(), cellX, cellY, cellZ, anchorY, experiment);
+    }
+
+    private static boolean active(
+            long worldSeed,
+            String material,
+            int cellX,
+            int cellY,
+            int cellZ,
+            int anchorY,
+            Snapshot experiment
+    ) {
         Double chance = experiment.activationChancePerCandidate().get(material);
-        if (chance == null) {
+        if (!experiment.loaded() || !experiment.enabled() || chance == null) {
             return false;
         }
+        double adjustedChance = Math.min(1.0, chance * activationDepthMultiplier(material, anchorY));
         return GeologyDeterminism.passesChance(
-                chance,
+                adjustedChance,
                 activationRoll(worldSeed, material, cellX, cellY, cellZ)
         );
+    }
+
+    /** Broad iron bias only; geology and valid host rock still decide whether an active body can place. */
+    static double activationDepthMultiplier(OreDepositCandidatePlanner.Proposal proposal) {
+        if (proposal == null) {
+            throw new IllegalArgumentException("ore proposal must not be null");
+        }
+        return activationDepthMultiplier(proposal.material(), proposal.anchorY());
+    }
+
+    private static double activationDepthMultiplier(String material, int anchorY) {
+        if (!"iron".equals(material)) {
+            return 1.0;
+        }
+        if (anchorY < 0) {
+            return 0.5;
+        }
+        if (anchorY < 64) {
+            return 1.5;
+        }
+        if (anchorY < 128) {
+            return 1.9;
+        }
+        return 1.0;
     }
 
     static double activationRoll(long worldSeed, OreDepositCandidatePlanner.Proposal proposal) {
