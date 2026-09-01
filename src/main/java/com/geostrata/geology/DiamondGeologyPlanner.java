@@ -3,7 +3,7 @@ package com.geostrata.geology;
 /** Pure deterministic candidate planning for rare diamond pipes and deep structural occurrences. */
 public final class DiamondGeologyPlanner {
     public static final int PIPE_CELL_SIZE = GeologyProvinceSampler.CELL_SIZE;
-    public static final int STRUCTURAL_CELL_SIZE = 32;
+    public static final int STRUCTURAL_CELL_SIZE = 128;
     public static final double PIPE_MAX_ABS_TILT_PER_VERTICAL_BLOCK = 0.035;
 
     private static final double PIPE_FIXED_MAX_HORIZONTAL_REACH_BLOCKS = 14.0;
@@ -51,7 +51,7 @@ public final class DiamondGeologyPlanner {
     }
 
     /**
-     * Deterministic anchor for a short structural-diamond sampling segment.
+     * Deterministic anchor used to sample short structural-diamond segments.
      * Actual corridor geometry comes from {@link TectonicStructuralField}; this
      * planner deliberately owns no second fault direction or tilt model.
      */
@@ -61,7 +61,7 @@ public final class DiamondGeologyPlanner {
         int span = STRUCTURAL_CELL_SIZE * 3 / 5;
         int anchorX = minX + (int) Math.floor(roll(worldSeed, cellX, cellZ, STRUCTURAL_X_SALT) * span);
         int anchorZ = minZ + (int) Math.floor(roll(worldSeed, cellX, cellZ, STRUCTURAL_Z_SALT) * span);
-        int clusters = 12 + (int) Math.floor(roll(worldSeed, cellX, cellZ, STRUCTURAL_CLUSTER_SALT) * 5.0);
+        int clusters = 4 + (int) Math.floor(roll(worldSeed, cellX, cellZ, STRUCTURAL_CLUSTER_SALT) * 3.0);
         return new StructuralCandidate(cellX, cellZ, anchorX, anchorZ, clusters);
     }
 
