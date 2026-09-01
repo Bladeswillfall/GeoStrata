@@ -4,17 +4,21 @@
 from __future__ import annotations
 
 import hashlib
+import json
 from pathlib import Path
 import struct
 import sys
 
 ROOT = Path(__file__).resolve().parents[1]
-ASSETS = ROOT / "src" / "main" / "resources" / "assets" / "geostrata"
+RESOURCES = ROOT / "src" / "main" / "resources"
+ASSETS = RESOURCES / "assets" / "geostrata"
 HOST_ROOT = ASSETS / "textures" / "block" / "host"
 PROPERTIES_ROOT = ASSETS / "optifine" / "ctm" / "_host_transitions"
 TEXTURE_ROOT = ASSETS / "textures" / "optifine" / "ctm" / "host_transition"
 LEGACY_TILESET_ROOT = ASSETS / "textures" / "block" / "ore_source" / "tileset"
+MATRIX_PATH = RESOURCES / "data" / "geostrata" / "materials" / "ore_texture_matrix.json"
 TILE_COUNT = 17
+GRADES = ("poor", "medium", "rich", "massive")
 
 
 def fail(message: str) -> None:
@@ -36,8 +40,59 @@ def digest(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
-def property_text(host: str, hosts: tuple[str, ...]) -> str:
-    match_blocks = " ".join(f"geostrata:{name}" for name in hosts)
+def load_matrix() -> dict[str, object]:
+    try:
+        value = json.loads(MATRIX_PATH.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        fail(f"cannot read ore texture matrix: {exc}")
+    if not isinstance(value, dict):
+        fail("ore texture matrix must contain an object")
+    return value
+
+
+def ore_states_by_host(hosts: tuple[str, ...]) -> dict[str, tuple[str, ...]]:
+    matrix = load_matrix()
+    ores = matrix.get("ores")
+    if not isinstance(ores, dict):
+        fail("ore texture matrix must contain ores")
+    states: dict[str, list[str]] = {host: [] for host in hosts}
+    for material, ore in ores.items():
+        if not isinstance(material, str) or not isinstance(ore, dict):
+            fail("ore texture matrix contains an invalid ore entry")
+        valid_hosts = ore.get("validHosts")
+        if not isinstance(valid_hosts, list) or not all(isinstance(host, str) for host in valid_hosts):
+            fail(f"{material}.validHosts must be a list of host ids")
+        for host in valid_hosts:
+            if host not in states:
+                continue
+            states[host].extend(
+                f"geostrata:{grade}_{material}_ore:host={host}"
+                for grade in GRADES
+            )
+    return {host: tuple(values) for host, values in states.items()}
+
+
+def geological_states(hosts: tuple[str, ...], ore_states: dict[str, tuple[str, ...]]) -> tuple[str, ...]:
+    return tuple(
+        state
+        for host in hosts
+        for state in (f"geostrata:{host}", *ore_states[host])
+    )
+
+
+def property_text(
+    host: str,
+    hosts: tuple[str, ...],
+    ore_states: dict[str, tuple[str, ...]],
+) -> str:
+    own_states = (f"geostrata:{host}", *ore_states[host])
+    own_set = set(own_states)
+    match_blocks = " ".join(
+        state
+        for state in geological_states(hosts, ore_states)
+        if state not in own_set
+    )
+    connect_blocks = " ".join(own_states)
     tiles = " ".join(
         f"geostrata:textures/optifine/ctm/host_transition/{host}/{index}"
         for index in range(TILE_COUNT)
@@ -45,7 +100,7 @@ def property_text(host: str, hosts: tuple[str, ...]) -> str:
     return (
         "method=overlay\n"
         f"matchBlocks={match_blocks}\n"
-        f"connectBlocks=geostrata:{host}\n"
+        f"connectBlocks={connect_blocks}\n"
         "connect=block\n"
         f"tiles={tiles}\n"
         "layer=cutout\n"
@@ -56,6 +111,7 @@ def main() -> None:
     hosts = tuple(sorted(path.stem for path in HOST_ROOT.glob("*.png")))
     if not hosts:
         fail("no GeoStrata host textures found")
+    ore_states = ore_states_by_host(hosts)
 
     legacy = list(LEGACY_TILESET_ROOT.glob("*.png"))
     if legacy:
@@ -79,8 +135,14 @@ def main() -> None:
             actual = property_path.read_text(encoding="utf-8")
         except OSError as exc:
             fail(f"cannot read {property_path.relative_to(ROOT)}: {exc}")
-        if actual != property_text(host, hosts):
+        if actual != property_text(host, hosts, ore_states):
             fail(f"{property_path.relative_to(ROOT)} has drifted from the host transition contract")
+
+        own_states = {f"geostrata:{host}", *ore_states[host]}
+        if ore_states[host] and not all(f":host={host}" in state for state in ore_states[host]):
+            fail(f"{host} ore transition states must preserve the host property")
+        if any(state in property_text(host, hosts, ore_states).split("\n")[1] for state in own_states):
+            fail(f"{host} transition must not overlay between blocks with the same geological host")
 
         hashes = []
         for index in range(TILE_COUNT):
@@ -91,7 +153,11 @@ def main() -> None:
         if len(set(hashes)) != TILE_COUNT:
             fail(f"{host} transition sprites must remain distinct")
 
-    print(f"validated {len(hosts)} host transition definitions and {len(expected_textures)} dither sprites")
+    print(
+        f"validated {len(hosts)} host transition definitions, "
+        f"{sum(len(states) for states in ore_states.values())} host-aware ore states and "
+        f"{len(expected_textures)} dither sprites"
+    )
 
 
 if __name__ == "__main__":
