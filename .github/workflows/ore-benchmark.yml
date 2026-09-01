@@ -98,6 +98,21 @@ jobs:
                   exit 1
               fi
 
+              python3 - "$scenario" <<'PY'
+          import pathlib
+          import re
+          import sys
+
+          scenario = sys.argv[1]
+          text = pathlib.Path('run/logs/latest.log').read_text(errors='replace')
+          matches = re.findall(r'Done \(([0-9]+(?:\.[0-9]+)?)s\)', text)
+          if not matches:
+              raise SystemExit(f'Could not parse Minecraft Done time for {scenario}')
+          seconds = float(matches[-1])
+          pathlib.Path(f'run/results/{scenario}.startup-seconds.txt').write_text(f'{seconds:.3f}\n')
+          print(f'{scenario} Minecraft Done time: {seconds:.3f}s')
+          PY
+
               printf 'geostrata ore benchmark\n' >&3
               found=0
               for _ in $(seq 1 360); do
@@ -154,6 +169,10 @@ jobs:
 
           baseline = json.loads(Path('run/results/vanilla.json').read_text())
           geostrata = json.loads(Path('run/results/geostrata.json').read_text())
+          vanilla_startup = float(Path('run/results/vanilla.startup-seconds.txt').read_text())
+          geostrata_startup = float(Path('run/results/geostrata.startup-seconds.txt').read_text())
+          startup_ratio = geostrata_startup / vanilla_startup
+          maximum_startup_ratio = 2.5
           overlapping = ('coal', 'iron', 'copper', 'gold', 'emerald')
           common = ('coal', 'iron', 'copper')
           preserved = ('gold', 'emerald', 'diamond', 'redstone', 'lapis')
@@ -175,6 +194,12 @@ jobs:
           summary = {
               'seed': baseline['seed'],
               'chunkCount': baseline['chunkCount'],
+              'startup': {
+                  'vanillaSeconds': vanilla_startup,
+                  'geostrataSeconds': geostrata_startup,
+                  'ratio': startup_ratio,
+                  'maximumRatio': maximum_startup_ratio,
+              },
               'overlappingMaterials': list(overlapping),
               'preservedVanillaMaterials': list(preserved),
               'vanilla': aggregate(baseline, overlapping),
@@ -182,6 +207,10 @@ jobs:
               'materials': {},
           }
           failures = []
+          if startup_ratio > maximum_startup_ratio:
+              failures.append(
+                  f"startup ratio {startup_ratio:.2f}x exceeds {maximum_startup_ratio:.2f}x budget"
+              )
           for material in baseline['materials']:
               before = baseline['materials'][material]
               after = geostrata['materials'][material]
@@ -213,6 +242,8 @@ jobs:
               '',
               f"Seed: {summary['seed']} | chunks: {summary['chunkCount']} (10x10)",
               '',
+              f"Startup: vanilla {vanilla_startup:.3f}s | GeoStrata {geostrata_startup:.3f}s | {startup_ratio:.2f}x (budget <= {maximum_startup_ratio:.2f}x)",
+              '',
               '| Material | Vanilla total | GeoStrata graded | Residual vanilla | Vanilla exposed patches | GeoStrata graded patches | % of vanilla patches |',
               '|---|---:|---:|---:|---:|---:|---:|',
           ]
@@ -224,6 +255,7 @@ jobs:
               )
           lines.extend([
               '',
+              'Performance acceptance: GeoStrata Minecraft startup must remain at or below 2.5x the paired vanilla startup time.',
               'Common-resource acceptance floor: each of coal, iron and copper must retain at least 50% of the vanilla exposed-patch count.',
               'Vanilla fallback preservation: gold, emerald, diamond, redstone and lapis must remain present when the vanilla reference contains them.',
               f"- vanilla overlapping total: {summary['vanilla']['total']}",
