@@ -69,9 +69,6 @@ public final class IronVerticalBenchmarkCommands {
         Stats stats = new Stats();
         BlockPos.Mutable pos = new BlockPos.Mutable();
         for (int chunkX = MIN_CHUNK; chunkX <= MAX_CHUNK; chunkX++) {
-            var chunk = world.getChunk(chunkX, chunkZPlaceholder());
-        }
-        for (int chunkX = MIN_CHUNK; chunkX <= MAX_CHUNK; chunkX++) {
             int startX = chunkX << 4;
             for (int chunkZ = MIN_CHUNK; chunkZ <= MAX_CHUNK; chunkZ++) {
                 var chunk = world.getChunk(chunkX, chunkZ);
@@ -92,10 +89,6 @@ public final class IronVerticalBenchmarkCommands {
             }
         }
         return stats;
-    }
-
-    private static int chunkZPlaceholder() {
-        return MIN_CHUNK;
     }
 
     private static Source ironSource(BlockState state) {
