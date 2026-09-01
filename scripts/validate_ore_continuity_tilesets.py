@@ -9,6 +9,8 @@ from pathlib import Path
 import struct
 import sys
 
+from validate_host_continuity_transitions import main as validate_host_transitions
+
 ROOT = Path(__file__).resolve().parents[1]
 RESOURCES = ROOT / "src" / "main" / "resources"
 ASSETS = RESOURCES / "assets" / "geostrata"
@@ -57,12 +59,13 @@ def png_size(path: Path) -> tuple[int, int]:
 
 def host_properties_text(host: str) -> str:
     tiles = " ".join(
-        f"geostrata:optifine/ctm/host/{host}/{index}"
+        f"geostrata:textures/optifine/ctm/host/{host}/{index}"
         for index in range(HOST_VARIANT_COUNT)
     )
     return (
         "method=random\n"
         f"matchTiles=geostrata:block/host/{host}\n"
+        "prioritize=false\n"
         f"tiles={tiles}\n"
     )
 
@@ -75,7 +78,7 @@ def properties_text(material: str, grade: str, host: str) -> str:
     return (
         "method=ctm_compact\n"
         f"matchBlocks=geostrata:{grade}_{material}_ore:host={host}\n"
-        "connect=state\n"
+        "connect=block\n"
         f"tiles={tiles}\n"
         "innerSeams=false\n"
     )
@@ -263,6 +266,7 @@ def main() -> None:
         f"{len(expected_host_textures)} host Continuity sprites, "
         f"{expected_combinations} compact CTM combinations and {len(expected_textures)} ore Continuity sprites"
     )
+    validate_host_transitions()
 
 
 if __name__ == "__main__":

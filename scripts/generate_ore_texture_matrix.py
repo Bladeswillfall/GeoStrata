@@ -116,10 +116,11 @@ def write_continuity_host(host: str, base: Image.Image) -> list[Image.Image]:
 
     properties = ASSETS / "optifine" / "ctm" / "host" / f"{host}.properties"
     properties.parent.mkdir(parents=True, exist_ok=True)
-    tiles = " ".join(f"geostrata:optifine/ctm/host/{host}/{index}" for index in range(CONTINUITY_VARIANTS))
+    tiles = " ".join(f"geostrata:textures/optifine/ctm/host/{host}/{index}" for index in range(CONTINUITY_VARIANTS))
     properties.write_text(
         "method=random\n"
         f"matchTiles=geostrata:block/host/{host}\n"
+        "prioritize=false\n"
         f"tiles={tiles}\n",
         encoding="utf-8",
     )
