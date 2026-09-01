@@ -9,6 +9,15 @@ public final class OreDepositCandidatePlanner {
 
     private static final int HORIZONTAL_MARGIN = 16;
     private static final int VERTICAL_MARGIN = 8;
+    private static final Frequency DEFAULT_FREQUENCY = new Frequency(
+            HORIZONTAL_CELL_SIZE,
+            VERTICAL_CELL_SIZE,
+            HORIZONTAL_MARGIN,
+            VERTICAL_MARGIN,
+            224
+    );
+    private static final Frequency GOLD_FREQUENCY = new Frequency(64, 32, 8, 4, 96);
+    private static final Frequency EMERALD_FREQUENCY = new Frequency(32, 32, 4, 4, 16);
     private static final long MATERIAL_SALT = 0xA24BAED4963EE407L;
     private static final long ANCHOR_X_SALT = 0x9FB21C651E98DF25L;
     private static final long ANCHOR_Y_SALT = 0xC13FA9A902A6328FL;
@@ -16,6 +25,18 @@ public final class OreDepositCandidatePlanner {
     private static final long STYLE_SALT = 0xD6E8FEB86659FD93L;
 
     private OreDepositCandidatePlanner() {
+    }
+
+    /** Material-specific candidate density without adding a second ore generator. */
+    public static Frequency frequency(OreOccurrenceCatalog.Occurrence occurrence) {
+        if (occurrence == null) {
+            throw new IllegalArgumentException("ore occurrence must not be null");
+        }
+        return switch (occurrence.id()) {
+            case "gold" -> GOLD_FREQUENCY;
+            case "emerald" -> EMERALD_FREQUENCY;
+            default -> DEFAULT_FREQUENCY;
+        };
     }
 
     /**
@@ -29,6 +50,24 @@ public final class OreDepositCandidatePlanner {
             int blockZ,
             OreOccurrenceCatalog.Occurrence occurrence
     ) {
+        Frequency frequency = frequency(occurrence);
+        return proposeCell(
+                worldSeed,
+                Math.floorDiv(blockX, frequency.horizontalCellSize()),
+                Math.floorDiv(blockY, frequency.verticalCellSize()),
+                Math.floorDiv(blockZ, frequency.horizontalCellSize()),
+                occurrence
+        );
+    }
+
+    /** Builds the deterministic proposal for an already resolved material cell. */
+    public static Proposal proposeCell(
+            long worldSeed,
+            int cellX,
+            int cellY,
+            int cellZ,
+            OreOccurrenceCatalog.Occurrence occurrence
+    ) {
         if (occurrence == null) {
             throw new IllegalArgumentException("ore occurrence must not be null");
         }
@@ -36,26 +75,24 @@ public final class OreDepositCandidatePlanner {
             throw new IllegalArgumentException("ore occurrence must declare at least one deposit style");
         }
 
-        int cellX = Math.floorDiv(blockX, HORIZONTAL_CELL_SIZE);
-        int cellY = Math.floorDiv(blockY, VERTICAL_CELL_SIZE);
-        int cellZ = Math.floorDiv(blockZ, HORIZONTAL_CELL_SIZE);
+        Frequency frequency = frequency(occurrence);
         long salt = MATERIAL_SALT ^ Integer.toUnsignedLong(occurrence.id().hashCode());
         int anchorX = anchor(
                 cellX,
-                HORIZONTAL_CELL_SIZE,
-                HORIZONTAL_MARGIN,
+                frequency.horizontalCellSize(),
+                frequency.horizontalMargin(),
                 GeologyDeterminism.unitRoll(worldSeed, cellX, cellY, cellZ, salt ^ ANCHOR_X_SALT)
         );
         int anchorY = anchor(
                 cellY,
-                VERTICAL_CELL_SIZE,
-                VERTICAL_MARGIN,
+                frequency.verticalCellSize(),
+                frequency.verticalMargin(),
                 GeologyDeterminism.unitRoll(worldSeed, cellX, cellY, cellZ, salt ^ ANCHOR_Y_SALT)
         );
         int anchorZ = anchor(
                 cellZ,
-                HORIZONTAL_CELL_SIZE,
-                HORIZONTAL_MARGIN,
+                frequency.horizontalCellSize(),
+                frequency.horizontalMargin(),
                 GeologyDeterminism.unitRoll(worldSeed, cellX, cellY, cellZ, salt ^ ANCHOR_Z_SALT)
         );
         int styleIndex = (int) Math.floor(
@@ -99,6 +136,24 @@ public final class OreDepositCandidatePlanner {
     private static int anchor(int cell, int size, int margin, double roll) {
         int span = size - 2 * margin;
         return cell * size + margin + (int) Math.floor(roll * span);
+    }
+
+    public record Frequency(
+            int horizontalCellSize,
+            int verticalCellSize,
+            int horizontalMargin,
+            int verticalMargin,
+            int searchPaddingBlocks
+    ) {
+        public Frequency {
+            if (horizontalCellSize < 1 || verticalCellSize < 1
+                    || horizontalMargin < 0 || verticalMargin < 0
+                    || horizontalMargin * 2 >= horizontalCellSize
+                    || verticalMargin * 2 >= verticalCellSize
+                    || searchPaddingBlocks < 0) {
+                throw new IllegalArgumentException("ore frequency profile dimensions must be positive and leave anchor space");
+            }
+        }
     }
 
     public record Proposal(
