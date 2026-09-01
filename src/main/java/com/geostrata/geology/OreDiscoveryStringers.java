@@ -264,10 +264,67 @@ public final class OreDiscoveryStringers {
         STRINGER
     }
 
-    /** Reuses the immutable body's orientation and evaluates stringer/halo distance in one pass. */
+    private static final class SegmentSampler {
+        private final double startAlong;
+        private final double startAcross;
+        private final double startNormal;
+        private final double deltaAlong;
+        private final double deltaAcross;
+        private final double deltaNormal;
+        private final double lengthSquared;
+        private final double radiusSquared;
+        private final double haloRadiusSquared;
+        private final double minAlong;
+        private final double maxAlong;
+        private final double minAcross;
+        private final double maxAcross;
+        private final double minNormal;
+        private final double maxNormal;
+
+        private SegmentSampler(Segment segment, double exposedHalo) {
+            startAlong = segment.start().along();
+            startAcross = segment.start().across();
+            startNormal = segment.start().normal();
+            deltaAlong = segment.end().along() - startAlong;
+            deltaAcross = segment.end().across() - startAcross;
+            deltaNormal = segment.end().normal() - startNormal;
+            lengthSquared = deltaAlong * deltaAlong + deltaAcross * deltaAcross + deltaNormal * deltaNormal;
+            double radius = segment.radius();
+            double haloRadius = radius + exposedHalo;
+            radiusSquared = radius * radius;
+            haloRadiusSquared = haloRadius * haloRadius;
+            minAlong = Math.min(startAlong, segment.end().along()) - haloRadius;
+            maxAlong = Math.max(startAlong, segment.end().along()) + haloRadius;
+            minAcross = Math.min(startAcross, segment.end().across()) - haloRadius;
+            maxAcross = Math.max(startAcross, segment.end().across()) + haloRadius;
+            minNormal = Math.min(startNormal, segment.end().normal()) - haloRadius;
+            maxNormal = Math.max(startNormal, segment.end().normal()) + haloRadius;
+        }
+
+        private boolean canReach(double along, double across, double normal) {
+            return along >= minAlong && along <= maxAlong
+                    && across >= minAcross && across <= maxAcross
+                    && normal >= minNormal && normal <= maxNormal;
+        }
+
+        private double distanceSquared(double along, double across, double normal) {
+            double projection = ((along - startAlong) * deltaAlong
+                    + (across - startAcross) * deltaAcross
+                    + (normal - startNormal) * deltaNormal) / lengthSquared;
+            double fraction = Math.min(1.0, Math.max(0.0, projection));
+            double deltaPointAlong = along - (startAlong + deltaAlong * fraction);
+            double deltaPointAcross = across - (startAcross + deltaAcross * fraction);
+            double deltaPointNormal = normal - (startNormal + deltaNormal * fraction);
+            return deltaPointAlong * deltaPointAlong
+                    + deltaPointAcross * deltaPointAcross
+                    + deltaPointNormal * deltaPointNormal;
+        }
+    }
+
+    /** Reuses immutable transforms and culls distant stringer segments before projection math. */
     public static final class Sampler {
         private final Field field;
-        private final double exposedHalo;
+        private final SegmentSampler[] segments;
         private final double cosAzimuth;
         private final double sinAzimuth;
         private final double cosDip;
@@ -275,7 +332,11 @@ public final class OreDiscoveryStringers {
 
         private Sampler(Field field) {
             this.field = field;
-            exposedHalo = exposedHaloBlocks(field.body());
+            double exposedHalo = exposedHaloBlocks(field.body());
+            segments = new SegmentSampler[field.segments().size()];
+            for (int index = 0; index < segments.length; index++) {
+                segments[index] = new SegmentSampler(field.segments().get(index), exposedHalo);
+            }
             cosAzimuth = Math.cos(field.body().azimuthRadians());
             sinAzimuth = Math.sin(field.body().azimuthRadians());
             cosDip = Math.cos(field.body().dipRadians());
@@ -283,7 +344,7 @@ public final class OreDiscoveryStringers {
         }
 
         public Proximity proximity(int x, int y, int z) {
-            if (field.segments().isEmpty() || !field.bounds().contains(x, y, z)) {
+            if (segments.length == 0 || !field.bounds().contains(x, y, z)) {
                 return Proximity.OUTSIDE;
             }
 
@@ -291,20 +352,19 @@ public final class OreDiscoveryStringers {
             double dx = (double) x - body.anchorX();
             double dy = (double) y - body.anchorY();
             double dz = (double) z - body.anchorZ();
-            LocalPoint point = new LocalPoint(
-                    dx * cosAzimuth * cosDip + dy * sinDip + dz * sinAzimuth * cosDip,
-                    -dx * sinAzimuth + dz * cosAzimuth,
-                    -dx * cosAzimuth * sinDip + dy * cosDip - dz * sinAzimuth * sinDip
-            );
+            double along = dx * cosAzimuth * cosDip + dy * sinDip + dz * sinAzimuth * cosDip;
+            double across = -dx * sinAzimuth + dz * cosAzimuth;
+            double normal = -dx * cosAzimuth * sinDip + dy * cosDip - dz * sinAzimuth * sinDip;
             boolean near = false;
-            for (Segment segment : field.segments()) {
-                double distanceSquared = distanceSquaredToSegment(point, segment);
-                double radius = segment.radius();
-                if (distanceSquared <= radius * radius) {
+            for (SegmentSampler segment : segments) {
+                if (!segment.canReach(along, across, normal)) {
+                    continue;
+                }
+                double distanceSquared = segment.distanceSquared(along, across, normal);
+                if (distanceSquared <= segment.radiusSquared) {
                     return Proximity.STRINGER;
                 }
-                double haloRadius = radius + exposedHalo;
-                near |= distanceSquared <= haloRadius * haloRadius;
+                near |= distanceSquared <= segment.haloRadiusSquared;
             }
             return near ? Proximity.NEAR_STRINGER : Proximity.OUTSIDE;
         }
