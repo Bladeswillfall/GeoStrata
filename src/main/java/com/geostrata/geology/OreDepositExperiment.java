@@ -64,6 +64,11 @@ public final class OreDepositExperiment {
         return active(worldSeed, proposal, current());
     }
 
+    /** Checks activation before proposal geometry/style work is needed. */
+    public static boolean active(long worldSeed, String material, int cellX, int cellY, int cellZ) {
+        return active(worldSeed, material, cellX, cellY, cellZ, current());
+    }
+
     static boolean active(
             long worldSeed,
             OreDepositCandidatePlanner.Proposal proposal,
@@ -72,23 +77,63 @@ public final class OreDepositExperiment {
         if (proposal == null || experiment == null) {
             throw new IllegalArgumentException("ore proposal and experiment must not be null");
         }
-        if (!experiment.loaded() || !experiment.enabled()) {
-            return false;
-        }
-        Double chance = experiment.activationChancePerCandidate().get(proposal.material());
-        if (chance == null) {
-            return false;
-        }
-        return GeologyDeterminism.passesChance(chance, activationRoll(worldSeed, proposal));
-    }
-
-    static double activationRoll(long worldSeed, OreDepositCandidatePlanner.Proposal proposal) {
-        long materialSalt = Integer.toUnsignedLong(proposal.material().hashCode());
-        return GeologyDeterminism.unitRoll(
+        return active(
                 worldSeed,
+                proposal.material(),
                 proposal.cellX(),
                 proposal.cellY(),
                 proposal.cellZ(),
+                experiment
+        );
+    }
+
+    static boolean active(
+            long worldSeed,
+            String material,
+            int cellX,
+            int cellY,
+            int cellZ,
+            Snapshot experiment
+    ) {
+        if (material == null || experiment == null) {
+            throw new IllegalArgumentException("ore material and experiment must not be null");
+        }
+        if (!experiment.loaded() || !experiment.enabled()) {
+            return false;
+        }
+        Double chance = experiment.activationChancePerCandidate().get(material);
+        if (chance == null) {
+            return false;
+        }
+        return GeologyDeterminism.passesChance(
+                chance,
+                activationRoll(worldSeed, material, cellX, cellY, cellZ)
+        );
+    }
+
+    static double activationRoll(long worldSeed, OreDepositCandidatePlanner.Proposal proposal) {
+        if (proposal == null) {
+            throw new IllegalArgumentException("ore proposal must not be null");
+        }
+        return activationRoll(
+                worldSeed,
+                proposal.material(),
+                proposal.cellX(),
+                proposal.cellY(),
+                proposal.cellZ()
+        );
+    }
+
+    static double activationRoll(long worldSeed, String material, int cellX, int cellY, int cellZ) {
+        if (material == null) {
+            throw new IllegalArgumentException("ore material must not be null");
+        }
+        long materialSalt = Integer.toUnsignedLong(material.hashCode());
+        return GeologyDeterminism.unitRoll(
+                worldSeed,
+                cellX,
+                cellY,
+                cellZ,
                 ACTIVATION_SALT ^ materialSalt
         );
     }
