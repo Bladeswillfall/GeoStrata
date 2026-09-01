@@ -46,7 +46,7 @@ public final class OreDepositCandidatePlanner {
                 HORIZONTAL_MARGIN,
                 GeologyDeterminism.unitRoll(worldSeed, cellX, cellY, cellZ, salt ^ ANCHOR_X_SALT)
         );
-        int anchorY = anchorYForCell(worldSeed, cellX, cellY, cellZ, occurrence);
+        int anchorY = anchorYForCell(worldSeed, cellX, cellY, cellZ, occurrence.id());
         int anchorZ = anchor(
                 cellZ,
                 HORIZONTAL_CELL_SIZE,
@@ -70,17 +70,11 @@ public final class OreDepositCandidatePlanner {
     }
 
     /** Returns only the deterministic Y anchor when activation needs depth before proposal construction. */
-    static int anchorYForCell(
-            long worldSeed,
-            int cellX,
-            int cellY,
-            int cellZ,
-            OreOccurrenceCatalog.Occurrence occurrence
-    ) {
-        if (occurrence == null) {
-            throw new IllegalArgumentException("ore occurrence must not be null");
+    static int anchorYForCell(long worldSeed, int cellX, int cellY, int cellZ, String material) {
+        if (material == null) {
+            throw new IllegalArgumentException("ore material must not be null");
         }
-        long salt = MATERIAL_SALT ^ Integer.toUnsignedLong(occurrence.id().hashCode());
+        long salt = MATERIAL_SALT ^ Integer.toUnsignedLong(material.hashCode());
         return anchor(
                 cellY,
                 VERTICAL_CELL_SIZE,
