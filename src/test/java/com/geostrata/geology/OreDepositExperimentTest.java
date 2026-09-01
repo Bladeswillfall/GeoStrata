@@ -24,11 +24,16 @@ final class OreDepositExperimentTest {
     }
 
     @Test
-    void ironActivationUsesBroadDepthBiasWithoutChangingOtherMaterials() {
+    void materialActivationUsesBroadVerticalBias() {
         assertEquals(0.5, OreDepositExperiment.activationDepthMultiplier(ironProposal(-8)));
         assertEquals(1.5, OreDepositExperiment.activationDepthMultiplier(ironProposal(20)));
         assertEquals(1.9, OreDepositExperiment.activationDepthMultiplier(ironProposal(80)));
         assertEquals(1.0, OreDepositExperiment.activationDepthMultiplier(ironProposal(160)));
+        assertEquals(0.0, OreDepositExperiment.activationDepthMultiplier(emeraldProposal(-16)));
+        assertEquals(12.5 / 9.0, OreDepositExperiment.activationDepthMultiplier(emeraldProposal(0)), 1.0e-12);
+        assertEquals(62.5 / 9.0, OreDepositExperiment.activationDepthMultiplier(emeraldProposal(64)), 1.0e-12);
+        assertEquals(12.5, OreDepositExperiment.activationDepthMultiplier(emeraldProposal(128)), 1.0e-12);
+        assertEquals(12.5, OreDepositExperiment.activationDepthMultiplier(emeraldProposal(200)), 1.0e-12);
         assertEquals(1.0, OreDepositExperiment.activationDepthMultiplier(proposal()));
     }
 
@@ -90,6 +95,12 @@ final class OreDepositExperimentTest {
     private static OreDepositCandidatePlanner.Proposal ironProposal(int anchorY) {
         return new OreDepositCandidatePlanner.Proposal(
                 "iron", "vein", 0, Math.floorDiv(anchorY, 64), 0, 0, anchorY, 0
+        );
+    }
+
+    private static OreDepositCandidatePlanner.Proposal emeraldProposal(int anchorY) {
+        return new OreDepositCandidatePlanner.Proposal(
+                "emerald", "micro_vein", 0, Math.floorDiv(anchorY, 32), 0, 0, anchorY, 0
         );
     }
 }

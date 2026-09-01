@@ -83,8 +83,11 @@ public final class OreDepositExperiment {
         return GeologyDeterminism.passesChance(adjustedChance, activationRoll(worldSeed, proposal));
     }
 
-    /** Broad iron bias only; geology and valid host rock still decide whether an active body can place. */
+    /** Broad material vertical bias; geology and valid host rock still decide whether an active body can place. */
     static double activationDepthMultiplier(OreDepositCandidatePlanner.Proposal proposal) {
+        if ("emerald".equals(proposal.material())) {
+            return Math.min(12.5, Math.max(0.0, (proposal.anchorY() + 16) * 12.5 / 144.0));
+        }
         if (!"iron".equals(proposal.material())) {
             return 1.0;
         }
