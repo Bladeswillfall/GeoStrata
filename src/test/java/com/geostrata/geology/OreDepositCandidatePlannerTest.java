@@ -44,6 +44,23 @@ final class OreDepositCandidatePlannerTest {
     }
 
     @Test
+    void rareOresUseDenserCandidateProfilesWithoutWideningChunkSearch() {
+        OreDepositCandidatePlanner.Frequency common = OreDepositCandidatePlanner.frequency(iron());
+        OreDepositCandidatePlanner.Frequency gold = OreDepositCandidatePlanner.frequency(gold());
+        OreDepositCandidatePlanner.Frequency emerald = OreDepositCandidatePlanner.frequency(emerald());
+
+        assertEquals(160, common.horizontalCellSize());
+        assertEquals(64, common.verticalCellSize());
+        assertEquals(224, common.searchPaddingBlocks());
+        assertEquals(64, gold.horizontalCellSize());
+        assertEquals(32, gold.verticalCellSize());
+        assertEquals(96, gold.searchPaddingBlocks());
+        assertEquals(32, emerald.horizontalCellSize());
+        assertEquals(32, emerald.verticalCellSize());
+        assertEquals(16, emerald.searchPaddingBlocks());
+    }
+
+    @Test
     void seedAndMaterialParticipateInTheProposal() {
         OreDepositCandidatePlanner.Proposal first = OreDepositCandidatePlanner.propose(1L, 0, 32, 0, iron());
         OreDepositCandidatePlanner.Proposal otherSeed = OreDepositCandidatePlanner.propose(2L, 0, 32, 0, iron());
@@ -136,6 +153,18 @@ final class OreDepositCandidatePlannerTest {
                 List.of(GeologyProvince.OROGENIC_BELT),
                 List.of("vein", "disseminated"),
                 gradeBlocks("gold")
+        );
+    }
+
+    private static OreOccurrenceCatalog.Occurrence emerald() {
+        return new OreOccurrenceCatalog.Occurrence(
+                "emerald",
+                "minecraft",
+                "minecraft:emerald",
+                List.of("schist"),
+                List.of(GeologyProvince.OROGENIC_BELT),
+                List.of("micro_vein"),
+                gradeBlocks("emerald")
         );
     }
 
