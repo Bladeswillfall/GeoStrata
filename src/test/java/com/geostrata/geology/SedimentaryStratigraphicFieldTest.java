@@ -96,6 +96,7 @@ final class SedimentaryStratigraphicFieldTest {
             SedimentaryStratigraphicField.Sample normal = field.sample(x, y, z, plan, extraOffset);
             SedimentaryStratigraphicField.Sample cached = field.sampleAtVerticalOffset(y, plan, totalOffset);
             assertEquals(normal, cached);
+            assertEquals(cached.bed(), field.bedAtVerticalOffset(y, plan, totalOffset));
         }
     }
 
