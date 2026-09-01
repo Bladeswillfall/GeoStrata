@@ -51,9 +51,6 @@ public final class OreDepositFeature extends Feature<DefaultFeatureConfig> {
     private static final int CHUNK_SIZE = 16;
     private static final int SECTION_SIZE = 16;
     private static final int SEARCH_PADDING_BLOCKS = 224;
-    private static final int PROVINCE_CONTEXT_PADDING_BLOCKS = SEARCH_PADDING_BLOCKS
-            + OreDepositCandidatePlanner.HORIZONTAL_CELL_SIZE
-            + (int) FaultControlledOrePlanner.CAPTURE_DISTANCE_BLOCKS;
     private static final String STRUCTURAL_CONTINUITY = "regional";
 
     public OreDepositFeature() {
@@ -90,13 +87,7 @@ public final class OreDepositFeature extends Feature<DefaultFeatureConfig> {
         if (occupied == null) {
             return false;
         }
-        GeologyProvinceSampler.Context provinceContext = GeologyProvinceSampler.context(
-                worldSeed,
-                startX - PROVINCE_CONTEXT_PADDING_BLOCKS,
-                startZ - PROVINCE_CONTEXT_PADDING_BLOCKS,
-                endX + PROVINCE_CONTEXT_PADDING_BLOCKS,
-                endZ + PROVINCE_CONTEXT_PADDING_BLOCKS
-        );
+        ProvinceSampleCache provinces = new ProvinceSampleCache(worldSeed);
         List<BlockBox> protectedStructurePieces = StructurePieceProtection.forChunk(world, chunk);
 
         int placed = 0;
@@ -111,7 +102,7 @@ public final class OreDepositFeature extends Feature<DefaultFeatureConfig> {
                     occurrence,
                     hosts,
                     structuralCycleThickness,
-                    provinceContext,
+                    provinces,
                     occupied,
                     protectedStructurePieces
             );
@@ -129,7 +120,7 @@ public final class OreDepositFeature extends Feature<DefaultFeatureConfig> {
             OreOccurrenceCatalog.Occurrence occurrence,
             LazyHostResolver hosts,
             double structuralCycleThickness,
-            GeologyProvinceSampler.Context provinceContext,
+            ProvinceSampleCache provinces,
             VerticalEnvelope occupied,
             List<BlockBox> protectedStructurePieces
     ) {
@@ -170,7 +161,7 @@ public final class OreDepositFeature extends Feature<DefaultFeatureConfig> {
                             worldSeed,
                             proposal,
                             structuralCycleThickness,
-                            provinceContext
+                            provinces.contextFor(proposal.anchorX(), proposal.anchorZ())
                     );
                     proposal = binding.proposal();
 
@@ -180,7 +171,7 @@ public final class OreDepositFeature extends Feature<DefaultFeatureConfig> {
                     if (!intersectsChunk(bounds, startX, endX, startZ, endZ, occupied)) {
                         continue;
                     }
-                    if (!qualifiesLocation(world, occurrence, proposal, provinceContext)) {
+                    if (!qualifiesLocation(world, occurrence, proposal, provinces)) {
                         continue;
                     }
                     placed += placeBody(
@@ -207,9 +198,9 @@ public final class OreDepositFeature extends Feature<DefaultFeatureConfig> {
             StructureWorldAccess world,
             OreOccurrenceCatalog.Occurrence occurrence,
             OreDepositCandidatePlanner.Proposal proposal,
-            GeologyProvinceSampler.Context provinceContext
+            ProvinceSampleCache provinces
     ) {
-        GeologyProvince province = provinceContext.sample(proposal.anchorX(), proposal.anchorZ()).province();
+        GeologyProvince province = provinces.sample(proposal.anchorX(), proposal.anchorZ()).province();
         if (!occurrence.provinceContexts().contains(province)) {
             return false;
         }
@@ -449,6 +440,36 @@ public final class OreDepositFeature extends Feature<DefaultFeatureConfig> {
     }
 
     private record VerticalEnvelope(int minY, int maxY) {
+    }
+
+    private static final class ProvinceSampleCache {
+        private final long worldSeed;
+        private final Map<Long, GeologyProvinceSampler.Context> contexts = new HashMap<>();
+
+        private ProvinceSampleCache(long worldSeed) {
+            this.worldSeed = worldSeed;
+        }
+
+        private GeologyProvinceSampler.Sample sample(int x, int z) {
+            return contextFor(x, z).sample(x, z);
+        }
+
+        private GeologyProvinceSampler.Context contextFor(int x, int z) {
+            int cellX = Math.floorDiv(x, GeologyProvinceSampler.CELL_SIZE);
+            int cellZ = Math.floorDiv(z, GeologyProvinceSampler.CELL_SIZE);
+            long key = ((long) cellX << 32) ^ Integer.toUnsignedLong(cellZ);
+            return contexts.computeIfAbsent(key, ignored -> {
+                int minX = cellX * GeologyProvinceSampler.CELL_SIZE;
+                int minZ = cellZ * GeologyProvinceSampler.CELL_SIZE;
+                return GeologyProvinceSampler.context(
+                        worldSeed,
+                        minX,
+                        minZ,
+                        minX + GeologyProvinceSampler.CELL_SIZE - 1,
+                        minZ + GeologyProvinceSampler.CELL_SIZE - 1
+                );
+            });
+        }
     }
 
     private static final class LazyHostResolver {
