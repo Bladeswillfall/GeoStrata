@@ -176,6 +176,21 @@ public final class SedimentaryStratigraphicField {
             return plan.bedAt(fraction);
         }
 
+        /** Last integer Y before this sample's next stratigraphic contact. */
+        public int bedRunEndY(
+                Sample sample,
+                int y,
+                SedimentaryContactPlanner.Plan plan
+        ) {
+            if (sample == null || plan == null) {
+                throw new IllegalArgumentException("sample and contact plan must not be null");
+            }
+            double nextContactCoordinate = sample.cycleIndex() + sample.bed().upperFraction();
+            double nextContactY = sample.verticalOffset()
+                    + cycleThicknessBlocks * (nextContactCoordinate - plan.phase());
+            return integerBeforeBoundary(nextContactY, y);
+        }
+
         /**
          * Samples a column when its total structural vertical offset has already
          * been resolved. Worldgen can compute that X/Z-only value once per column
@@ -222,6 +237,17 @@ public final class SedimentaryStratigraphicField {
                 throw new IllegalArgumentException("stratigraphic coordinate must be finite");
             }
             return coordinate;
+        }
+
+        private static int integerBeforeBoundary(double boundaryY, int currentY) {
+            if (!Double.isFinite(boundaryY) || boundaryY >= Integer.MAX_VALUE) {
+                return Integer.MAX_VALUE;
+            }
+            double firstDifferentY = Math.ceil(boundaryY);
+            if (firstDifferentY <= currentY) {
+                return currentY;
+            }
+            return (int) firstDifferentY - 1;
         }
     }
 
