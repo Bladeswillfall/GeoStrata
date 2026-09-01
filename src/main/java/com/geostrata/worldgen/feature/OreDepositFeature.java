@@ -242,6 +242,7 @@ public final class OreDepositFeature extends Feature<DefaultFeatureConfig> {
         int minZ = Math.max(startZ, bounds.minZ());
         int maxZ = Math.min(endZ, bounds.maxZ());
         Set<String> validHosts = Set.copyOf(occurrence.hostLithologies());
+        OreDepositGeometry.Sampler sampler = body.sampler();
         BlockPos.Mutable mutable = new BlockPos.Mutable();
         BlockPos.Mutable neighbor = new BlockPos.Mutable();
 
@@ -252,7 +253,7 @@ public final class OreDepositFeature extends Feature<DefaultFeatureConfig> {
                     if (placeVoxel(
                             world,
                             occurrence,
-                            body,
+                            sampler,
                             discovery,
                             hosts,
                             protectedStructurePieces,
@@ -274,7 +275,7 @@ public final class OreDepositFeature extends Feature<DefaultFeatureConfig> {
     private static boolean placeVoxel(
             StructureWorldAccess world,
             OreOccurrenceCatalog.Occurrence occurrence,
-            OreDepositGeometry.Body body,
+            OreDepositGeometry.Sampler sampler,
             OreDiscoveryStringers.Field discovery,
             LazyHostResolver hosts,
             List<BlockBox> protectedStructurePieces,
@@ -288,7 +289,7 @@ public final class OreDepositFeature extends Feature<DefaultFeatureConfig> {
         if (StructurePieceProtection.contains(protectedStructurePieces, x, y, z)) {
             return false;
         }
-        OreDepositGeometry.Sample sample = body.sample(x, y, z);
+        OreDepositGeometry.Sample sample = sampler.sample(x, y, z);
         boolean stringer = discovery.contains(x, y, z);
         boolean exposedFringe = !stringer
                 && discovery.nearStringer(x, y, z)
