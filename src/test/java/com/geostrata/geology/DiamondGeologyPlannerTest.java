@@ -54,11 +54,11 @@ final class DiamondGeologyPlannerTest {
     }
 
     @Test
-    void structuralPlanningUsesShortDenseFaultSegments() {
+    void structuralPlanningUsesBoundedFaultSegments() {
         DiamondGeologyPlanner.StructuralCandidate candidate = DiamondGeologyPlanner.structural(42L, 7, -4);
-        assertEquals(32, DiamondGeologyPlanner.STRUCTURAL_CELL_SIZE);
+        assertEquals(128, DiamondGeologyPlanner.STRUCTURAL_CELL_SIZE);
         assertEquals(candidate, DiamondGeologyPlanner.structural(42L, 7, -4));
-        assertTrue(candidate.clusterCount() >= 12 && candidate.clusterCount() <= 16);
+        assertTrue(candidate.clusterCount() >= 4 && candidate.clusterCount() <= 6);
 
         int minX = 7 * DiamondGeologyPlanner.STRUCTURAL_CELL_SIZE + DiamondGeologyPlanner.STRUCTURAL_CELL_SIZE / 5;
         int minZ = -4 * DiamondGeologyPlanner.STRUCTURAL_CELL_SIZE + DiamondGeologyPlanner.STRUCTURAL_CELL_SIZE / 5;
