@@ -30,6 +30,27 @@ final class OreDiscoveryStringersTest {
     }
 
     @Test
+    void optimizedSamplerMatchesExactStringerQueries() {
+        for (String material : new String[]{"iron", "copper"}) {
+            OreDiscoveryStringers.Field field = OreDiscoveryStringers.forBody(body(material, 8675309L));
+            OreDiscoveryStringers.Sampler sampler = field.sampler();
+            OreDepositGeometry.Bounds bounds = field.bounds();
+            for (int x = bounds.minX(); x <= bounds.maxX(); x += 3) {
+                for (int z = bounds.minZ(); z <= bounds.maxZ(); z += 3) {
+                    for (int y = bounds.minY(); y <= bounds.maxY(); y += 3) {
+                        OreDiscoveryStringers.Proximity expected = field.contains(x, y, z)
+                                ? OreDiscoveryStringers.Proximity.STRINGER
+                                : field.nearStringer(x, y, z)
+                                        ? OreDiscoveryStringers.Proximity.NEAR_STRINGER
+                                        : OreDiscoveryStringers.Proximity.OUTSIDE;
+                        assertEquals(expected, sampler.proximity(x, y, z));
+                    }
+                }
+            }
+        }
+    }
+
+    @Test
     void otherMaterialsDoNotGainDiscoveryStringersYet() {
         OreDepositGeometry.Body body = body("gold", 8675309L);
         OreDiscoveryStringers.Field field = OreDiscoveryStringers.forBody(body);
