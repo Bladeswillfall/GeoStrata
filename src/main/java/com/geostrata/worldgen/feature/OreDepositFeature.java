@@ -243,6 +243,7 @@ public final class OreDepositFeature extends Feature<DefaultFeatureConfig> {
         int maxZ = Math.min(endZ, bounds.maxZ());
         Set<String> validHosts = Set.copyOf(occurrence.hostLithologies());
         OreDepositGeometry.Sampler sampler = body.sampler();
+        OreDiscoveryStringers.Sampler discoverySampler = discovery.sampler();
         BlockPos.Mutable mutable = new BlockPos.Mutable();
         BlockPos.Mutable neighbor = new BlockPos.Mutable();
 
@@ -254,7 +255,7 @@ public final class OreDepositFeature extends Feature<DefaultFeatureConfig> {
                             world,
                             occurrence,
                             sampler,
-                            discovery,
+                            discoverySampler,
                             hosts,
                             protectedStructurePieces,
                             validHosts,
@@ -276,7 +277,7 @@ public final class OreDepositFeature extends Feature<DefaultFeatureConfig> {
             StructureWorldAccess world,
             OreOccurrenceCatalog.Occurrence occurrence,
             OreDepositGeometry.Sampler sampler,
-            OreDiscoveryStringers.Field discovery,
+            OreDiscoveryStringers.Sampler discoverySampler,
             LazyHostResolver hosts,
             List<BlockBox> protectedStructurePieces,
             Set<String> validHosts,
@@ -290,9 +291,9 @@ public final class OreDepositFeature extends Feature<DefaultFeatureConfig> {
             return false;
         }
         OreDepositGeometry.Sample sample = sampler.sample(x, y, z);
-        boolean stringer = discovery.contains(x, y, z);
-        boolean exposedFringe = !stringer
-                && discovery.nearStringer(x, y, z)
+        OreDiscoveryStringers.Proximity proximity = discoverySampler.proximity(x, y, z);
+        boolean stringer = proximity == OreDiscoveryStringers.Proximity.STRINGER;
+        boolean exposedFringe = proximity == OreDiscoveryStringers.Proximity.NEAR_STRINGER
                 && touchesAir(world, neighbor, x, y, z);
         if (!sample.economic() && !sample.trace() && !stringer && !exposedFringe) {
             return false;
