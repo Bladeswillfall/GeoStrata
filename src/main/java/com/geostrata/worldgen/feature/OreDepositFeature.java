@@ -78,7 +78,7 @@ public final class OreDepositFeature extends Feature<DefaultFeatureConfig> {
         double structuralCycleThickness = fieldProfiles
                 .parametersFor(STRUCTURAL_CONTINUITY)
                 .cycleThicknessBlocks();
-        HostResolver hosts = HostResolver.forChunk(world, startX, startZ, lithologies);
+        LazyHostResolver hosts = new LazyHostResolver(world, startX, startZ, lithologies);
         Chunk chunk = world.getChunk(Math.floorDiv(startX, CHUNK_SIZE), Math.floorDiv(startZ, CHUNK_SIZE));
         List<BlockBox> protectedStructurePieces = StructurePieceProtection.forChunk(world, chunk);
 
@@ -108,7 +108,7 @@ public final class OreDepositFeature extends Feature<DefaultFeatureConfig> {
             int startZ,
             int endZ,
             OreOccurrenceCatalog.Occurrence occurrence,
-            HostResolver hosts,
+            LazyHostResolver hosts,
             double structuralCycleThickness,
             List<BlockBox> protectedStructurePieces
     ) {
@@ -232,7 +232,7 @@ public final class OreDepositFeature extends Feature<DefaultFeatureConfig> {
             OreDepositGeometry.Body body,
             OreDiscoveryStringers.Field discovery,
             OreDepositGeometry.Bounds bounds,
-            HostResolver hosts,
+            LazyHostResolver hosts,
             List<BlockBox> protectedStructurePieces
     ) {
         int minX = Math.max(startX, bounds.minX());
@@ -276,7 +276,7 @@ public final class OreDepositFeature extends Feature<DefaultFeatureConfig> {
             OreOccurrenceCatalog.Occurrence occurrence,
             OreDepositGeometry.Body body,
             OreDiscoveryStringers.Field discovery,
-            HostResolver hosts,
+            LazyHostResolver hosts,
             List<BlockBox> protectedStructurePieces,
             Set<String> validHosts,
             BlockPos.Mutable mutable,
@@ -368,6 +368,33 @@ public final class OreDepositFeature extends Feature<DefaultFeatureConfig> {
             throw new IllegalStateException("Invalid block tag id: " + rawIdentifier);
         }
         return TagKey.of(RegistryKeys.BLOCK, id);
+    }
+
+    private static final class LazyHostResolver {
+        private final StructureWorldAccess world;
+        private final int startX;
+        private final int startZ;
+        private final LithologyCatalog.Snapshot lithologies;
+        private HostResolver delegate;
+
+        private LazyHostResolver(
+                StructureWorldAccess world,
+                int startX,
+                int startZ,
+                LithologyCatalog.Snapshot lithologies
+        ) {
+            this.world = world;
+            this.startX = startX;
+            this.startZ = startZ;
+            this.lithologies = lithologies;
+        }
+
+        private String resolve(BlockPos pos) {
+            if (delegate == null) {
+                delegate = HostResolver.forChunk(world, startX, startZ, lithologies);
+            }
+            return delegate.resolve(pos);
+        }
     }
 
     private record HostResolver(
