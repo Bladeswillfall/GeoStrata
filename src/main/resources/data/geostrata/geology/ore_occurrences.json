@@ -184,7 +184,7 @@
         "requirePositiveProminence": true
       },
       "depositStyles": [
-        "vein"
+        "micro_vein"
       ],
       "maximumNaturalGrade": "rich",
       "gradeBlocks": {
