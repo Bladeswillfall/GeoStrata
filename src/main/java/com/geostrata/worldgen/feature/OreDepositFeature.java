@@ -132,7 +132,8 @@ public final class OreDepositFeature extends Feature<DefaultFeatureConfig> {
                             cellZ,
                             occurrence
                     );
-                    if (!OreDepositExperiment.active(worldSeed, proposal)) {
+                    if (!OreDepositExperiment.active(worldSeed, proposal)
+                            || !qualifiesLocation(world, worldSeed, occurrence, proposal)) {
                         continue;
                     }
                     FaultControlledOrePlanner.Binding binding = FaultControlledOrePlanner.bind(
@@ -140,10 +141,6 @@ public final class OreDepositFeature extends Feature<DefaultFeatureConfig> {
                             proposal,
                             structuralCycleThickness
                     );
-                    proposal = binding.proposal();
-                    if (!qualifiesLocation(world, worldSeed, occurrence, proposal)) {
-                        continue;
-                    }
 
                     OreDepositGeometry.Body body = binding.body(worldSeed);
                     OreDiscoveryStringers.Field discovery = OreDiscoveryStringers.forBody(body);
@@ -181,8 +178,12 @@ public final class OreDepositFeature extends Feature<DefaultFeatureConfig> {
                 proposal.anchorX(),
                 proposal.anchorZ()
         ).province();
-        return occurrence.provinceContexts().contains(province)
-                && occurrence.terrainFilter().matches(ChunkGeneratorTerrainMorphologySampler.sample(
+        if (!occurrence.provinceContexts().contains(province)) {
+            return false;
+        }
+        OreOccurrenceCatalog.TerrainFilter terrainFilter = occurrence.terrainFilter();
+        return terrainFilter.minimumReliefBlocks() == 0 && !terrainFilter.requirePositiveProminence()
+                || terrainFilter.matches(ChunkGeneratorTerrainMorphologySampler.sample(
                         world.toServerWorld(),
                         proposal.anchorX(),
                         proposal.anchorZ()
