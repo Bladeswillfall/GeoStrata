@@ -24,9 +24,9 @@ import java.util.List;
  */
 public final class DiamondStructuralFeature extends Feature<DefaultFeatureConfig> {
     private static final int CHUNK_SIZE = 16;
-    private static final int SEARCH_PADDING = 224;
+    private static final int SEARCH_PADDING = 160;
     private static final String STRUCTURAL_CONTINUITY = "regional";
-    private static final double MAX_FAULT_CAPTURE_DISTANCE = DiamondGeologyPlanner.STRUCTURAL_CELL_SIZE * 0.65;
+    private static final double MAX_FAULT_CAPTURE_DISTANCE = 128.0;
     private static final double ALONG_FAULT_SPREAD = 28.0;
     private static final double ACROSS_FAULT_JITTER = 2.5;
     private static final long CLUSTER_Y_SALT = 0x8CB92BA72F3D8DD7L;
@@ -140,7 +140,7 @@ public final class DiamondStructuralFeature extends Feature<DefaultFeatureConfig
         int placed = 0;
         for (int cluster = 0; cluster < candidate.clusterCount(); cluster++) {
             double yRoll = DiamondGeologyPlanner.structuralClusterRoll(seed, candidate, cluster, CLUSTER_Y_SALT);
-            int y = minY + (int) Math.floor(yRoll * (maxY - minY + 1));
+            int y = minY + (int) Math.floor(yRoll * yRoll * (maxY - minY + 1));
             double alongJitter = signed(
                     DiamondGeologyPlanner.structuralClusterRoll(seed, candidate, cluster, CLUSTER_X_SALT)
             ) * ALONG_FAULT_SPREAD;
