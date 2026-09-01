@@ -31,33 +31,17 @@ final class OreDepositExperimentTest {
     }
 
     @Test
-    void materialActivationUsesBroadVerticalBias() {
-        assertEquals(0.5, OreDepositExperiment.activationDepthMultiplier(ironProposal(-8)));
-        assertEquals(1.5, OreDepositExperiment.activationDepthMultiplier(ironProposal(20)));
-        assertEquals(1.9, OreDepositExperiment.activationDepthMultiplier(ironProposal(80)));
-        assertEquals(1.0, OreDepositExperiment.activationDepthMultiplier(ironProposal(160)));
-        assertEquals(0.0, OreDepositExperiment.activationDepthMultiplier(emeraldProposal(-16)));
-        assertEquals(12.5 / 9.0, OreDepositExperiment.activationDepthMultiplier(emeraldProposal(0)), 1.0e-12);
-        assertEquals(62.5 / 9.0, OreDepositExperiment.activationDepthMultiplier(emeraldProposal(64)), 1.0e-12);
-        assertEquals(12.5, OreDepositExperiment.activationDepthMultiplier(emeraldProposal(128)), 1.0e-12);
-        assertEquals(12.5, OreDepositExperiment.activationDepthMultiplier(emeraldProposal(200)), 1.0e-12);
-        assertEquals(1.0, OreDepositExperiment.activationDepthMultiplier(proposal()));
-    }
+    void affinityMultiplierTiltsChanceWithoutChangingDeterministicRoll() {
+        OreDepositCandidatePlanner.Proposal proposal = proposal();
+        OreDepositExperiment.Snapshot experiment = experiment(true, 0.50);
 
-    @Test
-    void cheapIronActivationMatchesProposalActivationAtEveryDepthBand() {
-        long seed = 8675309L;
-        OreDepositExperiment.Snapshot experiment = experiment("iron", true, 0.36);
-        for (int cellY : new int[]{-1, 0, 1, 2}) {
-            int anchorY = OreDepositCandidatePlanner.anchorYForCell(seed, 0, cellY, 0, "iron");
-            OreDepositCandidatePlanner.Proposal proposal = new OreDepositCandidatePlanner.Proposal(
-                    "iron", "vein", 0, cellY, 0, 0, anchorY, 0
-            );
-            assertEquals(
-                    OreDepositExperiment.active(seed, proposal, experiment),
-                    OreDepositExperiment.active(seed, "iron", 0, cellY, 0, experiment)
-            );
-        }
+        assertFalse(OreDepositExperiment.active(8675309L, proposal, 1.0, experiment));
+        assertTrue(OreDepositExperiment.active(8675309L, proposal, 2.0, experiment));
+        assertFalse(OreDepositExperiment.active(8675309L, proposal, 0.0, experiment));
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> OreDepositExperiment.active(8675309L, proposal, -1.0, experiment)
+        );
     }
 
     @Test
@@ -121,18 +105,6 @@ final class OreDepositExperimentTest {
     private static OreDepositCandidatePlanner.Proposal proposal() {
         return new OreDepositCandidatePlanner.Proposal(
                 "copper", "vein", -1, 0, 2, -48, 20, 96
-        );
-    }
-
-    private static OreDepositCandidatePlanner.Proposal ironProposal(int anchorY) {
-        return new OreDepositCandidatePlanner.Proposal(
-                "iron", "vein", 0, Math.floorDiv(anchorY, 64), 0, 0, anchorY, 0
-        );
-    }
-
-    private static OreDepositCandidatePlanner.Proposal emeraldProposal(int anchorY) {
-        return new OreDepositCandidatePlanner.Proposal(
-                "emerald", "micro_vein", 0, Math.floorDiv(anchorY, 16), 0, 0, anchorY, 0
         );
     }
 }
