@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate committed GeoStrata ore CTM assets without requiring Pillow."""
+"""Validate committed GeoStrata texture assets without requiring Pillow."""
 
 from __future__ import annotations
 
@@ -14,16 +14,24 @@ RESOURCES = ROOT / "src" / "main" / "resources"
 ASSETS = RESOURCES / "assets" / "geostrata"
 MATRIX_PATH = RESOURCES / "data" / "geostrata" / "materials" / "ore_texture_matrix.json"
 MANIFEST_PATH = RESOURCES / "data" / "geostrata" / "materials" / "ore_ctm_manifest.json"
-SOURCE_ROOT = ASSETS / "textures" / "block" / "ore_source" / "tileset"
+HOST_ROOT = ASSETS / "textures" / "block" / "host"
+MASTER_ROOT = ASSETS / "textures" / "block" / "ore_source" / "master"
+OVERLAY_ROOT = ASSETS / "textures" / "block" / "ore_source"
+COMPOSITE_ROOT = ASSETS / "textures" / "block" / "ore"
+MODELS_ROOT = ASSETS / "models"
+SOURCE_ROOT = OVERLAY_ROOT / "tileset"
+HOST_PROPERTIES_ROOT = ASSETS / "optifine" / "ctm" / "host"
+HOST_TEXTURE_ROOT = ASSETS / "textures" / "optifine" / "ctm" / "host"
 PROPERTIES_ROOT = ASSETS / "optifine" / "ctm" / "ore"
 TEXTURE_ROOT = ASSETS / "textures" / "optifine" / "ctm" / "ore"
 PREVIEW_PATH = ROOT / "docs" / "images" / "ore-ctm-tileset-preview.png"
 GRADES = ("poor", "medium", "rich", "massive")
+HOST_VARIANT_COUNT = 4
 COMPACT_TILE_COUNT = 5
 
 
 def fail(message: str) -> None:
-    print(f"ore CTM validation failed: {message}", file=sys.stderr)
+    print(f"texture validation failed: {message}", file=sys.stderr)
     raise SystemExit(1)
 
 
@@ -48,6 +56,18 @@ def png_size(path: Path) -> tuple[int, int]:
     return struct.unpack(">II", header[16:24])
 
 
+def host_properties_text(host: str) -> str:
+    tiles = " ".join(
+        f"geostrata:optifine/ctm/host/{host}/{index}"
+        for index in range(HOST_VARIANT_COUNT)
+    )
+    return (
+        "method=random\n"
+        f"matchTiles=geostrata:block/host/{host}\n"
+        f"tiles={tiles}\n"
+    )
+
+
 def properties_text(material: str, grade: str, host: str) -> str:
     tiles = " ".join(
         f"geostrata:optifine/ctm/ore/{material}/{host}/{grade}/{index}"
@@ -66,11 +86,39 @@ def digest(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
+def require_png(path: Path, size: tuple[int, int]) -> None:
+    if png_size(path) != size:
+        fail(f"{path.relative_to(ROOT)} must be exactly {size[0]}x{size[1]}")
+
+
+def validate_model_texture_references() -> int:
+    checked = 0
+    for model_path in MODELS_ROOT.rglob("*.json"):
+        model = load_json(model_path)
+        textures = model.get("textures")
+        if textures is None:
+            continue
+        if not isinstance(textures, dict):
+            fail(f"{model_path.relative_to(ROOT)} textures must be an object")
+        for texture in textures.values():
+            if not isinstance(texture, str):
+                fail(f"{model_path.relative_to(ROOT)} texture references must be strings")
+            if texture.startswith("#") or not texture.startswith("geostrata:"):
+                continue
+            relative = texture.removeprefix("geostrata:")
+            path = ASSETS / "textures" / f"{relative}.png"
+            png_size(path)
+            checked += 1
+    return checked
+
+
 def main() -> None:
     matrix = load_json(MATRIX_PATH)
     manifest = load_json(MANIFEST_PATH)
     if matrix.get("schemaVersion") != 1 or matrix.get("resolution") != 16:
         fail("ore texture matrix must remain schema 1 at 16x16")
+    if tuple(matrix.get("grades", {})) != GRADES:
+        fail(f"ore texture matrix grade order must remain {GRADES}")
     if manifest.get("schemaVersion") != 1 or manifest.get("method") != "ctm_compact":
         fail("ore CTM manifest must use schema 1 and ctm_compact")
     if manifest.get("sourceSubtiles") != 13 or manifest.get("subtileResolution") != 8:
@@ -78,9 +126,53 @@ def main() -> None:
     if manifest.get("runtimeTilesPerCombination") != COMPACT_TILE_COUNT:
         fail("ctm_compact must contain exactly five runtime tiles per combination")
 
+    hosts = matrix.get("hosts")
+    if not isinstance(hosts, list) or not hosts or not all(isinstance(host, str) for host in hosts):
+        fail("ore texture matrix must contain host ids")
+    if len(set(hosts)) != len(hosts):
+        fail("ore texture matrix host ids must be unique")
+
     ores = matrix.get("ores")
-    if not isinstance(ores, dict):
+    if not isinstance(ores, dict) or not ores:
         fail("ore texture matrix must contain ores")
+
+    host_textures = set(HOST_ROOT.glob("*.png"))
+    for texture in host_textures:
+        require_png(texture, (16, 16))
+    missing_hosts = {HOST_ROOT / f"{host}.png" for host in hosts} - host_textures
+    if missing_hosts:
+        fail("ore texture matrix references missing host textures")
+
+    expected_masters: set[Path] = set()
+    expected_overlays: set[Path] = set()
+    expected_composites: set[Path] = set()
+    expected_host_properties = {HOST_PROPERTIES_ROOT / f"{host}.properties" for host in hosts}
+    expected_host_textures = {
+        HOST_TEXTURE_ROOT / host / f"{index}.png"
+        for host in hosts
+        for index in range(HOST_VARIANT_COUNT)
+    }
+
+    for host in hosts:
+        property_path = HOST_PROPERTIES_ROOT / f"{host}.properties"
+        try:
+            actual = property_path.read_text(encoding="utf-8")
+        except OSError as exc:
+            fail(f"cannot read {property_path.relative_to(ROOT)}: {exc}")
+        if actual != host_properties_text(host):
+            fail(f"{property_path.relative_to(ROOT)} has drifted from the host Continuity contract")
+        variants = []
+        for index in range(HOST_VARIANT_COUNT):
+            texture = HOST_TEXTURE_ROOT / host / f"{index}.png"
+            require_png(texture, (16, 16))
+            variants.append(digest(texture))
+        if len(set(variants)) != HOST_VARIANT_COUNT:
+            fail(f"{host} Continuity variants must remain distinct")
+
+    if set(HOST_PROPERTIES_ROOT.glob("*.properties")) != expected_host_properties:
+        fail("host Continuity property coverage does not exactly match the texture matrix")
+    if set(HOST_TEXTURE_ROOT.rglob("*.png")) != expected_host_textures:
+        fail("host Continuity sprite coverage does not exactly match the texture matrix")
 
     expected_properties: set[Path] = set()
     expected_textures: set[Path] = set()
@@ -88,14 +180,21 @@ def main() -> None:
     for material, ore in ores.items():
         if not isinstance(material, str) or not isinstance(ore, dict):
             fail("ore texture matrix contains an invalid ore entry")
+        expected_masters.add(MASTER_ROOT / f"{material}.png")
+        for grade in GRADES:
+            expected_overlays.add(OVERLAY_ROOT / material / f"{grade}.png")
+            for host in hosts:
+                expected_composites.add(COMPOSITE_ROOT / material / host / f"{grade}.png")
+
         source = SOURCE_ROOT / f"{material}.png"
         expected_sources.add(source)
-        if png_size(source) != (40, 24):
-            fail(f"{source.relative_to(ROOT)} must be exactly 40x24")
+        require_png(source, (40, 24))
 
         valid_hosts = ore.get("validHosts")
         if not isinstance(valid_hosts, list) or not all(isinstance(host, str) for host in valid_hosts):
             fail(f"{material}.validHosts must be a list of host ids")
+        if not set(valid_hosts) <= set(hosts):
+            fail(f"{material}.validHosts contains an unknown host")
         for grade in GRADES:
             for host in valid_hosts:
                 property_path = PROPERTIES_ROOT / material / grade / f"{host}.properties"
@@ -110,8 +209,23 @@ def main() -> None:
                 for index in range(COMPACT_TILE_COUNT):
                     texture = TEXTURE_ROOT / material / host / grade / f"{index}.png"
                     expected_textures.add(texture)
-                    if png_size(texture) != (16, 16):
-                        fail(f"{texture.relative_to(ROOT)} must be exactly 16x16")
+                    require_png(texture, (16, 16))
+
+    actual_masters = set(MASTER_ROOT.glob("*.png"))
+    actual_overlays = {
+        path
+        for path in OVERLAY_ROOT.glob("*/*.png")
+        if path.parent.name not in {"master", "tileset"}
+    }
+    actual_composites = set(COMPOSITE_ROOT.rglob("*.png"))
+    if actual_masters != expected_masters:
+        fail("master ore texture coverage does not exactly match the texture matrix")
+    if actual_overlays != expected_overlays:
+        fail("generated ore overlay coverage does not exactly match the texture matrix")
+    if actual_composites != expected_composites:
+        fail("host-aware ore composite coverage does not exactly match the texture matrix")
+    for texture in expected_masters | expected_overlays | expected_composites:
+        require_png(texture, (16, 16))
 
     actual_properties = set(PROPERTIES_ROOT.rglob("*.properties"))
     actual_textures = set(TEXTURE_ROOT.rglob("*.png"))
@@ -141,9 +255,14 @@ def main() -> None:
         if digest(path) != expected_hash:
             fail(f"{relative} does not match the generated CTM manifest; regenerate the tilesets")
 
+    model_texture_references = validate_model_texture_references()
+
     print(
-        f"validated {len(expected_sources)} ore source sheets, {expected_combinations} compact CTM combinations "
-        f"and {len(expected_textures)} sprites"
+        f"validated {model_texture_references} model texture references, "
+        f"{len(host_textures)} host textures, {len(expected_composites)} host-aware ore composites, "
+        f"{len(expected_host_textures)} host Continuity sprites, "
+        f"{len(expected_sources)} ore CTM source sheets, {expected_combinations} compact CTM combinations "
+        f"and {len(expected_textures)} ore Continuity sprites"
     )
 
 
