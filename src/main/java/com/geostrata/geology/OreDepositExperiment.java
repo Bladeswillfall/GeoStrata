@@ -79,7 +79,25 @@ public final class OreDepositExperiment {
         if (chance == null) {
             return false;
         }
-        return GeologyDeterminism.passesChance(chance, activationRoll(worldSeed, proposal));
+        double adjustedChance = Math.min(1.0, chance * activationDepthMultiplier(proposal));
+        return GeologyDeterminism.passesChance(adjustedChance, activationRoll(worldSeed, proposal));
+    }
+
+    /** Broad iron bias only; geology and valid host rock still decide whether an active body can place. */
+    static double activationDepthMultiplier(OreDepositCandidatePlanner.Proposal proposal) {
+        if (!"iron".equals(proposal.material())) {
+            return 1.0;
+        }
+        if (proposal.anchorY() < 0) {
+            return 0.5;
+        }
+        if (proposal.anchorY() < 64) {
+            return 1.5;
+        }
+        if (proposal.anchorY() < 128) {
+            return 1.9;
+        }
+        return 1.0;
     }
 
     static double activationRoll(long worldSeed, OreDepositCandidatePlanner.Proposal proposal) {
