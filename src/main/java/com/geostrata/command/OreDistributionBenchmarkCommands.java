@@ -27,8 +27,8 @@ import java.util.Set;
 /** Developer-only distribution scan for comparing vanilla and GeoStrata ore visibility. */
 public final class OreDistributionBenchmarkCommands {
     private static final int GRID_CHUNKS = 10;
-    // Dedicated orogenic emerald calibration square; revert to -5 after measurement.
-    private static final int MIN_CHUNK = -163;
+    // Dedicated cratonic-fault calibration square; revert to -5 after measurement.
+    private static final int MIN_CHUNK = 57;
     private static final int MAX_CHUNK = MIN_CHUNK + GRID_CHUNKS - 1;
     private static final int GENERATION_HALO_CHUNKS = 1;
     private static final int AIR_PROXIMITY_RADIUS = 12;
