@@ -297,22 +297,39 @@ public final class OreDepositFeature extends Feature<DefaultFeatureConfig> {
             return false;
         }
         OreDepositGeometry.Sample sample = sampler.sample(x, y, z);
-        OreDiscoveryStringers.Proximity proximity = discoverySampler.proximity(x, y, z);
+        String host = null;
+        boolean parentHost = false;
+        if (sample.economic()) {
+            mutable.set(x, y, z);
+            host = hosts.resolve(mutable);
+            if (host == null || !OreHost.supports(host)) {
+                return false;
+            }
+            parentHost = validHosts.contains(host);
+        }
+
+        OreDiscoveryStringers.Proximity proximity = OreDiscoveryStringers.Proximity.OUTSIDE;
+        if (!sample.economic() || !parentHost) {
+            proximity = discoverySampler.proximity(x, y, z);
+        }
         boolean stringer = proximity == OreDiscoveryStringers.Proximity.STRINGER;
         boolean exposedFringe = proximity == OreDiscoveryStringers.Proximity.NEAR_STRINGER
                 && touchesAir(world, neighbor, x, y, z);
         if (!sample.economic() && !sample.trace() && !stringer && !exposedFringe) {
             return false;
         }
-        mutable.set(x, y, z);
-        String host = hosts.resolve(mutable);
-        if (host == null || !OreHost.supports(host)) {
-            return false;
+
+        if (host == null) {
+            mutable.set(x, y, z);
+            host = hosts.resolve(mutable);
+            if (host == null || !OreHost.supports(host)) {
+                return false;
+            }
+            parentHost = validHosts.contains(host);
         }
         boolean discoveryOre = stringer || exposedFringe;
         boolean exposedTrace = sample.trace()
                 && (exposedFringe || touchesAir(world, neighbor, x, y, z));
-        boolean parentHost = validHosts.contains(host);
         OreGrade grade = parentHost
                 ? OreExposurePlacement.placementGrade(sample, exposedTrace, discoveryOre)
                 : discoveryOre ? OreGrade.POOR : null;
