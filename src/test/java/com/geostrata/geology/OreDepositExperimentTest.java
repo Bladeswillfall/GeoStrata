@@ -31,6 +31,31 @@ final class OreDepositExperimentTest {
     }
 
     @Test
+    void ironActivationUsesBroadDepthBiasWithoutChangingOtherMaterials() {
+        assertEquals(0.5, OreDepositExperiment.activationDepthMultiplier(ironProposal(-8)));
+        assertEquals(1.5, OreDepositExperiment.activationDepthMultiplier(ironProposal(20)));
+        assertEquals(1.9, OreDepositExperiment.activationDepthMultiplier(ironProposal(80)));
+        assertEquals(1.0, OreDepositExperiment.activationDepthMultiplier(ironProposal(160)));
+        assertEquals(1.0, OreDepositExperiment.activationDepthMultiplier(proposal()));
+    }
+
+    @Test
+    void cheapIronActivationMatchesProposalActivationAtEveryDepthBand() {
+        long seed = 8675309L;
+        OreDepositExperiment.Snapshot experiment = experiment("iron", true, 0.36);
+        for (int cellY : new int[]{-1, 0, 1, 2}) {
+            int anchorY = OreDepositCandidatePlanner.anchorYForCell(seed, 0, cellY, 0, "iron");
+            OreDepositCandidatePlanner.Proposal proposal = new OreDepositCandidatePlanner.Proposal(
+                    "iron", "vein", 0, cellY, 0, 0, anchorY, 0
+            );
+            assertEquals(
+                    OreDepositExperiment.active(seed, proposal, experiment),
+                    OreDepositExperiment.active(seed, "iron", 0, cellY, 0, experiment)
+            );
+        }
+    }
+
+    @Test
     void companionActivationKeepsTheConfiguredChance() {
         OreDepositExperiment.Snapshot configured = experiment(false, 0.36);
         OreDepositExperiment.Snapshot activated = configured.activated(true);
@@ -73,18 +98,28 @@ final class OreDepositExperimentTest {
     }
 
     private static OreDepositExperiment.Snapshot experiment(boolean enabled, double chance) {
+        return experiment("copper", enabled, chance);
+    }
+
+    private static OreDepositExperiment.Snapshot experiment(String material, boolean enabled, double chance) {
         return new OreDepositExperiment.Snapshot(
                 "experimental_opt_in",
                 enabled,
                 "chunk_local_valid_host_clipping",
                 "not_implemented",
-                Map.of("copper", chance)
+                Map.of(material, chance)
         );
     }
 
     private static OreDepositCandidatePlanner.Proposal proposal() {
         return new OreDepositCandidatePlanner.Proposal(
                 "copper", "vein", -1, 0, 2, -48, 20, 96
+        );
+    }
+
+    private static OreDepositCandidatePlanner.Proposal ironProposal(int anchorY) {
+        return new OreDepositCandidatePlanner.Proposal(
+                "iron", "vein", 0, Math.floorDiv(anchorY, 64), 0, 0, anchorY, 0
         );
     }
 }
