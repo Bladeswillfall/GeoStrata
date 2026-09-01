@@ -8,6 +8,7 @@ on:
       - 'src/main/java/com/geostrata/block/GeoStrataBlocks.java'
       - 'src/main/java/com/geostrata/block/GradedOreBlock.java'
       - 'src/main/java/com/geostrata/block/OreHost.java'
+      - 'src/main/java/com/geostrata/command/IronVerticalBenchmarkCommands.java'
       - 'src/main/java/com/geostrata/command/OreDistributionBenchmarkCommands.java'
       - 'src/main/java/com/geostrata/geology/**'
       - 'src/main/java/com/geostrata/worldgen/feature/OreDepositFeature.java'
@@ -120,6 +121,28 @@ jobs:
                   exit 1
               fi
 
+              printf 'geostrata ore vertical-benchmark\n' >&3
+              vertical_found=0
+              for _ in $(seq 1 240); do
+                  if grep -q 'GEOSTRATA_IRON_VERTICAL_BENCHMARK ' run/logs/latest.log; then
+                      vertical_found=1
+                      break
+                  fi
+                  if ! kill -0 "$pid" 2>/dev/null; then
+                      echo "Minecraft server exited during iron vertical benchmark for ${scenario}."
+                      cat "run/results/${scenario}.stdout.log"
+                      cat run/logs/latest.log
+                      exit 1
+                  fi
+                  sleep 2
+              done
+              if [ "$vertical_found" -ne 1 ]; then
+                  echo "Iron vertical benchmark did not complete for ${scenario}."
+                  cat run/logs/latest.log
+                  kill -TERM -- "-$pid" 2>/dev/null || true
+                  exit 1
+              fi
+
               python3 - "$scenario" <<'PY'
           import json
           import pathlib
@@ -127,11 +150,15 @@ jobs:
 
           scenario = sys.argv[1]
           lines = pathlib.Path('run/logs/latest.log').read_text(errors='replace').splitlines()
-          marker = 'GEOSTRATA_ORE_BENCHMARK '
-          payload = next(line.split(marker, 1)[1] for line in reversed(lines) if marker in line)
-          data = json.loads(payload)
-          pathlib.Path(f'run/results/{scenario}.json').write_text(json.dumps(data, indent=2) + '\n')
-          print(scenario, json.dumps(data, separators=(',', ':')))
+          outputs = {
+              f'run/results/{scenario}.json': 'GEOSTRATA_ORE_BENCHMARK ',
+              f'run/results/{scenario}.iron-vertical.json': 'GEOSTRATA_IRON_VERTICAL_BENCHMARK ',
+          }
+          for output, marker in outputs.items():
+              payload = next(line.split(marker, 1)[1] for line in reversed(lines) if marker in line)
+              data = json.loads(payload)
+              pathlib.Path(output).write_text(json.dumps(data, indent=2) + '\n')
+              print(scenario, marker.strip(), json.dumps(data, separators=(',', ':')))
           PY
 
               cp run/logs/latest.log "run/results/${scenario}.latest.log"
@@ -154,9 +181,14 @@ jobs:
 
           baseline = json.loads(Path('run/results/vanilla.json').read_text())
           geostrata = json.loads(Path('run/results/geostrata.json').read_text())
+          baseline_vertical = json.loads(Path('run/results/vanilla.iron-vertical.json').read_text())
+          geostrata_vertical = json.loads(Path('run/results/geostrata.iron-vertical.json').read_text())
           overlapping = ('coal', 'iron', 'copper', 'gold', 'emerald')
           common = ('coal', 'iron', 'copper')
           preserved = ('gold', 'emerald', 'diamond', 'redstone', 'lapis')
+          iron_target_percent = 75.0
+          iron_min_percent = 70.0
+          iron_max_percent = 80.0
 
           def aggregate(data, materials, graded=False):
               rows = [data['materials'][material] for material in materials]
@@ -179,6 +211,12 @@ jobs:
               'preservedVanillaMaterials': list(preserved),
               'vanilla': aggregate(baseline, overlapping),
               'geostrataGraded': aggregate(geostrata, overlapping, graded=True),
+              'ironTargetPercentOfVanilla': iron_target_percent,
+              'ironAcceptedPercentRange': [iron_min_percent, iron_max_percent],
+              'ironVertical': {
+                  'vanilla': baseline_vertical,
+                  'geostrata': geostrata_vertical,
+              },
               'materials': {},
           }
           failures = []
@@ -188,10 +226,12 @@ jobs:
               vanilla_patches = before['airExposedClusters']
               graded_patches = after['gradedAirExposedClusters']
               target = (vanilla_patches + 1) // 2 if material in common else None
-              ratio = 0.0 if vanilla_patches == 0 else graded_patches * 100.0 / vanilla_patches
+              patch_ratio = 0.0 if vanilla_patches == 0 else graded_patches * 100.0 / vanilla_patches
+              block_ratio = 0.0 if before['total'] == 0 else after['gradedBlocks'] * 100.0 / before['total']
               summary['materials'][material] = {
                   'vanillaTotal': before['total'],
                   'geostrataGradedTotal': after['gradedBlocks'],
+                  'gradedBlockPercentOfVanilla': block_ratio,
                   'residualVanillaTotal': after['vanillaTaggedBlocks'],
                   'vanillaAirExposed': before['airExposed'],
                   'geostrataGradedAirExposed': after['gradedAirExposed'],
@@ -199,7 +239,7 @@ jobs:
                   'vanillaExposedClusters': vanilla_patches,
                   'geostrataGradedExposedClusters': graded_patches,
                   'residualVanillaExposedClusters': after['vanillaTaggedAirExposedClusters'],
-                  'gradedPatchPercentOfVanilla': ratio,
+                  'gradedPatchPercentOfVanilla': patch_ratio,
                   'commonMinimumTarget': target,
               }
               if target is not None and graded_patches < target:
@@ -207,24 +247,64 @@ jobs:
               if material in preserved and before['total'] > 0 and after['vanillaTaggedBlocks'] == 0:
                   failures.append(f"{material}: vanilla fallback disappeared")
 
+          iron = summary['materials']['iron']
+          if not iron_min_percent <= iron['gradedBlockPercentOfVanilla'] <= iron_max_percent:
+              failures.append(
+                  f"iron mass: {iron['gradedBlockPercentOfVanilla']:.1f}% of vanilla is outside "
+                  f"{iron_min_percent:.0f}-{iron_max_percent:.0f}% target band"
+              )
+          if geostrata_vertical['vanillaTaggedBlocks'] != 0:
+              failures.append("iron: residual vanilla-tagged blocks remain in companion benchmark")
+
           Path('run/results/paired.json').write_text(json.dumps(summary, indent=2) + '\n')
           lines = [
               '# Ore distribution benchmark',
               '',
               f"Seed: {summary['seed']} | chunks: {summary['chunkCount']} (10x10)",
               '',
-              '| Material | Vanilla total | GeoStrata graded | Residual vanilla | Vanilla exposed patches | GeoStrata graded patches | % of vanilla patches |',
-              '|---|---:|---:|---:|---:|---:|---:|',
+              '| Material | Vanilla total | GeoStrata graded | % of vanilla blocks | Residual vanilla | Vanilla exposed patches | GeoStrata graded patches | % of vanilla patches |',
+              '|---|---:|---:|---:|---:|---:|---:|---:|',
           ]
           for material, row in summary['materials'].items():
               lines.append(
                   f"| {material} | {row['vanillaTotal']} | {row['geostrataGradedTotal']} | "
-                  f"{row['residualVanillaTotal']} | {row['vanillaExposedClusters']} | "
-                  f"{row['geostrataGradedExposedClusters']} | {row['gradedPatchPercentOfVanilla']:.1f}% |"
+                  f"{row['gradedBlockPercentOfVanilla']:.1f}% | {row['residualVanillaTotal']} | "
+                  f"{row['vanillaExposedClusters']} | {row['geostrataGradedExposedClusters']} | "
+                  f"{row['gradedPatchPercentOfVanilla']:.1f}% |"
               )
+
+          vanilla_bands = {band['minY']: band for band in baseline_vertical['verticalBands']}
+          geostrata_bands = {band['minY']: band for band in geostrata_vertical['verticalBands']}
+          band_starts = sorted(set(vanilla_bands) | set(geostrata_bands))
           lines.extend([
               '',
-              'Common-resource acceptance floor: each of coal, iron and copper must retain at least 50% of the vanilla exposed-patch count.',
+              '## Iron mass and vertical distribution',
+              '',
+              f"Target: about {iron_target_percent:.0f}% of vanilla iron blocks; CI accepts {iron_min_percent:.0f}-{iron_max_percent:.0f}%.",
+              f"Vanilla: {baseline_vertical['totalIronBlocks']} blocks ({baseline_vertical['blocksPerChunk']:.2f}/chunk), "
+              f"Y {baseline_vertical['minY']}..{baseline_vertical['maxY']}, mean {baseline_vertical['meanY']:.2f}, "
+              f"{baseline_vertical['occupiedYLevels']} occupied Y-levels.",
+              f"GeoStrata: {geostrata_vertical['totalIronBlocks']} blocks ({geostrata_vertical['blocksPerChunk']:.2f}/chunk), "
+              f"Y {geostrata_vertical['minY']}..{geostrata_vertical['maxY']}, mean {geostrata_vertical['meanY']:.2f}, "
+              f"{geostrata_vertical['occupiedYLevels']} occupied Y-levels.",
+              f"GeoStrata iron mass: {iron['gradedBlockPercentOfVanilla']:.1f}% of vanilla.",
+              '',
+              '| Y band | Vanilla blocks | Vanilla share | GeoStrata blocks | GeoStrata share |',
+              '|---|---:|---:|---:|---:|',
+          ])
+          for start in band_starts:
+              vanilla_band = vanilla_bands.get(start, {'count': 0, 'sharePercent': 0.0, 'maxY': start + 15})
+              geostrata_band = geostrata_bands.get(start, {'count': 0, 'sharePercent': 0.0, 'maxY': start + 15})
+              max_y = max(vanilla_band['maxY'], geostrata_band['maxY'])
+              lines.append(
+                  f"| {start}..{max_y} | {vanilla_band['count']} | {vanilla_band['sharePercent']:.1f}% | "
+                  f"{geostrata_band['count']} | {geostrata_band['sharePercent']:.1f}% |"
+              )
+
+          lines.extend([
+              '',
+              'Common-resource discoverability floor: each of coal, iron and copper must retain at least 50% of the vanilla exposed-patch count.',
+              'Iron mass floor/ceiling: GeoStrata iron must remain within the 70-80% tuning band around the 75% vanilla target.',
               'Vanilla fallback preservation: gold, emerald, diamond, redstone and lapis must remain present when the vanilla reference contains them.',
               f"- vanilla overlapping total: {summary['vanilla']['total']}",
               f"- GeoStrata graded overlapping total: {summary['geostrataGraded']['total']}",
