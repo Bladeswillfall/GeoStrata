@@ -196,9 +196,7 @@ def main() -> None:
     for material, ore in ores.items():
         if not isinstance(material, str) or not isinstance(ore, dict):
             fail("ore texture matrix contains an invalid ore entry")
-        master = MASTER_ROOT / "master" / f"{material}.png"
-        if not master.exists():
-            master = MASTER_ROOT / f"{material}.png"
+        master = MASTER_ROOT / f"{material}.png"
         expected_masters.add(master)
         expected_inputs.add(master)
         for grade in GRADES:
