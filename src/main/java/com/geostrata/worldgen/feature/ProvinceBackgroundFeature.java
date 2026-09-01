@@ -179,6 +179,8 @@ public final class ProvinceBackgroundFeature extends Feature<DefaultFeatureConfi
             int worldX,
             int worldZ
     ) {
+        ProvinceBackgroundRuntime.Column geologyColumn =
+                context.geology().columns()[localX * SECTION_SIZE + localZ];
         int placed = 0;
         for (int localY = context.minLocalY(); localY <= context.maxLocalY(); localY++) {
             BlockState existing = context.states().get(localX, localY, localZ);
@@ -190,7 +192,7 @@ public final class ProvinceBackgroundFeature extends Feature<DefaultFeatureConfi
                 continue;
             }
 
-            String lithology = context.geology().lithologyAt(worldX, worldY, worldZ);
+            String lithology = geologyColumn.lithologyAt(worldY);
             BlockState replacement = context.outputStates().get(lithology);
             if (replacement != null && !existing.equals(replacement)) {
                 context.states().swapUnsafe(localX, localY, localZ, replacement);
