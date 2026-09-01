@@ -304,7 +304,7 @@ public final class CorrelatedSedimentaryRuntime {
             String parent = sample.bed().lithology();
             int runEndY = foldPolarity.preservesVerticalScale()
                     ? Math.min(
-                            site.field().baseField().bedRunEndY(sample, y, site.plan()),
+                            sedimentaryRunEndY(sample, y, verticalOffset),
                             structuralColumn.faultRunEndY(y)
                     )
                     : y;
@@ -355,6 +355,18 @@ public final class CorrelatedSedimentaryRuntime {
                 case "quartz_sandstone" -> "quartzite";
                 default -> null;
             };
+        }
+
+        private int sedimentaryRunEndY(
+                SedimentaryStratigraphicField.Sample sample,
+                int y,
+                double verticalOffset
+        ) {
+            double nextContactCoordinate = sample.cycleIndex() + sample.bed().upperFraction();
+            double nextContactY = verticalOffset
+                    + site.field().baseField().cycleThicknessBlocks()
+                    * (nextContactCoordinate - site.plan().phase());
+            return integerBeforeBoundary(nextContactY, y);
         }
 
         private int metamorphicRunEndY(int bandIndex, int y, double verticalOffset) {

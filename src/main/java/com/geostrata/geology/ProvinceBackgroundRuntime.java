@@ -313,7 +313,12 @@ public final class ProvinceBackgroundRuntime {
         );
         ColumnResolver resolver = (x, z, structural) -> new ResolvedColumn(
                 province,
-                lithologyResolver(province, base, plan, structural),
+                y -> {
+                    if (FaultDamageZone.contains(province, structural.tectonicColumn(), y)) {
+                        return "breccia";
+                    }
+                    return base.bedAtVerticalOffset(y, plan, structural.verticalOffset(y)).lithology();
+                },
                 y -> {
                     if (FaultDamageZone.contains(province, structural.tectonicColumn(), y)) {
                         return new ResolvedSample("breccia", "fault_damage");
@@ -323,31 +328,6 @@ public final class ProvinceBackgroundRuntime {
                 }
         );
         return new SiteContext(field, resolver);
-    }
-
-    private static IntFunction<String> lithologyResolver(
-            GeologyProvince province,
-            SedimentaryStratigraphicField.Field base,
-            SedimentaryContactPlanner.Plan plan,
-            TerrainAwareStructuralField.Column structural
-    ) {
-        if (province != GeologyProvince.SEDIMENTARY_BASIN) {
-            return y -> {
-                if (FaultDamageZone.contains(province, structural.tectonicColumn(), y)) {
-                    return "breccia";
-                }
-                return base.bedAtVerticalOffset(y, plan, structural.verticalOffset(y)).lithology();
-            };
-        }
-        return new RunCachedLithology(y -> {
-            double verticalOffset = structural.verticalOffset(y);
-            SedimentaryStratigraphicField.Sample sample = base.sampleAtVerticalOffset(y, plan, verticalOffset);
-            int throughY = Math.min(
-                    base.bedRunEndY(sample, y, plan),
-                    structural.faultRunEndY(y)
-            );
-            return new LithologyRun(sample.bed().lithology(), throughY);
-        });
     }
 
     private static int columnIndex(int localX, int localZ) {
@@ -438,32 +418,6 @@ public final class ProvinceBackgroundRuntime {
         }
     }
 
-    private record LithologyRun(String lithology, int throughY) {
-    }
-
-    private static final class RunCachedLithology implements IntFunction<String> {
-        private final LithologyRunResolver resolver;
-        private int cachedFromY = 1;
-        private int cachedThroughY = 0;
-        private String cachedLithology;
-
-        private RunCachedLithology(LithologyRunResolver resolver) {
-            this.resolver = resolver;
-        }
-
-        @Override
-        public String apply(int y) {
-            if (cachedLithology != null && y >= cachedFromY && y <= cachedThroughY) {
-                return cachedLithology;
-            }
-            LithologyRun run = resolver.resolve(y);
-            cachedFromY = y;
-            cachedThroughY = Math.max(y, run.throughY());
-            cachedLithology = run.lithology();
-            return cachedLithology;
-        }
-    }
-
     private record SiteKey(GeologyProvince province, int siteX, int siteZ) {
     }
 
@@ -471,11 +425,6 @@ public final class ProvinceBackgroundRuntime {
         private ResolvedColumn resolve(int x, int z) {
             return resolver.column(x, z, field.column(x, z));
         }
-    }
-
-    @FunctionalInterface
-    private interface LithologyRunResolver {
-        LithologyRun resolve(int y);
     }
 
     @FunctionalInterface

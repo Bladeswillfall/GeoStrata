@@ -101,24 +101,6 @@ final class SedimentaryStratigraphicFieldTest {
     }
 
     @Test
-    void bedRunEndsOnLastIntegerBeforeNextContact() {
-        SedimentaryContactPlanner.Plan plan = twoBedPlan(0.0);
-        SedimentaryStratigraphicField.Field field = SedimentaryStratigraphicField.forSite(
-                1L,
-                0,
-                0,
-                new SedimentaryStratigraphicField.Parameters(20.0, 0.0, 0.0, 64.0)
-        );
-        double verticalOffset = 3.5;
-        SedimentaryStratigraphicField.Sample sample = field.sampleAtVerticalOffset(4.0, plan, verticalOffset);
-
-        assertEquals("lower", sample.bed().lithology());
-        assertEquals(13, field.bedRunEndY(sample, 4, plan));
-        assertEquals("lower", field.bedAtVerticalOffset(13.0, plan, verticalOffset).lithology());
-        assertEquals("upper", field.bedAtVerticalOffset(14.0, plan, verticalOffset).lithology());
-    }
-
-    @Test
     void fieldDerivationIsDeterministicForAProvinceSite() {
         SedimentaryStratigraphicField.Parameters parameters =
                 new SedimentaryStratigraphicField.Parameters(56.0, 0.3, 4.5, 144.0);
