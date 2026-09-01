@@ -22,6 +22,7 @@ public final class OreOccurrenceCatalog {
     private static final Set<String> DEPOSIT_STYLES = Set.of(
             "coal_seam",
             "vein",
+            "micro_vein",
             "stratiform",
             "disseminated",
             "massive_lens_or_pocket"

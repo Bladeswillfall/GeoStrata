@@ -50,7 +50,6 @@ import java.util.Set;
 public final class OreDepositFeature extends Feature<DefaultFeatureConfig> {
     private static final int CHUNK_SIZE = 16;
     private static final int SECTION_SIZE = 16;
-    private static final int SEARCH_PADDING_BLOCKS = 224;
     private static final String STRUCTURAL_CONTINUITY = "regional";
 
     public OreDepositFeature() {
@@ -124,18 +123,15 @@ public final class OreDepositFeature extends Feature<DefaultFeatureConfig> {
             VerticalEnvelope occupied,
             List<BlockBox> protectedStructurePieces
     ) {
-        int minCellX = Math.floorDiv(startX - SEARCH_PADDING_BLOCKS, OreDepositCandidatePlanner.HORIZONTAL_CELL_SIZE);
-        int maxCellX = Math.floorDiv(endX + SEARCH_PADDING_BLOCKS, OreDepositCandidatePlanner.HORIZONTAL_CELL_SIZE);
-        int minCellY = Math.floorDiv(
-                occupied.minY() - SEARCH_PADDING_BLOCKS,
-                OreDepositCandidatePlanner.VERTICAL_CELL_SIZE
-        );
-        int maxCellY = Math.floorDiv(
-                occupied.maxY() + SEARCH_PADDING_BLOCKS,
-                OreDepositCandidatePlanner.VERTICAL_CELL_SIZE
-        );
-        int minCellZ = Math.floorDiv(startZ - SEARCH_PADDING_BLOCKS, OreDepositCandidatePlanner.HORIZONTAL_CELL_SIZE);
-        int maxCellZ = Math.floorDiv(endZ + SEARCH_PADDING_BLOCKS, OreDepositCandidatePlanner.HORIZONTAL_CELL_SIZE);
+        OreDepositCandidatePlanner.Frequency frequency = OreDepositCandidatePlanner.frequency(occurrence);
+        int horizontalPadding = frequency.horizontalSearchPaddingBlocks();
+        int verticalPadding = frequency.verticalSearchPaddingBlocks();
+        int minCellX = Math.floorDiv(startX - horizontalPadding, frequency.horizontalCellSize());
+        int maxCellX = Math.floorDiv(endX + horizontalPadding, frequency.horizontalCellSize());
+        int minCellY = Math.floorDiv(occupied.minY() - verticalPadding, frequency.verticalCellSize());
+        int maxCellY = Math.floorDiv(occupied.maxY() + verticalPadding, frequency.verticalCellSize());
+        int minCellZ = Math.floorDiv(startZ - horizontalPadding, frequency.horizontalCellSize());
+        int maxCellZ = Math.floorDiv(endZ + horizontalPadding, frequency.horizontalCellSize());
 
         int placed = 0;
         for (int cellX = minCellX; cellX <= maxCellX; cellX++) {
@@ -150,7 +146,7 @@ public final class OreDepositFeature extends Feature<DefaultFeatureConfig> {
                     )) {
                         continue;
                     }
-                    OreDepositCandidatePlanner.Proposal proposal = proposalForCell(
+                    OreDepositCandidatePlanner.Proposal proposal = OreDepositCandidatePlanner.proposeCell(
                             worldSeed,
                             cellX,
                             cellY,
@@ -213,22 +209,6 @@ public final class OreDepositFeature extends Feature<DefaultFeatureConfig> {
                 proposal.anchorX(),
                 proposal.anchorZ()
         ));
-    }
-
-    private static OreDepositCandidatePlanner.Proposal proposalForCell(
-            long worldSeed,
-            int cellX,
-            int cellY,
-            int cellZ,
-            OreOccurrenceCatalog.Occurrence occurrence
-    ) {
-        return OreDepositCandidatePlanner.propose(
-                worldSeed,
-                cellX * OreDepositCandidatePlanner.HORIZONTAL_CELL_SIZE,
-                cellY * OreDepositCandidatePlanner.VERTICAL_CELL_SIZE,
-                cellZ * OreDepositCandidatePlanner.HORIZONTAL_CELL_SIZE,
-                occurrence
-        );
     }
 
     private static boolean intersectsChunk(

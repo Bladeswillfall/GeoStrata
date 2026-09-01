@@ -10,6 +10,8 @@ public final class OreDepositGeometry {
     private static final double COAL_TRACE_NORMAL_SCALE = 3.0;
     private static final double GRADE_DITHER = 0.12;
     private static final double IRON_LINEAR_SCALE = 1.65;
+    private static final double GOLD_LINEAR_SCALE = 0.45;
+    private static final double EMERALD_LINEAR_SCALE = 1.35;
 
     private static final long AZIMUTH_SALT = 0x243F6A8885A308D3L;
     private static final long DIP_SALT = 0x13198A2E03707344L;
@@ -41,7 +43,12 @@ public final class OreDepositGeometry {
         }
 
         Profile profile = profile(proposal.depositStyle());
-        double materialScale = "iron".equals(proposal.material()) ? IRON_LINEAR_SCALE : 1.0;
+        double materialScale = switch (proposal.material()) {
+            case "iron" -> IRON_LINEAR_SCALE;
+            case "gold" -> GOLD_LINEAR_SCALE;
+            case "emerald" -> EMERALD_LINEAR_SCALE;
+            default -> 1.0;
+        };
         double azimuth = TWO_PI * roll(worldSeed, proposal, AZIMUTH_SALT);
         double dip = profile.maximumDipRadians() * (roll(worldSeed, proposal, DIP_SALT) * 2.0 - 1.0);
         double length = varied(profile.lengthRadius() * materialScale, roll(worldSeed, proposal, LENGTH_SALT), 0.20);
@@ -76,6 +83,7 @@ public final class OreDepositGeometry {
         return switch (style) {
             case "coal_seam" -> new Profile(56.0, 34.0, 2.2, Math.toRadians(12.0), 1.0);
             case "vein" -> new Profile(36.0, 2.8, 2.4, Math.toRadians(75.0), 1.8);
+            case "micro_vein" -> new Profile(2.0, 0.85, 0.85, Math.toRadians(70.0), 0.12);
             case "stratiform" -> new Profile(46.0, 30.0, 4.5, Math.toRadians(18.0), 1.6);
             case "disseminated" -> new Profile(26.0, 20.0, 13.0, Math.toRadians(35.0), 2.4);
             case "massive_lens_or_pocket" -> new Profile(20.0, 15.0, 9.0, Math.toRadians(45.0), 1.8);

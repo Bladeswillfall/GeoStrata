@@ -126,7 +126,7 @@ public final class OreDepositExperiment {
         );
     }
 
-    /** Broad iron bias only; geology and valid host rock still decide whether an active body can place. */
+    /** Broad material vertical bias; geology and valid host rock still decide whether an active body can place. */
     static double activationDepthMultiplier(OreDepositCandidatePlanner.Proposal proposal) {
         if (proposal == null) {
             throw new IllegalArgumentException("ore proposal must not be null");
@@ -135,6 +135,9 @@ public final class OreDepositExperiment {
     }
 
     private static double activationDepthMultiplier(String material, int anchorY) {
+        if ("emerald".equals(material)) {
+            return Math.min(12.5, Math.max(0.0, (anchorY + 16) * 12.5 / 144.0));
+        }
         if (!"iron".equals(material)) {
             return 1.0;
         }

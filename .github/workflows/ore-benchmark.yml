@@ -5,6 +5,7 @@ on:
     paths:
       - '.github/workflows/ore-benchmark.yml'
       - 'experiment-companion/**'
+      - 'scripts/validate_geology_catalog.py'
       - 'src/main/java/com/geostrata/block/GeoStrataBlocks.java'
       - 'src/main/java/com/geostrata/block/GradedOreBlock.java'
       - 'src/main/java/com/geostrata/block/OreHost.java'
@@ -12,7 +13,10 @@ on:
       - 'src/main/java/com/geostrata/geology/**'
       - 'src/main/java/com/geostrata/worldgen/feature/OreDepositFeature.java'
       - 'src/main/java/com/geostrata/worldgen/feature/ProvinceBackgroundFeature.java'
+      - 'src/main/java/com/geostrata/worldgen/feature/DiamondPipeFeature.java'
+      - 'src/main/java/com/geostrata/worldgen/feature/DiamondStructuralFeature.java'
       - 'src/main/resources/data/geostrata/geology/**'
+      - 'src/main/resources/data/geostrata/loot_tables/blocks/*_copper_ore.json'
       - 'src/main/resources/data/geostrata/materials/ore_texture_matrix.json'
       - 'src/main/resources/data/geostrata/worldgen/**'
 
@@ -176,7 +180,8 @@ jobs:
           maximum_startup_ratio = 2.5
           overlapping = ('coal', 'iron', 'copper', 'gold', 'emerald')
           common = ('coal', 'iron', 'copper')
-          preserved = ('gold', 'emerald', 'diamond', 'redstone', 'lapis')
+          preserved = ('redstone', 'lapis')
+          owned_vanilla_blocks = ('diamond',)
 
           def aggregate(data, materials, graded=False):
               rows = [data['materials'][material] for material in materials]
@@ -201,7 +206,8 @@ jobs:
                   'ratio': startup_ratio,
                   'maximumRatio': maximum_startup_ratio,
               },
-              'overlappingMaterials': list(overlapping),
+              'gradedGeoStrataMaterials': list(overlapping),
+              'ownedVanillaBlockMaterials': list(owned_vanilla_blocks),
               'preservedVanillaMaterials': list(preserved),
               'vanilla': aggregate(baseline, overlapping),
               'geostrataGraded': aggregate(geostrata, overlapping, graded=True),
@@ -216,24 +222,34 @@ jobs:
               before = baseline['materials'][material]
               after = geostrata['materials'][material]
               vanilla_patches = before['airExposedClusters']
-              graded_patches = after['gradedAirExposedClusters']
+              if material in owned_vanilla_blocks:
+                  owned_total = after['total']
+                  owned_exposed = after['airExposed']
+                  owned_patches = after['airExposedClusters']
+                  residual_vanilla = 0
+                  residual_vanilla_patches = 0
+              else:
+                  owned_total = after['gradedBlocks']
+                  owned_exposed = after['gradedAirExposed']
+                  owned_patches = after['gradedAirExposedClusters']
+                  residual_vanilla = after['vanillaTaggedBlocks']
+                  residual_vanilla_patches = after['vanillaTaggedAirExposedClusters']
               target = (vanilla_patches + 1) // 2 if material in common else None
-              ratio = 0.0 if vanilla_patches == 0 else graded_patches * 100.0 / vanilla_patches
+              ratio = 0.0 if vanilla_patches == 0 else owned_patches * 100.0 / vanilla_patches
               summary['materials'][material] = {
                   'vanillaTotal': before['total'],
-                  'geostrataGradedTotal': after['gradedBlocks'],
-                  'residualVanillaTotal': after['vanillaTaggedBlocks'],
+                  'geostrataOwnedTotal': owned_total,
+                  'residualVanillaTotal': residual_vanilla,
                   'vanillaAirExposed': before['airExposed'],
-                  'geostrataGradedAirExposed': after['gradedAirExposed'],
-                  'residualVanillaAirExposed': after['vanillaTaggedAirExposed'],
+                  'geostrataOwnedAirExposed': owned_exposed,
                   'vanillaExposedClusters': vanilla_patches,
-                  'geostrataGradedExposedClusters': graded_patches,
-                  'residualVanillaExposedClusters': after['vanillaTaggedAirExposedClusters'],
-                  'gradedPatchPercentOfVanilla': ratio,
+                  'geostrataOwnedExposedClusters': owned_patches,
+                  'residualVanillaExposedClusters': residual_vanilla_patches,
+                  'ownedPatchPercentOfVanilla': ratio,
                   'commonMinimumTarget': target,
               }
-              if target is not None and graded_patches < target:
-                  failures.append(f"{material}: {graded_patches} < {target} patches")
+              if target is not None and owned_patches < target:
+                  failures.append(f"{material}: {owned_patches} < {target} patches")
               if material in preserved and before['total'] > 0 and after['vanillaTaggedBlocks'] == 0:
                   failures.append(f"{material}: vanilla fallback disappeared")
 
@@ -245,24 +261,24 @@ jobs:
               '',
               f"Startup: vanilla {vanilla_startup:.3f}s | GeoStrata {geostrata_startup:.3f}s | {startup_ratio:.2f}x (budget <= {maximum_startup_ratio:.2f}x)",
               '',
-              '| Material | Vanilla total | GeoStrata graded | Residual vanilla | Vanilla exposed patches | GeoStrata graded patches | % of vanilla patches |',
+              '| Material | Vanilla total | GeoStrata owned | Residual vanilla | Vanilla exposed patches | GeoStrata owned patches | % of vanilla patches |',
               '|---|---:|---:|---:|---:|---:|---:|',
           ]
           for material, row in summary['materials'].items():
               lines.append(
-                  f"| {material} | {row['vanillaTotal']} | {row['geostrataGradedTotal']} | "
+                  f"| {material} | {row['vanillaTotal']} | {row['geostrataOwnedTotal']} | "
                   f"{row['residualVanillaTotal']} | {row['vanillaExposedClusters']} | "
-                  f"{row['geostrataGradedExposedClusters']} | {row['gradedPatchPercentOfVanilla']:.1f}% |"
+                  f"{row['geostrataOwnedExposedClusters']} | {row['ownedPatchPercentOfVanilla']:.1f}% |"
               )
           lines.extend([
               '',
               'Performance acceptance: GeoStrata Minecraft startup must remain at or below 2.5x the paired vanilla startup time.',
               'Common-resource acceptance floor: each of coal, iron and copper must retain at least 50% of the vanilla exposed-patch count.',
-              'Vanilla fallback preservation: gold, emerald, diamond, redstone and lapis must remain present when the vanilla reference contains them.',
+              'Vanilla fallback preservation: redstone and lapis remain vanilla-owned.',
+              'Diamond accounting: vanilla diamond is suppressed here, but structural/pipe abundance is calibrated in a dedicated cratonic fault region; zero in this arbitrary square is not a failure.',
+              'Gold is reported here; emerald is calibrated separately in geologically appropriate mountain/orogenic terrain.',
               f"- vanilla overlapping total: {summary['vanilla']['total']}",
               f"- GeoStrata graded overlapping total: {summary['geostrataGraded']['total']}",
-              f"- vanilla overlapping exposed patches: {summary['vanilla']['airExposedClusters']}",
-              f"- GeoStrata graded overlapping exposed patches: {summary['geostrataGraded']['airExposedClusters']}",
           ])
           Path('run/results/paired.md').write_text('\n'.join(lines) + '\n')
           print('\n'.join(lines))

@@ -54,10 +54,11 @@ final class DiamondGeologyPlannerTest {
     }
 
     @Test
-    void structuralPlanningOnlyControlsSparseCellAnchors() {
+    void structuralPlanningIsChunkLocalAndDeterministic() {
         DiamondGeologyPlanner.StructuralCandidate candidate = DiamondGeologyPlanner.structural(42L, 7, -4);
+        assertEquals(16, DiamondGeologyPlanner.STRUCTURAL_CELL_SIZE);
         assertEquals(candidate, DiamondGeologyPlanner.structural(42L, 7, -4));
-        assertTrue(candidate.clusterCount() >= 2 && candidate.clusterCount() <= 3);
+        assertTrue(candidate.clusterCount() >= 12 && candidate.clusterCount() <= 16);
 
         int minX = 7 * DiamondGeologyPlanner.STRUCTURAL_CELL_SIZE + DiamondGeologyPlanner.STRUCTURAL_CELL_SIZE / 5;
         int minZ = -4 * DiamondGeologyPlanner.STRUCTURAL_CELL_SIZE + DiamondGeologyPlanner.STRUCTURAL_CELL_SIZE / 5;

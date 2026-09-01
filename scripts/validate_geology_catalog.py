@@ -327,6 +327,10 @@ def validate_ore_material(
     if ore.get("outputItem") != occurrence.get("outputItem"):
         fail(f"{material_id} outputItem does not match its ore occurrence")
 
+    yield_multiplier = occurrence.get("baseYieldMultiplier", 1)
+    if not isinstance(yield_multiplier, int) or isinstance(yield_multiplier, bool) or yield_multiplier < 1:
+        fail(f"{material_id} baseYieldMultiplier must be a positive integer")
+
     grade_blocks = occurrence.get("gradeBlocks")
     if not isinstance(grade_blocks, dict):
         fail(f"{material_id} occurrence is missing gradeBlocks")
@@ -341,7 +345,11 @@ def validate_ore_material(
         economy = economics.get(grade)
         if not isinstance(economy, dict) or not isinstance(economy.get("baseYield"), int):
             fail(f"ore catalog has invalid {grade} economics")
-        validate_ore_loot(block, occurrence["outputItem"], economy["baseYield"])
+        validate_ore_loot(
+            block,
+            occurrence["outputItem"],
+            economy["baseYield"] * yield_multiplier,
+        )
 
 
 def validate_material_catalog() -> int:

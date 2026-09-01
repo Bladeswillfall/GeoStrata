@@ -48,6 +48,10 @@ public final class DiamondPipeFeature extends Feature<DiamondPipeConfig> {
             RegistryKeys.BLOCK,
             GeoStrata.id("worldgen/diamond_surface_replaceables")
     );
+    private static final TagKey<Block> GEOSTRATA_ROCKS = TagKey.of(
+            RegistryKeys.BLOCK,
+            GeoStrata.id("rocks")
+    );
 
     public DiamondPipeFeature(Codec<DiamondPipeConfig> codec) {
         super(codec);
@@ -372,10 +376,11 @@ public final class DiamondPipeFeature extends Feature<DiamondPipeConfig> {
                     }
                     mutable.set(x, y, z);
                     BlockState state = world.getBlockState(mutable);
-                    if (state.isIn(BlockTags.DEEPSLATE_ORE_REPLACEABLES)) {
+                    boolean geostrataRock = state.isIn(GEOSTRATA_ROCKS);
+                    if (state.isIn(BlockTags.DEEPSLATE_ORE_REPLACEABLES) || (geostrataRock && y < 0)) {
                         world.setBlockState(mutable, Blocks.DEEPSLATE_DIAMOND_ORE.getDefaultState(), Block.NOTIFY_LISTENERS);
                         placed++;
-                    } else if (state.isIn(BlockTags.STONE_ORE_REPLACEABLES)) {
+                    } else if (state.isIn(BlockTags.STONE_ORE_REPLACEABLES) || geostrataRock) {
                         world.setBlockState(mutable, Blocks.DIAMOND_ORE.getDefaultState(), Block.NOTIFY_LISTENERS);
                         placed++;
                     }

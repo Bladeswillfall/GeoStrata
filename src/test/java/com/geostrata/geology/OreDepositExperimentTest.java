@@ -31,11 +31,16 @@ final class OreDepositExperimentTest {
     }
 
     @Test
-    void ironActivationUsesBroadDepthBiasWithoutChangingOtherMaterials() {
+    void materialActivationUsesBroadVerticalBias() {
         assertEquals(0.5, OreDepositExperiment.activationDepthMultiplier(ironProposal(-8)));
         assertEquals(1.5, OreDepositExperiment.activationDepthMultiplier(ironProposal(20)));
         assertEquals(1.9, OreDepositExperiment.activationDepthMultiplier(ironProposal(80)));
         assertEquals(1.0, OreDepositExperiment.activationDepthMultiplier(ironProposal(160)));
+        assertEquals(0.0, OreDepositExperiment.activationDepthMultiplier(emeraldProposal(-16)));
+        assertEquals(12.5 / 9.0, OreDepositExperiment.activationDepthMultiplier(emeraldProposal(0)), 1.0e-12);
+        assertEquals(62.5 / 9.0, OreDepositExperiment.activationDepthMultiplier(emeraldProposal(64)), 1.0e-12);
+        assertEquals(12.5, OreDepositExperiment.activationDepthMultiplier(emeraldProposal(128)), 1.0e-12);
+        assertEquals(12.5, OreDepositExperiment.activationDepthMultiplier(emeraldProposal(200)), 1.0e-12);
         assertEquals(1.0, OreDepositExperiment.activationDepthMultiplier(proposal()));
     }
 
@@ -67,7 +72,7 @@ final class OreDepositExperimentTest {
     }
 
     @Test
-    void companionSuppressesOnlyValidatedCommonVanillaOres() throws IOException {
+    void companionSuppressesGeoStrataOwnedVanillaOres() throws IOException {
         String source = Files.readString(Path.of(
                 "experiment-companion/src/main/java/com/geostrata/experiment/CorrelatedExperimentCompanion.java"
         ));
@@ -75,9 +80,11 @@ final class OreDepositExperimentTest {
         assertTrue(source.contains("ORE_COAL_UPPER"));
         assertTrue(source.contains("ORE_IRON_UPPER"));
         assertTrue(source.contains("ORE_COPPER"));
-        assertFalse(source.contains("ORE_GOLD"));
-        assertFalse(source.contains("ORE_EMERALD"));
-        assertFalse(source.contains("ORE_DIAMOND"));
+        assertTrue(source.contains("ORE_GOLD"));
+        assertTrue(source.contains("ORE_EMERALD"));
+        assertTrue(source.contains("ORE_DIAMOND"));
+        assertFalse(source.contains("ORE_REDSTONE"));
+        assertFalse(source.contains("ORE_LAPIS"));
     }
 
     @Test
@@ -120,6 +127,12 @@ final class OreDepositExperimentTest {
     private static OreDepositCandidatePlanner.Proposal ironProposal(int anchorY) {
         return new OreDepositCandidatePlanner.Proposal(
                 "iron", "vein", 0, Math.floorDiv(anchorY, 64), 0, 0, anchorY, 0
+        );
+    }
+
+    private static OreDepositCandidatePlanner.Proposal emeraldProposal(int anchorY) {
+        return new OreDepositCandidatePlanner.Proposal(
+                "emerald", "micro_vein", 0, Math.floorDiv(anchorY, 16), 0, 0, anchorY, 0
         );
     }
 }
