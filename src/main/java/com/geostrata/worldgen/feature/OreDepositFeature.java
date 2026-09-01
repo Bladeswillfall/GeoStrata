@@ -51,6 +51,9 @@ public final class OreDepositFeature extends Feature<DefaultFeatureConfig> {
     private static final int CHUNK_SIZE = 16;
     private static final int SECTION_SIZE = 16;
     private static final int SEARCH_PADDING_BLOCKS = 224;
+    private static final int PROVINCE_CONTEXT_PADDING_BLOCKS = SEARCH_PADDING_BLOCKS
+            + OreDepositCandidatePlanner.HORIZONTAL_CELL_SIZE
+            + (int) FaultControlledOrePlanner.CAPTURE_DISTANCE_BLOCKS;
     private static final String STRUCTURAL_CONTINUITY = "regional";
 
     public OreDepositFeature() {
@@ -87,6 +90,13 @@ public final class OreDepositFeature extends Feature<DefaultFeatureConfig> {
         if (occupied == null) {
             return false;
         }
+        GeologyProvinceSampler.Context provinceContext = GeologyProvinceSampler.context(
+                worldSeed,
+                startX - PROVINCE_CONTEXT_PADDING_BLOCKS,
+                startZ - PROVINCE_CONTEXT_PADDING_BLOCKS,
+                endX + PROVINCE_CONTEXT_PADDING_BLOCKS,
+                endZ + PROVINCE_CONTEXT_PADDING_BLOCKS
+        );
         List<BlockBox> protectedStructurePieces = StructurePieceProtection.forChunk(world, chunk);
 
         int placed = 0;
@@ -101,6 +111,7 @@ public final class OreDepositFeature extends Feature<DefaultFeatureConfig> {
                     occurrence,
                     hosts,
                     structuralCycleThickness,
+                    provinceContext,
                     occupied,
                     protectedStructurePieces
             );
@@ -118,6 +129,7 @@ public final class OreDepositFeature extends Feature<DefaultFeatureConfig> {
             OreOccurrenceCatalog.Occurrence occurrence,
             LazyHostResolver hosts,
             double structuralCycleThickness,
+            GeologyProvinceSampler.Context provinceContext,
             VerticalEnvelope occupied,
             List<BlockBox> protectedStructurePieces
     ) {
@@ -157,7 +169,8 @@ public final class OreDepositFeature extends Feature<DefaultFeatureConfig> {
                     FaultControlledOrePlanner.Binding binding = FaultControlledOrePlanner.bind(
                             worldSeed,
                             proposal,
-                            structuralCycleThickness
+                            structuralCycleThickness,
+                            provinceContext
                     );
                     proposal = binding.proposal();
 
@@ -167,7 +180,7 @@ public final class OreDepositFeature extends Feature<DefaultFeatureConfig> {
                     if (!intersectsChunk(bounds, startX, endX, startZ, endZ, occupied)) {
                         continue;
                     }
-                    if (!qualifiesLocation(world, worldSeed, occurrence, proposal)) {
+                    if (!qualifiesLocation(world, occurrence, proposal, provinceContext)) {
                         continue;
                     }
                     placed += placeBody(
@@ -192,15 +205,11 @@ public final class OreDepositFeature extends Feature<DefaultFeatureConfig> {
 
     private static boolean qualifiesLocation(
             StructureWorldAccess world,
-            long worldSeed,
             OreOccurrenceCatalog.Occurrence occurrence,
-            OreDepositCandidatePlanner.Proposal proposal
+            OreDepositCandidatePlanner.Proposal proposal,
+            GeologyProvinceSampler.Context provinceContext
     ) {
-        GeologyProvince province = GeologyProvinceSampler.sample(
-                worldSeed,
-                proposal.anchorX(),
-                proposal.anchorZ()
-        ).province();
+        GeologyProvince province = provinceContext.sample(proposal.anchorX(), proposal.anchorZ()).province();
         return occurrence.provinceContexts().contains(province)
                 && occurrence.terrainFilter().matches(ChunkGeneratorTerrainMorphologySampler.sample(
                         world.toServerWorld(),
