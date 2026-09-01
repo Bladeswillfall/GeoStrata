@@ -8,7 +8,7 @@
   "nativeGenerationSuppression": "not_implemented",
   "activationChancePerCandidate": {
     "coal": 0.8,
-    "iron": 0.5,
+    "iron": 1.0,
     "copper": 0.36,
     "gold": 0.16,
     "emerald": 0.08
