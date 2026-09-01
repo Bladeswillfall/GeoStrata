@@ -317,7 +317,7 @@ public final class ProvinceBackgroundRuntime {
                     if (FaultDamageZone.contains(province, structural.tectonicColumn(), y)) {
                         return "breccia";
                     }
-                    return base.sampleAtVerticalOffset(y, plan, structural.verticalOffset(y)).bed().lithology();
+                    return base.bedAtVerticalOffset(y, plan, structural.verticalOffset(y)).lithology();
                 },
                 y -> {
                     if (FaultDamageZone.contains(province, structural.tectonicColumn(), y)) {
