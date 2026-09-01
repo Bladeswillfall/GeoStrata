@@ -363,8 +363,8 @@ def validate_material_catalog() -> int:
         fail("unexpected material profile catalog model identifier")
     if catalog.get("runtimeStatus") != "validated_metadata_only":
         fail("material profiles must remain explicit that JSON values are not runtime-loaded settings")
-    if ore_catalog.get("schemaVersion") != 2 or ore_catalog.get("runtimeStatus") != "grade_economy_active":
-        fail("ore occurrence catalog must expose the active schema-2 grade economy")
+    if ore_catalog.get("schemaVersion") != 3 or ore_catalog.get("runtimeStatus") != "grade_economy_active":
+        fail("ore occurrence catalog must expose the active schema-3 generation and grade economy")
     if texture_matrix.get("schemaVersion") != 1 or texture_matrix.get("resolution") != 16:
         fail("ore texture matrix must use schema 1 and native 16x16 textures")
     grade_model = ore_catalog.get("gradeModel")
