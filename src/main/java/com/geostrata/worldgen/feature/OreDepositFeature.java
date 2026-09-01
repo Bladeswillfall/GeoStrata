@@ -25,6 +25,7 @@ import net.minecraft.registry.tag.TagKey;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockBox;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.world.Heightmap;
 import net.minecraft.world.StructureWorldAccess;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.chunk.ChunkSection;
@@ -266,7 +267,8 @@ public final class OreDepositFeature extends Feature<DefaultFeatureConfig> {
         int placed = 0;
         for (int x = minX; x <= maxX; x++) {
             for (int z = minZ; z <= maxZ; z++) {
-                for (int y = minY; y <= maxY; y++) {
+                int columnMaxY = Math.min(maxY, world.getTopY(Heightmap.Type.WORLD_SURFACE_WG, x, z) - 1);
+                for (int y = minY; y <= columnMaxY; y++) {
                     if (placeVoxel(
                             world,
                             occurrence,
