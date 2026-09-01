@@ -15,6 +15,7 @@ final class OreDepositGeometryTest {
     private static final List<String> STYLES = List.of(
             "coal_seam",
             "vein",
+            "micro_vein",
             "stratiform",
             "disseminated",
             "massive_lens_or_pocket"
@@ -33,6 +34,16 @@ final class OreDepositGeometryTest {
             assertFalse(anchor.trace());
             assertEquals("massive", anchor.zone());
         }
+    }
+
+    @Test
+    void microVeinStaysTinyAndUnbranched() {
+        OreDepositGeometry.Body body = OreDepositGeometry.forCandidate(8675309L, candidate("micro_vein"));
+
+        assertTrue(body.lengthRadius() < 3.0);
+        assertTrue(body.widthRadius() < 1.2);
+        assertTrue(body.thicknessRadius() < 1.2);
+        assertTrue(body.branches().isEmpty());
     }
 
     @Test
