@@ -37,6 +37,36 @@ FIELD_HEIGHT = TILE_SIZE * REPEAT_HEIGHT
 REPEAT_TILE_COUNT = REPEAT_WIDTH * REPEAT_HEIGHT
 GRADES = ("poor", "medium", "rich", "massive")
 
+# Integer-frequency ridges stay seamless across the 64x64 repeat boundary.
+# Each tuple is fx, fy, warp_fx, warp_fy, warp_amount, priority. The first
+# ridges dominate Poor ore; lower-priority branches appear as grade density rises.
+RIDGE_PROFILES: dict[str, tuple[tuple[int, int, int, int, float, float], ...]] = {
+    "coal": (
+        (0, 1, 1, 0, 0.48, 1.00),
+        (0, 2, 1, 0, 0.34, 0.78),
+        (1, 0, 0, 1, 0.18, 0.48),
+    ),
+    "iron": (
+        (1, -1, 1, 1, 0.42, 1.00),
+        (2, 1, 1, -1, 0.34, 0.82),
+        (1, 2, 2, -1, 0.28, 0.68),
+    ),
+    "copper": (
+        (1, 1, 1, -1, 0.48, 1.00),
+        (1, -2, 2, 1, 0.34, 0.82),
+        (3, 1, 1, 2, 0.24, 0.64),
+    ),
+    "gold": (
+        (1, 2, 2, -1, 0.50, 1.00),
+        (2, -1, 1, 2, 0.36, 0.76),
+        (3, 1, 1, -2, 0.22, 0.55),
+    ),
+    "emerald": (
+        (2, 1, 1, -2, 0.44, 1.00),
+        (1, -3, 2, 1, 0.28, 0.70),
+    ),
+}
+
 
 def stable_value(*parts: object) -> int:
     digest = hashlib.blake2s("|".join(map(str, parts)).encode("utf-8"), digest_size=8).digest()
@@ -57,36 +87,68 @@ def load_rgba(path: Path, size: tuple[int, int]) -> Image.Image:
     return image
 
 
-def mineral_palette(master: Image.Image) -> list[tuple[int, int, int]]:
-    palette = [pixel[:3] for pixel in master.getdata() if pixel[3] >= 32]
+def mineral_palette(master: Image.Image) -> list[tuple[int, int, int, int]]:
+    palette = [pixel for pixel in master.getdata() if pixel[3] >= 32]
     if not palette:
-        raise SystemExit("ore master must contain opaque mineral pixels")
+        raise SystemExit("ore master must contain visible mineral pixels")
     return palette
 
 
-def periodic_score(material: str, x: int, y: int) -> float:
-    """Smooth, seamless 64x64 field with material-specific phases."""
-    waves = (
-        (1, 0, 1.00),
-        (0, 1, 0.92),
-        (1, 1, 0.78),
-        (2, -1, 0.56),
-        (1, 3, 0.42),
-        (3, 2, 0.34),
-        (5, -2, 0.20),
+def ridge_profile(material: str) -> tuple[tuple[int, int, int, int, float, float], ...]:
+    profile = RIDGE_PROFILES.get(material)
+    if profile is not None:
+        return profile
+    return (
+        (1, 1, 1, -1, 0.42, 1.00),
+        (1, -2, 2, 1, 0.30, 0.72),
     )
-    score = 0.0
-    for index, (fx, fy, weight) in enumerate(waves):
-        phase = (stable_value(material, "phase", index) % 1_000_000) / 1_000_000.0 * math.tau
-        angle = math.tau * (fx * x / FIELD_WIDTH + fy * y / FIELD_HEIGHT) + phase
-        score += weight * math.cos(angle)
-    slope = ((stable_value(material, "ridge-slope") % 7) - 3) or 1
-    ridge_phase = (stable_value(material, "ridge-phase") % FIELD_WIDTH) / FIELD_WIDTH * math.tau
-    ridge = math.cos(math.tau * (x + slope * y) / FIELD_WIDTH + ridge_phase)
-    return score + 0.38 * ridge
 
 
-def select_pixels(material: str, target_per_tile: int) -> set[tuple[int, int]]:
+def periodic_score(material: str, x: int, y: int) -> float:
+    """Seamless mineral ridge network instead of thresholded round noise blobs."""
+    best = -10.0
+    for index, (fx, fy, warp_fx, warp_fy, warp_amount, priority) in enumerate(ridge_profile(material)):
+        phase = (stable_value(material, "ridge-phase", index) % 1_000_000) / 1_000_000.0 * math.tau
+        warp_phase = (stable_value(material, "warp-phase", index) % 1_000_000) / 1_000_000.0 * math.tau
+        theta = math.tau * (fx * x / FIELD_WIDTH + fy * y / FIELD_HEIGHT) + phase
+        theta += warp_amount * math.sin(
+            math.tau * (warp_fx * x / FIELD_WIDTH + warp_fy * y / FIELD_HEIGHT) + warp_phase
+        )
+        ridge = 1.0 - abs(math.sin(theta / 2.0))
+
+        along_phase = (stable_value(material, "along-phase", index) % 1_000_000) / 1_000_000.0 * math.tau
+        along = 0.08 * math.cos(
+            math.tau * ((fy or 1) * x / FIELD_WIDTH - (fx or 1) * y / FIELD_HEIGHT) + along_phase
+        )
+        best = max(best, priority + ridge + along)
+    return best
+
+
+def tile_of(x: int, y: int) -> tuple[int, int]:
+    return x // TILE_SIZE, y // TILE_SIZE
+
+
+def adjacent_in_tile(
+    point: tuple[int, int],
+    selected: set[tuple[int, int]],
+    tile: tuple[int, int],
+) -> bool:
+    x, y = point
+    for dx in (-1, 0, 1):
+        for dy in (-1, 0, 1):
+            if dx == 0 and dy == 0:
+                continue
+            neighbour = (x + dx, y + dy)
+            if neighbour in selected and tile_of(*neighbour) == tile:
+                return True
+    return False
+
+
+def select_pixels(
+    material: str,
+    target_per_tile: int,
+    required: set[tuple[int, int]] | None = None,
+) -> set[tuple[int, int]]:
     target = target_per_tile * REPEAT_TILE_COUNT
     ranked = sorted(
         (
@@ -96,45 +158,63 @@ def select_pixels(material: str, target_per_tile: int) -> set[tuple[int, int]]:
         ),
         reverse=True,
     )
-    selected = {(x, y) for _, _, x, y in ranked[:target]}
+    selected = set(required or ())
+    for _, _, x, y in ranked:
+        if len(selected) >= target:
+            break
+        selected.add((x, y))
 
-    minimum = max(2, min(12, target_per_tile // 3))
-    by_tile: dict[tuple[int, int], list[tuple[float, int, int, int]]] = {}
+    minimum = 2 if target_per_tile <= 18 else 3 if target_per_tile <= 38 else 4
+    by_tile: dict[tuple[int, int], list[tuple[float, int, int, int]]] = {
+        (tx, ty): []
+        for ty in range(REPEAT_HEIGHT)
+        for tx in range(REPEAT_WIDTH)
+    }
     for row in ranked:
         _, _, x, y = row
-        by_tile.setdefault((x // TILE_SIZE, y // TILE_SIZE), []).append(row)
+        by_tile[tile_of(x, y)].append(row)
 
-    counts = {(tx, ty): 0 for ty in range(REPEAT_HEIGHT) for tx in range(REPEAT_WIDTH)}
+    counts = {tile: 0 for tile in by_tile}
     for x, y in selected:
-        counts[(x // TILE_SIZE, y // TILE_SIZE)] += 1
+        counts[tile_of(x, y)] += 1
 
+    # An ore block must never look like plain host rock. If a global vein misses a
+    # repeat tile, add one small local stringer instead of scattered salt-and-pepper.
     for tile, rows in by_tile.items():
-        need = minimum - counts[tile]
-        if need <= 0:
-            continue
-        for _, _, x, y in rows:
-            if (x, y) not in selected:
-                selected.add((x, y))
-                counts[tile] += 1
-                need -= 1
-                if need == 0:
-                    break
+        while counts[tile] < minimum:
+            candidates = [
+                row for row in rows
+                if (row[2], row[3]) not in selected
+                and (counts[tile] == 0 or adjacent_in_tile((row[2], row[3]), selected, tile))
+            ]
+            if not candidates:
+                candidates = [row for row in rows if (row[2], row[3]) not in selected]
+            if not candidates:
+                break
+            _, _, x, y = candidates[0]
+            selected.add((x, y))
+            counts[tile] += 1
 
+    required_pixels = set(required or ())
     if len(selected) > target:
         removal = sorted(
             (
                 (periodic_score(material, x, y), stable_value(material, "trim", x, y), x, y)
                 for x, y in selected
+                if (x, y) not in required_pixels
             )
         )
         for _, _, x, y in removal:
-            tile = (x // TILE_SIZE, y // TILE_SIZE)
+            tile = tile_of(x, y)
             if counts[tile] <= minimum:
                 continue
             selected.remove((x, y))
             counts[tile] -= 1
             if len(selected) == target:
                 break
+
+    if len(selected) != target:
+        raise SystemExit(f"could not satisfy {material} spatial density target {target}")
     return selected
 
 
@@ -144,10 +224,10 @@ def build_overlay(master: Image.Image, material: str, selected: set[tuple[int, i
     for x, y in selected:
         source = master.getpixel((x % TILE_SIZE, y % TILE_SIZE))
         if source[3] >= 32:
-            red, green, blue = source[:3]
+            red, green, blue, alpha = source
         else:
-            red, green, blue = palette[stable_value(material, "colour", x, y) % len(palette)]
-        overlay.putpixel((x, y), (red, green, blue, 255))
+            red, green, blue, alpha = palette[stable_value(material, "colour", x, y) % len(palette)]
+        overlay.putpixel((x, y), (red, green, blue, alpha))
     return overlay
 
 
@@ -161,7 +241,7 @@ def composite_field(host: Image.Image, overlay: Image.Image) -> Image.Image:
         (x, y)
         for y in range(FIELD_HEIGHT)
         for x in range(FIELD_WIDTH)
-        if overlay.getpixel((x, y))[3] > 0
+        if overlay.getpixel((x, y))[3] >= 32
     }
     rim: set[tuple[int, int]] = set()
     for x, y in ore_pixels:
@@ -171,7 +251,7 @@ def composite_field(host: Image.Image, overlay: Image.Image) -> Image.Image:
                 rim.add(point)
     for point in rim:
         red, green, blue, alpha = field.getpixel(point)
-        field.putpixel(point, (int(red * 0.88), int(green * 0.88), int(blue * 0.88), alpha))
+        field.putpixel(point, (int(red * 0.94), int(green * 0.94), int(blue * 0.94), alpha))
     field.alpha_composite(overlay)
     return field
 
@@ -243,11 +323,16 @@ def generate() -> tuple[int, int]:
         master = load_rgba(master_path, (TILE_SIZE, TILE_SIZE))
         inputs.add(master_path)
         overlays: dict[str, Image.Image] = {}
+        selected: set[tuple[int, int]] = set()
         for grade in GRADES:
             source_path = ORE_SOURCE_ROOT / material / f"{grade}.png"
             inputs.add(source_path)
             load_rgba(source_path, (TILE_SIZE, TILE_SIZE))
-            selected = select_pixels(material, int(matrix["grades"][grade]["targetPixels"]))
+            selected = select_pixels(
+                material,
+                int(matrix["grades"][grade]["targetPixels"]),
+                selected,
+            )
             overlays[grade] = build_overlay(master, material, selected)
 
         for host in ore["validHosts"]:
