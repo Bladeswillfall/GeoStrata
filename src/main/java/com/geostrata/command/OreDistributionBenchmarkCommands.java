@@ -33,6 +33,7 @@ public final class OreDistributionBenchmarkCommands {
     private static final int GENERATION_HALO_CHUNKS = 1;
     private static final int AIR_PROXIMITY_RADIUS = 12;
     private static final int PLANE_LOCAL_X = 8;
+    private static final int Y_BAND_HEIGHT = 16;
     private static final List<String> MATERIALS = List.of(
             "coal",
             "iron",
@@ -264,16 +265,21 @@ public final class OreDistributionBenchmarkCommands {
         private long vanillaTagged;
         private long gradedExposed;
         private long vanillaExposed;
+        private long ySum;
         private long gradedYSum;
         private long gradedWithin2Air;
         private long gradedWithin4Air;
         private long gradedWithin8Air;
         private long gradedWithin12Air;
+        private int minY = Integer.MAX_VALUE;
+        private int maxY = Integer.MIN_VALUE;
         private int gradedMinY = Integer.MAX_VALUE;
         private int gradedMaxY = Integer.MIN_VALUE;
         private int gradedMinAirDistance = Integer.MAX_VALUE;
         private final EnumMap<OreGrade, Long> grades = new EnumMap<>(OreGrade.class);
         private final Map<String, EnumMap<OreGrade, Long>> gradesByHost = new LinkedHashMap<>();
+        private final Map<Integer, Long> yBands = new LinkedHashMap<>();
+        private final Map<String, Map<Integer, Long>> gradedYBandsByHost = new LinkedHashMap<>();
         private final Set<Long> exposedChunks = new HashSet<>();
         private final Set<Long> exposedPositions = new HashSet<>();
         private final Set<Long> gradedExposedPositions = new HashSet<>();
@@ -289,6 +295,11 @@ public final class OreDistributionBenchmarkCommands {
                 int nearestAir
         ) {
             total++;
+            ySum += y;
+            minY = Math.min(minY, y);
+            maxY = Math.max(maxY, y);
+            int yBand = Math.floorDiv(y, Y_BAND_HEIGHT) * Y_BAND_HEIGHT;
+            yBands.merge(yBand, 1L, Long::sum);
             if (sample.graded()) {
                 graded++;
                 gradedYSum += y;
@@ -310,6 +321,8 @@ public final class OreDistributionBenchmarkCommands {
                 grades.merge(sample.grade(), 1L, Long::sum);
                 gradesByHost.computeIfAbsent(sample.host(), ignored -> new EnumMap<>(OreGrade.class))
                         .merge(sample.grade(), 1L, Long::sum);
+                gradedYBandsByHost.computeIfAbsent(sample.host(), ignored -> new LinkedHashMap<>())
+                        .merge(yBand, 1L, Long::sum);
             } else {
                 vanillaTagged++;
             }
@@ -349,6 +362,10 @@ public final class OreDistributionBenchmarkCommands {
             json.addProperty("airExposedClusters", exposedClusters(exposedPositions));
             json.addProperty("planeTotal", planeTotal);
             json.addProperty("planeAirExposed", planeExposed);
+            json.addProperty("minY", total == 0 ? null : minY);
+            json.addProperty("maxY", total == 0 ? null : maxY);
+            json.addProperty("meanY", total == 0 ? null : ySum / (double) total);
+            json.add("yBands", yBandsJson());
             json.addProperty("gradedBlocks", graded);
             json.addProperty("vanillaTaggedBlocks", vanillaTagged);
             json.addProperty("gradedAirExposed", gradedExposed);
@@ -380,7 +397,30 @@ public final class OreDistributionBenchmarkCommands {
                 hostJson.add(host, hostGradeJson);
             });
             json.add("gradesByHost", hostJson);
+            json.add("gradedYBandsByHost", gradedYBandsByHostJson());
             return json;
+        }
+
+        private JsonObject yBandsJson() {
+            JsonObject bands = new JsonObject();
+            yBands.forEach((startY, count) -> {
+                JsonObject band = new JsonObject();
+                band.addProperty("blocks", count);
+                band.addProperty("share", total == 0 ? 0.0 : count / (double) total);
+                bands.add(startY + ".." + (startY + Y_BAND_HEIGHT - 1), band);
+            });
+            return bands;
+        }
+
+        private JsonObject gradedYBandsByHostJson() {
+            JsonObject hosts = new JsonObject();
+            gradedYBandsByHost.forEach((host, hostBands) -> {
+                JsonObject bands = new JsonObject();
+                hostBands.forEach((startY, count) ->
+                        bands.addProperty(startY + ".." + (startY + Y_BAND_HEIGHT - 1), count));
+                hosts.add(host, bands);
+            });
+            return hosts;
         }
     }
 
@@ -432,6 +472,7 @@ public final class OreDistributionBenchmarkCommands {
             root.addProperty("chunkCount", GRID_CHUNKS * GRID_CHUNKS);
             root.addProperty("generationHaloChunks", GENERATION_HALO_CHUNKS);
             root.addProperty("airProximityRadius", AIR_PROXIMITY_RADIUS);
+            root.addProperty("verticalBandHeight", Y_BAND_HEIGHT);
             root.addProperty("bottomY", bottomY);
             root.addProperty("topYExclusive", topY);
             root.addProperty("blocksScanned", (long) GRID_CHUNKS * GRID_CHUNKS * 16L * 16L * (topY - bottomY));
