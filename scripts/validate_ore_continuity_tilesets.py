@@ -9,6 +9,8 @@ from pathlib import Path
 import struct
 import sys
 
+from validate_host_continuity_transitions import main as validate_host_transitions
+
 ROOT = Path(__file__).resolve().parents[1]
 RESOURCES = ROOT / "src" / "main" / "resources"
 ASSETS = RESOURCES / "assets" / "geostrata"
@@ -194,7 +196,9 @@ def main() -> None:
     for material, ore in ores.items():
         if not isinstance(material, str) or not isinstance(ore, dict):
             fail("ore texture matrix contains an invalid ore entry")
-        master = MASTER_ROOT / f"{material}.png"
+        master = MASTER_ROOT / "master" / f"{material}.png"
+        if not master.exists():
+            master = MASTER_ROOT / f"{material}.png"
         expected_masters.add(master)
         expected_inputs.add(master)
         for grade in GRADES:
@@ -264,6 +268,7 @@ def main() -> None:
         f"{len(expected_host_textures)} host Continuity sprites, "
         f"{expected_combinations} compact CTM combinations and {len(expected_textures)} ore Continuity sprites"
     )
+    validate_host_transitions()
 
 
 if __name__ == "__main__":
