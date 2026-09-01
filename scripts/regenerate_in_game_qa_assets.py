@@ -66,6 +66,20 @@ def patch_source_contracts() -> None:
         "validator ore CTM cross-host connectivity",
     )
 
+    geology_validator = ROOT / "scripts/validate_geology_catalog.py"
+    replace_once(
+        geology_validator,
+        '            f"geostrata:optifine/ctm/host/{host}/{index}"',
+        '            f"geostrata:textures/optifine/ctm/host/{host}/{index}"',
+        "geology validator canonical host Continuity path",
+    )
+    replace_once(
+        geology_validator,
+        '            f"matchTiles=geostrata:block/host/{host}\\n"\n            f"tiles={tiles}\\n"',
+        '            f"matchTiles=geostrata:block/host/{host}\\n"\n            "prioritize=false\\n"\n            f"tiles={tiles}\\n"',
+        "geology validator host overlay processing order",
+    )
+
 
 def patch_build_workflow() -> None:
     workflow = ROOT / ".github/workflows/build.yml"
