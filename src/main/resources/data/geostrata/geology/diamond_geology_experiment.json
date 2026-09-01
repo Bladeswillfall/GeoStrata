@@ -8,5 +8,5 @@
     "kimberlite": 0.06,
     "lamproite": 0.02
   },
-  "structuralActivationChancePerCell": 0.45
+  "structuralActivationChancePerCell": 1.0
 }
