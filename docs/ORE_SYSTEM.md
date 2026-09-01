@@ -226,43 +226,49 @@ from the neighbouring rock instead of ending on a hard one-pixel line. Normal
 host `method=random` rules use canonical texture paths and `prioritize=false`,
 allowing the boundary overlay to run before the subtle interior variation.
 
-### Connected ore tilesets
+### Spatial multi-block ore tilesets
 
-Graded ores use a separate topology-aware Continuity layer so exposed deposits
-read as one mineral body instead of a grid of repeated single-block sprites.
-The current generator uses the normal full-size 16x16 graded mineral overlays
-as its source field; the obsolete 40x24/8x8 authoring sheets no longer ship as
-runtime textures.
+Graded ores use Continuity's native `repeat` method rather than neighbour-topology
+`ctm_compact`. Compact CTM splits an individual block face into halves and
+quadrants, which is useful for borders but still repeats block-local mineral art
+through the interior of a large deposit. The result looked connected only in
+some edge cases while a four-block-wide seam still visibly repeated every block.
 
-`scripts/generate_ore_continuity_tilesets.py` derives the five sprites required
-by Continuity's `ctm_compact` method: isolated, fully connected, vertical,
-horizontal, and missing-diagonal states.
+`scripts/generate_ore_continuity_tilesets.py` now builds one deterministic,
+periodic 64x64 mineral field per material and grade, then crops it into a 4x4
+set of sixteen 16x16 tiles. Continuity selects those tiles from world position
+and face direction. Adjacent ore blocks therefore show adjacent pieces of one
+larger mineral field instead of copies of the same one-block motif.
 
-The generated properties match one material, grade and host state, but use
-`connect=block`. Adjacent blocks of the same material and grade therefore
-connect across a host-rock state change while each block still uses its local
-host composite. Grade boundaries remain visible because Poor, Medium, Rich and
-Massive are distinct block IDs.
+The four grades share the same material-specific spatial score field and differ
+only by their declared density target, so Poor, Medium, Rich and Massive remain
+visually related as concentration increases. Each repeat tile is also guaranteed
+a small visible mineral sample at low density so a legitimate ore block cannot
+become visually empty.
 
-Only combinations listed in each material's `validHosts` are emitted. Flat
-host/material/grade textures remain the renderer-independent fallback when
-Continuity is absent.
+The same mineral field is composited independently against every valid host.
+When a deposit crosses from one host rock to another, the background changes but
+the mineral coordinates remain aligned naturally; no `connect=block` rule or
+second rendering system is required. Flat host/material/grade composites remain
+the renderer-independent fallback when Continuity is absent.
 
-Generated ore CTM assets remain covered by
-`data/geostrata/materials/ore_ctm_manifest.json`. Regenerate ores with
-`python3 scripts/generate_ore_continuity_tilesets.py`; regenerate rock-boundary
-overlays with `python3 scripts/generate_host_continuity_transitions.py`.
-Normal CI validates both committed outputs without requiring Pillow.
+Generated ore assets are covered by schema 3 of
+`data/geostrata/materials/ore_ctm_manifest.json`: `method=repeat`, a 4x4 field,
+and sixteen runtime tiles per material/grade/host combination. Regenerate ores
+with `python3 scripts/generate_ore_continuity_tilesets.py`; regenerate
+rock-boundary overlays with `python3 scripts/generate_host_continuity_transitions.py`.
+Normal CI validates both committed outputs without requiring Pillow and rejects
+ore fields that collapse back into repeated block-local sprites.
 
 `docs/images/host-tiling-preview.png` remains the quick check for host
-repetition. `docs/images/ore-ctm-tileset-preview.png` shows the five compact ore
-CTM outputs for each grade and material using its default host.
+repetition. `docs/images/ore-ctm-tileset-preview.png` now assembles the actual
+4x4 repeat field for every material and grade using its default host.
 
 ![Host, mineral and grade authoring matrix](images/ore-texture-matrix-preview.png)
 
 ![Seamless host tiling and Continuity variation](images/host-tiling-preview.png)
 
-![Compact connected ore tilesets](images/ore-ctm-tileset-preview.png)
+![Spatial multi-block ore fields](images/ore-ctm-tileset-preview.png)
 
 Full-bright cells are currently permitted by geological occurrence rules. Dim
 cells are generated and asset-ready but will not occur naturally unless the
