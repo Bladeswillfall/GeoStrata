@@ -18,7 +18,7 @@ public final class OreDepositCandidatePlanner {
             224
     );
     private static final Frequency GOLD_FREQUENCY = new Frequency(64, 64, 8, 8, 160, 64);
-    private static final Frequency EMERALD_FREQUENCY = new Frequency(32, 32, 4, 4, 16, 16);
+    private static final Frequency EMERALD_FREQUENCY = new Frequency(32, 16, 4, 2, 16, 16);
     private static final long MATERIAL_SALT = 0xA24BAED4963EE407L;
     private static final long ANCHOR_X_SALT = 0x9FB21C651E98DF25L;
     private static final long ANCHOR_Y_SALT = 0xC13FA9A902A6328FL;

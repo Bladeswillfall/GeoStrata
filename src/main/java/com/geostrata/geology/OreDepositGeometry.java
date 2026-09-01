@@ -10,6 +10,7 @@ public final class OreDepositGeometry {
     private static final double GRADE_DITHER = 0.12;
     private static final double IRON_LINEAR_SCALE = 1.65;
     private static final double GOLD_LINEAR_SCALE = 0.45;
+    private static final double EMERALD_LINEAR_SCALE = 1.35;
 
     private static final long AZIMUTH_SALT = 0x243F6A8885A308D3L;
     private static final long DIP_SALT = 0x13198A2E03707344L;
@@ -42,6 +43,7 @@ public final class OreDepositGeometry {
         double materialScale = switch (proposal.material()) {
             case "iron" -> IRON_LINEAR_SCALE;
             case "gold" -> GOLD_LINEAR_SCALE;
+            case "emerald" -> EMERALD_LINEAR_SCALE;
             default -> 1.0;
         };
         double azimuth = TWO_PI * roll(worldSeed, proposal, AZIMUTH_SALT);
