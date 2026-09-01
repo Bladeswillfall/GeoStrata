@@ -13,8 +13,6 @@ import net.minecraft.world.gen.GenerationStep;
 import net.minecraft.world.gen.feature.OrePlacedFeatures;
 import net.minecraft.world.gen.feature.PlacedFeature;
 
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.List;
 
 /** Explicit opt-in companion that makes GeoStrata's experimental worldgen reachable. */
@@ -31,8 +29,6 @@ public final class CorrelatedExperimentCompanion implements ModInitializer {
             RegistryKeys.PLACED_FEATURE,
             GeoStrata.id("province_background_experiment")
     );
-    private static final Path SKIP_CORRELATED_FLAG = Path.of("geostrata-diagnostic-skip-correlated.flag");
-    private static final Path SKIP_BACKGROUND_FLAG = Path.of("geostrata-diagnostic-skip-background.flag");
     private static final List<RegistryKey<PlacedFeature>> VALIDATED_REPLACED_VANILLA_OVERWORLD_ORES = List.of(
             OrePlacedFeatures.ORE_COAL_UPPER,
             OrePlacedFeatures.ORE_COAL_LOWER,
@@ -55,20 +51,16 @@ public final class CorrelatedExperimentCompanion implements ModInitializer {
                                         feature
                                 ))
                 );
-        if (!Files.exists(SKIP_CORRELATED_FLAG)) {
-            BiomeModifications.addFeature(
-                    BiomeSelectors.tag(REGISTRATION_BIOMES),
-                    GenerationStep.Feature.UNDERGROUND_DECORATION,
-                    CORRELATED_FEATURE
-            );
-        }
-        if (!Files.exists(SKIP_BACKGROUND_FLAG)) {
-            BiomeModifications.addFeature(
-                    BiomeSelectors.tag(REGISTRATION_BIOMES),
-                    GenerationStep.Feature.UNDERGROUND_DECORATION,
-                    BACKGROUND_FEATURE
-            );
-        }
+        BiomeModifications.addFeature(
+                BiomeSelectors.tag(REGISTRATION_BIOMES),
+                GenerationStep.Feature.UNDERGROUND_DECORATION,
+                CORRELATED_FEATURE
+        );
+        BiomeModifications.addFeature(
+                BiomeSelectors.tag(REGISTRATION_BIOMES),
+                GenerationStep.Feature.UNDERGROUND_DECORATION,
+                BACKGROUND_FEATURE
+        );
         OreDebugCommands.register();
         GeoStrata.LOGGER.info(
                 "GeoStrata experimental worldgen companion enabled; validated common vanilla ores suppressed, unvalidated rare vanilla ores preserved"
