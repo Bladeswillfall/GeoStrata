@@ -145,7 +145,7 @@ public final class DiamondStructuralFeature extends Feature<DefaultFeatureConfig
             double centerZ = trace.z()
                     + tectonics.faultSin() * alongJitter
                     + normalZ * acrossJitter;
-            int radius = DiamondGeologyPlanner.structuralClusterRoll(seed, candidate, cluster, CLUSTER_SIZE_SALT) < 0.12
+            int radius = DiamondGeologyPlanner.structuralClusterRoll(seed, candidate, cluster, CLUSTER_SIZE_SALT) < 0.35
                     ? 2
                     : 1;
             placed += DiamondPipeFeature.placeDiamondCluster(
