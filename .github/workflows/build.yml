@@ -51,7 +51,7 @@ jobs:
           if-no-files-found: error
 
   runtime-smoke:
-    if: github.head_ref == 'perf/extreme-height-worldgen-20260830'
+    if: github.head_ref == 'perf/extreme-height-worldgen-20260830' || github.head_ref == 'perf/world-load-regression-20260831'
     name: runtime-smoke (paired)
     runs-on: ubuntu-latest
     timeout-minutes: 18
