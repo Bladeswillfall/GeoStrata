@@ -79,6 +79,24 @@ final class FaultControlledOrePlannerTest {
         );
     }
 
+    @Test
+    void contextBackedBindingMatchesDirectSampling() {
+        BoundCase found = boundCase();
+        OreDepositCandidatePlanner.Proposal proposal = found.original();
+        GeologyProvinceSampler.Context context = GeologyProvinceSampler.context(
+                found.seed(),
+                proposal.anchorX() - 128,
+                proposal.anchorZ() - 128,
+                proposal.anchorX() + 128,
+                proposal.anchorZ() + 128
+        );
+
+        assertEquals(
+                found.binding(),
+                FaultControlledOrePlanner.bind(found.seed(), proposal, CYCLE_THICKNESS, context)
+        );
+    }
+
     private static BoundCase boundCase() {
         long seed = 246813579L;
         int y = 24;
