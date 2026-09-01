@@ -1,16 +1,10 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "model": "geostrata:ore_deposit_experiment",
   "runtimeStatus": "experimental_opt_in",
   "enabled": false,
-  "description": "Disabled by default. Override this server-data resource with enabled=true to evaluate real geology-qualified GeoStrata ore deposits while vanilla ore generation remains active.",
+  "description": "Disabled by default. Override this server-data resource with enabled=true to evaluate real geology-qualified GeoStrata ore deposits while vanilla ore generation remains active. Per-material abundance now lives in ore_occurrences.json; activationScale is a global test multiplier only.",
   "placementMode": "chunk_local_valid_host_clipping",
   "nativeGenerationSuppression": "not_implemented",
-  "activationChancePerCandidate": {
-    "coal": 0.8,
-    "iron": 0.5,
-    "copper": 0.36,
-    "gold": 0.8,
-    "emerald": 0.08
-  }
+  "activationScale": 1.0
 }
