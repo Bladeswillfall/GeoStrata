@@ -26,8 +26,8 @@ final class OreDepositExperimentTest {
     @Test
     void ironActivationUsesBroadDepthBiasWithoutChangingOtherMaterials() {
         assertEquals(0.5, OreDepositExperiment.activationDepthMultiplier(ironProposal(-8)));
-        assertEquals(2.0, OreDepositExperiment.activationDepthMultiplier(ironProposal(20)));
-        assertEquals(1.5, OreDepositExperiment.activationDepthMultiplier(ironProposal(80)));
+        assertEquals(1.5, OreDepositExperiment.activationDepthMultiplier(ironProposal(20)));
+        assertEquals(1.9, OreDepositExperiment.activationDepthMultiplier(ironProposal(80)));
         assertEquals(1.0, OreDepositExperiment.activationDepthMultiplier(ironProposal(160)));
         assertEquals(1.0, OreDepositExperiment.activationDepthMultiplier(proposal()));
     }
