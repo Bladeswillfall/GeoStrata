@@ -4,6 +4,7 @@ import com.geostrata.GeoStrata;
 import com.geostrata.block.GeoStrataBlocks;
 import com.geostrata.command.GeoStrataCommands;
 import com.geostrata.command.GeologyResolveCommands;
+import com.geostrata.command.IronVerticalBenchmarkCommands;
 import com.geostrata.command.MetamorphismCommands;
 import com.geostrata.command.OreDistributionBenchmarkCommands;
 import com.geostrata.command.StructuralCommands;
@@ -21,6 +22,7 @@ public final class FabricGeoStrata implements ModInitializer {
         MetamorphismCommands.register();
         StructuralCommands.register();
         OreDistributionBenchmarkCommands.register();
+        IronVerticalBenchmarkCommands.register();
         GeoStrata.LOGGER.info(
                 "GeoStrata initialized {} runtime blocks through the Fabric adapter",
                 GeoStrataBlocks.count()
