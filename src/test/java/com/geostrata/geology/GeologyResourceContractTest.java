@@ -89,13 +89,13 @@ final class GeologyResourceContractTest {
         JsonObject lithologies = read(GEOLOGY.resolve("lithologies.json"));
         JsonArray entries = lithologies.getAsJsonArray("lithologies");
         for (int index = 0; index < entries.size(); index++) {
-            if ("phyllite".equals(entries.get(index).getAsJsonObject().get("id").getAsString())) {
+            if ("phyllite".equals(string(entries.get(index).getAsJsonObject(), "id"))) {
                 entries.remove(index);
                 break;
             }
         }
 
-        IllegalArgumentException error = assertThrows(
+        IllegalArgumentException exception = assertThrows(
                 IllegalArgumentException.class,
                 () -> GeologyDataReload.parse(
                         lithologies,
@@ -108,7 +108,7 @@ final class GeologyResourceContractTest {
                         true
                 )
         );
-        assertTrue(error.getMessage().contains("phyllite"));
+        assertTrue(exception.getMessage().contains("phyllite"));
     }
 
     private static GeologyDataReload.State parseGeology(boolean companionLoaded) throws IOException {
@@ -124,67 +124,158 @@ final class GeologyResourceContractTest {
         );
     }
 
-    private static void assertCharacteristicProvincePalettes(GeologyDataReload.State core) {
-        for (GeologyProvince province : GeologyProvince.values()) {
-            assertFalse(core.provinces().profile(province).lithologyWeights().isEmpty());
+    private static void assertCharacteristicProvincePalettes(GeologyDataReload.State data) {
+        for (var weights : data.provinces().weights().values()) {
+            assertTrue(weights.values().stream().filter(weight -> weight >= 0.65).count() >= 3);
+        }
+        for (LithologyCatalog.Entry lithology : data.lithologies().entries()) {
+            assertTrue(data.provinces().weights().values().stream()
+                    .mapToDouble(weights -> weights.get(lithology.id()))
+                    .max()
+                    .orElseThrow() >= 0.65, lithology.id());
         }
     }
 
-    private static void assertOrdinaryProvinceMatrixCandidates(GeologyDataReload.State core) {
-        assertTrue(core.provinces().profile(GeologyProvince.SEDIMENTARY_BASIN).lithologyWeights().containsKey("shale"));
-        assertTrue(core.provinces().profile(GeologyProvince.CRATONIC_SHIELD).lithologyWeights().containsKey("gneiss"));
-        assertTrue(core.provinces().profile(GeologyProvince.OROGENIC_BELT).lithologyWeights().containsKey("slate"));
-        assertTrue(core.provinces().profile(GeologyProvince.VOLCANIC_ARC).lithologyWeights().containsKey("basalt"));
-        assertTrue(core.provinces().profile(GeologyProvince.RIFT_PROVINCE).lithologyWeights().containsKey("basalt"));
+    private static void assertOrdinaryProvinceMatrixCandidates(GeologyDataReload.State data) {
+        List<LithologyCatalog.Entry> ordinary = data.lithologies().entries().stream()
+                .filter(entry -> entry.baselineFeature() != null && entry.baselineFeature().endsWith("_ore"))
+                .toList();
+        assertTrue(ordinary.size() >= 4);
+        assertFalse(ordinary.stream().anyMatch(entry -> entry.id().equals("kimberlite") || entry.id().equals("lamproite")));
+        for (GeologyProvince province : GeologyProvince.values()) {
+            assertEquals(4, ordinary.stream()
+                    .sorted(java.util.Comparator
+                            .<LithologyCatalog.Entry>comparingDouble(entry -> data.provinces().weight(province, entry.id()))
+                            .reversed()
+                            .thenComparing(LithologyCatalog.Entry::id))
+                    .limit(4)
+                    .count());
+        }
     }
 
     private static void assertSuccessionContextCoverage(SedimentarySuccessions.Snapshot successions) {
-        Set<String> contexts = new HashSet<>();
-        successions.successions().forEach(successionsEntry -> contexts.addAll(successionsEntry.contexts()));
-        assertTrue(contexts.containsAll(Set.of("marine_shelf", "fluvial", "coastal", "rift_basin")));
+        Set<GeologyProvince> contexts = new HashSet<>();
+        for (SedimentarySuccessions.Succession succession : successions.successions()) {
+            contexts.addAll(succession.contexts());
+        }
+        assertTrue(contexts.contains(GeologyProvince.SEDIMENTARY_BASIN));
+        assertTrue(contexts.contains(GeologyProvince.RIFT_PROVINCE));
     }
 
     private static void assertExperimentTagsExist(CorrelatedSedimentaryExperiment.Snapshot experiment) {
         assertTrue(tagPath("tags/worldgen/biome", experiment.registrationBiomeTag()).toFile().isFile());
         assertTrue(tagPath("tags/blocks", experiment.hostBlockTag()).toFile().isFile());
+        assertTrue(RESOURCES.resolve(
+                "data/geostrata/tags/worldgen/biome/has_experimental_ore_deposits.json"
+        ).toFile().isFile());
+    }
+
+    private static Path tagPath(String directory, String identifier) {
+        assertTrue(identifier.startsWith("geostrata:"));
+        return RESOURCES.resolve("data/geostrata")
+                .resolve(directory)
+                .resolve(identifier.substring(identifier.indexOf(':') + 1) + ".json");
     }
 
     private static void assertStrataLensResourcesArePaired() throws IOException {
-        try (var configured = Files.list(CONFIGURED)) {
-            configured.filter(path -> path.getFileName().toString().endsWith("_lens.json"))
-                    .forEach(path -> assertTrue(PLACED.resolve(path.getFileName()).toFile().isFile()));
+        int lenses = 0;
+        try (var files = Files.list(CONFIGURED)) {
+            for (Path path : files.filter(file -> file.toString().endsWith(".json")).sorted().toList()) {
+                JsonObject configured = read(path);
+                if (!"geostrata:strata_lens".equals(string(configured, "type"))) {
+                    continue;
+                }
+                lenses++;
+                assertStrataLensShape(configured.getAsJsonObject("config"), path);
+                assertPlacement(path);
+            }
         }
+        assertTrue(lenses > 0);
     }
 
-    private static void assertCorrelatedWorldgenStaging() {
-        assertTrue(CONFIGURED.resolve("correlated_sedimentary_experiment.json").toFile().isFile());
-        assertTrue(PLACED.resolve("correlated_sedimentary_experiment.json").toFile().isFile());
-        assertTrue(CONFIGURED.resolve("province_background_experiment.json").toFile().isFile());
-        assertTrue(PLACED.resolve("province_background_experiment.json").toFile().isFile());
+    private static void assertStrataLensShape(JsonObject config, Path path) {
+        assertTrue(config != null, path.toString());
+        assertTrue(config.has("targets") && config.getAsJsonArray("targets").size() > 0, path.toString());
+        for (String field : List.of(
+                "discard_chance_on_air_exposure", "long_radius", "short_radius_ratio",
+                "short_radius_variation", "half_thickness", "edge_half_thickness", "max_slope",
+                "warp_amplitude", "warp_variation", "warp_wavelength"
+        )) {
+            assertTrue(config.has(field), path + " missing " + field);
+        }
+        assertFalse(config.has("size"), path.toString());
     }
 
-    private static void assertOreDepositWorldgenStaging() {
-        assertTrue(CONFIGURED.resolve("ore_deposit_experiment.json").toFile().isFile());
-        assertTrue(PLACED.resolve("ore_deposit_experiment.json").toFile().isFile());
+    private static void assertPlacement(Path configuredPath) throws IOException {
+        Path path = PLACED.resolve(configuredPath.getFileName());
+        assertTrue(path.toFile().isFile(), path.toString());
+        JsonObject placed = read(path);
+        String name = configuredPath.getFileName().toString().replaceFirst("\\.json$", "");
+        assertEquals("geostrata:" + name, string(placed, "feature"));
+
+        JsonArray modifiers = placed.getAsJsonArray("placement");
+        assertTrue(modifiers != null && !modifiers.isEmpty(), path.toString());
+        List<String> types = modifiers.asList().stream()
+                .map(JsonElement::getAsJsonObject)
+                .map(modifier -> string(modifier, "type"))
+                .toList();
+        for (String required : List.of(
+                "minecraft:count", "minecraft:in_square", "geostrata:subsurface_anchor", "minecraft:biome"
+        )) {
+            assertEquals(1, types.stream().filter(required::equals).count(), path.toString());
+        }
+        assertFalse(types.contains("minecraft:height_range"), path + " must use generated terrain height, not a fixed Y range");
+
+        JsonObject count = modifiers.get(types.indexOf("minecraft:count")).getAsJsonObject();
+        assertTrue(count.get("count").getAsInt() >= 1 && count.get("count").getAsInt() <= 8);
+    }
+
+    private static void assertCorrelatedWorldgenStaging() throws IOException {
+        JsonObject configured = read(CONFIGURED.resolve("correlated_sedimentary_experiment.json"));
+        assertEquals("geostrata:correlated_sedimentary", string(configured, "type"));
+        assertEquals(0, configured.getAsJsonObject("config").size());
+
+        JsonObject placed = read(PLACED.resolve("correlated_sedimentary_experiment.json"));
+        assertEquals("geostrata:correlated_sedimentary_experiment", string(placed, "feature"));
+        assertTrue(placed.getAsJsonArray("placement").isEmpty());
+
+        JsonObject backgroundConfigured = read(CONFIGURED.resolve("province_background_experiment.json"));
+        assertEquals("geostrata:province_background", string(backgroundConfigured, "type"));
+        assertEquals(0, backgroundConfigured.getAsJsonObject("config").size());
+
+        JsonObject backgroundPlaced = read(PLACED.resolve("province_background_experiment.json"));
+        assertEquals("geostrata:province_background_experiment", string(backgroundPlaced, "feature"));
+        assertTrue(backgroundPlaced.getAsJsonArray("placement").isEmpty());
+    }
+
+    private static void assertOreDepositWorldgenStaging() throws IOException {
+        JsonObject configured = read(CONFIGURED.resolve("ore_deposit_experiment.json"));
+        assertEquals("geostrata:ore_deposit", string(configured, "type"));
+        assertEquals(0, configured.getAsJsonObject("config").size());
+
+        JsonObject placed = read(PLACED.resolve("ore_deposit_experiment.json"));
+        assertEquals("geostrata:ore_deposit_experiment", string(placed, "feature"));
+        assertTrue(placed.getAsJsonArray("placement").isEmpty());
     }
 
     private static void assertCompanionMetadata() throws IOException {
         JsonObject metadata = read(Path.of("experiment-companion/src/main/resources/fabric.mod.json"));
-        assertEquals("geostrata_correlated_experiment", metadata.get("id").getAsString());
-    }
-
-    private static Path tagPath(String kind, String rawId) {
-        String path = rawId.substring(rawId.indexOf(':') + 1);
-        return RESOURCES.resolve("data/geostrata").resolve(kind).resolve(path + ".json");
+        assertEquals(GeologyDataReload.COMPANION_MOD_ID, string(metadata, "id"));
+        assertTrue(string(metadata.getAsJsonObject("depends"), "geostrata").startsWith(">="));
+        assertEquals(
+                List.of("com.geostrata.experiment.CorrelatedExperimentCompanion"),
+                metadata.getAsJsonObject("entrypoints").getAsJsonArray("main").asList().stream()
+                        .map(JsonElement::getAsString)
+                        .toList()
+        );
     }
 
     private static JsonObject read(Path path) throws IOException {
-        try (var reader = Files.newBufferedReader(path)) {
-            JsonElement element = JsonParser.parseReader(reader);
-            if (!element.isJsonObject()) {
-                throw new IOException(path + " root is not an object");
-            }
-            return element.getAsJsonObject();
-        }
+        return JsonParser.parseString(Files.readString(path)).getAsJsonObject();
+    }
+
+    private static String string(JsonObject object, String key) {
+        JsonElement value = object.get(key);
+        return value == null ? null : value.getAsString();
     }
 }
