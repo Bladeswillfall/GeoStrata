@@ -8,7 +8,7 @@ public final class OreDepositGeometry {
     private static final double TRACE_LIMIT = 1.25;
     private static final double COAL_TRACE_NORMAL_SCALE = 3.0;
     private static final double GRADE_DITHER = 0.12;
-    private static final double IRON_LINEAR_SCALE = 1.31;
+    private static final double IRON_LINEAR_SCALE = 1.65;
 
     private static final long AZIMUTH_SALT = 0x243F6A8885A308D3L;
     private static final long DIP_SALT = 0x13198A2E03707344L;
