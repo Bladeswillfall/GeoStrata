@@ -44,7 +44,7 @@ final class OreDepositExperimentTest {
     }
 
     @Test
-    void companionSuppressesOnlyValidatedCommonVanillaOres() throws IOException {
+    void companionSuppressesGeoStrataOwnedVanillaOres() throws IOException {
         String source = Files.readString(Path.of(
                 "experiment-companion/src/main/java/com/geostrata/experiment/CorrelatedExperimentCompanion.java"
         ));
@@ -52,9 +52,11 @@ final class OreDepositExperimentTest {
         assertTrue(source.contains("ORE_COAL_UPPER"));
         assertTrue(source.contains("ORE_IRON_UPPER"));
         assertTrue(source.contains("ORE_COPPER"));
-        assertFalse(source.contains("ORE_GOLD"));
-        assertFalse(source.contains("ORE_EMERALD"));
-        assertFalse(source.contains("ORE_DIAMOND"));
+        assertTrue(source.contains("ORE_GOLD"));
+        assertTrue(source.contains("ORE_EMERALD"));
+        assertTrue(source.contains("ORE_DIAMOND"));
+        assertFalse(source.contains("ORE_REDSTONE"));
+        assertFalse(source.contains("ORE_LAPIS"));
     }
 
     @Test
