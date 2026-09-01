@@ -14,10 +14,11 @@ public final class OreDepositCandidatePlanner {
             VERTICAL_CELL_SIZE,
             HORIZONTAL_MARGIN,
             VERTICAL_MARGIN,
+            224,
             224
     );
-    private static final Frequency GOLD_FREQUENCY = new Frequency(64, 32, 8, 4, 96);
-    private static final Frequency EMERALD_FREQUENCY = new Frequency(32, 32, 4, 4, 16);
+    private static final Frequency GOLD_FREQUENCY = new Frequency(64, 32, 8, 4, 160, 64);
+    private static final Frequency EMERALD_FREQUENCY = new Frequency(32, 32, 4, 4, 16, 16);
     private static final long MATERIAL_SALT = 0xA24BAED4963EE407L;
     private static final long ANCHOR_X_SALT = 0x9FB21C651E98DF25L;
     private static final long ANCHOR_Y_SALT = 0xC13FA9A902A6328FL;
@@ -143,14 +144,15 @@ public final class OreDepositCandidatePlanner {
             int verticalCellSize,
             int horizontalMargin,
             int verticalMargin,
-            int searchPaddingBlocks
+            int horizontalSearchPaddingBlocks,
+            int verticalSearchPaddingBlocks
     ) {
         public Frequency {
             if (horizontalCellSize < 1 || verticalCellSize < 1
                     || horizontalMargin < 0 || verticalMargin < 0
                     || horizontalMargin * 2 >= horizontalCellSize
                     || verticalMargin * 2 >= verticalCellSize
-                    || searchPaddingBlocks < 0) {
+                    || horizontalSearchPaddingBlocks < 0 || verticalSearchPaddingBlocks < 0) {
                 throw new IllegalArgumentException("ore frequency profile dimensions must be positive and leave anchor space");
             }
         }
