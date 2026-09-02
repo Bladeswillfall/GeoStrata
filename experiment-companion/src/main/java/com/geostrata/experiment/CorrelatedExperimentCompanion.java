@@ -38,21 +38,22 @@ public final class CorrelatedExperimentCompanion implements ModInitializer {
                             ModificationPhase.REMOVALS,
                             BiomeSelectors.foundInOverworld(),
                             context -> {
-                            if (Registries.ITEM.containsId(CREATE_RAW_ZINC)) {
-                                context.getGenerationSettings().removeFeature(
-                                        GenerationStep.Feature.UNDERGROUND_ORES,
-                                        CREATE_ZINC_ORE
-                                );
+                                if (Registries.ITEM.containsId(CREATE_RAW_ZINC)) {
+                                    context.getGenerationSettings().removeFeature(
+                                            GenerationStep.Feature.UNDERGROUND_ORES,
+                                            CREATE_ZINC_ORE
+                                    );
+                                }
+                                if (benchmarkSuppressVanillaDiamond) {
+                                    BENCHMARK_DIAMOND_ORES.forEach(feature ->
+                                            context.getGenerationSettings().removeFeature(
+                                                    GenerationStep.Feature.UNDERGROUND_ORES,
+                                                    feature
+                                            ));
+                                }
                             }
-                            if (benchmarkSuppressVanillaDiamond) {
-                                BENCHMARK_DIAMOND_ORES.forEach(feature ->
-                                        context.getGenerationSettings().removeFeature(
-                                                GenerationStep.Feature.UNDERGROUND_ORES,
-                                                feature
-                                        ));
-                            }
-                        }
-                );
+                    );
+        }
         OreDebugCommands.register();
         GeoStrata.LOGGER.info("GeoStrata experiment companion enabled; rare ore/diamond experiments and debug tools active");
         if (benchmarkSuppressVanillaDiamond) {
