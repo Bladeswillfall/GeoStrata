@@ -142,6 +142,33 @@ final class OreDepositCandidatePlannerTest {
     }
 
     @Test
+    void formationRoutesPreventFlatCrossProducts() {
+        OreOccurrenceCatalog.Occurrence occurrence = routedOccurrence();
+        OreDepositCandidatePlanner.Proposal vein = new OreDepositCandidatePlanner.Proposal(
+                "test_ore", "vein", 0, 0, 0, 0, 0, 0
+        );
+        OreDepositCandidatePlanner.Proposal stratiform = new OreDepositCandidatePlanner.Proposal(
+                "test_ore", "stratiform", 0, 0, 0, 0, 0, 0
+        );
+
+        assertTrue(OreDepositCandidatePlanner.accept(
+                vein, occurrence, GeologyProvince.OROGENIC_BELT, "shale"
+        ).isPresent());
+        assertTrue(OreDepositCandidatePlanner.accept(
+                stratiform, occurrence, GeologyProvince.SEDIMENTARY_BASIN, "limestone"
+        ).isPresent());
+        assertFalse(OreDepositCandidatePlanner.accept(
+                vein, occurrence, GeologyProvince.SEDIMENTARY_BASIN, "limestone"
+        ).isPresent());
+        assertFalse(OreDepositCandidatePlanner.accept(
+                vein, occurrence, GeologyProvince.OROGENIC_BELT, "limestone"
+        ).isPresent());
+        assertFalse(OreDepositCandidatePlanner.accept(
+                stratiform, occurrence, GeologyProvince.SEDIMENTARY_BASIN, "shale"
+        ).isPresent());
+    }
+
+    @Test
     void rejectsMismatchedOccurrence() {
         OreDepositCandidatePlanner.Proposal proposal = OreDepositCandidatePlanner.propose(42L, 0, 0, 0, iron());
         assertThrows(
@@ -205,6 +232,36 @@ final class OreDepositCandidatePlannerTest {
                 OreOccurrenceCatalog.TerrainFilter.none(),
                 OreGrade.MASSIVE,
                 gradeBlocks(material)
+        );
+    }
+
+    private static OreOccurrenceCatalog.Occurrence routedOccurrence() {
+        List<OreOccurrenceCatalog.FormationRoute> routes = List.of(
+                new OreOccurrenceCatalog.FormationRoute(
+                        "orogenic_vein",
+                        List.of("shale"),
+                        List.of(GeologyProvince.OROGENIC_BELT),
+                        List.of("vein")
+                ),
+                new OreOccurrenceCatalog.FormationRoute(
+                        "basin_stratiform",
+                        List.of("limestone"),
+                        List.of(GeologyProvince.SEDIMENTARY_BASIN),
+                        List.of("stratiform")
+                )
+        );
+        return new OreOccurrenceCatalog.Occurrence(
+                "test_ore",
+                "minecraft",
+                "minecraft:raw_iron",
+                List.of("shale", "limestone"),
+                List.of(GeologyProvince.OROGENIC_BELT, GeologyProvince.SEDIMENTARY_BASIN),
+                List.of("vein", "stratiform"),
+                routes,
+                OreGenerationProfile.defaults(),
+                OreOccurrenceCatalog.TerrainFilter.none(),
+                OreGrade.MASSIVE,
+                gradeBlocks("test_ore")
         );
     }
 
