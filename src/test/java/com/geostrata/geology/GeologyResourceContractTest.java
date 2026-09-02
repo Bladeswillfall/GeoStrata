@@ -33,8 +33,8 @@ final class GeologyResourceContractTest {
         assertTrue(core.provinces().loaded());
         assertTrue(core.successions().loaded());
         assertTrue(core.fieldProfiles().loaded());
-        assertFalse(core.experiment().enabled());
-        assertEquals("metadata_only", core.experiment().runtimeStatus());
+        assertTrue(core.experiment().enabled());
+        assertEquals("core_runtime", core.experiment().runtimeStatus());
         assertTrue(core.experiment().verticalWindow().isFullDimension());
         assertFalse(core.oreExperiment().enabled());
         assertEquals("experimental_opt_in", core.oreExperiment().runtimeStatus());
@@ -70,7 +70,7 @@ final class GeologyResourceContractTest {
 
         GeologyDataReload.State activated = parseGeology(true);
         assertTrue(activated.experiment().enabled());
-        assertEquals("experimental_runtime", activated.experiment().runtimeStatus());
+        assertEquals("core_runtime", activated.experiment().runtimeStatus());
         assertTrue(activated.experiment().verticalWindow().isFullDimension());
         assertFalse(activated.oreExperiment().enabled());
 
