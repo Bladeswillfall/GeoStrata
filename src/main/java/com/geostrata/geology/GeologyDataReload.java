@@ -50,7 +50,7 @@ public final class GeologyDataReload {
     private GeologyDataReload() {
     }
 
-    public static void reload(ResourceManager manager, boolean companionLoaded) {
+    public static void reload(ResourceManager manager, boolean companionLoaded, boolean coreCommonOreOwnershipEnabled) {
         try {
             State loaded = parseIncludingExternal(
                     readObject(manager, LITHOLOGIES),
@@ -63,7 +63,10 @@ public final class GeologyDataReload {
                     readObject(manager, EXPERIMENT),
                     GeologyDataReload::registeredItem
             );
-            OreDepositExperiment.Snapshot oreExperiment = loaded.oreExperiment().activated(companionLoaded);
+            OreDepositExperiment.Snapshot oreExperiment = loaded.oreExperiment().activated(
+                    companionLoaded,
+                    coreCommonOreOwnershipEnabled
+            );
             DiamondGeologyExperiment.Snapshot diamondExperiment = DiamondGeologyExperiment.parse(
                     readObject(manager, DIAMOND_GEOLOGY_EXPERIMENT)
             ).activated(companionLoaded);
@@ -71,10 +74,10 @@ public final class GeologyDataReload {
             loaded.publish(oreExperiment);
             DiamondGeologyExperiment.install(diamondExperiment);
             GeoStrata.LOGGER.info(
-                    "Loaded GeoStrata geology data: {} lithologies, {} ore occurrences, ore placement experiment enabled={}, diamond geology experiment enabled={}, {} successions, correlated experiment enabled={}",
+                    "Loaded GeoStrata geology data: {} lithologies, {} ore occurrences, ore placement runtime={}, diamond geology experiment enabled={}, {} successions, correlated experiment enabled={}",
                     loaded.lithologies().entries().size(),
                     loaded.oreOccurrences().occurrences().size(),
-                    oreExperiment.enabled(),
+                    oreExperiment.runtimeStatus(),
                     diamondExperiment.enabled(),
                     loaded.successions().successions().size(),
                     loaded.experiment().enabled()

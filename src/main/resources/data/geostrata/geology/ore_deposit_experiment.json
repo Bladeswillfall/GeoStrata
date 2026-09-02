@@ -3,7 +3,7 @@
   "model": "geostrata:ore_deposit_experiment",
   "runtimeStatus": "experimental_opt_in",
   "enabled": false,
-  "description": "Disabled by default. Override this server-data resource with enabled=true to evaluate real geology-qualified GeoStrata ore deposits while vanilla ore generation remains active. Per-material abundance now lives in ore_occurrences.json; activationScale is a global test multiplier only.",
+  "description": "Catalog-level activation descriptor. Normal core runtime promotes coal, iron and copper from this catalog and owns their vanilla suppression; the experiment companion additionally activates the remaining catalog materials. Per-material abundance lives in ore_occurrences.json; activationScale is a global test multiplier only.",
   "placementMode": "chunk_local_valid_host_clipping",
   "nativeGenerationSuppression": "not_implemented",
   "activationScale": 1.0

@@ -6,9 +6,11 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -47,31 +49,59 @@ final class OreDepositExperimentTest {
     @Test
     void companionActivationKeepsTheConfiguredChance() {
         OreDepositExperiment.Snapshot configured = experiment(false, 0.36);
-        OreDepositExperiment.Snapshot activated = configured.activated(true);
+        OreDepositExperiment.Snapshot activated = configured.activated(true, true);
 
         assertTrue(activated.enabled());
         assertEquals("experimental_runtime", activated.runtimeStatus());
-        assertEquals("experimental_companion_overworld", activated.nativeGenerationSuppression());
+        assertEquals("core_common_overworld", activated.nativeGenerationSuppression());
         assertEquals(0.36, activated.activationChance("copper"));
     }
 
     @Test
-    void companionSuppressesOnlyProvenCommonOresByDefault() throws IOException {
-        String source = Files.readString(Path.of(
+    void coreRuntimeActivatesOnlyProvenCommonMaterials() {
+        OreDepositExperiment.Snapshot configured = new OreDepositExperiment.Snapshot(
+                "experimental_opt_in",
+                false,
+                "chunk_local_valid_host_clipping",
+                "not_implemented",
+                Map.of("coal", 0.8, "iron", 0.5, "copper", 0.36, "gold", 0.8, "emerald", 0.08)
+        );
+
+        OreDepositExperiment.Snapshot core = configured.activated(false, true);
+
+        assertTrue(core.enabled());
+        assertEquals("core_common_runtime", core.runtimeStatus());
+        assertEquals("core_common_overworld", core.nativeGenerationSuppression());
+        assertEquals(Set.of("coal", "iron", "copper"), core.activationChancePerCandidate().keySet());
+        assertFalse(OreDepositExperiment.active(8675309L, "gold", -1, 0, 2, core));
+        assertSame(configured, configured.activated(false, false));
+    }
+
+    @Test
+    void coreSuppressesOnlyProvenCommonOres() throws IOException {
+        String core = Files.readString(Path.of(
+                "src/main/java/com/geostrata/platform/fabric/FabricWorldgenRegistration.java"
+        ));
+        String companion = Files.readString(Path.of(
                 "experiment-companion/src/main/java/com/geostrata/experiment/CorrelatedExperimentCompanion.java"
         ));
         String workflow = Files.readString(Path.of(".github/workflows/ore-benchmark.yml"));
 
-        assertTrue(source.contains("ORE_COAL_UPPER"));
-        assertTrue(source.contains("ORE_IRON_UPPER"));
-        assertTrue(source.contains("ORE_COPPER"));
-        assertFalse(source.contains("ORE_GOLD"));
-        assertFalse(source.contains("ORE_EMERALD"));
-        assertTrue(source.contains("BENCHMARK_DIAMOND_ORES"));
-        assertTrue(source.contains("GEOSTRATA_BENCHMARK_SUPPRESS_VANILLA_DIAMOND"));
+        assertTrue(core.contains("ORE_COAL_UPPER"));
+        assertTrue(core.contains("ORE_IRON_UPPER"));
+        assertTrue(core.contains("ORE_COPPER"));
+        assertFalse(core.contains("ORE_GOLD"));
+        assertFalse(core.contains("ORE_EMERALD"));
+        assertFalse(companion.contains("ORE_COAL_UPPER"));
+        assertFalse(companion.contains("ORE_IRON_UPPER"));
+        assertFalse(companion.contains("ORE_COPPER"));
+        assertTrue(companion.contains("BENCHMARK_DIAMOND_ORES"));
+        assertTrue(companion.contains("GEOSTRATA_BENCHMARK_SUPPRESS_VANILLA_DIAMOND"));
+        assertTrue(core.contains("GEOSTRATA_BENCHMARK_DISABLE_CORE_COMMON_ORE_OWNERSHIP"));
+        assertTrue(workflow.contains("GEOSTRATA_BENCHMARK_DISABLE_CORE_COMMON_ORE_OWNERSHIP"));
         assertTrue(workflow.contains("export GEOSTRATA_BENCHMARK_SUPPRESS_VANILLA_DIAMOND=true"));
-        assertFalse(source.contains("ORE_REDSTONE"));
-        assertFalse(source.contains("ORE_LAPIS"));
+        assertFalse(core.contains("ORE_REDSTONE"));
+        assertFalse(core.contains("ORE_LAPIS"));
     }
 
     @Test
