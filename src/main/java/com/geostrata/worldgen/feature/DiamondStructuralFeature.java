@@ -120,7 +120,7 @@ public final class DiamondStructuralFeature extends Feature<DefaultFeatureConfig
         int minY = world.getBottomY() + 5;
         int maxY = Math.min(
                 world.getTopY() - 1,
-                world.getBottomY() + Math.max(28, (int) Math.round(worldHeight * 0.22))
+                world.getBottomY() + Math.max(28, (int) Math.round(worldHeight * 0.08))
         );
         if (maxY <= minY) {
             return 0;
@@ -145,9 +145,9 @@ public final class DiamondStructuralFeature extends Feature<DefaultFeatureConfig
             double centerZ = trace.z()
                     + tectonics.faultSin() * alongJitter
                     + normalZ * acrossJitter;
-            int radius = DiamondGeologyPlanner.structuralClusterRoll(seed, candidate, cluster, CLUSTER_SIZE_SALT) < 0.35
-                    ? 2
-                    : 1;
+            int radius = DiamondGeologyPlanner.structuralClusterRoll(seed, candidate, cluster, CLUSTER_SIZE_SALT) < 0.65
+                    ? 3
+                    : 2;
             placed += DiamondPipeFeature.placeDiamondCluster(
                     world,
                     centerX,

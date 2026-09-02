@@ -309,7 +309,7 @@
         "biomeMultipliers": {
           "geostrata:has_mountain_rocks": 1.25
         },
-        "bodyScale": 1.35
+        "bodyScale": 1.65
       },
       "maximumNaturalGrade": "rich",
       "gradeBlocks": {
