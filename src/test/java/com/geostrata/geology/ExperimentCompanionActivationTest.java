@@ -30,6 +30,7 @@ final class ExperimentCompanionActivationTest {
 
         OreDepositExperiment.Snapshot coreOre = ore.activated(false, true);
         OreDepositExperiment.Snapshot activeOre = ore.activated(true, true);
+        OreDepositExperiment.Snapshot benchmarkCompanionOre = ore.activated(true, false);
         DiamondGeologyExperiment.Snapshot activeDiamond = diamond.activated(true);
 
         assertTrue(coreOre.enabled());
@@ -43,6 +44,11 @@ final class ExperimentCompanionActivationTest {
         assertEquals(0.8, activeOre.activationChance("coal"), 1.0e-12);
         assertEquals(1.0, activeOre.activationChance("iron"), 1.0e-12);
         assertEquals(0.36, activeOre.activationChance("copper"), 1.0e-12);
+
+        assertTrue(benchmarkCompanionOre.enabled());
+        assertEquals("experimental_runtime", benchmarkCompanionOre.runtimeStatus());
+        assertEquals(Set.of("emerald"), benchmarkCompanionOre.activationChancePerCandidate().keySet());
+        assertEquals("not_implemented", benchmarkCompanionOre.nativeGenerationSuppression());
 
         assertTrue(activeDiamond.enabled());
         assertEquals("experimental_runtime", activeDiamond.runtimeStatus());
