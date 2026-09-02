@@ -9,6 +9,7 @@ import java.util.Collections;
 import java.util.EnumMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -162,6 +163,11 @@ public final class OreOccurrenceCatalog {
         TerrainFilter terrainFilter = parseTerrainFilter(id, object);
         List<String> styles = stringList(requiredArray(object, "depositStyles"), id + " depositStyles");
         requireDepositStyles(id, styles);
+        List<FormationRoute> formationRoutes = parseFormationRoutes(
+                id,
+                requiredArray(object, "formationRoutes"),
+                knownLithologies
+        );
         OreGenerationProfile generation = OreGenerationProfile.parse(
                 id,
                 requiredObject(object, "generation"),
@@ -177,11 +183,50 @@ public final class OreOccurrenceCatalog {
                 hosts,
                 contexts,
                 styles,
+                formationRoutes,
                 generation,
                 terrainFilter,
                 maximumNaturalGrade,
                 gradeBlocks
         );
+    }
+
+    private static List<FormationRoute> parseFormationRoutes(
+            String material,
+            JsonArray rawRoutes,
+            Set<String> knownLithologies
+    ) {
+        if (rawRoutes.isEmpty()) {
+            throw new IllegalArgumentException(material + " formationRoutes must not be empty");
+        }
+        List<FormationRoute> routes = new ArrayList<>();
+        Set<String> routeIds = new HashSet<>();
+        for (JsonElement rawRoute : rawRoutes) {
+            if (!rawRoute.isJsonObject()) {
+                throw new IllegalArgumentException(material + " formationRoutes entries must be objects");
+            }
+            JsonObject object = rawRoute.getAsJsonObject();
+            String routeId = simpleId(object, "id");
+            if (!routeIds.add(routeId)) {
+                throw new IllegalArgumentException(material + " formationRoutes contains duplicate route " + routeId);
+            }
+            List<String> hosts = stringList(
+                    requiredArray(object, "hostLithologies"),
+                    material + " route " + routeId + " hostLithologies"
+            );
+            requireKnownHosts(material + " route " + routeId, hosts, knownLithologies);
+            List<GeologyProvince> contexts = parseContexts(
+                    material + " route " + routeId,
+                    requiredArray(object, "provinceContexts")
+            );
+            List<String> styles = stringList(
+                    requiredArray(object, "depositStyles"),
+                    material + " route " + routeId + " depositStyles"
+            );
+            requireDepositStyles(material + " route " + routeId, styles);
+            routes.add(new FormationRoute(routeId, hosts, contexts, styles));
+        }
+        return List.copyOf(routes);
     }
 
     private static TerrainFilter parseTerrainFilter(String material, JsonObject occurrence) {
@@ -263,6 +308,24 @@ public final class OreOccurrenceCatalog {
             }
         }
         return Optional.empty();
+    }
+
+    private static List<String> flattenHosts(List<FormationRoute> routes) {
+        LinkedHashSet<String> values = new LinkedHashSet<>();
+        routes.forEach(route -> values.addAll(route.hostLithologies()));
+        return List.copyOf(values);
+    }
+
+    private static List<GeologyProvince> flattenContexts(List<FormationRoute> routes) {
+        LinkedHashSet<GeologyProvince> values = new LinkedHashSet<>();
+        routes.forEach(route -> values.addAll(route.provinceContexts()));
+        return List.copyOf(values);
+    }
+
+    private static List<String> flattenStyles(List<FormationRoute> routes) {
+        LinkedHashSet<String> values = new LinkedHashSet<>();
+        routes.forEach(route -> values.addAll(route.depositStyles()));
+        return List.copyOf(values);
     }
 
     private static List<String> stringList(JsonArray array, String field) {
@@ -412,6 +475,38 @@ public final class OreOccurrenceCatalog {
         }
     }
 
+    public record FormationRoute(
+            String id,
+            List<String> hostLithologies,
+            List<GeologyProvince> provinceContexts,
+            List<String> depositStyles
+    ) {
+        public FormationRoute {
+            if (id == null || id.isBlank()
+                    || hostLithologies == null || hostLithologies.isEmpty()
+                    || provinceContexts == null || provinceContexts.isEmpty()
+                    || depositStyles == null || depositStyles.isEmpty()) {
+                throw new IllegalArgumentException("formation route id, hosts, provinces and styles must not be empty");
+            }
+            hostLithologies = List.copyOf(hostLithologies);
+            provinceContexts = List.copyOf(provinceContexts);
+            depositStyles = List.copyOf(depositStyles);
+        }
+
+        public boolean supports(String depositStyle, GeologyProvince province) {
+            return depositStyle != null
+                    && province != null
+                    && depositStyles.contains(depositStyle)
+                    && provinceContexts.contains(province);
+        }
+
+        public boolean matches(String depositStyle, GeologyProvince province, String hostLithology) {
+            return hostLithology != null
+                    && supports(depositStyle, province)
+                    && hostLithologies.contains(hostLithology);
+        }
+    }
+
     public record Occurrence(
             String id,
             String providerMod,
@@ -419,6 +514,7 @@ public final class OreOccurrenceCatalog {
             List<String> hostLithologies,
             List<GeologyProvince> provinceContexts,
             List<String> depositStyles,
+            List<FormationRoute> formationRoutes,
             OreGenerationProfile generation,
             TerrainFilter terrainFilter,
             OreGrade maximumNaturalGrade,
@@ -428,12 +524,50 @@ public final class OreOccurrenceCatalog {
             hostLithologies = List.copyOf(hostLithologies);
             provinceContexts = List.copyOf(provinceContexts);
             depositStyles = List.copyOf(depositStyles);
+            formationRoutes = List.copyOf(formationRoutes);
+            if (formationRoutes.isEmpty()) {
+                throw new IllegalArgumentException("ore occurrence must declare at least one formation route");
+            }
+            if (!hostLithologies.equals(flattenHosts(formationRoutes))
+                    || !provinceContexts.equals(flattenContexts(formationRoutes))
+                    || !depositStyles.equals(flattenStyles(formationRoutes))) {
+                throw new IllegalArgumentException(
+                        "ore occurrence host/province/style summaries must exactly match the ordered union of formationRoutes"
+                );
+            }
             if (generation == null || terrainFilter == null || maximumNaturalGrade == null) {
                 throw new IllegalArgumentException("ore generation profile, terrain filter and maximum natural grade must not be null");
             }
             EnumMap<OreGrade, String> copiedBlocks = new EnumMap<>(OreGrade.class);
             copiedBlocks.putAll(gradeBlocks);
             gradeBlocks = Collections.unmodifiableMap(copiedBlocks);
+        }
+
+        public Occurrence(
+                String id,
+                String providerMod,
+                String outputItem,
+                List<String> hostLithologies,
+                List<GeologyProvince> provinceContexts,
+                List<String> depositStyles,
+                OreGenerationProfile generation,
+                TerrainFilter terrainFilter,
+                OreGrade maximumNaturalGrade,
+                Map<OreGrade, String> gradeBlocks
+        ) {
+            this(
+                    id,
+                    providerMod,
+                    outputItem,
+                    hostLithologies,
+                    provinceContexts,
+                    depositStyles,
+                    List.of(new FormationRoute("baseline", hostLithologies, provinceContexts, depositStyles)),
+                    generation,
+                    terrainFilter,
+                    maximumNaturalGrade,
+                    gradeBlocks
+            );
         }
 
         public Occurrence(
@@ -482,6 +616,20 @@ public final class OreOccurrenceCatalog {
                     OreGrade.MASSIVE,
                     gradeBlocks
             );
+        }
+
+        public boolean matchesFormationRoute(String depositStyle, GeologyProvince province, String hostLithology) {
+            return formationRoutes.stream().anyMatch(route -> route.matches(depositStyle, province, hostLithology));
+        }
+
+        public List<String> hostLithologiesFor(String depositStyle, GeologyProvince province) {
+            LinkedHashSet<String> validHosts = new LinkedHashSet<>();
+            for (FormationRoute route : formationRoutes) {
+                if (route.supports(depositStyle, province)) {
+                    validHosts.addAll(route.hostLithologies());
+                }
+            }
+            return List.copyOf(validHosts);
         }
 
         public OreGrade capNaturalGrade(OreGrade grade) {
