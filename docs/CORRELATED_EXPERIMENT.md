@@ -1,16 +1,18 @@
-# Correlated sedimentary experiment
+# Correlated geology runtime
 
-GeoStrata keeps its advanced geology behind the separate `experiment-companion` artifact. Standalone GeoStrata retains the compatibility/fallback worldgen path; installing `geostrata_correlated_experiment` promotes the already-validated experiment metadata to `experimental_runtime` and registers the companion consumers.
+GeoStrata's correlated sedimentary and province-background geology was incubated behind the separate `experiment-companion` artifact. It is now a normal core runtime: the bundled contract is `core_runtime + enabled`, and the Fabric core adapter attaches the correlated sedimentary and province-background features directly.
+
+The companion no longer activates or attaches geology. Its remaining role is experimental common-ore suppression, benchmark-only diamond suppression and developer/debug commands.
 
 Existing chunks are not retroactively rewritten. Use fresh chunks or fresh worlds when evaluating worldgen changes.
 
 ## Runtime authority
 
-The companion does not use one universal rock matrix. Authority is layered:
+GeoStrata core does not use one universal rock matrix. Authority is layered:
 
 1. the active terrain generator establishes terrain shape;
 2. `GeologyProvinceSampler` resolves deterministic regional province/site context;
-3. `CorrelatedSedimentaryRuntime` owns eligible ordered sedimentary host where the correlated experiment claims a chunk;
+3. `CorrelatedSedimentaryRuntime` owns eligible ordered sedimentary host where the correlated contract claims a chunk;
 4. `ProvinceBackgroundRuntime` resolves the remaining province architecture;
 5. the shared structural field deforms both authorities;
 6. metamorphism, fault damage, diamonds and ore deposits consume the same geology/structure;
@@ -20,22 +22,22 @@ The semantic runtimes are authoritative; block-mutation feature order is not. Th
 
 ## Correlated ownership
 
-The correlated experiment currently targets:
+The correlated runtime currently targets:
 
 - `basin_mudrock_carbonate_cycle`;
 - `shelf_chalk_carbonate_cycle`;
 - `rift_fining_upward_clastics`;
 - `orogenic_fan_fining_upward`.
 
-Allowed provinces are Sedimentary Basin, Rift Province and Orogenic Belt. Owned chunks must remain at least 96 blocks from the nearest province boundary; the transition zone is left to province-background/suture handling while the correlated model is experimental.
+Allowed provinces are Sedimentary Basin, Rift Province and Orogenic Belt. Owned chunks must remain at least 96 blocks from the nearest province boundary; the transition zone is left to province-background/suture handling.
 
-`CorrelatedExperimentChunkOwnership` normalizes ownership to the 16×16 chunk. The same decision suppresses superseded fallback lenses and clips fallback bodies that would otherwise cross into correlated authority.
+`CorrelatedExperimentChunkOwnership` retains its historical class name but normalizes ownership to the 16×16 chunk. The same decision clips superseded fallback bodies that would otherwise cross into correlated authority.
 
 The authoritative correlated bed union is limestone, chalk, shale, mudstone, siltstone, breccia and conglomerate. Parent-aware Orogenic metamorphism may transform supported mudrock parents into slate/phyllite/schist/gneiss, carbonate into marble and quartz-rich sandstone into quartzite.
 
 ## Province architecture
 
-`ProvinceBackgroundRuntime` is the shared semantic resolver used by both the late background mutation and pre-generation consumers such as experimental ore host qualification.
+`ProvinceBackgroundRuntime` is the shared semantic resolver used by both the late background mutation and pre-generation consumers such as ore host qualification.
 
 Architecture is province-specific:
 
@@ -90,7 +92,7 @@ Ore activation remains keyed to material + original deterministic candidate cell
 
 Terrain response remains partial and province-dependent. Positive prominence acts as uplift/ridge evidence; strong negative prominence attenuates response so ravines mostly expose existing geology instead of dragging the geological field to the ravine floor.
 
-Geological thickness is not scaled to dimension height. The companion evaluates the same field across the active dimension bounds.
+Geological thickness is not scaled to dimension height. Core evaluates the same field across the active dimension bounds.
 
 ## Mutation safety
 
@@ -143,4 +145,4 @@ The hot path remains bounded:
 
 The next live-test priority is geometry rather than rock count: inspect fresh cave/cliff exposures that cross province boundaries and confirm that sutures read as steep regional contacts rather than chunk seams or vertical walls. Also verify that Volcanic, Cratonic and Orogenic provinces retain their distinct body architecture through those contacts.
 
-Standalone GeoStrata remains on the fallback baseline unless the companion is deliberately installed.
+Normal core GeoStrata worlds use this runtime. A datapack may disable the correlated contract for diagnosis or emergency recovery, but that does not dynamically resurrect the retired legacy rock-lens biome attachments because biome feature attachment is resolved before server datapacks load.
