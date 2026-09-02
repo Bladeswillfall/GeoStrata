@@ -2,74 +2,132 @@
 
 GeoStrata is staging a geology-driven ore system. The stable occurrence contract
 is `data/geostrata/geology/ore_occurrences.json`, loaded and validated with the
-rest of the server-data geology graph. Real deposit placement now exists behind
-a separate disabled-by-default experiment; ordinary GeoStrata worlds remain on
-the pre-deposit baseline unless a datapack explicitly opts in.
+rest of the server-data geology graph. Real deposit placement exists behind a
+separate disabled-by-default experiment; ordinary GeoStrata worlds remain on
+the pre-deposit baseline unless the experiment companion or an explicit server
+data override activates it.
 
 ## Current implemented boundary
 
-The catalog currently defines coal, iron, copper, gold and emerald. Emerald is the first
-occurrence to add an explicit terrain filter and natural-grade ceiling. Each occurrence declares:
+The catalog currently defines coal, iron, copper, gold and emerald. Each
+occurrence declares the geological facts that decide where that material is
+allowed to exist:
 
 - the mod that owns the material economy;
 - the canonical output item;
 - valid GeoStrata host lithologies;
-- valid geological province contexts; and
-- one or more deposit styles.
+- valid geological province contexts;
+- one or more reusable deposit styles;
+- optional terrain requirements; and
+- an optional natural-grade ceiling.
 
-The supported styles are deliberately limited to `coal_seam`, `vein`,
-`stratiform`, `disseminated` and `massive_lens_or_pocket`. Data reload fails if
-an occurrence references an unknown lithology, province or style. Use
-`/geostrata ore <material>` to inspect the loaded occurrence contract.
+Schema 3 also gives every occurrence a required `generation` profile. This is
+the human-editable gameplay/tuning layer rather than a second generator. It can
+declare:
 
-`OreDepositCandidatePlanner` divides the world into deterministic 256×256×64
-candidate cells. For each material and cell it derives one jittered anchor and
-one style from the occurrence's allowed styles without consuming Minecraft
-feature RNG state. The candidate cell is therefore stable regardless of chunk
-generation order.
+- `activationChance` — base probability for a deterministic candidate;
+- `candidateGrid` — horizontal/vertical candidate spacing, margins and search
+  padding;
+- `depthAffinity` — flat or linearly interpolated vertical multipliers;
+- `provinceMultipliers` — soft weighting inside already-valid geological
+  provinces;
+- `biomeMultipliers` — soft environmental bonuses sampled at the candidate
+  anchor; and
+- `depositStyleWeights` — relative weights when an occurrence can use several
+  formation styles.
+
+The central rule is deliberately asymmetric:
+
+> geology decides whether an occurrence is valid; the generation LUT can tilt
+> how often an already-valid occurrence activates.
+
+`hostLithologies`, `provinceContexts` and terrain filters therefore remain hard
+geological gates. A biome bonus cannot make coal appear in an invalid province
+or an invalid host system. Conversely, biome multipliers are required to be at
+least `1.0`: they can make an appropriate environment more rewarding, but they
+cannot remove a resource from otherwise valid geology. If multiple matching
+biome tags overlap, only the strongest bonus applies rather than multiplying the
+bonuses together.
+
+This is the intended extension path for future ores. If a provider adds tin and
+GeoStrata already has suitable formation styles, adding tin should primarily be
+a new occurrence/LUT entry plus its blocks/assets/provider integration. New
+Java worldgen is only justified when the material needs a genuinely new
+formation mechanism that the existing style library cannot represent.
+
+The currently supported styles are deliberately limited to `coal_seam`,
+`vein`, `micro_vein`, `stratiform`, `disseminated` and
+`massive_lens_or_pocket`. Data reload fails if an occurrence references an
+unknown lithology, province or style. Use `/geostrata ore <material>` to inspect
+the loaded occurrence contract.
+
+### Current baseline tuning
+
+The schema migration preserves the existing base activation chances, candidate
+spacing and iron/emerald depth behaviour. The first biome affinities are small,
+intentional gameplay tilts rather than replacement rules:
+
+| Material | Base activation | Candidate grid | Biome bonus |
+| --- | ---: | --- | ---: |
+| Coal | 80% | 160×160×64 | swamp soils ×1.30 |
+| Iron | 50% | 160×160×64 | mountain rocks ×1.10 |
+| Copper | 36% | 160×160×64 | none |
+| Gold | 80% | 64×64×64 | badlands soils ×1.15 |
+| Emerald | 8% | 32×32×16 | mountain rocks ×1.25 |
+
+These percentages are candidate activation probabilities, not percentages of
+chunks containing ore. Hard province eligibility, depth affinity, terrain
+filters, body bounds and valid host clipping still reduce actual world
+abundance substantially.
+
+`OreDepositCandidatePlanner` reads candidate density directly from each
+occurrence. For each material and candidate cell it derives one jittered anchor
+and one weighted deposit style without consuming Minecraft feature RNG state.
+The candidate is therefore stable regardless of chunk generation order. There
+are no material-name switches for gold, emerald or future ores in the planner.
 
 `OreDepositGeometry` gives each declared style a distinct body: low-dip coal
-sheets, branched tubular veins, broad stratiform lenses, sparse disseminated
-envelopes and compact massive lenses/pockets. The seed derives the baseline
-orientation, scale, warp and the two restrained side branches used by veins. A
-nearby fracture-style vein may subsequently have its anchor and main-axis
-azimuth bound to the shared tectonic fault field; its dimensions, warp, branches,
-concentration and grade logic remain the existing body geometry. The body sampler
-grades economic blocks from edge to core, applies stable block-coordinate
-dithering at grade boundaries and represents the surrounding halo or
-disseminated host gaps as non-economic Trace.
+sheets, branched tubular veins, small fracture veins, broad stratiform lenses,
+sparse disseminated envelopes and compact massive lenses/pockets. The seed
+derives the baseline orientation, scale and warp. A nearby fracture-style
+`vein` may subsequently have its anchor and main-axis azimuth bound to the
+shared tectonic fault field; its dimensions, warp, branches, concentration and
+grade logic remain the existing body geometry. The body sampler grades economic
+blocks from edge to core, applies stable block-coordinate dithering at grade
+boundaries and represents the surrounding halo or disseminated host gaps as
+non-economic Trace.
 
 The older anchor-host qualification path remains useful to diagnostics, but
 runtime placement deliberately does not read a remote candidate anchor block
-from another chunk. Active placement first checks the candidate's geological
-province, then clips each economic voxel to a locally present host lithology
-allowed by that material. This avoids chunk-loading/order hazards and lets a
-single body cross a geological contact while preserving the correct host state
-on each placed ore block.
+from another chunk. Active placement clips each economic voxel to a locally
+present host lithology allowed by that material. This avoids chunk-loading/order
+hazards and lets a single body cross a geological contact while preserving the
+correct host state on each placed ore block.
 
 ### Experimental deposit placement
 
 `data/geostrata/geology/ore_deposit_experiment.json` is the explicit activation
-boundary. The bundled resource has `enabled=false`. A test datapack may replace
-that resource with `enabled=true`; no code or client resource pack is required.
-The feature is registered across the overworld but returns immediately while the
-contract is disabled, so the normal generated-world baseline is unchanged.
+boundary. The bundled resource has `enabled=false`. Per-material abundance no
+longer lives in this file: it belongs to the occurrence LUT. The experiment file
+only carries a global `activationScale` for whole-experiment testing.
 
-The initial activation probability is intentionally conservative and applies to
-each material's deterministic 256×256×64 candidate cell before province and
-host clipping:
+For each nearby deterministic candidate, runtime placement now performs the
+following sequence:
 
-| Material | Candidate activation |
-| --- | ---: |
-| Coal | 4.0% |
-| Iron | 2.5% |
-| Copper | 1.8% |
-| Gold | 0.8% |
-| Emerald | 0.4% |
+1. create the occurrence-specific candidate and, where applicable, bind a
+   fracture vein to the shared fault field;
+2. reject candidates outside the occurrence's hard geological province list;
+3. combine the occurrence's depth, province and biome affinity multipliers;
+4. apply that affinity to the occurrence's deterministic base activation roll;
+5. apply any hard terrain filter;
+6. construct the body only for candidates that survived those cheap gates; and
+7. clip economic voxels to valid local host lithologies and the current chunk.
 
-These are experiment values, not a promised economy. The bodies are much larger
-than vanilla single-feature ore blobs, so high candidate frequency would swamp
-the graded yield model before abundance has been measured in fresh worlds.
+Biome affinity is sampled from the active chunk generator's biome source at the
+deterministic deposit anchor. It does not force-load a generated chunk and does
+not depend on which neighbouring chunk happened to generate first. This also
+lets compatible terrain/biome generators participate through their normal biome
+source rather than requiring GeoStrata to hard-code individual terrain mods.
 
 Placement is chunk-local. Every generated chunk re-evaluates the nearby stable
 candidate cells, builds any active body whose conservative bounds intersect the
@@ -90,16 +148,18 @@ replacement feature; the later sedimentary pass will not overwrite the graded
 ore block.
 
 Trace remains evidence-only and does not place a block. Vanilla/provider-native
-ore generation is still **not suppressed**. This experiment exists to measure
-body abundance, readability, performance and economic coverage before GeoStrata
-is allowed to become the exclusive generation owner.
+ore generation is still **not suppressed** by the standalone core mod. This
+experiment exists to measure body abundance, readability, performance and
+economic coverage before GeoStrata is allowed to become the exclusive
+generation owner.
 
 ### Shared fault-controlled veins
 
 `FaultControlledOrePlanner` is the single structural binding for experimental
-`vein` proposals. Candidate cells continue to own abundance: activation is
-resolved from material plus cell coordinates before structural binding, so
-moving a vein onto a fault cannot reroll whether that deposit exists.
+`vein` proposals. Candidate cells continue to own the deterministic random roll;
+fault binding does not generate a second candidate or consume a second random
+stream. The final bound anchor can, however, participate in the same geological
+and environmental affinity checks as any other final candidate location.
 
 A vein whose original anchor lies within 96 blocks of the shared fault family,
 and safely inside its owning province rather than near a province boundary, is
@@ -110,34 +170,32 @@ meandering trace. The existing vein body is re-oriented along that strike.
 
 This deliberately does not create a second ore-specific fracture simulator. The
 same fault trace displaces strata, exposes damage-zone breccia, controls
-structural diamonds and anchors nearby fracture-style veins. Non-vein deposit
+structural diamonds and anchors nearby fracture-style veins. Non-`vein` deposit
 styles bypass this binding unchanged. `/geostrata ore <material> candidate`
 uses the same planner and reports when a preview is `fault-aligned`.
 
 ### Emerald occurrence
 
-Emerald remains tied to mountain/orogenic gameplay without a bespoke emerald prospecting
-subsystem. Its occurrence is restricted to `orogenic_belt`, requires at least 24 blocks of
-coarse 128-block-scale terrain relief with positive prominence, and uses the shared `vein`
-body. This means terrain tells the player which mountain belts are worth exploring while the
-local host rock clips the vein naturally.
+Emerald remains tied to mountain/orogenic gameplay without a bespoke emerald
+prospecting subsystem. Its occurrence is restricted to `orogenic_belt`, requires
+at least 24 blocks of coarse 128-block-scale terrain relief with positive
+prominence, and uses the shared `micro_vein` body. Its generation LUT also gives
+mountain-tagged terrain a ×1.25 soft activation bonus. Mountains are therefore
+better prospecting territory without becoming the only place emerald can exist
+inside valid geology.
 
-Valid hosts are, in preferred geological order, schist, shale, marble, gneiss, limestone and
-slate. The list deliberately excludes quartzite, igneous rocks and coarse clastics rather than
-turning rare edge cases into extra gameplay rules. Existing parent-aware metamorphism already
-lets shale/carbonate systems continue into slate/schist/gneiss and marble in orogenic chunks.
+Valid hosts are, in preferred geological order, schist, shale, marble, gneiss,
+limestone and slate. The list deliberately excludes quartzite, igneous rocks and
+coarse clastics rather than turning rare edge cases into extra gameplay rules.
+Existing parent-aware metamorphism already lets shale/carbonate systems continue
+into slate/schist/gneiss and marble in orogenic chunks.
 
-The shared grade contract still registers Poor/Medium/Rich/Massive blocks for consistent loot,
-Silk Touch and assets, but emerald declares `maximumNaturalGrade=rich`. Massive emerald is thus
-asset/economy compatible but is not placed by ordinary generation. If a future generic
-structural-intersection rule justifies exceptional massive pockets, that can lift the cap
-without adding an emerald-only structural system.
-
-Emerald uses the same `FaultControlledOrePlanner` as other fracture-style veins.
-A qualifying candidate near a real Orogenic fault therefore snaps to that shared
-fault trace and follows its local meandering strike; a candidate too far from a
-fault retains the ordinary deterministic vein geometry. Emerald does not own a
-parallel fault simulator.
+The shared grade contract still registers Poor/Medium/Rich/Massive blocks for
+consistent loot, Silk Touch and assets, but emerald declares
+`maximumNaturalGrade=rich`. Massive emerald is thus asset/economy compatible but
+is not placed by ordinary generation. If a future generic structural-intersection
+rule justifies exceptional massive pockets, that can lift the cap without adding
+an emerald-only structural system.
 
 ## Grade contract
 
@@ -228,17 +286,18 @@ allowing the boundary overlay to run before the subtle interior variation.
 
 ### Spatial multi-block ore tilesets
 
-Graded ores use Continuity's native `repeat` method rather than neighbour-topology
-`ctm_compact`. Compact CTM splits an individual block face into halves and
-quadrants, which is useful for borders but still repeats block-local mineral art
-through the interior of a large deposit. The result looked connected only in
-some edge cases while a four-block-wide seam still visibly repeated every block.
+Graded ores use Continuity's native `repeat` method rather than
+neighbour-topology `ctm_compact`. Compact CTM splits an individual block face
+into halves and quadrants, which is useful for borders but still repeats
+block-local mineral art through the interior of a large deposit. The result
+looked connected only in some edge cases while a four-block-wide seam still
+visibly repeated every block.
 
-`scripts/generate_ore_continuity_tilesets.py` now builds one deterministic,
-periodic 64x64 mineral field per material and grade, then crops it into a 4x4
-set of sixteen 16x16 tiles. Continuity selects those tiles from world position
-and face direction. Adjacent ore blocks therefore show adjacent pieces of one
-larger mineral field instead of copies of the same one-block motif.
+`scripts/generate_ore_continuity_tilesets.py` builds one deterministic, periodic
+64x64 mineral field per material and grade, then crops it into a 4x4 set of
+sixteen 16x16 tiles. Continuity selects those tiles from world position and face
+direction. Adjacent ore blocks therefore show adjacent pieces of one larger
+mineral field instead of copies of the same one-block motif.
 
 The four grades share the same material-specific spatial score field and differ
 only by their declared density target, so Poor, Medium, Rich and Massive remain
@@ -256,13 +315,14 @@ Generated ore assets are covered by schema 3 of
 `data/geostrata/materials/ore_ctm_manifest.json`: `method=repeat`, a 4x4 field,
 and sixteen runtime tiles per material/grade/host combination. Regenerate ores
 with `python3 scripts/generate_ore_continuity_tilesets.py`; regenerate
-rock-boundary overlays with `python3 scripts/generate_host_continuity_transitions.py`.
-Normal CI validates both committed outputs without requiring Pillow and rejects
-ore fields that collapse back into repeated block-local sprites.
+rock-boundary overlays with
+`python3 scripts/generate_host_continuity_transitions.py`. Normal CI validates
+both committed outputs without requiring Pillow and rejects ore fields that
+collapse back into repeated block-local sprites.
 
 `docs/images/host-tiling-preview.png` remains the quick check for host
-repetition. `docs/images/ore-ctm-tileset-preview.png` now assembles the actual
-4x4 repeat field for every material and grade using its default host.
+repetition. `docs/images/ore-ctm-tileset-preview.png` assembles the actual 4x4
+repeat field for every material and grade using its default host.
 
 ![Host, mineral and grade authoring matrix](images/ore-texture-matrix-preview.png)
 
@@ -291,9 +351,9 @@ registered block IDs after startup.
 
 ## Staged implementation path
 
-1. **complete** — validate phase-one host, province, style and output contracts.
-2. **complete** — implement deterministic deposit candidates from world seed
-   and geological context without mutating blocks;
+1. **complete** — validate phase-one host, province, style and output contracts;
+2. **complete** — implement deterministic deposit candidates from world seed and
+   geological context without mutating blocks;
 3. **complete** — add Poor/Medium/Rich/Massive block, loot, yield and XP behavior
    with Trace as non-economic evidence;
 4. **complete** — construct and sample deterministic style-specific bodies,
@@ -301,7 +361,10 @@ registered block IDs after startup.
 5. **complete, experimental opt-in** — place deterministic bodies chunk-locally,
    clip them to valid host lithologies and expose conservative abundance tuning
    while leaving the default world and native ore generation unchanged;
-6. suppress overlapping native generation only when replacement coverage is
+6. **complete** — move candidate density, activation, depth bias, province bias,
+   biome bonuses and style weights into the schema-3 occurrence LUT so future
+   ores do not require material-name worldgen switches;
+7. suppress overlapping native generation only when replacement coverage is
    proven by fresh-world abundance/economy tests; and
-7. add guarded provider-mod occurrences without transferring ownership of their
+8. add guarded provider-mod occurrences without transferring ownership of their
    item economies into core GeoStrata.
