@@ -132,23 +132,6 @@ public final class CorrelatedSedimentaryExperiment {
         public boolean loaded() {
             return !targetSuccessionIds.isEmpty();
         }
-
-        Snapshot activated(boolean companionLoaded) {
-            if (!companionLoaded || enabled) {
-                return this;
-            }
-            return new Snapshot(
-                    "experimental_runtime",
-                    true,
-                    targetSuccessionIds,
-                    allowedProvinces,
-                    supersededLithologies,
-                    minimumBoundaryDistanceBlocks,
-                    registrationBiomeTag,
-                    hostBlockTag,
-                    verticalWindow
-            );
-        }
     }
 
     public record Ownership(
