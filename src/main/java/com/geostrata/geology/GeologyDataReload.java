@@ -53,8 +53,7 @@ public final class GeologyDataReload {
                     readObject(manager, PROVINCES),
                     readObject(manager, SUCCESSIONS),
                     readObject(manager, FIELD_PROFILES),
-                    readObject(manager, EXPERIMENT),
-                    companionLoaded
+                    readObject(manager, EXPERIMENT)
             );
             OreDepositExperiment.Snapshot oreExperiment = loaded.oreExperiment().activated(companionLoaded);
             DiamondGeologyExperiment.Snapshot diamondExperiment = DiamondGeologyExperiment.parse(
@@ -99,8 +98,7 @@ public final class GeologyDataReload {
             JsonObject provincesRoot,
             JsonObject successionsRoot,
             JsonObject fieldProfilesRoot,
-            JsonObject experimentRoot,
-            boolean companionLoaded
+            JsonObject experimentRoot
     ) {
         LithologyCatalog.Snapshot lithologies = LithologyCatalog.parse(lithologiesRoot);
         validateRuntimeArchitectureLithologies(lithologies);
@@ -123,7 +121,7 @@ public final class GeologyDataReload {
                 successions,
                 lithologies,
                 provinces
-        ).activated(companionLoaded);
+        );
         return new State(
                 lithologies,
                 oreOccurrences,
