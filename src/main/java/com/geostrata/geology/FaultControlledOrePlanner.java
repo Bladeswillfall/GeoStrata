@@ -65,7 +65,12 @@ public final class FaultControlledOrePlanner {
                 proposal.anchorY(),
                 (int) Math.round(trace.z())
         );
-        return new Binding(aligned, true, localStrikeRadians(tectonics, trace, proposal.anchorY()));
+        return new Binding(
+                proposal,
+                aligned,
+                true,
+                localStrikeRadians(tectonics, trace, proposal.anchorY())
+        );
     }
 
     private static double localStrikeRadians(
@@ -90,19 +95,31 @@ public final class FaultControlledOrePlanner {
         return Math.atan2(dz, dx);
     }
 
+    /**
+     * The public proposal remains the candidate-owned anchor used for abundance and affinity.
+     * bodyProposal may be moved onto a shared fault only after that candidate decision is stable.
+     */
     public record Binding(
             OreDepositCandidatePlanner.Proposal proposal,
+            OreDepositCandidatePlanner.Proposal bodyProposal,
             boolean faultAligned,
             double faultStrikeRadians
     ) {
         public Binding {
-            if (proposal == null || !Double.isFinite(faultStrikeRadians)) {
+            if (proposal == null || bodyProposal == null || !Double.isFinite(faultStrikeRadians)) {
                 throw new IllegalArgumentException("ore structural binding must be valid");
+            }
+            if (!proposal.material().equals(bodyProposal.material())
+                    || !proposal.depositStyle().equals(bodyProposal.depositStyle())
+                    || proposal.cellX() != bodyProposal.cellX()
+                    || proposal.cellY() != bodyProposal.cellY()
+                    || proposal.cellZ() != bodyProposal.cellZ()) {
+                throw new IllegalArgumentException("ore structural binding may move geometry but not candidate identity");
             }
         }
 
         private static Binding unbound(OreDepositCandidatePlanner.Proposal proposal) {
-            return new Binding(proposal, false, 0.0);
+            return new Binding(proposal, proposal, false, 0.0);
         }
 
         /** Uses the loaded ore LUT when available; neutral tuning keeps standalone callers deterministic. */
@@ -118,7 +135,7 @@ public final class FaultControlledOrePlanner {
             if (generation == null) {
                 throw new IllegalArgumentException("ore generation tuning must not be null");
             }
-            OreDepositGeometry.Body base = OreDepositGeometry.forProposal(worldSeed, proposal, generation);
+            OreDepositGeometry.Body base = OreDepositGeometry.forProposal(worldSeed, bodyProposal, generation);
             if (!faultAligned) {
                 return base;
             }
