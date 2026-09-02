@@ -54,7 +54,7 @@ jobs:
 
           requested = {
               'tectonic': '3.0.15',
-              'lithostitched': '1.4.8-fabric-1.20',
+              'lithostitched': '1.4.11-fabric-1.20',
           }
           mods = pathlib.Path('run/mods')
           for project, version_number in requested.items():
@@ -225,7 +225,7 @@ jobs:
           maximum_ratio = 2.5
           summary = (
               '# Correlated geology runtime readiness\n\n'
-              'Pinned terrain stack: Tectonic 3.0.15 + Lithostitched 1.4.8 on Minecraft 1.20.1.\n\n'
+              'Pinned terrain stack: Tectonic 3.0.15 + Lithostitched 1.4.11 on Minecraft 1.20.1.\n\n'
               'Extreme-height terrain: Y -128..640.\n\n'
               f'Baseline startup: {baseline:.3f}s  \n'
               f'Correlated startup: {correlated:.3f}s  \n'
