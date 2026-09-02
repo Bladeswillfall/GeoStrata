@@ -28,8 +28,11 @@ import java.util.Set;
 /** Developer-only distribution scan for comparing vanilla and GeoStrata ore visibility. */
 public final class OreDistributionBenchmarkCommands {
     private static final int GRID_CHUNKS = 10;
-    private static final int DEFAULT_MIN_CHUNK = -44;
     private static final int GENERATION_HALO_CHUNKS = 1;
+    private static final int MAX_WORLD_CHUNK = 1_874_999;
+    private static final int MIN_BENCHMARK_CHUNK = -MAX_WORLD_CHUNK + GENERATION_HALO_CHUNKS;
+    private static final int MAX_BENCHMARK_CHUNK = MAX_WORLD_CHUNK - (GRID_CHUNKS - 1) - GENERATION_HALO_CHUNKS;
+    private static final int DEFAULT_MIN_CHUNK = -44;
     private static final int AIR_PROXIMITY_RADIUS = 12;
     private static final int PLANE_LOCAL_X = 8;
     private static final int Y_BAND_HEIGHT = 16;
@@ -54,11 +57,13 @@ public final class OreDistributionBenchmarkCommands {
                                 .then(CommandManager.literal("benchmark")
                                         .requires(source -> source.hasPermissionLevel(2))
                                         .executes(context -> run(context.getSource(), DEFAULT_MIN_CHUNK))
-                                        .then(CommandManager.argument("minChunk", IntegerArgumentType.integer())
-                                                .executes(context -> run(
-                                                        context.getSource(),
-                                                        IntegerArgumentType.getInteger(context, "minChunk")
-                                                ))))))
+                                        .then(CommandManager.argument(
+                                                "minChunk",
+                                                IntegerArgumentType.integer(MIN_BENCHMARK_CHUNK, MAX_BENCHMARK_CHUNK)
+                                        ).executes(context -> run(
+                                                context.getSource(),
+                                                IntegerArgumentType.getInteger(context, "minChunk")
+                                        ))))))
         );
     }
 
