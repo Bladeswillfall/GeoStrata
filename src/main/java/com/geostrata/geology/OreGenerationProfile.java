@@ -12,19 +12,18 @@ import java.util.Map;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 
-/**
- * Human-editable generation tuning for an ore occurrence.
- *
- * <p>Hard geological eligibility remains in the occurrence contract. This profile only
- * tunes how frequently an eligible occurrence is proposed and activated.</p>
- */
+/** Human-editable tuning layered on top of hard geological ore eligibility. */
 public record OreGenerationProfile(
         double activationChance,
         CandidateGrid candidateGrid,
         List<DepthBand> depthAffinity,
         Map<GeologyProvince, Double> provinceMultipliers,
         Map<String, Double> biomeMultipliers,
-        Map<String, Double> depositStyleWeights
+        Map<String, Double> depositStyleWeights,
+        double bodyScale,
+        double traceNormalScale,
+        GradeTuning grades,
+        DiscoveryStringers discoveryStringers
 ) {
     private static final Pattern IDENTIFIER = Pattern.compile("[a-z0-9_.-]+:[a-z0-9/._-]+");
 
@@ -33,8 +32,12 @@ public record OreGenerationProfile(
             throw new IllegalArgumentException("ore activation chance must be between 0 and 1");
         }
         if (candidateGrid == null || depthAffinity == null || provinceMultipliers == null
-                || biomeMultipliers == null || depositStyleWeights == null) {
+                || biomeMultipliers == null || depositStyleWeights == null || grades == null
+                || discoveryStringers == null) {
             throw new IllegalArgumentException("ore generation profile fields must not be null");
+        }
+        if (!positive(bodyScale) || !positive(traceNormalScale)) {
+            throw new IllegalArgumentException("ore body and trace scales must be finite and positive");
         }
         validateMultipliers(provinceMultipliers, 0.0, "province");
         validateMultipliers(biomeMultipliers, 1.0, "biome");
@@ -43,6 +46,29 @@ public record OreGenerationProfile(
         provinceMultipliers = Collections.unmodifiableMap(new LinkedHashMap<>(provinceMultipliers));
         biomeMultipliers = Collections.unmodifiableMap(new LinkedHashMap<>(biomeMultipliers));
         depositStyleWeights = Collections.unmodifiableMap(new LinkedHashMap<>(depositStyleWeights));
+    }
+
+    /** Compatibility constructor for callers that only need activation/affinity tuning. */
+    public OreGenerationProfile(
+            double activationChance,
+            CandidateGrid candidateGrid,
+            List<DepthBand> depthAffinity,
+            Map<GeologyProvince, Double> provinceMultipliers,
+            Map<String, Double> biomeMultipliers,
+            Map<String, Double> depositStyleWeights
+    ) {
+        this(
+                activationChance,
+                candidateGrid,
+                depthAffinity,
+                provinceMultipliers,
+                biomeMultipliers,
+                depositStyleWeights,
+                1.0,
+                1.0,
+                GradeTuning.defaults(),
+                DiscoveryStringers.disabled()
+        );
     }
 
     static OreGenerationProfile parse(
@@ -68,13 +94,24 @@ public record OreGenerationProfile(
                 optionalObject(object, "depositStyleWeights"),
                 depositStyles
         );
+        double bodyScale = optionalPositiveDouble(object, "bodyScale", 1.0);
+        double traceNormalScale = optionalPositiveDouble(object, "traceNormalScale", 1.0);
+        GradeTuning grades = parseGradeTuning(material, optionalObject(object, "gradeThresholds"));
+        DiscoveryStringers discovery = parseDiscoveryStringers(
+                material,
+                optionalObject(object, "discoveryStringers")
+        );
         return new OreGenerationProfile(
                 activationChance,
                 candidateGrid,
                 depthAffinity,
                 provinceMultipliers,
                 biomeMultipliers,
-                styleWeights
+                styleWeights,
+                bodyScale,
+                traceNormalScale,
+                grades,
+                discovery
         );
     }
 
@@ -103,10 +140,7 @@ public record OreGenerationProfile(
         return provinceMultipliers.getOrDefault(province, 1.0);
     }
 
-    /**
-     * Biome entries are deliberately non-stacking: the strongest matching bonus wins.
-     * This keeps overlapping biome tags from multiplying into accidental jackpots.
-     */
+    /** Strongest matching biome bonus wins so overlapping biome tags do not compound. */
     public double biomeMultiplier(Predicate<String> matchesTag) {
         double multiplier = 1.0;
         for (Map.Entry<String, Double> entry : biomeMultipliers.entrySet()) {
@@ -239,6 +273,42 @@ public record OreGenerationProfile(
         return result;
     }
 
+    private static GradeTuning parseGradeTuning(String material, JsonObject object) {
+        if (object == null) {
+            return GradeTuning.defaults();
+        }
+        try {
+            return new GradeTuning(
+                    requireDouble(object, "medium"),
+                    requireDouble(object, "rich"),
+                    requireDouble(object, "massive"),
+                    requireDouble(object, "dither")
+            );
+        } catch (IllegalArgumentException exception) {
+            throw new IllegalArgumentException(material + " gradeThresholds: " + exception.getMessage(), exception);
+        }
+    }
+
+    private static DiscoveryStringers parseDiscoveryStringers(String material, JsonObject object) {
+        if (object == null) {
+            return DiscoveryStringers.disabled();
+        }
+        try {
+            return new DiscoveryStringers(
+                    requireInt(object, "count"),
+                    requireDouble(object, "minLength"),
+                    requireDouble(object, "maxLength"),
+                    requireDouble(object, "minRadius"),
+                    requireDouble(object, "maxRadius"),
+                    requireDouble(object, "exposedHaloBlocks"),
+                    optionalInt(object, "downwardBiasedCount", 0),
+                    optionalDouble(object, "downwardBias", 0.0)
+            );
+        } catch (IllegalArgumentException exception) {
+            throw new IllegalArgumentException(material + " discoveryStringers: " + exception.getMessage(), exception);
+        }
+    }
+
     private static GeologyProvince provinceById(String id) {
         for (GeologyProvince province : GeologyProvince.values()) {
             if (province.id().equals(id)) {
@@ -306,6 +376,11 @@ public record OreGenerationProfile(
         return object.has(key) ? requireInt(object, key) : null;
     }
 
+    private static int optionalInt(JsonObject object, String key, int fallback) {
+        Integer value = optionalInt(object, key);
+        return value == null ? fallback : value;
+    }
+
     private static double requireDouble(JsonObject object, String key) {
         JsonElement element = object.get(key);
         if (element == null) {
@@ -314,15 +389,40 @@ public record OreGenerationProfile(
         return finiteNonNegative(element, key);
     }
 
+    private static double optionalDouble(JsonObject object, String key, double fallback) {
+        JsonElement element = object.get(key);
+        return element == null ? fallback : finite(element, key);
+    }
+
+    private static double optionalPositiveDouble(JsonObject object, String key, double fallback) {
+        double value = optionalDouble(object, key, fallback);
+        if (!positive(value)) {
+            throw new IllegalArgumentException(key + " must be finite and positive");
+        }
+        return value;
+    }
+
     private static double finiteNonNegative(JsonElement element, String field) {
+        double value = finite(element, field);
+        if (value < 0.0) {
+            throw new IllegalArgumentException(field + " must be non-negative");
+        }
+        return value;
+    }
+
+    private static double finite(JsonElement element, String field) {
         if (!element.isJsonPrimitive() || !element.getAsJsonPrimitive().isNumber()) {
             throw new IllegalArgumentException(field + " must be a number");
         }
         double value = element.getAsDouble();
-        if (!Double.isFinite(value) || value < 0.0) {
-            throw new IllegalArgumentException(field + " must be finite and non-negative");
+        if (!Double.isFinite(value)) {
+            throw new IllegalArgumentException(field + " must be finite");
         }
         return value;
+    }
+
+    private static boolean positive(double value) {
+        return Double.isFinite(value) && value > 0.0;
     }
 
     public record CandidateGrid(
@@ -373,6 +473,83 @@ public record OreGenerationProfile(
             }
             double t = (double) (y - minY) / (double) (maxY - minY);
             return startMultiplier + (endMultiplier - startMultiplier) * t;
+        }
+    }
+
+    /** Concentration cutoffs used inside a body after deterministic dither. */
+    public record GradeTuning(
+            double mediumThreshold,
+            double richThreshold,
+            double massiveThreshold,
+            double dither
+    ) {
+        public GradeTuning {
+            if (!inUnitInterval(mediumThreshold)
+                    || !inUnitInterval(richThreshold)
+                    || !inUnitInterval(massiveThreshold)
+                    || !inUnitInterval(dither)
+                    || mediumThreshold >= richThreshold
+                    || richThreshold >= massiveThreshold) {
+                throw new IllegalArgumentException(
+                        "grade thresholds must increase within 0..1 and dither must be within 0..1"
+                );
+            }
+        }
+
+        public static GradeTuning defaults() {
+            return new GradeTuning(0.35, 0.60, 0.82, 0.12);
+        }
+
+        public OreGrade grade(double concentration) {
+            if (concentration < mediumThreshold) {
+                return OreGrade.POOR;
+            }
+            if (concentration < richThreshold) {
+                return OreGrade.MEDIUM;
+            }
+            if (concentration < massiveThreshold) {
+                return OreGrade.RICH;
+            }
+            return OreGrade.MASSIVE;
+        }
+
+        private static boolean inUnitInterval(double value) {
+            return Double.isFinite(value) && value >= 0.0 && value <= 1.0;
+        }
+    }
+
+    /** Optional poor-grade discovery fractures genetically tied to the parent body. */
+    public record DiscoveryStringers(
+            int count,
+            double minLength,
+            double maxLength,
+            double minRadius,
+            double maxRadius,
+            double exposedHaloBlocks,
+            int downwardBiasedCount,
+            double downwardBias
+    ) {
+        public DiscoveryStringers {
+            if (count < 0 || downwardBiasedCount < 0 || downwardBiasedCount > count
+                    || !Double.isFinite(minLength) || !Double.isFinite(maxLength)
+                    || !Double.isFinite(minRadius) || !Double.isFinite(maxRadius)
+                    || !Double.isFinite(exposedHaloBlocks) || !Double.isFinite(downwardBias)
+                    || minLength < 0.0 || maxLength < minLength
+                    || minRadius < 0.0 || maxRadius < minRadius || exposedHaloBlocks < 0.0
+                    || downwardBias > 0.0) {
+                throw new IllegalArgumentException("invalid discovery stringer tuning");
+            }
+            if (count > 0 && (minLength <= 0.0 || minRadius <= 0.0)) {
+                throw new IllegalArgumentException("enabled discovery stringers need positive length and radius");
+            }
+        }
+
+        public static DiscoveryStringers disabled() {
+            return new DiscoveryStringers(0, 0.0, 0.0, 0.0, 0.0, 0.0, 0, 0.0);
+        }
+
+        public boolean enabled() {
+            return count > 0;
         }
     }
 }
