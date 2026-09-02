@@ -1,0 +1,261 @@
+name: Core ore readiness benchmark
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/core-ore-readiness.yml'
+      - 'src/main/java/com/geostrata/block/GeoStrataBlocks.java'
+      - 'src/main/java/com/geostrata/block/GradedOreBlock.java'
+      - 'src/main/java/com/geostrata/block/OreHost.java'
+      - 'src/main/java/com/geostrata/command/OreDistributionBenchmarkCommands.java'
+      - 'src/main/java/com/geostrata/geology/**'
+      - 'src/main/java/com/geostrata/worldgen/feature/OreDepositFeature.java'
+      - 'src/main/resources/data/geostrata/geology/**'
+      - 'src/main/resources/data/geostrata/worldgen/**'
+
+permissions:
+  contents: read
+
+jobs:
+  core-ore-readiness:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Java 21 for Gradle and Loom
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Set up Gradle 9.4
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: 9.4.0
+
+      - name: Build core mod
+        run: gradle build --stacktrace
+
+      - name: Prepare dedicated server
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p run/results
+          printf 'eula=true\n' > run/eula.txt
+          cat > run/server.properties <<'EOF'
+          level-name=geostrata-core-ore-readiness
+          level-seed=8675309
+          level-type=minecraft:normal
+          online-mode=false
+          spawn-protection=0
+          view-distance=2
+          simulation-distance=2
+          max-tick-time=-1
+          enable-command-block=false
+          EOF
+
+      - name: Benchmark vanilla baseline and core-only ore experiment
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          run_scenario() {
+              scenario="$1"
+              rm -rf run/geostrata-core-ore-readiness run/logs
+
+              if [ "$scenario" = core ]; then
+                  pack="run/geostrata-core-ore-readiness/datapacks/geostrata-core-ore-readiness"
+                  mkdir -p "$pack/data/geostrata/geology"
+                  cat > "$pack/pack.mcmeta" <<'EOF'
+          {"pack":{"pack_format":15,"description":"GeoStrata CI core-only ore readiness"}}
+          EOF
+                  cat > "$pack/data/geostrata/geology/ore_deposit_experiment.json" <<'EOF'
+          {
+            "schemaVersion": 2,
+            "model": "geostrata:ore_deposit_experiment",
+            "runtimeStatus": "experimental_opt_in",
+            "enabled": true,
+            "description": "CI-only core ore readiness override; vanilla ore generation remains active.",
+            "placementMode": "chunk_local_valid_host_clipping",
+            "nativeGenerationSuppression": "not_implemented",
+            "activationScale": 1.0
+          }
+          EOF
+              fi
+
+              fifo="run/${scenario}.console"
+              rm -f "$fifo"
+              mkfifo "$fifo"
+              exec 3<>"$fifo"
+              setsid gradle runServer --stacktrace <"$fifo" >"run/results/${scenario}.stdout.log" 2>&1 &
+              pid=$!
+
+              started=0
+              for _ in $(seq 1 240); do
+                  if [ -f run/logs/latest.log ] && grep -q 'Done (' run/logs/latest.log; then
+                      started=1
+                      break
+                  fi
+                  if ! kill -0 "$pid" 2>/dev/null; then
+                      echo "Minecraft server exited before startup for ${scenario}."
+                      cat "run/results/${scenario}.stdout.log"
+                      [ -f run/logs/latest.log ] && cat run/logs/latest.log
+                      exit 1
+                  fi
+                  sleep 2
+              done
+              if [ "$started" -ne 1 ]; then
+                  echo "Minecraft server did not reach Done for ${scenario}."
+                  kill -TERM -- "-$pid" 2>/dev/null || true
+                  exit 1
+              fi
+
+              python3 - "$scenario" <<'PY'
+          import pathlib
+          import re
+          import sys
+
+          scenario = sys.argv[1]
+          text = pathlib.Path('run/logs/latest.log').read_text(errors='replace')
+          matches = re.findall(r'Done \(([0-9]+(?:\.[0-9]+)?)s\)', text)
+          if not matches:
+              raise SystemExit(f'Could not parse Minecraft Done time for {scenario}')
+          pathlib.Path(f'run/results/{scenario}.startup-seconds.txt').write_text(f'{float(matches[-1]):.3f}\n')
+          PY
+
+              printf 'geostrata ore benchmark -44\n' >&3
+              found=0
+              for _ in $(seq 1 360); do
+                  if grep -q 'GEOSTRATA_ORE_BENCHMARK ' run/logs/latest.log; then
+                      found=1
+                      break
+                  fi
+                  if ! kill -0 "$pid" 2>/dev/null; then
+                      echo "Minecraft server exited during benchmark for ${scenario}."
+                      cat "run/results/${scenario}.stdout.log"
+                      cat run/logs/latest.log
+                      exit 1
+                  fi
+                  sleep 2
+              done
+              if [ "$found" -ne 1 ]; then
+                  echo "Ore benchmark did not complete for ${scenario}."
+                  cat run/logs/latest.log
+                  kill -TERM -- "-$pid" 2>/dev/null || true
+                  exit 1
+              fi
+
+              python3 - "$scenario" <<'PY'
+          import json
+          import pathlib
+          import sys
+
+          scenario = sys.argv[1]
+          marker = 'GEOSTRATA_ORE_BENCHMARK '
+          lines = pathlib.Path('run/logs/latest.log').read_text(errors='replace').splitlines()
+          payload = next(line.split(marker, 1)[1] for line in reversed(lines) if marker in line)
+          pathlib.Path(f'run/results/{scenario}.json').write_text(
+              json.dumps(json.loads(payload), indent=2) + '\n'
+          )
+          PY
+
+              cp run/logs/latest.log "run/results/${scenario}.latest.log"
+              printf 'stop\n' >&3
+              wait "$pid" || true
+              exec 3>&-
+              rm -f "$fifo"
+          }
+
+          run_scenario vanilla
+          run_scenario core
+
+      - name: Summarize core-only readiness
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          baseline = json.loads(Path('run/results/vanilla.json').read_text())
+          core = json.loads(Path('run/results/core.json').read_text())
+          vanilla_startup = float(Path('run/results/vanilla.startup-seconds.txt').read_text())
+          core_startup = float(Path('run/results/core.startup-seconds.txt').read_text())
+          common = ('coal', 'iron', 'copper')
+          rows = {}
+          ready = True
+          for material in common:
+              before = baseline['materials'][material]
+              after = core['materials'][material]
+              vanilla_patches = before['airExposedClusters']
+              core_patches = after['gradedAirExposedClusters']
+              ratio = 0.0 if vanilla_patches == 0 else core_patches * 100.0 / vanilla_patches
+              material_ready = vanilla_patches > 0 and core_patches >= (vanilla_patches + 1) // 2
+              ready = ready and material_ready
+              if before['vanillaTaggedBlocks'] > 0 and after['vanillaTaggedBlocks'] == 0:
+                  raise SystemExit(f'{material}: core-only diagnostic unexpectedly suppressed vanilla generation')
+              rows[material] = {
+                  'vanillaTotal': before['total'],
+                  'coreGradedTotal': after['gradedBlocks'],
+                  'coreResidualVanillaTotal': after['vanillaTaggedBlocks'],
+                  'vanillaExposedPatches': vanilla_patches,
+                  'coreGradedExposedPatches': core_patches,
+                  'patchPercentOfVanilla': ratio,
+                  'promotionFloorMet': material_ready,
+              }
+
+          summary = {
+              'seed': baseline['seed'],
+              'chunkMin': baseline['chunkMin'],
+              'chunkMax': baseline['chunkMax'],
+              'chunkCount': baseline['chunkCount'],
+              'startup': {
+                  'vanillaSeconds': vanilla_startup,
+                  'coreOreSeconds': core_startup,
+                  'ratio': core_startup / vanilla_startup,
+              },
+              'promotionReadyAtCurrent50PercentFloor': ready,
+              'materials': rows,
+          }
+          Path('run/results/core-readiness.json').write_text(json.dumps(summary, indent=2) + '\n')
+
+          lines = [
+              '# Core-only common ore readiness',
+              '',
+              f"Seed: {summary['seed']} | chunks: {summary['chunkCount']} (10x10) | chunk range: {summary['chunkMin']}..{summary['chunkMax']}",
+              '',
+              f"Startup: baseline {vanilla_startup:.3f}s | core-only ore experiment {core_startup:.3f}s | {core_startup / vanilla_startup:.2f}x",
+              '',
+              '| Material | Vanilla total | Core graded | Residual vanilla | Vanilla exposed patches | Core graded patches | % of vanilla patches | 50% floor |',
+              '|---|---:|---:|---:|---:|---:|---:|:---:|',
+          ]
+          for material, row in rows.items():
+              lines.append(
+                  f"| {material} | {row['vanillaTotal']} | {row['coreGradedTotal']} | "
+                  f"{row['coreResidualVanillaTotal']} | {row['vanillaExposedPatches']} | "
+                  f"{row['coreGradedExposedPatches']} | {row['patchPercentOfVanilla']:.1f}% | "
+                  f"{'yes' if row['promotionFloorMet'] else 'no'} |"
+              )
+          lines.extend([
+              '',
+              f"Promotion-ready at the existing 50% exposed-patch floor: **{'YES' if ready else 'NO'}**.",
+              '',
+              'This is diagnostic only: the core scenario enables the existing ore experiment through a temporary datapack and intentionally leaves vanilla ore generation active. It does not change normal GeoStrata behavior.',
+          ])
+          report = '\n'.join(lines) + '\n'
+          Path('run/results/core-readiness.md').write_text(report)
+          print(report)
+          with Path('/dev/stdout').open('w') as output:
+              pass
+          PY
+          cat run/results/core-readiness.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload readiness results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: geostrata-core-ore-readiness
+          path: run/results/*
+          if-no-files-found: warn
