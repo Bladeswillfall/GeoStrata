@@ -319,7 +319,7 @@
       "canonicalRole": "geostrata:rock/igneous/andesite",
       "minecraftBlock": "minecraft:andesite",
       "priorityConsumers": ["create"],
-      "status": "missing"
+      "status": "implemented"
     },
     {
       "id": "granite",

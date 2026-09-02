@@ -3,12 +3,16 @@ package com.geostrata.platform.fabric;
 import com.geostrata.GeoStrata;
 import net.fabricmc.fabric.api.biome.v1.BiomeModifications;
 import net.fabricmc.fabric.api.biome.v1.BiomeSelectors;
+import net.fabricmc.fabric.api.biome.v1.ModificationPhase;
 import net.minecraft.registry.RegistryKey;
 import net.minecraft.registry.RegistryKeys;
 import net.minecraft.registry.tag.TagKey;
 import net.minecraft.world.biome.Biome;
 import net.minecraft.world.gen.GenerationStep;
+import net.minecraft.world.gen.feature.OrePlacedFeatures;
 import net.minecraft.world.gen.feature.PlacedFeature;
+
+import java.util.List;
 
 /** Fabric biome-modification adapter for GeoStrata's shared data-driven placed features. */
 public final class FabricWorldgenRegistration {
@@ -18,11 +22,16 @@ public final class FabricWorldgenRegistration {
     private static final TagKey<Biome> HAS_BADLANDS_SOILS = biomeTag("has_badlands_soils");
     private static final TagKey<Biome> HAS_EXPERIMENTAL_ORE_DEPOSITS = biomeTag("has_experimental_ore_deposits");
     private static final TagKey<Biome> HAS_EXPERIMENTAL_DIAMOND_GEOLOGY = biomeTag("has_experimental_diamond_geology");
+    private static final List<RegistryKey<PlacedFeature>> REPLACED_VANILLA_ANDESITE_BLOBS = List.of(
+            OrePlacedFeatures.ORE_ANDESITE_UPPER,
+            OrePlacedFeatures.ORE_ANDESITE_LOWER
+    );
 
     private FabricWorldgenRegistration() {
     }
 
     public static void register() {
+        removeVanillaAndesiteBlobs();
         addToTag("correlated_sedimentary_experiment", HAS_COMMON_ROCKS, GenerationStep.Feature.TOP_LAYER_MODIFICATION);
         addToTag("province_background_experiment", HAS_COMMON_ROCKS, GenerationStep.Feature.TOP_LAYER_MODIFICATION);
 
@@ -59,6 +68,19 @@ public final class FabricWorldgenRegistration {
                 HAS_EXPERIMENTAL_DIAMOND_GEOLOGY,
                 GenerationStep.Feature.UNDERGROUND_DECORATION
         );
+    }
+
+    private static void removeVanillaAndesiteBlobs() {
+        BiomeModifications.create(GeoStrata.id("core_andesite_ownership"))
+                .add(
+                        ModificationPhase.REMOVALS,
+                        BiomeSelectors.foundInOverworld(),
+                        context -> REPLACED_VANILLA_ANDESITE_BLOBS.forEach(feature ->
+                                context.getGenerationSettings().removeFeature(
+                                        GenerationStep.Feature.UNDERGROUND_ORES,
+                                        feature
+                                ))
+                );
     }
 
     private static void addToTag(String feature, TagKey<Biome> tag) {

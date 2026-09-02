@@ -25,6 +25,7 @@ public final class VolcanicArcModel {
     private static final double COMPLEX_HALO_SCALE = 1.18;
     private static final double PLUTON_TOP_NORMALIZED_Y = -0.20;
     private static final double GRANITE_CORE_RADIUS = 0.58;
+    private static final double RHYOLITE_CORE_RADIUS = 0.52;
 
     private static final long DIKE_ANGLE_SALT = 0x8EBC6AF09C88C6E3L;
     private static final long DIKE_PHASE_SALT = 0x589965CC75374CC3L;
@@ -191,7 +192,7 @@ public final class VolcanicArcModel {
                 return complexRock(vertical, complexRadius);
             }
             if (vertical > PLUTON_TOP_NORMALIZED_Y && complexRadius <= COMPLEX_HALO_SCALE) {
-                return new Sample("breccia", "rhyolite_breccia");
+                return new Sample("breccia", "volcanic_breccia");
             }
             if (sillFootprint <= 1.0 && Math.abs(y - sillCenterY) <= SILL_HALF_THICKNESS) {
                 return new Sample("basalt", "sill");
@@ -210,7 +211,9 @@ public final class VolcanicArcModel {
                         ? new Sample("granite", "plutonic_core")
                         : new Sample("diorite", "plutonic_margin");
             }
-            return new Sample("rhyolite", "rhyolite_body");
+            return complexRadius <= RHYOLITE_CORE_RADIUS
+                    ? new Sample("rhyolite", "rhyolite_body")
+                    : new Sample("andesite", "andesite_body");
         }
 
         private Sample countryRock() {

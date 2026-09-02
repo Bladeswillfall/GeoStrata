@@ -41,6 +41,7 @@ public final class GeologyDataReload {
             "hornfels",
             "basalt",
             "rhyolite",
+            "andesite",
             "granite",
             "diorite",
             "breccia"
