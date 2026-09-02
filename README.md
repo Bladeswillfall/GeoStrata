@@ -19,14 +19,14 @@ The current pre-alpha includes rock families such as:
 - Conglomerate and breccia.
 - Several types of soil and clay.
 
-Natural lithologies use coherent province/correlated body-style generation rather than vanilla ore blobs. Correlated sedimentary strata, terrain-aware deformation and parent-aware metamorphism now run in normal core worlds; the optional companion remains for experimental ore ownership, benchmark-only diamond suppression and developer diagnostics.
+Natural lithologies use coherent province/correlated body-style generation rather than vanilla ore blobs. Correlated sedimentary strata, terrain-aware deformation, parent-aware metamorphism, and graded coal/iron/copper generation now run in normal core worlds. On Fabric, core also suppresses the corresponding vanilla coal/iron/copper worldgen. The optional companion remains for experimental gold/emerald/diamond worldgen, benchmark-only diamond suppression and developer diagnostics.
 
 The mod also leaves room for other mods to join in. A modpack can add its own biomes, terrain blocks, or geological rules without GeoStrata needing to be rewritten for every individual mod.
 
 ## Where things live
 
 - `src/` — shared GeoStrata source/resources plus the current Fabric adapter under `com.geostrata.platform.fabric`.
-- `experiment-companion/` — the current Fabric experimental ore-ownership and developer-diagnostics artifact.
+- `experiment-companion/` — the current Fabric rare-ore/diamond experiment and developer-diagnostics artifact.
 - `pack/` — the development and integration modpack. This is not included in the core mod jar and is not part of the multi-loader mod architecture.
 - `compat/` — optional compatibility projects and add-ons.
 - `scripts/` — scripts used for checking and supporting the build.
