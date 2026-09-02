@@ -2,7 +2,7 @@
 
 GeoStrata's correlated sedimentary and province-background geology was incubated behind the separate `experiment-companion` artifact. It is now a normal core runtime: the bundled contract is `core_runtime + enabled`, and the Fabric core adapter attaches the correlated sedimentary and province-background features directly.
 
-The companion no longer activates or attaches geology. Its remaining role is experimental common-ore suppression, benchmark-only diamond suppression and developer/debug commands.
+The companion no longer activates or attaches geology or owns common-ore suppression. Core owns graded coal/iron/copper generation and the corresponding Fabric vanilla-worldgen suppression; the companion remains for experimental gold/emerald/diamond generation, benchmark-only diamond suppression and developer/debug commands.
 
 Existing chunks are not retroactively rewritten. Use fresh chunks or fresh worlds when evaluating worldgen changes.
 
