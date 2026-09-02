@@ -20,6 +20,7 @@ import com.geostrata.geology.SedimentaryFieldProfiles;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.registry.Registries;
+import net.minecraft.registry.RegistryKey;
 import net.minecraft.registry.RegistryKeys;
 import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.registry.tag.TagKey;
@@ -90,6 +91,7 @@ public final class OreDepositFeature extends Feature<DefaultFeatureConfig> {
             return false;
         }
         ProvinceSampleCache provinces = new ProvinceSampleCache(worldSeed);
+        FormationContextCache formationContexts = new FormationContextCache(world);
         List<BlockBox> protectedStructurePieces = StructurePieceProtection.forChunk(world, chunk);
 
         int placed = 0;
@@ -105,6 +107,7 @@ public final class OreDepositFeature extends Feature<DefaultFeatureConfig> {
                     hosts,
                     structuralCycleThickness,
                     provinces,
+                    formationContexts,
                     occupied,
                     protectedStructurePieces
             );
@@ -123,6 +126,7 @@ public final class OreDepositFeature extends Feature<DefaultFeatureConfig> {
             LazyHostResolver hosts,
             double structuralCycleThickness,
             ProvinceSampleCache provinces,
+            FormationContextCache formationContexts,
             VerticalEnvelope occupied,
             List<BlockBox> protectedStructurePieces
     ) {
@@ -156,7 +160,18 @@ public final class OreDepositFeature extends Feature<DefaultFeatureConfig> {
                     proposal = binding.proposal();
 
                     GeologyProvince province = provinces.sample(proposal.anchorX(), proposal.anchorZ()).province();
-                    List<String> routeHosts = occurrence.hostLithologiesFor(proposal.depositStyle(), province);
+                    String bodyStyle = occurrence.requiresBodyStyleContext(proposal.depositStyle(), province)
+                            ? formationContexts.bodyStyle(
+                                    proposal.anchorX(),
+                                    proposal.anchorY(),
+                                    proposal.anchorZ()
+                            ).orElse(null)
+                            : null;
+                    List<String> routeHosts = occurrence.hostLithologiesFor(
+                            proposal.depositStyle(),
+                            province,
+                            bodyStyle
+                    );
                     if (routeHosts.isEmpty() || !activeCandidate(world, worldSeed, occurrence, proposal, province)) {
                         continue;
                     }
@@ -493,6 +508,31 @@ public final class OreDepositFeature extends Feature<DefaultFeatureConfig> {
                         minZ + GeologyProvinceSampler.CELL_SIZE - 1
                 );
             });
+        }
+    }
+
+    private static final class FormationContextCache {
+        private final StructureWorldAccess world;
+        private final Map<Long, Optional<GeologyResolver.PreparedChunk>> chunks = new HashMap<>();
+
+        private FormationContextCache(StructureWorldAccess world) {
+            this.world = world;
+        }
+
+        private Optional<String> bodyStyle(int x, int y, int z) {
+            return preparedChunk(x, z)
+                    .flatMap(chunk -> chunk.resolve(x, y, z))
+                    .flatMap(GeologyResolver.Result::bodyStyle);
+        }
+
+        private Optional<GeologyResolver.PreparedChunk> preparedChunk(int x, int z) {
+            int chunkX = Math.floorDiv(x, CHUNK_SIZE);
+            int chunkZ = Math.floorDiv(z, CHUNK_SIZE);
+            long key = ((long) chunkX << 32) ^ Integer.toUnsignedLong(chunkZ);
+            return chunks.computeIfAbsent(
+                    key,
+                    ignored -> GeologyResolver.prepareChunk(world.toServerWorld(), x, z)
+            );
         }
     }
 
