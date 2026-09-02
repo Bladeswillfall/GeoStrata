@@ -11,7 +11,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 final class CorrelatedSedimentaryExperimentTest {
     @Test
-    void parsesDisabledCoreContract() {
+    void parsesDisabledMetadataContract() {
         CorrelatedSedimentaryExperiment.Snapshot snapshot = fixture().parse(
                 experiment(false, "metadata_only", 96, "alpha", "beta")
         );
@@ -23,6 +23,17 @@ final class CorrelatedSedimentaryExperimentTest {
     }
 
     @Test
+    void parsesEnabledCoreRuntimeContract() {
+        CorrelatedSedimentaryExperiment.Snapshot snapshot = fixture().parse(
+                experiment(true, "core_runtime", 96, "alpha", "beta")
+        );
+
+        assertTrue(snapshot.enabled());
+        assertEquals("core_runtime", snapshot.runtimeStatus());
+        assertTrue(snapshot.verticalWindow().isFullDimension());
+    }
+
+    @Test
     void rejectsLegacySeaLevelWindowSchema() {
         JsonObject legacy = experiment(false, "metadata_only", 96, "alpha", "beta");
         legacy.addProperty("schemaVersion", 1);
@@ -30,11 +41,15 @@ final class CorrelatedSedimentaryExperimentTest {
     }
 
     @Test
-    void coreContractRejectsEmbeddedActivation() {
+    void rejectsMismatchedRuntimeState() {
         Fixture fixture = fixture();
         assertThrows(
                 IllegalArgumentException.class,
                 () -> fixture.parse(experiment(true, "metadata_only", 96, "alpha", "beta"))
+        );
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> fixture.parse(experiment(false, "core_runtime", 96, "alpha", "beta"))
         );
         assertThrows(
                 IllegalArgumentException.class,
@@ -43,7 +58,7 @@ final class CorrelatedSedimentaryExperimentTest {
     }
 
     @Test
-    void companionPresenceActivatesCoreContract() {
+    void companionPresenceActivatesDisabledMetadataContract() {
         CorrelatedSedimentaryExperiment.Snapshot active = fixture().parse(
                 experiment(false, "metadata_only", 96, "alpha", "beta")
         ).activated(true);
@@ -51,6 +66,16 @@ final class CorrelatedSedimentaryExperimentTest {
         assertTrue(active.enabled());
         assertEquals("experimental_runtime", active.runtimeStatus());
         assertTrue(active.verticalWindow().isFullDimension());
+    }
+
+    @Test
+    void companionPresencePreservesCoreRuntimeContract() {
+        CorrelatedSedimentaryExperiment.Snapshot active = fixture().parse(
+                experiment(true, "core_runtime", 96, "alpha", "beta")
+        ).activated(true);
+
+        assertTrue(active.enabled());
+        assertEquals("core_runtime", active.runtimeStatus());
     }
 
     @Test
