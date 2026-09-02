@@ -73,14 +73,13 @@ public final class DiamondPipeFeature extends Feature<DiamondPipeConfig> {
         long seed = world.getSeed();
         int pipePadding = DiamondGeologyPlanner.pipeSearchPaddingBlocks(world.getTopY() - world.getBottomY());
         DiamondGeologyPlanner.PipeKind kind = context.getConfig().kind();
-        Chunk chunk = world.getChunk(Math.floorDiv(startX, CHUNK_SIZE), Math.floorDiv(startZ, CHUNK_SIZE));
-        List<BlockBox> protectedStructurePieces = StructurePieceProtection.forChunk(world, chunk);
 
         int minCellX = Math.floorDiv(startX - pipePadding, DiamondGeologyPlanner.PIPE_CELL_SIZE);
         int maxCellX = Math.floorDiv(endX + pipePadding, DiamondGeologyPlanner.PIPE_CELL_SIZE);
         int minCellZ = Math.floorDiv(startZ - pipePadding, DiamondGeologyPlanner.PIPE_CELL_SIZE);
         int maxCellZ = Math.floorDiv(endZ + pipePadding, DiamondGeologyPlanner.PIPE_CELL_SIZE);
 
+        List<BlockBox> protectedStructurePieces = null;
         int placed = 0;
         for (int cellX = minCellX; cellX <= maxCellX; cellX++) {
             for (int cellZ = minCellZ; cellZ <= maxCellZ; cellZ++) {
@@ -95,6 +94,10 @@ public final class DiamondPipeFeature extends Feature<DiamondPipeConfig> {
                 );
                 if (province.province() != GeologyProvince.CRATONIC_SHIELD || TerraneSuture.canCross(province)) {
                     continue;
+                }
+                if (protectedStructurePieces == null) {
+                    Chunk chunk = world.getChunk(Math.floorDiv(startX, CHUNK_SIZE), Math.floorDiv(startZ, CHUNK_SIZE));
+                    protectedStructurePieces = StructurePieceProtection.forChunk(world, chunk);
                 }
                 placed += placeCandidate(
                         world,
