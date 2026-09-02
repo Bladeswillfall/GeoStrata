@@ -1,13 +1,216 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "model": "geostrata:external_material_catalog",
   "runtimeStatus": "planning_metadata_only",
   "rules": {
     "generationOwnership": "GeoStrata may own natural occurrence only after provider detection, provider-output mapping, replacement generation and safe native-worldgen suppression are implemented and tested.",
-    "providerOwnership": "The provider mod keeps item, recipe and processing ownership.",
-    "hostPolicy": "Core host-rock gaps are unconditional GeoStrata geology work. Compatibility consumers only explain why a host is useful; they never gate whether that lithology exists.",
-    "missingHostPolicy": "futureHostRoles are planning targets, not permission to substitute an unrelated current lithology."
+    "providerOwnership": "Provider mods keep item, recipe and processing ownership; GeoStrata owns one canonical geological occurrence per material.",
+    "formationRoutePolicy": "Each canonical material declares one or more formation routes tying host lithologies, geological provinces and reusable deposit styles together. Do not independently cross-product those fields.",
+    "hostPolicy": "Core host-rock work is unconditional GeoStrata geology. Compatibility consumers may raise priority but never gate whether a lithology exists.",
+    "geometryPolicy": "Reuse the existing deposit-style library. Add new ore-body geometry only when a required formation cannot be expressed by vein, micro_vein, stratiform, disseminated, coal_seam or massive_lens_or_pocket."
   },
+  "canonicalMaterials": [
+    {
+      "id": "zinc",
+      "kind": "ore",
+      "canonicalRole": "geostrata:ore/zinc",
+      "formationRoutes": [
+        {
+          "id": "carbonate_replacement",
+          "hostLithologies": ["limestone", "marble"],
+          "futureHostRoles": [],
+          "provinceContexts": ["sedimentary_basin", "orogenic_belt"],
+          "depositStyles": ["stratiform", "vein"],
+          "requiredGeology": []
+        },
+        {
+          "id": "clastic_sediment_hosted",
+          "hostLithologies": ["shale", "siltstone"],
+          "futureHostRoles": [],
+          "provinceContexts": ["sedimentary_basin", "rift_province"],
+          "depositStyles": ["stratiform"],
+          "requiredGeology": []
+        },
+        {
+          "id": "intrusion_contact_skarn",
+          "hostLithologies": ["limestone", "marble", "hornfels"],
+          "futureHostRoles": [],
+          "provinceContexts": ["volcanic_arc", "orogenic_belt"],
+          "depositStyles": ["massive_lens_or_pocket", "disseminated"],
+          "requiredGeology": ["skarn_contact_replacement"]
+        }
+      ]
+    },
+    {
+      "id": "tin",
+      "kind": "ore",
+      "canonicalRole": "geostrata:ore/tin",
+      "formationRoutes": [
+        {
+          "id": "granite_hydrothermal",
+          "hostLithologies": ["granite", "rhyolite", "gneiss"],
+          "futureHostRoles": [],
+          "provinceContexts": ["volcanic_arc", "orogenic_belt"],
+          "depositStyles": ["vein", "disseminated"],
+          "requiredGeology": []
+        },
+        {
+          "id": "pegmatite_greisen",
+          "hostLithologies": ["granite", "gneiss"],
+          "futureHostRoles": ["pegmatite"],
+          "provinceContexts": ["volcanic_arc", "orogenic_belt", "cratonic_shield"],
+          "depositStyles": ["vein", "massive_lens_or_pocket"],
+          "requiredGeology": ["pegmatite_system"]
+        }
+      ]
+    },
+    {
+      "id": "thorium",
+      "kind": "ore",
+      "canonicalRole": "geostrata:ore/thorium",
+      "formationRoutes": [
+        {
+          "id": "felsic_accessory",
+          "hostLithologies": ["granite", "rhyolite", "gneiss"],
+          "futureHostRoles": [],
+          "provinceContexts": ["volcanic_arc", "cratonic_shield", "orogenic_belt"],
+          "depositStyles": ["disseminated", "vein"],
+          "requiredGeology": []
+        },
+        {
+          "id": "pegmatite_accessory",
+          "hostLithologies": ["granite", "gneiss"],
+          "futureHostRoles": ["pegmatite"],
+          "provinceContexts": ["volcanic_arc", "cratonic_shield", "orogenic_belt"],
+          "depositStyles": ["disseminated", "vein"],
+          "requiredGeology": ["pegmatite_system"]
+        }
+      ]
+    },
+    {
+      "id": "magnetite",
+      "kind": "mineral_deposit",
+      "canonicalRole": "geostrata:mineral/magnetite",
+      "formationRoutes": [
+        {
+          "id": "mafic_magmatic",
+          "hostLithologies": ["basalt", "diorite"],
+          "futureHostRoles": ["gabbro", "peridotite"],
+          "provinceContexts": ["volcanic_arc", "rift_province"],
+          "depositStyles": ["disseminated", "massive_lens_or_pocket"],
+          "requiredGeology": ["mafic_ultramafic_intrusive_system"]
+        },
+        {
+          "id": "skarn_contact",
+          "hostLithologies": ["limestone", "marble", "hornfels"],
+          "futureHostRoles": [],
+          "provinceContexts": ["volcanic_arc", "orogenic_belt"],
+          "depositStyles": ["massive_lens_or_pocket", "disseminated"],
+          "requiredGeology": ["skarn_contact_replacement"]
+        },
+        {
+          "id": "banded_metamorphic",
+          "hostLithologies": ["quartzite", "gneiss"],
+          "futureHostRoles": ["banded_iron_formation"],
+          "provinceContexts": ["cratonic_shield", "orogenic_belt"],
+          "depositStyles": ["stratiform"],
+          "requiredGeology": ["banded_iron_formation_system"]
+        }
+      ]
+    },
+    {
+      "id": "lead",
+      "kind": "ore",
+      "canonicalRole": "geostrata:ore/lead",
+      "formationRoutes": [
+        {
+          "id": "carbonate_replacement",
+          "hostLithologies": ["limestone", "marble"],
+          "futureHostRoles": [],
+          "provinceContexts": ["sedimentary_basin", "orogenic_belt"],
+          "depositStyles": ["vein", "stratiform"],
+          "requiredGeology": []
+        },
+        {
+          "id": "clastic_sediment_hosted",
+          "hostLithologies": ["shale", "siltstone"],
+          "futureHostRoles": [],
+          "provinceContexts": ["sedimentary_basin", "rift_province"],
+          "depositStyles": ["stratiform", "vein"],
+          "requiredGeology": []
+        },
+        {
+          "id": "intrusion_contact_skarn",
+          "hostLithologies": ["limestone", "marble", "hornfels"],
+          "futureHostRoles": [],
+          "provinceContexts": ["volcanic_arc", "orogenic_belt"],
+          "depositStyles": ["massive_lens_or_pocket", "vein"],
+          "requiredGeology": ["skarn_contact_replacement"]
+        }
+      ]
+    },
+    {
+      "id": "nickel",
+      "kind": "ore",
+      "canonicalRole": "geostrata:ore/nickel",
+      "formationRoutes": [
+        {
+          "id": "mafic_disseminated",
+          "hostLithologies": ["basalt"],
+          "futureHostRoles": ["gabbro"],
+          "provinceContexts": ["rift_province", "volcanic_arc"],
+          "depositStyles": ["disseminated"],
+          "requiredGeology": ["mafic_ultramafic_intrusive_system"]
+        },
+        {
+          "id": "ultramafic_sulfide",
+          "hostLithologies": [],
+          "futureHostRoles": ["peridotite", "ultramafic_intrusive"],
+          "provinceContexts": ["rift_province", "cratonic_shield"],
+          "depositStyles": ["disseminated", "massive_lens_or_pocket"],
+          "requiredGeology": ["mafic_ultramafic_intrusive_system"]
+        }
+      ]
+    },
+    {
+      "id": "lithium",
+      "kind": "ore",
+      "canonicalRole": "geostrata:ore/lithium",
+      "formationRoutes": [
+        {
+          "id": "granitic_pegmatite",
+          "hostLithologies": ["granite", "gneiss"],
+          "futureHostRoles": ["pegmatite"],
+          "provinceContexts": ["volcanic_arc", "orogenic_belt", "cratonic_shield"],
+          "depositStyles": ["vein", "massive_lens_or_pocket"],
+          "requiredGeology": ["pegmatite_system"]
+        }
+      ]
+    },
+    {
+      "id": "uranium",
+      "kind": "ore",
+      "canonicalRole": "geostrata:ore/uranium",
+      "formationRoutes": [
+        {
+          "id": "felsic_hydrothermal",
+          "hostLithologies": ["granite", "rhyolite", "gneiss"],
+          "futureHostRoles": [],
+          "provinceContexts": ["cratonic_shield", "volcanic_arc", "orogenic_belt"],
+          "depositStyles": ["vein", "disseminated"],
+          "requiredGeology": []
+        },
+        {
+          "id": "sandstone_redox",
+          "hostLithologies": ["sandstone"],
+          "futureHostRoles": [],
+          "provinceContexts": ["sedimentary_basin", "rift_province"],
+          "depositStyles": ["stratiform", "disseminated"],
+          "requiredGeology": ["sandstone_redox_mineralization"]
+        }
+      ]
+    }
+  ],
   "providers": [
     {
       "id": "create",
@@ -15,15 +218,10 @@
       "modIds": ["create"],
       "materials": [
         {
-          "id": "zinc",
-          "kind": "ore",
-          "canonicalRole": "geostrata:ore/zinc",
+          "canonicalMaterial": "zinc",
           "providerBlocks": ["create:zinc_ore", "create:deepslate_zinc_ore"],
           "providerOutput": "create:raw_zinc",
           "commonTags": ["c:ores/zinc", "c:raw_materials/zinc"],
-          "preferredFormationStyles": ["vein", "stratiform"],
-          "currentGeoStrataHosts": ["limestone", "shale", "marble"],
-          "futureHostRoles": ["carbonate", "felsic_intrusive"],
           "status": "catalogued"
         }
       ]
@@ -34,15 +232,10 @@
       "modIds": ["create_dd"],
       "materials": [
         {
-          "id": "tin",
-          "kind": "ore",
-          "canonicalRole": "geostrata:ore/tin",
+          "canonicalMaterial": "tin",
           "providerBlocks": ["create_dd:tin_ore", "create_dd:deepslate_tin_ore"],
           "providerOutput": "create_dd:raw_tin",
           "commonTags": ["c:ores/tin", "c:raw_materials/tin"],
-          "preferredFormationStyles": ["vein", "disseminated"],
-          "currentGeoStrataHosts": ["rhyolite", "schist", "gneiss"],
-          "futureHostRoles": ["granite", "pegmatite", "felsic_intrusive"],
           "status": "catalogued"
         }
       ]
@@ -53,27 +246,17 @@
       "modIds": ["create_new_age"],
       "materials": [
         {
-          "id": "thorium",
-          "kind": "ore",
-          "canonicalRole": "geostrata:ore/thorium",
+          "canonicalMaterial": "thorium",
           "providerBlocks": ["create_new_age:thorium_ore"],
           "providerOutput": null,
           "commonTags": ["c:ores/thorium"],
-          "preferredFormationStyles": ["vein", "disseminated"],
-          "currentGeoStrataHosts": ["rhyolite", "gneiss", "schist"],
-          "futureHostRoles": ["granite", "pegmatite", "heavy_mineral_accessory"],
           "status": "catalogued"
         },
         {
-          "id": "magnetite",
-          "kind": "mineral_deposit",
-          "canonicalRole": "geostrata:mineral/magnetite",
+          "canonicalMaterial": "magnetite",
           "providerBlocks": ["create_new_age:magnetite_block"],
           "providerOutput": null,
           "commonTags": [],
-          "preferredFormationStyles": ["massive_lens_or_pocket", "disseminated"],
-          "currentGeoStrataHosts": ["basalt", "gneiss", "marble"],
-          "futureHostRoles": ["ultramafic", "skarn", "banded_iron_formation"],
           "status": "catalogued"
         }
       ]
@@ -84,39 +267,24 @@
       "modIds": ["tfmg"],
       "materials": [
         {
-          "id": "lead",
-          "kind": "ore",
-          "canonicalRole": "geostrata:ore/lead",
+          "canonicalMaterial": "lead",
           "providerBlocks": ["tfmg:lead_ore", "tfmg:deepslate_lead_ore"],
           "providerOutput": "tfmg:raw_lead",
           "commonTags": ["c:ores/lead", "c:raw_materials/lead"],
-          "preferredFormationStyles": ["vein", "stratiform"],
-          "currentGeoStrataHosts": ["limestone", "shale", "marble"],
-          "futureHostRoles": ["carbonate", "sedimentary_basin"],
           "status": "catalogued"
         },
         {
-          "id": "nickel",
-          "kind": "ore",
-          "canonicalRole": "geostrata:ore/nickel",
+          "canonicalMaterial": "nickel",
           "providerBlocks": ["tfmg:nickel_ore", "tfmg:deepslate_nickel_ore"],
           "providerOutput": "tfmg:raw_nickel",
           "commonTags": ["c:ores/nickel", "c:raw_materials/nickel"],
-          "preferredFormationStyles": ["disseminated", "massive_lens_or_pocket"],
-          "currentGeoStrataHosts": ["basalt", "gneiss"],
-          "futureHostRoles": ["ultramafic", "mafic_intrusive"],
           "status": "catalogued"
         },
         {
-          "id": "lithium",
-          "kind": "ore",
-          "canonicalRole": "geostrata:ore/lithium",
+          "canonicalMaterial": "lithium",
           "providerBlocks": ["tfmg:lithium_ore", "tfmg:deepslate_lithium_ore"],
           "providerOutput": "tfmg:raw_lithium",
           "commonTags": ["c:ores/lithium", "c:raw_materials/lithium"],
-          "preferredFormationStyles": ["vein", "massive_lens_or_pocket"],
-          "currentGeoStrataHosts": ["rhyolite", "gneiss"],
-          "futureHostRoles": ["granite", "pegmatite", "evaporite_brine"],
           "status": "catalogued"
         }
       ]
@@ -127,62 +295,99 @@
       "modIds": ["createnuclear"],
       "materials": [
         {
-          "id": "uranium",
-          "kind": "ore",
-          "canonicalRole": "geostrata:ore/uranium",
+          "canonicalMaterial": "uranium",
           "providerBlocks": ["createnuclear:uranium_ore", "createnuclear:deepslate_uranium_ore"],
           "providerOutput": null,
           "commonTags": ["c:ores/uranium"],
-          "preferredFormationStyles": ["vein", "disseminated", "stratiform"],
-          "currentGeoStrataHosts": ["shale", "rhyolite", "gneiss"],
-          "futureHostRoles": ["granite", "sandstone", "unconformity"],
           "status": "catalogued"
         },
         {
-          "id": "lead",
-          "kind": "ore_alias",
-          "canonicalRole": "geostrata:ore/lead",
+          "canonicalMaterial": "lead",
           "providerBlocks": ["createnuclear:lead_ore", "createnuclear:deepslate_lead_ore"],
           "providerOutput": null,
           "commonTags": ["c:ores/lead"],
-          "preferredFormationStyles": ["vein", "stratiform"],
-          "currentGeoStrataHosts": ["limestone", "shale", "marble"],
-          "futureHostRoles": ["carbonate", "sedimentary_basin"],
           "status": "catalogued_alias"
         }
       ]
     }
   ],
-  "priorityHostRocks": [
+  "coreGeologyBacklog": [
     {
       "id": "andesite",
-      "kind": "host_rock",
+      "kind": "lithology",
       "scope": "core_geology",
-      "providerBlock": "minecraft:andesite",
       "canonicalRole": "geostrata:rock/igneous/andesite",
+      "minecraftBlock": "minecraft:andesite",
       "priorityConsumers": ["create"],
-      "targetOwnership": "geostrata_geology",
-      "status": "missing_geo_strata_lithology"
+      "status": "missing"
     },
     {
       "id": "granite",
-      "kind": "host_rock",
+      "kind": "lithology",
       "scope": "core_geology",
-      "providerBlock": "minecraft:granite",
       "canonicalRole": "geostrata:rock/igneous/granite",
+      "minecraftBlock": "minecraft:granite",
       "priorityConsumers": ["create", "create_dreams_and_desires", "create_new_age", "tfmg", "create_nuclear"],
-      "targetOwnership": "geostrata_geology",
-      "status": "missing_geo_strata_lithology"
+      "status": "implemented"
     },
     {
       "id": "diorite",
-      "kind": "host_rock",
+      "kind": "lithology",
       "scope": "core_geology",
-      "providerBlock": "minecraft:diorite",
       "canonicalRole": "geostrata:rock/igneous/diorite",
-      "priorityConsumers": ["create"],
-      "targetOwnership": "geostrata_geology",
-      "status": "missing_geo_strata_lithology"
+      "minecraftBlock": "minecraft:diorite",
+      "priorityConsumers": ["create", "create_new_age"],
+      "status": "implemented"
+    },
+    {
+      "id": "pegmatite_system",
+      "kind": "formation_context",
+      "scope": "core_geology",
+      "reusesDepositStyles": ["vein", "massive_lens_or_pocket", "disseminated"],
+      "futureLithologies": ["pegmatite"],
+      "unlocks": ["tin", "lithium", "thorium"],
+      "newOreGeometryRequired": false,
+      "status": "missing"
+    },
+    {
+      "id": "mafic_ultramafic_intrusive_system",
+      "kind": "formation_context",
+      "scope": "core_geology",
+      "reusesDepositStyles": ["disseminated", "massive_lens_or_pocket"],
+      "futureLithologies": ["gabbro", "peridotite"],
+      "unlocks": ["nickel", "magnetite"],
+      "newOreGeometryRequired": false,
+      "status": "missing"
+    },
+    {
+      "id": "skarn_contact_replacement",
+      "kind": "formation_context",
+      "scope": "core_geology",
+      "reusesDepositStyles": ["disseminated", "massive_lens_or_pocket", "vein"],
+      "futureLithologies": [],
+      "unlocks": ["magnetite", "zinc", "lead"],
+      "newOreGeometryRequired": false,
+      "status": "missing"
+    },
+    {
+      "id": "sandstone_redox_mineralization",
+      "kind": "formation_context",
+      "scope": "core_geology",
+      "reusesDepositStyles": ["stratiform", "disseminated"],
+      "futureLithologies": [],
+      "unlocks": ["uranium"],
+      "newOreGeometryRequired": false,
+      "status": "missing"
+    },
+    {
+      "id": "banded_iron_formation_system",
+      "kind": "formation_context",
+      "scope": "core_geology",
+      "reusesDepositStyles": ["stratiform"],
+      "futureLithologies": ["banded_iron_formation"],
+      "unlocks": ["magnetite"],
+      "newOreGeometryRequired": false,
+      "status": "deferred"
     }
   ]
 }
