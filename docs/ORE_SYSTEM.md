@@ -1,11 +1,12 @@
 # Ore and mineral system
 
-GeoStrata is staging a geology-driven ore system. The stable occurrence contract
-is `data/geostrata/geology/ore_occurrences.json`, loaded and validated with the
-rest of the server-data geology graph. Real deposit placement exists behind a
-separate disabled-by-default experiment; ordinary GeoStrata worlds remain on
-the pre-deposit baseline unless the experiment companion or an explicit server
-data override activates it.
+GeoStrata uses a geology-driven ore system. The stable occurrence contract is
+`data/geostrata/geology/ore_occurrences.json`, loaded and validated with the
+rest of the server-data geology graph. Normal core worlds now generate graded
+coal, iron and copper deposits; the Fabric adapter also suppresses the
+corresponding vanilla placed features. Gold and emerald remain companion-only
+experiments with vanilla fallbacks, while diamond uses its separate experimental
+structural/pipe system.
 
 ## Current implemented boundary
 
@@ -112,12 +113,15 @@ present host lithology allowed by that material. This avoids chunk-loading/order
 hazards and lets a single body cross a geological contact while preserving the
 correct host state on each placed ore block.
 
-### Experimental deposit placement
+### Deposit placement runtime
 
-`data/geostrata/geology/ore_deposit_experiment.json` is the explicit activation
-boundary. The bundled resource has `enabled=false`. Per-material abundance no
-longer lives in this file: it belongs to the occurrence LUT. The experiment file
-only carries a global `activationScale` for whole-experiment testing.
+`data/geostrata/geology/ore_deposit_experiment.json` retains its historical name
+and remains the catalog-level activation descriptor. The bundled resource has
+`enabled=false`; runtime ownership is applied after loading. Normal core promotes
+only coal, iron and copper from the catalog, while the experiment companion
+additionally activates the remaining catalog materials. Per-material abundance
+no longer lives in this file: it belongs to the occurrence LUT. The descriptor
+only carries a global `activationScale` for whole-system testing.
 
 For each nearby deterministic candidate, runtime placement now performs the
 following sequence:
@@ -152,27 +156,30 @@ answer when it generates, which removes cross-chunk mutation ordering from the
 shape.
 
 Direct GeoStrata rock blocks resolve their lithology from the loaded catalog. If
-the separate correlated sedimentary experiment owns a chunk, ore placement can
-also resolve the correlated field against its vanilla host-replacement tag. The
-virtual result is the authoritative final correlated output, including
-parent-aware metamorphism and overturned stratigraphy, rather than merely the
-parent sedimentary bed. That allows an ore voxel to acquire the correct future
-host identity even when ore placement runs before the companion sedimentary
-replacement feature; the later sedimentary pass will not overwrite the graded
+the correlated sedimentary runtime owns a chunk, ore placement can also resolve
+the correlated field against its vanilla host-replacement tag. The virtual
+result is the authoritative final correlated output, including parent-aware
+metamorphism and overturned stratigraphy, rather than merely the parent
+sedimentary bed. That allows an ore voxel to acquire the correct future host
+identity even when ore placement runs before the late correlated/province
+background replacement feature; the later pass will not overwrite the graded
 ore block.
 
-Trace remains evidence-only and does not place a block. Vanilla/provider-native
-ore generation is still **not suppressed** by the standalone core mod. This
-experiment exists to measure body abundance, readability, performance and
-economic coverage before GeoStrata is allowed to become the exclusive
-generation owner.
+Trace remains evidence-only and does not place a block. On Fabric, normal core
+GeoStrata suppresses vanilla coal, iron and copper because those proven common
+resources are now core-owned. Gold and emerald keep vanilla fallback generation
+when the companion activates their GeoStrata occurrences. Diamond remains a
+separate experiment and keeps vanilla fallback in normal play; CI can suppress
+vanilla diamond narrowly for attribution. Redstone and lapis remain
+Minecraft-owned. Provider-native generation is not suppressed until a specific
+provider replacement has independently demonstrated safe coverage.
 
 ### Shared fault-controlled veins
 
-`FaultControlledOrePlanner` is the single structural binding for experimental
-`vein` proposals. Candidate cells continue to own the deterministic random roll,
-hard province eligibility, terrain requirements and environmental affinity.
-The binding may be computed before those cheap gates, but it does not generate a
+`FaultControlledOrePlanner` is the single structural binding for active `vein`
+proposals. Candidate cells continue to own the deterministic random roll, hard
+province eligibility, terrain requirements and environmental affinity. The
+binding may be computed before those cheap gates, but it does not generate a
 second candidate, consume a second random stream, or reroll abundance after
 moving the eventual body. It keeps the original proposal for candidate-owned
 decisions and separately holds the fault-snapped body proposal used only for
@@ -355,16 +362,20 @@ occurrence catalog is expanded later.
 
 GeoStrata is the intended overworld generation owner for every enabled ore or
 mineral occurrence. The provider mod continues to own the material's item,
-recipes and processing economy. Phase one uses Minecraft outputs; a future
-provider-backed entry such as Create zinc should remain dormant unless its
-provider is installed, then generate through GeoStrata while dropping the
+recipes and processing economy. Coal, iron and copper are now production-owned
+by GeoStrata core, with the Fabric adapter suppressing their corresponding
+vanilla placed features. Gold and emerald remain companion experiments with
+vanilla fallbacks, and diamond remains on its separate experimental path.
+A future provider-backed entry such as Create zinc should remain dormant unless
+its provider is installed, then generate through GeoStrata while dropping the
 provider-compatible material.
 
-Provider-native ore generation must only be suppressed after the experimental
-replacement deposits have demonstrated acceptable availability and economy.
-Suppressing first would create worlds with missing resources. External host-rock
-compatibility should extend a stable host/semantic contract rather than replace
-registered block IDs after startup.
+Provider-native ore generation must only be suppressed after the replacement
+deposits have demonstrated acceptable availability and economy. Coal, iron and
+copper have crossed that gate; future vanilla or provider-backed materials must
+prove it independently before their native generation is removed. External
+host-rock compatibility should extend a stable host/semantic contract rather
+than replace registered block IDs after startup.
 
 ## Staged implementation path
 
@@ -375,13 +386,14 @@ registered block IDs after startup.
    with Trace as non-economic evidence;
 4. **complete** — construct and sample deterministic style-specific bodies,
    concentration, dithered grades and non-economic Trace without mutating blocks;
-5. **complete, experimental opt-in** — place deterministic bodies chunk-locally,
-   clip them to valid host lithologies and expose conservative abundance tuning
-   while leaving the default world and native ore generation unchanged;
+5. **complete** — place deterministic bodies chunk-locally and clip them to valid
+   host lithologies; coal/iron/copper now run in normal core while rarer
+   occurrences remain opt-in experiments;
 6. **complete** — move candidate density, activation, depth bias, province bias,
    biome bonuses and style weights into the schema-3 occurrence LUT so future
    ores do not require material-name worldgen switches;
-7. suppress overlapping native generation only when replacement coverage is
-   proven by fresh-world abundance/economy tests; and
+7. **complete for coal/iron/copper** — suppress overlapping native generation
+   only after replacement coverage is proven by fresh-world abundance/economy
+   tests; repeat that proof independently for each future material; and
 8. add guarded provider-mod occurrences without transferring ownership of their
    item economies into core GeoStrata.
