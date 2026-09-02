@@ -105,8 +105,20 @@ public final class FaultControlledOrePlanner {
             return new Binding(proposal, false, 0.0);
         }
 
+        /** Uses the loaded ore LUT when available; neutral tuning keeps standalone callers deterministic. */
         public OreDepositGeometry.Body body(long worldSeed) {
-            OreDepositGeometry.Body base = OreDepositGeometry.forProposal(worldSeed, proposal);
+            OreOccurrenceCatalog.Occurrence occurrence = OreOccurrenceCatalog.current().byId().get(proposal.material());
+            OreGenerationProfile generation = occurrence == null
+                    ? OreGenerationProfile.defaults()
+                    : occurrence.generation();
+            return body(worldSeed, generation);
+        }
+
+        public OreDepositGeometry.Body body(long worldSeed, OreGenerationProfile generation) {
+            if (generation == null) {
+                throw new IllegalArgumentException("ore generation tuning must not be null");
+            }
+            OreDepositGeometry.Body base = OreDepositGeometry.forProposal(worldSeed, proposal, generation);
             if (!faultAligned) {
                 return base;
             }
@@ -125,7 +137,9 @@ public final class FaultControlledOrePlanner {
                     base.warpAmplitude(),
                     base.warpWavelength(),
                     base.warpPhase(),
-                    base.branches()
+                    base.branches(),
+                    base.traceNormalScale(),
+                    base.grades()
             );
         }
     }
