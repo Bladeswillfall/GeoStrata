@@ -20,7 +20,6 @@ import com.geostrata.geology.SedimentaryFieldProfiles;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.registry.Registries;
-import net.minecraft.registry.RegistryKey;
 import net.minecraft.registry.RegistryKeys;
 import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.registry.tag.TagKey;
@@ -131,6 +130,8 @@ public final class OreDepositFeature extends Feature<DefaultFeatureConfig> {
             List<BlockBox> protectedStructurePieces
     ) {
         OreDepositCandidatePlanner.Frequency frequency = OreDepositCandidatePlanner.frequency(occurrence);
+        boolean usesBodyStyleContext = occurrence.formationRoutes().stream()
+                .anyMatch(OreOccurrenceCatalog.FormationRoute::requiresBodyStyle);
         int horizontalPadding = frequency.horizontalSearchPaddingBlocks();
         int verticalPadding = frequency.verticalSearchPaddingBlocks();
         int minCellX = Math.floorDiv(startX - horizontalPadding, frequency.horizontalCellSize());
@@ -160,7 +161,8 @@ public final class OreDepositFeature extends Feature<DefaultFeatureConfig> {
                     proposal = binding.proposal();
 
                     GeologyProvince province = provinces.sample(proposal.anchorX(), proposal.anchorZ()).province();
-                    String bodyStyle = occurrence.requiresBodyStyleContext(proposal.depositStyle(), province)
+                    String bodyStyle = usesBodyStyleContext
+                            && occurrence.requiresBodyStyleContext(proposal.depositStyle(), province)
                             ? formationContexts.bodyStyle(
                                     proposal.anchorX(),
                                     proposal.anchorY(),
@@ -513,7 +515,7 @@ public final class OreDepositFeature extends Feature<DefaultFeatureConfig> {
 
     private static final class FormationContextCache {
         private final StructureWorldAccess world;
-        private final Map<Long, Optional<GeologyResolver.PreparedChunk>> chunks = new HashMap<>();
+        private Map<Long, Optional<GeologyResolver.PreparedChunk>> chunks;
 
         private FormationContextCache(StructureWorldAccess world) {
             this.world = world;
@@ -526,6 +528,9 @@ public final class OreDepositFeature extends Feature<DefaultFeatureConfig> {
         }
 
         private Optional<GeologyResolver.PreparedChunk> preparedChunk(int x, int z) {
+            if (chunks == null) {
+                chunks = new HashMap<>();
+            }
             int chunkX = Math.floorDiv(x, CHUNK_SIZE);
             int chunkZ = Math.floorDiv(z, CHUNK_SIZE);
             long key = ((long) chunkX << 32) ^ Integer.toUnsignedLong(chunkZ);
