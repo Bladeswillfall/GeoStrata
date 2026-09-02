@@ -23,6 +23,7 @@ public final class GeologyDataReload {
 
     private static final Identifier LITHOLOGIES = GeoStrata.id("geology/lithologies.json");
     private static final Identifier ORE_OCCURRENCES = GeoStrata.id("geology/ore_occurrences.json");
+    private static final Identifier EXTERNAL_ORE_OCCURRENCES = GeoStrata.id("geology/external_ore_occurrences.json");
     private static final Identifier ORE_DEPOSIT_EXPERIMENT = GeoStrata.id("geology/ore_deposit_experiment.json");
     private static final Identifier DIAMOND_GEOLOGY_EXPERIMENT = GeoStrata.id("geology/diamond_geology_experiment.json");
     private static final Identifier PROVINCES = GeoStrata.id("geology/province_profiles.json");
@@ -49,9 +50,10 @@ public final class GeologyDataReload {
 
     public static void reload(ResourceManager manager, boolean companionLoaded) {
         try {
-            State loaded = parse(
+            State loaded = parseIncludingExternal(
                     readObject(manager, LITHOLOGIES),
                     readObject(manager, ORE_OCCURRENCES),
+                    readObject(manager, EXTERNAL_ORE_OCCURRENCES),
                     readObject(manager, ORE_DEPOSIT_EXPERIMENT),
                     readObject(manager, PROVINCES),
                     readObject(manager, SUCCESSIONS),
@@ -131,12 +133,71 @@ public final class GeologyDataReload {
             JsonObject experimentRoot,
             Predicate<String> outputAvailable
     ) {
-        LithologyCatalog.Snapshot lithologies = LithologyCatalog.parse(lithologiesRoot);
-        validateRuntimeArchitectureLithologies(lithologies);
-        OreOccurrenceCatalog.Snapshot oreOccurrences = availableOreOccurrences(
-                OreOccurrenceCatalog.parse(lithologies, oreOccurrencesRoot),
+        return parseState(
+                lithologiesRoot,
+                oreOccurrencesRoot,
+                null,
+                oreDepositExperimentRoot,
+                provincesRoot,
+                successionsRoot,
+                fieldProfilesRoot,
+                experimentRoot,
                 outputAvailable
         );
+    }
+
+    static State parseIncludingExternal(
+            JsonObject lithologiesRoot,
+            JsonObject oreOccurrencesRoot,
+            JsonObject externalOreOccurrencesRoot,
+            JsonObject oreDepositExperimentRoot,
+            JsonObject provincesRoot,
+            JsonObject successionsRoot,
+            JsonObject fieldProfilesRoot,
+            JsonObject experimentRoot,
+            Predicate<String> outputAvailable
+    ) {
+        if (externalOreOccurrencesRoot == null) {
+            throw new IllegalArgumentException("external ore occurrence catalog must not be null");
+        }
+        return parseState(
+                lithologiesRoot,
+                oreOccurrencesRoot,
+                externalOreOccurrencesRoot,
+                oreDepositExperimentRoot,
+                provincesRoot,
+                successionsRoot,
+                fieldProfilesRoot,
+                experimentRoot,
+                outputAvailable
+        );
+    }
+
+    private static State parseState(
+            JsonObject lithologiesRoot,
+            JsonObject oreOccurrencesRoot,
+            JsonObject externalOreOccurrencesRoot,
+            JsonObject oreDepositExperimentRoot,
+            JsonObject provincesRoot,
+            JsonObject successionsRoot,
+            JsonObject fieldProfilesRoot,
+            JsonObject experimentRoot,
+            Predicate<String> outputAvailable
+    ) {
+        LithologyCatalog.Snapshot lithologies = LithologyCatalog.parse(lithologiesRoot);
+        validateRuntimeArchitectureLithologies(lithologies);
+        OreOccurrenceCatalog.Snapshot oreOccurrences = OreOccurrenceCatalog.parse(
+                lithologies,
+                oreOccurrencesRoot
+        );
+        if (externalOreOccurrencesRoot != null) {
+            oreOccurrences = ExternalOreOccurrenceCatalog.merge(
+                    lithologies,
+                    oreOccurrences,
+                    externalOreOccurrencesRoot
+            );
+        }
+        oreOccurrences = availableOreOccurrences(oreOccurrences, outputAvailable);
         OreDepositExperiment.Snapshot oreExperiment = OreDepositExperiment.parse(
                 oreDepositExperimentRoot,
                 oreOccurrences
