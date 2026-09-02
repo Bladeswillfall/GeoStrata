@@ -28,6 +28,8 @@ public final class DiamondStructuralFeature extends Feature<DefaultFeatureConfig
     private static final String STRUCTURAL_CONTINUITY = "regional";
     private static final double ALONG_FAULT_SPREAD = 12.0;
     private static final double ACROSS_FAULT_JITTER = 6.0;
+    static final double STRUCTURAL_DEPTH_FRACTION = 0.08;
+    static final double LARGE_CLUSTER_RADIUS_CHANCE = 0.65;
     private static final long CLUSTER_Y_SALT = 0x8CB92BA72F3D8DD7L;
     private static final long CLUSTER_X_SALT = 0x58F38DED09D2C7A9L;
     private static final long CLUSTER_Z_SALT = 0xA24BAED4963EE407L;
@@ -120,7 +122,7 @@ public final class DiamondStructuralFeature extends Feature<DefaultFeatureConfig
         int minY = world.getBottomY() + 5;
         int maxY = Math.min(
                 world.getTopY() - 1,
-                world.getBottomY() + Math.max(28, (int) Math.round(worldHeight * 0.22))
+                world.getBottomY() + Math.max(28, (int) Math.round(worldHeight * STRUCTURAL_DEPTH_FRACTION))
         );
         if (maxY <= minY) {
             return 0;
@@ -145,9 +147,10 @@ public final class DiamondStructuralFeature extends Feature<DefaultFeatureConfig
             double centerZ = trace.z()
                     + tectonics.faultSin() * alongJitter
                     + normalZ * acrossJitter;
-            int radius = DiamondGeologyPlanner.structuralClusterRoll(seed, candidate, cluster, CLUSTER_SIZE_SALT) < 0.35
-                    ? 2
-                    : 1;
+            int radius = DiamondGeologyPlanner.structuralClusterRoll(seed, candidate, cluster, CLUSTER_SIZE_SALT)
+                    < LARGE_CLUSTER_RADIUS_CHANCE
+                    ? 3
+                    : 2;
             placed += DiamondPipeFeature.placeDiamondCluster(
                     world,
                     centerX,

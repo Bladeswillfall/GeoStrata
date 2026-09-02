@@ -23,7 +23,7 @@ final class DiamondGeologyResourceTest {
         assertFalse(snapshot.enabled());
         assertEquals("not_implemented", snapshot.nativeGenerationSuppression());
         assertTrue(snapshot.pipeActivationChance("kimberlite") > snapshot.pipeActivationChance("lamproite"));
-        assertTrue(snapshot.structuralActivationChancePerCell() > 0.0);
+        assertEquals(0.18, snapshot.structuralActivationChancePerCell(), 0.0);
     }
 
     @Test
