@@ -95,6 +95,11 @@ final class VolcanicArcModelTest {
                 center.sample(center.complexCenterY() - center.complexRadiusY() * 0.40)
         );
         assertEquals(
+                new VolcanicArcModel.Sample("granite", "pegmatite_fertile_margin"),
+                center.sample(center.complexCenterY() - center.complexRadiusY() * 0.70),
+                "the evolved outer granite core should expose the reusable pegmatite formation context"
+        );
+        assertEquals(
                 new VolcanicArcModel.Sample("diorite", "plutonic_margin"),
                 center.sample(center.complexCenterY() - center.complexRadiusY() * 0.85)
         );

@@ -5,7 +5,7 @@
   "rules": {
     "generationOwnership": "GeoStrata may own natural occurrence only after provider detection, provider-output mapping, replacement generation and safe native-worldgen suppression are implemented and tested.",
     "providerOwnership": "Provider mods keep item, recipe and processing ownership; GeoStrata owns one canonical geological occurrence per material.",
-    "formationRoutePolicy": "Each canonical material declares one or more formation routes tying host lithologies, geological provinces and reusable deposit styles together. Do not independently cross-product those fields.",
+    "formationRoutePolicy": "Each canonical material declares one or more formation routes tying host lithologies, geological provinces, optional semantic body styles and reusable deposit styles together. Do not independently cross-product those fields.",
     "hostPolicy": "Core host-rock work is unconditional GeoStrata geology. Compatibility consumers may raise priority but never gate whether a lithology exists.",
     "geometryPolicy": "Reuse the existing deposit-style library. Add new ore-body geometry only when a required formation cannot be expressed by vein, micro_vein, stratiform, disseminated, coal_seam or massive_lens_or_pocket."
   },
@@ -58,8 +58,9 @@
           "id": "pegmatite_greisen",
           "hostLithologies": ["granite", "gneiss"],
           "futureHostRoles": ["pegmatite"],
-          "provinceContexts": ["volcanic_arc", "orogenic_belt", "cratonic_shield"],
+          "provinceContexts": ["volcanic_arc"],
           "depositStyles": ["vein", "massive_lens_or_pocket"],
+          "bodyStyles": ["pegmatite_fertile_margin"],
           "requiredGeology": ["pegmatite_system"]
         }
       ]
@@ -81,8 +82,9 @@
           "id": "pegmatite_accessory",
           "hostLithologies": ["granite", "gneiss"],
           "futureHostRoles": ["pegmatite"],
-          "provinceContexts": ["volcanic_arc", "cratonic_shield", "orogenic_belt"],
+          "provinceContexts": ["volcanic_arc"],
           "depositStyles": ["disseminated", "vein"],
+          "bodyStyles": ["pegmatite_fertile_margin"],
           "requiredGeology": ["pegmatite_system"]
         }
       ]
@@ -181,8 +183,9 @@
           "id": "granitic_pegmatite",
           "hostLithologies": ["granite", "gneiss"],
           "futureHostRoles": ["pegmatite"],
-          "provinceContexts": ["volcanic_arc", "orogenic_belt", "cratonic_shield"],
+          "provinceContexts": ["volcanic_arc"],
           "depositStyles": ["vein", "massive_lens_or_pocket"],
+          "bodyStyles": ["pegmatite_fertile_margin"],
           "requiredGeology": ["pegmatite_system"]
         }
       ]
@@ -347,7 +350,7 @@
       "futureLithologies": ["pegmatite"],
       "unlocks": ["tin", "lithium", "thorium"],
       "newOreGeometryRequired": false,
-      "status": "missing"
+      "status": "implemented"
     },
     {
       "id": "mafic_ultramafic_intrusive_system",

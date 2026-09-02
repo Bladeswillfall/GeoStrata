@@ -224,7 +224,12 @@ public final class OreOccurrenceCatalog {
                     material + " route " + routeId + " depositStyles"
             );
             requireDepositStyles(material + " route " + routeId, styles);
-            routes.add(new FormationRoute(routeId, hosts, contexts, styles));
+            List<String> bodyStyles = optionalStringList(
+                    object,
+                    "bodyStyles",
+                    material + " route " + routeId + " bodyStyles"
+            );
+            routes.add(new FormationRoute(routeId, hosts, contexts, styles, bodyStyles));
         }
         return List.copyOf(routes);
     }
@@ -348,6 +353,21 @@ public final class OreOccurrenceCatalog {
             values.add(value);
         }
         return List.copyOf(values);
+    }
+
+    private static List<String> optionalStringList(JsonObject object, String key, String field) {
+        JsonElement raw = object.get(key);
+        if (raw == null) {
+            return List.of();
+        }
+        if (!raw.isJsonArray()) {
+            throw new IllegalArgumentException(field + " must be an array");
+        }
+        JsonArray array = raw.getAsJsonArray();
+        if (array.isEmpty()) {
+            return List.of();
+        }
+        return stringList(array, field);
     }
 
     private static JsonArray requiredArray(JsonObject object, String key) {
@@ -479,18 +499,30 @@ public final class OreOccurrenceCatalog {
             String id,
             List<String> hostLithologies,
             List<GeologyProvince> provinceContexts,
-            List<String> depositStyles
+            List<String> depositStyles,
+            List<String> bodyStyles
     ) {
         public FormationRoute {
             if (id == null || id.isBlank()
                     || hostLithologies == null || hostLithologies.isEmpty()
                     || provinceContexts == null || provinceContexts.isEmpty()
-                    || depositStyles == null || depositStyles.isEmpty()) {
+                    || depositStyles == null || depositStyles.isEmpty()
+                    || bodyStyles == null) {
                 throw new IllegalArgumentException("formation route id, hosts, provinces and styles must not be empty");
             }
             hostLithologies = List.copyOf(hostLithologies);
             provinceContexts = List.copyOf(provinceContexts);
             depositStyles = List.copyOf(depositStyles);
+            bodyStyles = List.copyOf(bodyStyles);
+        }
+
+        public FormationRoute(
+                String id,
+                List<String> hostLithologies,
+                List<GeologyProvince> provinceContexts,
+                List<String> depositStyles
+        ) {
+            this(id, hostLithologies, provinceContexts, depositStyles, List.of());
         }
 
         public boolean supports(String depositStyle, GeologyProvince province) {
@@ -500,10 +532,28 @@ public final class OreOccurrenceCatalog {
                     && provinceContexts.contains(province);
         }
 
-        public boolean matches(String depositStyle, GeologyProvince province, String hostLithology) {
+        public boolean requiresBodyStyle() {
+            return !bodyStyles.isEmpty();
+        }
+
+        public boolean supports(String depositStyle, GeologyProvince province, String bodyStyle) {
+            return supports(depositStyle, province)
+                    && (!requiresBodyStyle() || bodyStyle != null && bodyStyles.contains(bodyStyle));
+        }
+
+        public boolean matches(
+                String depositStyle,
+                GeologyProvince province,
+                String hostLithology,
+                String bodyStyle
+        ) {
             return hostLithology != null
-                    && supports(depositStyle, province)
+                    && supports(depositStyle, province, bodyStyle)
                     && hostLithologies.contains(hostLithology);
+        }
+
+        public boolean matches(String depositStyle, GeologyProvince province, String hostLithology) {
+            return matches(depositStyle, province, hostLithology, null);
         }
     }
 
@@ -619,13 +669,36 @@ public final class OreOccurrenceCatalog {
         }
 
         public boolean matchesFormationRoute(String depositStyle, GeologyProvince province, String hostLithology) {
-            return formationRoutes.stream().anyMatch(route -> route.matches(depositStyle, province, hostLithology));
+            return matchesFormationRoute(depositStyle, province, hostLithology, null);
+        }
+
+        public boolean matchesFormationRoute(
+                String depositStyle,
+                GeologyProvince province,
+                String hostLithology,
+                String bodyStyle
+        ) {
+            return formationRoutes.stream()
+                    .anyMatch(route -> route.matches(depositStyle, province, hostLithology, bodyStyle));
+        }
+
+        public boolean requiresBodyStyleContext(String depositStyle, GeologyProvince province) {
+            return formationRoutes.stream()
+                    .anyMatch(route -> route.supports(depositStyle, province) && route.requiresBodyStyle());
         }
 
         public List<String> hostLithologiesFor(String depositStyle, GeologyProvince province) {
+            return hostLithologiesFor(depositStyle, province, null);
+        }
+
+        public List<String> hostLithologiesFor(
+                String depositStyle,
+                GeologyProvince province,
+                String bodyStyle
+        ) {
             LinkedHashSet<String> validHosts = new LinkedHashSet<>();
             for (FormationRoute route : formationRoutes) {
-                if (route.supports(depositStyle, province)) {
+                if (route.supports(depositStyle, province, bodyStyle)) {
                     validHosts.addAll(route.hostLithologies());
                 }
             }

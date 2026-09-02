@@ -8,7 +8,9 @@ import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 final class OreOccurrenceCatalogTest {
     @Test
@@ -26,6 +28,32 @@ final class OreOccurrenceCatalogTest {
         assertEquals(4, snapshot.gradeModel().require(OreGrade.RICH).baseYield());
         assertEquals(8, snapshot.gradeModel().require(OreGrade.MASSIVE).experienceMax());
         assertEquals("geostrata:rich_iron_ore", iron.gradeBlocks().get(OreGrade.RICH));
+    }
+
+    @Test
+    void bodyStyleConstraintIsOptionalAndFailsClosedWithoutContext() {
+        JsonObject root = occurrence("shale", "vein");
+        root.getAsJsonArray("occurrences")
+                .get(0).getAsJsonObject()
+                .getAsJsonArray("formationRoutes")
+                .get(0).getAsJsonObject()
+                .add("bodyStyles", JsonParser.parseString("[\"pegmatite_fertile_margin\"]"));
+
+        OreOccurrenceCatalog.Occurrence iron = OreOccurrenceCatalog.parse(lithologies(), root).require("iron");
+        assertEquals(List.of("pegmatite_fertile_margin"), iron.formationRoutes().get(0).bodyStyles());
+        assertTrue(iron.requiresBodyStyleContext("vein", GeologyProvince.OROGENIC_BELT));
+        assertEquals(List.of(), iron.hostLithologiesFor("vein", GeologyProvince.OROGENIC_BELT));
+        assertEquals(
+                List.of("shale"),
+                iron.hostLithologiesFor("vein", GeologyProvince.OROGENIC_BELT, "pegmatite_fertile_margin")
+        );
+        assertFalse(iron.matchesFormationRoute("vein", GeologyProvince.OROGENIC_BELT, "shale"));
+        assertTrue(iron.matchesFormationRoute(
+                "vein",
+                GeologyProvince.OROGENIC_BELT,
+                "shale",
+                "pegmatite_fertile_margin"
+        ));
     }
 
     @Test

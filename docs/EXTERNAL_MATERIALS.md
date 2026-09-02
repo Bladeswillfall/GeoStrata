@@ -24,10 +24,11 @@ Each canonical material owns one or more `formationRoutes`. A route binds togeth
 - current GeoStrata host lithologies;
 - future host roles that must not be faked with an unrelated current rock;
 - allowed geological provinces;
+- optional semantic `bodyStyles` when a route depends on an existing geological structure rather than merely a rock name;
 - one or more existing deposit-body styles; and
 - any shared geological context that must exist before the route can be promoted to runtime generation.
 
-This prevents a flat `hosts × provinces × styles` cross-product from producing combinations that were never intended. A future runtime occurrence should consume the same route concept rather than independently choosing a host, province and body style.
+This prevents a flat `hosts × provinces × body styles × deposit styles` cross-product from producing combinations that were never intended. The runtime occurrence contract uses the same route concept rather than independently choosing those properties.
 
 ## Create-family first tranche
 
@@ -60,13 +61,13 @@ Create raised the priority of andesite, but it does not own the rock or gate its
 
 The catalogue records shared geological work instead of inventing a generator per ore:
 
-- **Pegmatite system** — granite-linked late felsic veins/lenses. Reuse existing vein/lens/disseminated geometry. Main beneficiaries: tin, lithium, thorium.
+- **Pegmatite system — implemented context.** The existing Volcanic Arc pluton now labels the evolved outer part of its granite core as `pegmatite_fertile_margin`. Formation routes can require that semantic body style, while reusing existing vein/lens/disseminated ore geometry. This adds no new pegmatite block, noise field or independent generation pass. A distinct pegmatite lithology can still be added later if it earns its gameplay/visual cost. Main beneficiaries: tin, lithium, thorium.
 - **Mafic/ultramafic intrusive system** — future gabbro/peridotite-style hosts using existing disseminated and massive-lens ore geometry. Main beneficiaries: nickel and magnetite.
 - **Skarn/contact replacement** — reuse existing intrusion/contact-metamorphism context plus massive/disseminated/vein geometry. Main beneficiaries: magnetite, zinc and lead.
 - **Sandstone redox mineralisation** — initially reuse stratiform/disseminated geometry inside sandstone rather than implementing chemical transport simulation. Main beneficiary: uranium.
 - **Banded iron-formation system** — recorded as deferred rather than required for the first magnetite implementation.
 
-None of those currently requires a brand-new ore-body shape. The new work is chiefly **geological context and host generation**, not another collection of blob generators.
+None of these contexts requires a brand-new ore-body shape. The new work is chiefly **geological context and host generation**, not another collection of blob generators.
 
 ## Gameified-realism rule
 
