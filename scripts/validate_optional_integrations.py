@@ -229,6 +229,13 @@ def validate_external_materials() -> None:
             unknown_styles = set(styles) - ALLOWED_FORMATION_STYLES
             if unknown_styles:
                 fail(f"{material_id}.{route_id} uses unsupported deposit styles {sorted(unknown_styles)}")
+            body_styles = _string_list(
+                route.get("bodyStyles", []),
+                f"{material_id}.{route_id}.bodyStyles",
+                allow_empty=True,
+            )
+            if not all(SIMPLE_ID.fullmatch(body_style) for body_style in body_styles):
+                fail(f"{material_id}.{route_id} has invalid bodyStyles")
             required = set(_string_list(
                 route.get("requiredGeology"),
                 f"{material_id}.{route_id}.requiredGeology",
