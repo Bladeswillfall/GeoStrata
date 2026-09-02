@@ -50,11 +50,11 @@ Compatibility is also revealing reusable gaps in the core geology model. These a
 
 ### Igneous lithologies
 
-- **Andesite** remains a missing normal GeoStrata lithology and should be handled generally, whether Create is installed or not.
+- **Andesite** is now a current GeoStrata lithology backed by `minecraft:andesite`. The Volcanic Arc runtime places it as the intermediate outer/shallow shell around evolved rhyolite cores, whether Create is installed or not.
 - **Granite** is already a current GeoStrata lithology backed by `minecraft:granite` and is now available to formation-route planning.
 - **Diorite** is already a current GeoStrata lithology backed by `minecraft:diorite`.
 
-Create raises the importance of andesite, but it does not own the rock or gate its geology.
+Create raised the priority of andesite, but it does not own the rock or gate its geology.
 
 ### Shared formation contexts
 
