@@ -31,7 +31,7 @@ final class BundledOreGenerationProfileTest {
         assertEquals(3.0, coal.traceNormalScale(), 0.0);
         assertEquals(1.65, iron.bodyScale(), 0.0);
         assertEquals(0.45, gold.bodyScale(), 0.0);
-        assertEquals(1.35, emerald.bodyScale(), 0.0);
+        assertEquals(1.65, emerald.bodyScale(), 0.0);
 
         assertTrue(iron.discoveryStringers().enabled());
         assertEquals(14, iron.discoveryStringers().count());
