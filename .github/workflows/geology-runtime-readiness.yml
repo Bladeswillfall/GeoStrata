@@ -149,7 +149,11 @@ jobs:
               scenario="$1"
               rm -rf run/geostrata-runtime-readiness run/logs
               if [ "$scenario" = correlated ]; then
-                  cp experiment-companion/build/libs/geostrata-correlated-experiment-0.2.0.jar run/mods/
+                  companion_jar=$(find experiment-companion/build/libs -maxdepth 1 -type f \
+                      -name 'geostrata-correlated-experiment-*.jar' \
+                      ! -name '*-sources.jar' ! -name '*-dev.jar' -print -quit)
+                  test -n "$companion_jar"
+                  cp "$companion_jar" run/mods/
               else
                   rm -f run/mods/geostrata-correlated-experiment-*.jar
               fi
