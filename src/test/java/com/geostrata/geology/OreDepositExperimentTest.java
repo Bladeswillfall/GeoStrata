@@ -56,17 +56,20 @@ final class OreDepositExperimentTest {
     }
 
     @Test
-    void companionSuppressesGeoStrataOwnedVanillaOres() throws IOException {
+    void companionSuppressesOnlyProvenCommonOresByDefault() throws IOException {
         String source = Files.readString(Path.of(
                 "experiment-companion/src/main/java/com/geostrata/experiment/CorrelatedExperimentCompanion.java"
         ));
+        String workflow = Files.readString(Path.of(".github/workflows/ore-benchmark.yml"));
 
         assertTrue(source.contains("ORE_COAL_UPPER"));
         assertTrue(source.contains("ORE_IRON_UPPER"));
         assertTrue(source.contains("ORE_COPPER"));
-        assertTrue(source.contains("ORE_GOLD"));
-        assertTrue(source.contains("ORE_EMERALD"));
-        assertTrue(source.contains("ORE_DIAMOND"));
+        assertFalse(source.contains("ORE_GOLD"));
+        assertFalse(source.contains("ORE_EMERALD"));
+        assertTrue(source.contains("BENCHMARK_DIAMOND_ORES"));
+        assertTrue(source.contains("GEOSTRATA_BENCHMARK_SUPPRESS_VANILLA_DIAMOND"));
+        assertTrue(workflow.contains("export GEOSTRATA_BENCHMARK_SUPPRESS_VANILLA_DIAMOND=true"));
         assertFalse(source.contains("ORE_REDSTONE"));
         assertFalse(source.contains("ORE_LAPIS"));
     }

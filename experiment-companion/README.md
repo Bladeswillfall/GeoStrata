@@ -14,6 +14,8 @@ Normal GeoStrata installs remain unchanged. The companion suppresses vanilla Ove
 
 This deliberately allows duplicate rare-resource generation in disposable validation worlds. That is preferable to deleting a vanilla resource before the experimental replacement has proven adequate availability. Suppression can be expanded material-by-material once benchmark evidence supports it.
 
+The CI ore benchmark has one narrow exception for measurement only. When `GEOSTRATA_BENCHMARK_SUPPRESS_VANILLA_DIAMOND=true` is present, the companion also removes vanilla diamond placed features so the benchmark can attribute vanilla diamond-block IDs to GeoStrata's structural/pipe routes without ambiguity. Normal companion launches do not set this environment variable and therefore keep ordinary vanilla diamonds.
+
 ## Testing
 
 Build both artifacts with:
