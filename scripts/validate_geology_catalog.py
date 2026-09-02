@@ -26,6 +26,7 @@ ORE_HOST_SOURCE = ROOT / "src" / "main" / "java" / "com" / "geostrata" / "block"
 CONTINUITY_ROOT = ASSETS / "optifine" / "ctm" / "host"
 CONTINUITY_TEXTURES = ASSETS / "textures" / "optifine" / "ctm" / "host"
 CONTINUITY_VARIANTS = 4
+VANILLA_HOST_TILES = {"granite": "minecraft:block/granite"}
 
 ROCK_CLASSES = ("sedimentary", "igneous", "metamorphic")
 ALLOWED_BODY_STYLES = {
@@ -114,7 +115,7 @@ def validate_continuity_hosts(hosts: list[str]) -> None:
         )
         expected = (
             "method=random\n"
-            f"matchTiles=geostrata:block/host/{host}\n"
+            f"matchTiles={VANILLA_HOST_TILES.get(host, f'geostrata:block/host/{host}')}\n"
             "prioritize=false\n"
             f"tiles={tiles}\n"
         )

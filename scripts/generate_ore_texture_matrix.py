@@ -26,6 +26,7 @@ MATRIX_PATH = RESOURCES / "data" / "geostrata" / "materials" / "ore_texture_matr
 GRADES = ("poor", "medium", "rich", "massive")
 CONTINUITY_VARIANTS = 4
 CONTINUITY_EDGE_GUARD = 2
+VANILLA_HOST_TILES = {"granite": "minecraft:block/granite"}
 
 
 def load_matrix() -> dict[str, object]:
@@ -119,7 +120,7 @@ def write_continuity_host(host: str, base: Image.Image) -> list[Image.Image]:
     tiles = " ".join(f"geostrata:textures/optifine/ctm/host/{host}/{index}" for index in range(CONTINUITY_VARIANTS))
     properties.write_text(
         "method=random\n"
-        f"matchTiles=geostrata:block/host/{host}\n"
+        f"matchTiles={VANILLA_HOST_TILES.get(host, f'geostrata:block/host/{host}')}\n"
         "prioritize=false\n"
         f"tiles={tiles}\n",
         encoding="utf-8",

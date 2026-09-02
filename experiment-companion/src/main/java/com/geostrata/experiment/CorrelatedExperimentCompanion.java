@@ -37,10 +37,7 @@ public final class CorrelatedExperimentCompanion implements ModInitializer {
     @Override
     public void onInitialize() {
         boolean benchmarkSuppressVanillaDiamond = Boolean.parseBoolean(System.getenv(BENCHMARK_SUPPRESS_DIAMOND_ENV));
-        if (Registries.ITEM.containsId(CREATE_RAW_ZINC)
-                || Registries.ITEM.containsId(CREATE_DD_RAW_TIN)
-                || benchmarkSuppressVanillaDiamond) {
-            BiomeModifications.create(GeoStrata.id("companion_ore_worldgen_ownership"))
+        BiomeModifications.create(GeoStrata.id("companion_ore_worldgen_ownership"))
                     .add(
                             ModificationPhase.REMOVALS,
                             BiomeSelectors.foundInOverworld(),
@@ -66,7 +63,6 @@ public final class CorrelatedExperimentCompanion implements ModInitializer {
                                 }
                             }
                     );
-        }
         OreDebugCommands.register();
         GeoStrata.LOGGER.info("GeoStrata experiment companion enabled; rare ore/diamond experiments and debug tools active");
         if (benchmarkSuppressVanillaDiamond) {
