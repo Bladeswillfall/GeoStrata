@@ -3,10 +3,7 @@ package com.geostrata.geology;
 import com.google.gson.JsonObject;
 import java.util.Set;
 
-/**
- * Loads the disabled-by-default correlated sedimentary experiment contract and
- * owns the single eligibility decision shared by diagnostics and future worldgen.
- */
+/** Owns the correlated sedimentary runtime contract and shared worldgen eligibility decision. */
 public final class CorrelatedSedimentaryExperiment {
     private static volatile Snapshot snapshot = Snapshot.unloaded();
 
@@ -137,7 +134,7 @@ public final class CorrelatedSedimentaryExperiment {
         }
 
         Snapshot activated(boolean companionLoaded) {
-            if (!companionLoaded) {
+            if (!companionLoaded || enabled) {
                 return this;
             }
             return new Snapshot(
