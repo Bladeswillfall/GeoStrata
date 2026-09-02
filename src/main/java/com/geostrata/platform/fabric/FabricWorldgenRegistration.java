@@ -3,12 +3,15 @@ package com.geostrata.platform.fabric;
 import com.geostrata.GeoStrata;
 import net.fabricmc.fabric.api.biome.v1.BiomeModifications;
 import net.fabricmc.fabric.api.biome.v1.BiomeSelectors;
+import net.fabricmc.fabric.api.biome.v1.ModificationPhase;
 import net.minecraft.registry.RegistryKey;
 import net.minecraft.registry.RegistryKeys;
 import net.minecraft.registry.tag.TagKey;
 import net.minecraft.world.biome.Biome;
 import net.minecraft.world.gen.GenerationStep;
 import net.minecraft.world.gen.feature.PlacedFeature;
+
+import java.util.List;
 
 /** Fabric biome-modification adapter for GeoStrata's shared data-driven placed features. */
 public final class FabricWorldgenRegistration {
@@ -20,11 +23,31 @@ public final class FabricWorldgenRegistration {
     private static final TagKey<Biome> HAS_BADLANDS_SOILS = biomeTag("has_badlands_soils");
     private static final TagKey<Biome> HAS_EXPERIMENTAL_ORE_DEPOSITS = biomeTag("has_experimental_ore_deposits");
     private static final TagKey<Biome> HAS_EXPERIMENTAL_DIAMOND_GEOLOGY = biomeTag("has_experimental_diamond_geology");
+    private static final List<RegistryKey<PlacedFeature>> LEGACY_FALLBACK_ROCKS = List.of(
+            key("limestone_ore"),
+            key("shale_ore"),
+            key("mudstone_ore"),
+            key("basalt_ore"),
+            key("chalk_ore"),
+            key("siltstone_ore"),
+            key("conglomerate_ore"),
+            key("slate_ore"),
+            key("marble_ore"),
+            key("quartzite_ore"),
+            key("schist_ore"),
+            key("gneiss_ore"),
+            key("rhyolite_ore"),
+            key("breccia_ore")
+    );
 
     private FabricWorldgenRegistration() {
     }
 
     public static void register() {
+        removeLegacyFallbackRocks();
+        addToTag("correlated_sedimentary_experiment", HAS_COMMON_ROCKS, GenerationStep.Feature.TOP_LAYER_MODIFICATION);
+        addToTag("province_background_experiment", HAS_COMMON_ROCKS, GenerationStep.Feature.TOP_LAYER_MODIFICATION);
+
         addToTag("limestone_ore", HAS_COMMON_ROCKS);
         addToTag("shale_ore", HAS_COMMON_ROCKS);
         addToTag("mudstone_ore", HAS_COMMON_ROCKS);
@@ -75,6 +98,19 @@ public final class FabricWorldgenRegistration {
                 HAS_EXPERIMENTAL_DIAMOND_GEOLOGY,
                 GenerationStep.Feature.UNDERGROUND_DECORATION
         );
+    }
+
+    private static void removeLegacyFallbackRocks() {
+        BiomeModifications.create(GeoStrata.id("core_geology_ownership"))
+                .add(
+                        ModificationPhase.REMOVALS,
+                        BiomeSelectors.foundInOverworld(),
+                        context -> LEGACY_FALLBACK_ROCKS.forEach(feature ->
+                                context.getGenerationSettings().removeFeature(
+                                        GenerationStep.Feature.UNDERGROUND_ORES,
+                                        feature
+                                ))
+                );
     }
 
     private static void addToTag(String feature, TagKey<Biome> tag) {
