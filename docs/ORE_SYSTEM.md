@@ -31,8 +31,8 @@ declare:
 - `depthAffinity` — flat or linearly interpolated vertical multipliers;
 - `provinceMultipliers` — soft weighting inside already-valid geological
   provinces;
-- `biomeMultipliers` — soft environmental bonuses sampled at the candidate
-  anchor; and
+- `biomeMultipliers` — soft environmental bonuses sampled from the surface
+  environment above the candidate X/Z; and
 - `depositStyleWeights` — relative weights when an occurrence can use several
   formation styles.
 
@@ -63,22 +63,30 @@ the loaded occurrence contract.
 
 ### Current baseline tuning
 
-The schema migration preserves the existing base activation chances, candidate
-spacing and iron/emerald depth behaviour. The first biome affinities are small,
-intentional gameplay tilts rather than replacement rules:
+The first calibrated biome affinities are intentionally few and player-readable.
+They are bonuses to already-valid geology rather than an attempt to make every
+ore correlate with a surface biome:
 
 | Material | Base activation | Candidate grid | Biome bonus |
 | --- | ---: | --- | ---: |
-| Coal | 80% | 160×160×64 | swamp soils ×1.30 |
-| Iron | 50% | 160×160×64 | mountain rocks ×1.10 |
+| Coal | 80% | 160×160×64 | swamp soils ×1.15 |
+| Iron | 50% | 160×160×64 | none |
 | Copper | 36% | 160×160×64 | none |
 | Gold | 80% | 64×64×64 | badlands soils ×1.15 |
 | Emerald | 8% | 32×32×16 | mountain rocks ×1.25 |
 
+Coal's earlier ×1.30 placeholder made an otherwise-valid swamp candidate
+activate at the 100% cap (`0.8 × 1.30`). The calibrated ×1.15 value instead
+moves the candidate chance from 80% to 92%: a worthwhile prospecting advantage
+without turning the biome into a guarantee. Iron's provisional mountain bonus
+was removed because it did not express a comparably clear gameplay relationship
+and its existing depth profile already strongly rewards appropriate elevations.
+
 These percentages are candidate activation probabilities, not percentages of
 chunks containing ore. Hard province eligibility, depth affinity, terrain
 filters, body bounds and valid host clipping still reduce actual world
-abundance substantially.
+abundance substantially. An unmatched biome uses multiplier `1.0`, so valid
+resources remain available outside their special zones.
 
 `OreDepositCandidatePlanner` reads candidate density directly from each
 occurrence. For each material and candidate cell it derives one jittered anchor
@@ -114,20 +122,25 @@ only carries a global `activationScale` for whole-experiment testing.
 For each nearby deterministic candidate, runtime placement now performs the
 following sequence:
 
-1. create the occurrence-specific candidate and, where applicable, bind a
-   fracture vein to the shared fault field;
+1. create the occurrence-specific candidate;
 2. reject candidates outside the occurrence's hard geological province list;
-3. combine the occurrence's depth, province and biome affinity multipliers;
+3. combine the occurrence's depth, province and surface-biome affinity at the
+   original candidate location;
 4. apply that affinity to the occurrence's deterministic base activation roll;
 5. apply any hard terrain filter;
-6. construct the body only for candidates that survived those cheap gates; and
-7. clip economic voxels to valid local host lithologies and the current chunk.
+6. where applicable, bind the surviving fracture-vein body to the shared fault
+   field; and
+7. construct and clip economic voxels to valid local host lithologies and the
+   current chunk.
 
 Biome affinity is sampled from the active chunk generator's biome source at the
-deterministic deposit anchor. It does not force-load a generated chunk and does
-not depend on which neighbouring chunk happened to generate first. This also
-lets compatible terrain/biome generators participate through their normal biome
-source rather than requiring GeoStrata to hard-code individual terrain mods.
+surface environment above the deterministic candidate X/Z. The surface Y comes
+from the generator's existing terrain-height query, so cave biomes do not stand
+in for the landscape above a deposit. This does not force-load a generated chunk
+and does not depend on which neighbouring chunk happened to generate first. It
+also lets compatible terrain/biome generators participate through their normal
+biome source rather than requiring GeoStrata to hard-code individual terrain
+mods.
 
 Placement is chunk-local. Every generated chunk re-evaluates the nearby stable
 candidate cells, builds any active body whose conservative bounds intersect the
@@ -156,10 +169,12 @@ generation owner.
 ### Shared fault-controlled veins
 
 `FaultControlledOrePlanner` is the single structural binding for experimental
-`vein` proposals. Candidate cells continue to own the deterministic random roll;
-fault binding does not generate a second candidate or consume a second random
-stream. The final bound anchor can, however, participate in the same geological
-and environmental affinity checks as any other final candidate location.
+`vein` proposals. Candidate cells continue to own the deterministic random roll,
+hard province eligibility, terrain requirements and environmental affinity.
+Fault binding does not generate a second candidate, consume a second random
+stream, or reroll abundance after moving the eventual body. The binding keeps
+the original proposal for those candidate-owned decisions and separately holds
+the fault-snapped body proposal used only for geometry.
 
 A vein whose original anchor lies within 96 blocks of the shared fault family,
 and safely inside its owning province rather than near a province boundary, is
