@@ -1,6 +1,7 @@
 package com.geostrata.geology;
 
 import com.geostrata.GeoStrata;
+import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
@@ -23,6 +24,7 @@ public final class GeologyDataReload {
 
     private static final Identifier LITHOLOGIES = GeoStrata.id("geology/lithologies.json");
     private static final Identifier ORE_OCCURRENCES = GeoStrata.id("geology/ore_occurrences.json");
+    private static final Identifier EXTERNAL_ORE_OCCURRENCES = GeoStrata.id("geology/external_ore_occurrences.json");
     private static final Identifier ORE_DEPOSIT_EXPERIMENT = GeoStrata.id("geology/ore_deposit_experiment.json");
     private static final Identifier DIAMOND_GEOLOGY_EXPERIMENT = GeoStrata.id("geology/diamond_geology_experiment.json");
     private static final Identifier PROVINCES = GeoStrata.id("geology/province_profiles.json");
@@ -49,9 +51,10 @@ public final class GeologyDataReload {
 
     public static void reload(ResourceManager manager, boolean companionLoaded) {
         try {
-            State loaded = parse(
+            State loaded = parseIncludingExternal(
                     readObject(manager, LITHOLOGIES),
                     readObject(manager, ORE_OCCURRENCES),
+                    readObject(manager, EXTERNAL_ORE_OCCURRENCES),
                     readObject(manager, ORE_DEPOSIT_EXPERIMENT),
                     readObject(manager, PROVINCES),
                     readObject(manager, SUCCESSIONS),
@@ -122,6 +125,81 @@ public final class GeologyDataReload {
     }
 
     static State parse(
+            JsonObject lithologiesRoot,
+            JsonObject oreOccurrencesRoot,
+            JsonObject oreDepositExperimentRoot,
+            JsonObject provincesRoot,
+            JsonObject successionsRoot,
+            JsonObject fieldProfilesRoot,
+            JsonObject experimentRoot,
+            Predicate<String> outputAvailable
+    ) {
+        return parseState(
+                lithologiesRoot,
+                oreOccurrencesRoot,
+                oreDepositExperimentRoot,
+                provincesRoot,
+                successionsRoot,
+                fieldProfilesRoot,
+                experimentRoot,
+                outputAvailable
+        );
+    }
+
+    static State parseIncludingExternal(
+            JsonObject lithologiesRoot,
+            JsonObject oreOccurrencesRoot,
+            JsonObject externalOreOccurrencesRoot,
+            JsonObject oreDepositExperimentRoot,
+            JsonObject provincesRoot,
+            JsonObject successionsRoot,
+            JsonObject fieldProfilesRoot,
+            JsonObject experimentRoot,
+            Predicate<String> outputAvailable
+    ) {
+        return parseState(
+                lithologiesRoot,
+                mergeOccurrenceRoots(oreOccurrencesRoot, externalOreOccurrencesRoot),
+                oreDepositExperimentRoot,
+                provincesRoot,
+                successionsRoot,
+                fieldProfilesRoot,
+                experimentRoot,
+                outputAvailable
+        );
+    }
+
+    private static JsonObject mergeOccurrenceRoots(JsonObject core, JsonObject external) {
+        if (core == null || external == null) {
+            throw new IllegalArgumentException("core and external ore occurrence catalogs must not be null");
+        }
+        requireInt(external, "schemaVersion", 1);
+        requireString(external, "model", "geostrata:external_ore_occurrence_catalog");
+        requireString(external, "runtimeStatus", "optional_provider_gated");
+        JsonElement rawExternal = external.get("occurrences");
+        if (rawExternal == null || !rawExternal.isJsonArray()) {
+            throw new IllegalArgumentException("external ore occurrences must be an array");
+        }
+
+        JsonObject merged = core.deepCopy();
+        JsonArray occurrences = merged.getAsJsonArray("occurrences");
+        if (occurrences == null) {
+            throw new IllegalArgumentException("core ore occurrences must be an array");
+        }
+        for (JsonElement rawOccurrence : rawExternal.getAsJsonArray()) {
+            if (!rawOccurrence.isJsonObject()) {
+                throw new IllegalArgumentException("external ore occurrence entry must be an object");
+            }
+            JsonObject occurrence = rawOccurrence.getAsJsonObject();
+            if ("minecraft".equals(stringValue(occurrence, "providerMod"))) {
+                throw new IllegalArgumentException("external ore occurrence must not declare minecraft as its provider");
+            }
+            occurrences.add(occurrence.deepCopy());
+        }
+        return merged;
+    }
+
+    private static State parseState(
             JsonObject lithologiesRoot,
             JsonObject oreOccurrencesRoot,
             JsonObject oreDepositExperimentRoot,
@@ -220,6 +298,27 @@ public final class GeologyDataReload {
                 throw new JsonParseException(id + " root must be a JSON object");
             }
             return root.getAsJsonObject();
+        }
+    }
+
+    private static String stringValue(JsonObject object, String key) {
+        JsonElement value = object.get(key);
+        return value != null && value.isJsonPrimitive() && value.getAsJsonPrimitive().isString()
+                ? value.getAsString()
+                : null;
+    }
+
+    private static void requireString(JsonObject object, String key, String expected) {
+        if (!expected.equals(stringValue(object, key))) {
+            throw new IllegalArgumentException(key + " must be " + expected);
+        }
+    }
+
+    private static void requireInt(JsonObject object, String key, int expected) {
+        JsonElement value = object.get(key);
+        if (value == null || !value.isJsonPrimitive() || !value.getAsJsonPrimitive().isNumber()
+                || value.getAsDouble() != expected) {
+            throw new IllegalArgumentException(key + " must be " + expected);
         }
     }
 
