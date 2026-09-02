@@ -258,12 +258,23 @@ public final class OreDepositExperiment {
 
         Snapshot activated(boolean companionLoaded, boolean coreCommonOwnershipEnabled) {
             if (companionLoaded) {
+                if (coreCommonOwnershipEnabled) {
+                    return new Snapshot(
+                            "experimental_runtime",
+                            true,
+                            placementMode,
+                            "core_common_overworld",
+                            activationChancePerCandidate
+                    );
+                }
+                LinkedHashMap<String, Double> rareChances = new LinkedHashMap<>(activationChancePerCandidate);
+                CORE_COMMON_MATERIALS.forEach(rareChances::remove);
                 return new Snapshot(
                         "experimental_runtime",
                         true,
                         placementMode,
-                        coreCommonOwnershipEnabled ? "core_common_overworld" : "not_implemented",
-                        activationChancePerCandidate
+                        "not_implemented",
+                        rareChances
                 );
             }
             if (!coreCommonOwnershipEnabled) {
