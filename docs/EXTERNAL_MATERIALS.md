@@ -1,6 +1,6 @@
 # External material compatibility catalogue
 
-GeoStrata should eventually own the **natural geological occurrence** of supported ores while the detected provider mod continues to own items, recipes, processing and progression.
+GeoStrata should eventually own the **natural geological occurrence** of supported ores and minerals while the detected provider mod continues to own items, recipes, processing and progression.
 
 The machine-readable backlog is:
 
@@ -10,60 +10,88 @@ src/main/resources/data/geostrata/compatibility/external_materials.json
 
 It is planning metadata only. Nothing in the catalogue enables a dependency, registers a block, suppresses another mod's worldgen, or causes GeoStrata to place provider-owned material yet.
 
-## Why catalogue this first
+## Canonical material first
 
-Provider support should be boring to add. A new metal should normally be a data entry describing:
+Provider support should not duplicate geology. Schema 2 separates two concerns:
 
-- which mod IDs provide it;
-- which provider ore/output IDs or common tags identify it;
-- which GeoStrata semantic role it maps to;
-- which existing deposit styles can represent it;
-- which existing GeoStrata lithologies are plausible hosts; and
-- which missing host-rock families should be added later rather than faked with an unrelated rock.
+1. `canonicalMaterials` describe **where and how a material can form**;
+2. `providers` describe **which installed mod supplies the blocks/items for that material**.
 
-Only genuinely new geological formation mechanisms should require new worldgen code.
+If two installed mods both provide lead, GeoStrata therefore has one canonical `lead` geological model and two provider mappings. It must not generate independent TFMG-lead and Create-Nuclear-lead deposits.
+
+Each canonical material owns one or more `formationRoutes`. A route binds together:
+
+- current GeoStrata host lithologies;
+- future host roles that must not be faked with an unrelated current rock;
+- allowed geological provinces;
+- one or more existing deposit-body styles; and
+- any shared geological context that must exist before the route can be promoted to runtime generation.
+
+This prevents a flat `hosts × provinces × styles` cross-product from producing combinations that were never intended. A future runtime occurrence should consume the same route concept rather than independently choosing a host, province and body style.
 
 ## Create-family first tranche
 
-| Provider | Natural material | Initial GeoStrata direction |
+| Canonical material | Provider(s) in this tranche | Main formation routes |
 | --- | --- | --- |
-| Create | Zinc | Carbonate/felsic-associated vein or stratiform occurrence |
-| Create: Dreams & Desires | Tin | Felsic/pegmatitic vein or disseminated occurrence |
-| Create: New Age | Thorium | Felsic/accessory-mineral vein or disseminated occurrence |
-| Create: New Age | Magnetite | Mafic, skarn-like or massive/disseminated occurrence |
-| Create: The Factory Must Grow | Lead | Carbonate/sedimentary vein or stratiform occurrence |
-| Create: The Factory Must Grow | Nickel | Mafic/ultramafic disseminated or massive occurrence |
-| Create: The Factory Must Grow | Lithium | Felsic/pegmatitic vein or pocket occurrence |
-| Create: Nuclear | Uranium | Felsic, shale or future sandstone/unconformity occurrence |
-| Create: Nuclear | Lead | Alias of the same canonical lead geology rather than a second lead system |
+| Zinc | Create | carbonate replacement; clastic sediment-hosted; later skarn/contact |
+| Tin | Create: Dreams & Desires | granite hydrothermal; pegmatite/greisen |
+| Thorium | Create: New Age | felsic accessory; pegmatite accessory |
+| Magnetite | Create: New Age | mafic magmatic; skarn/contact; later banded formation |
+| Lead | TFMG; Create: Nuclear | carbonate replacement; clastic sediment-hosted; later skarn/contact |
+| Nickel | TFMG | mafic disseminated; ultramafic sulfide |
+| Lithium | TFMG | granitic pegmatite |
+| Uranium | Create: Nuclear | felsic hydrothermal; sandstone redox |
 
-This is intentionally a **canonical-material** model. If two installed mods both provide lead, GeoStrata should generate one geological lead occurrence and select/interoperate with a provider output through tags or a narrow adapter. It should not generate two independent lead systems because two mods happened to register lead ore.
+The route catalogue deliberately reuses GeoStrata's existing `vein`, `micro_vein`, `stratiform`, `disseminated` and `massive_lens_or_pocket` geometry wherever those shapes are sufficient. New Java ore-body geometry is not justified merely because a new metal is added.
 
-## Core host-rock gaps exposed by compatibility work
+## Core geology exposed by the ore work
 
-Andesite, granite and diorite are **general GeoStrata geology**, not Create compatibility blocks. They should exist and generate coherently whether Create is installed or not. Create simply makes the absence of these lithologies more obvious and raises their implementation priority.
+Compatibility is also revealing reusable gaps in the core geology model. These are **not conditional Create features**.
 
-The compatibility catalogue therefore records the vanilla blocks as `scope: core_geology` gaps while also listing mods that benefit from them:
+### Igneous lithologies
 
-- `minecraft:andesite` -> `geostrata:rock/igneous/andesite`
-- `minecraft:granite` -> `geostrata:rock/igneous/granite`
-- `minecraft:diorite` -> `geostrata:rock/igneous/diorite`
+- **Andesite** remains a missing normal GeoStrata lithology and should be handled generally, whether Create is installed or not.
+- **Granite** is already a current GeoStrata lithology backed by `minecraft:granite` and is now available to formation-route planning.
+- **Diorite** is already a current GeoStrata lithology backed by `minecraft:diorite`.
 
-Their eventual implementation belongs in GeoStrata's normal lithology/host system and must **not** be gated on Create detection. In particular, granite is a major missing felsic intrusive host for tin, lithium, thorium and some uranium geology. Until GeoStrata has a real granite/pegmatite model, those materials should retain explicit future-host requirements rather than silently substituting rhyolite everywhere.
+Create raises the importance of andesite, but it does not own the rock or gate its geology.
 
-## Implementation sequence
+### Shared formation contexts
 
-For each provider material, support is complete only after all of the following are true:
+The catalogue records shared geological work instead of inventing a generator per ore:
+
+- **Pegmatite system** — granite-linked late felsic veins/lenses. Reuse existing vein/lens/disseminated geometry. Main beneficiaries: tin, lithium, thorium.
+- **Mafic/ultramafic intrusive system** — future gabbro/peridotite-style hosts using existing disseminated and massive-lens ore geometry. Main beneficiaries: nickel and magnetite.
+- **Skarn/contact replacement** — reuse existing intrusion/contact-metamorphism context plus massive/disseminated/vein geometry. Main beneficiaries: magnetite, zinc and lead.
+- **Sandstone redox mineralisation** — initially reuse stratiform/disseminated geometry inside sandstone rather than implementing chemical transport simulation. Main beneficiary: uranium.
+- **Banded iron-formation system** — recorded as deferred rather than required for the first magnetite implementation.
+
+None of those currently requires a brand-new ore-body shape. The new work is chiefly **geological context and host generation**, not another collection of blob generators.
+
+## Gameified-realism rule
+
+The aim is for geology to create player-readable clues without requiring a geology degree.
+
+Examples:
+
+- granite country plus coarse late intrusive veins can become a tin/lithium clue;
+- limestone/marble near intrusive contact zones can become magnetite/zinc/lead territory;
+- mafic/ultramafic bodies can become the strong nickel clue;
+- sandstone basins can support a distinct uranium route rather than making uranium a generic deep-rock ore.
+
+Those relationships should increase the value of understanding the world while keeping resources available through more than one plausible route where gameplay needs it.
+
+## Promotion sequence
+
+For each provider material, runtime support is complete only after all of the following are true:
 
 1. provider detection is loader-safe and optional;
 2. provider block/output IDs or common tags are verified for the supported Minecraft/mod version;
-3. the canonical material has an occurrence entry using existing deposit styles where possible;
-4. required host lithologies exist or the occurrence deliberately uses a smaller geologically valid subset;
-5. GeoStrata can emit the provider's economy output without copying its processing system;
-6. replacement generation is benchmarked for availability and discoverability; and
+3. the canonical material is promoted into the runtime occurrence/LUT contract using its validated formation routes;
+4. required host lithologies and shared geology contexts exist, or the initial implementation deliberately enables only the valid subset of routes;
+5. GeoStrata can emit/interoperate with the provider's economy output without copying its processing system;
+6. replacement generation is benchmarked for availability, discoverability and generation cost; and
 7. provider-native natural worldgen is suppressed only after the replacement path is proven safe.
-
-Core lithologies such as andesite/granite/diorite have a different condition: they are implemented because the geology model needs them, independently of any provider mod.
 
 The standalone GeoStrata jar must still load with none of these providers installed.
 
