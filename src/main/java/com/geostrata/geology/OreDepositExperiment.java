@@ -7,7 +7,7 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-/** Disabled-by-default tuning and activation boundary for real ore-deposit placement. */
+/** Disabled-by-default activation boundary for real ore-deposit placement. */
 public final class OreDepositExperiment {
     private static final long ACTIVATION_SALT = 0xDB4F0B9175AE2165L;
     private static volatile Snapshot snapshot = Snapshot.unloaded();
@@ -27,29 +27,23 @@ public final class OreDepositExperiment {
         if (!occurrences.loaded()) {
             throw new IllegalArgumentException("ore occurrences must be loaded before the deposit experiment");
         }
-        requireInt(root, "schemaVersion", 1);
+        requireInt(root, "schemaVersion", 2);
         requireString(root, "model", "geostrata:ore_deposit_experiment");
         requireString(root, "runtimeStatus", "experimental_opt_in");
         boolean enabled = requireBoolean(root, "enabled");
         requireString(root, "placementMode", "chunk_local_valid_host_clipping");
         requireString(root, "nativeGenerationSuppression", "not_implemented");
-
-        JsonObject rawChances = requiredObject(root, "activationChancePerCandidate");
-        if (!rawChances.keySet().equals(occurrences.byId().keySet())) {
-            throw new IllegalArgumentException(
-                    "activationChancePerCandidate must define exactly the loaded ore materials"
-            );
+        double activationScale = requireDouble(root, "activationScale");
+        if (activationScale < 0.0) {
+            throw new IllegalArgumentException("activationScale must not be negative");
         }
 
         LinkedHashMap<String, Double> chances = new LinkedHashMap<>();
         for (OreOccurrenceCatalog.Occurrence occurrence : occurrences.occurrences()) {
-            double chance = requireDouble(rawChances, occurrence.id());
-            if (chance < 0.0 || chance > 1.0) {
-                throw new IllegalArgumentException(
-                        occurrence.id() + " activation chance must be between 0 and 1"
-                );
-            }
-            chances.put(occurrence.id(), chance);
+            chances.put(
+                    occurrence.id(),
+                    Math.min(1.0, occurrence.generation().activationChance() * activationScale)
+            );
         }
         return new Snapshot(
                 "experimental_opt_in",
@@ -61,17 +55,35 @@ public final class OreDepositExperiment {
     }
 
     public static boolean active(long worldSeed, OreDepositCandidatePlanner.Proposal proposal) {
-        return active(worldSeed, proposal, current());
+        return active(worldSeed, proposal, 1.0, current());
     }
 
-    /** Checks activation before X/Z anchor, style and proposal construction work is needed. */
+    /** Applies data-driven geological/environmental affinity to the base material chance. */
+    public static boolean active(
+            long worldSeed,
+            OreDepositCandidatePlanner.Proposal proposal,
+            double affinityMultiplier
+    ) {
+        return active(worldSeed, proposal, affinityMultiplier, current());
+    }
+
+    /** Compatibility overload for callers that only have a candidate cell. */
     public static boolean active(long worldSeed, String material, int cellX, int cellY, int cellZ) {
-        return active(worldSeed, material, cellX, cellY, cellZ, current());
+        return active(worldSeed, material, cellX, cellY, cellZ, 1.0, current());
     }
 
     static boolean active(
             long worldSeed,
             OreDepositCandidatePlanner.Proposal proposal,
+            Snapshot experiment
+    ) {
+        return active(worldSeed, proposal, 1.0, experiment);
+    }
+
+    static boolean active(
+            long worldSeed,
+            OreDepositCandidatePlanner.Proposal proposal,
+            double affinityMultiplier,
             Snapshot experiment
     ) {
         if (proposal == null || experiment == null) {
@@ -83,7 +95,7 @@ public final class OreDepositExperiment {
                 proposal.cellX(),
                 proposal.cellY(),
                 proposal.cellZ(),
-                proposal.anchorY(),
+                affinityMultiplier,
                 experiment
         );
     }
@@ -96,22 +108,24 @@ public final class OreDepositExperiment {
             int cellZ,
             Snapshot experiment
     ) {
-        if (material == null || experiment == null) {
-            throw new IllegalArgumentException("ore material and experiment must not be null");
-        }
-        int anchorY = OreDepositCandidatePlanner.anchorYForCell(worldSeed, cellX, cellY, cellZ, material);
-        return active(worldSeed, material, cellX, cellY, cellZ, anchorY, experiment);
+        return active(worldSeed, material, cellX, cellY, cellZ, 1.0, experiment);
     }
 
-    private static boolean active(
+    static boolean active(
             long worldSeed,
             String material,
             int cellX,
             int cellY,
             int cellZ,
-            int anchorY,
+            double affinityMultiplier,
             Snapshot experiment
     ) {
+        if (material == null || experiment == null) {
+            throw new IllegalArgumentException("ore material and experiment must not be null");
+        }
+        if (!Double.isFinite(affinityMultiplier) || affinityMultiplier < 0.0) {
+            throw new IllegalArgumentException("ore affinity multiplier must be finite and non-negative");
+        }
         if (!experiment.loaded() || !experiment.enabled()) {
             return false;
         }
@@ -119,38 +133,20 @@ public final class OreDepositExperiment {
         if (chance == null) {
             return false;
         }
-        double adjustedChance = Math.min(1.0, chance * activationDepthMultiplier(material, anchorY));
+        double adjustedChance = Math.min(1.0, chance * affinityMultiplier);
         return GeologyDeterminism.passesChance(
                 adjustedChance,
                 activationRoll(worldSeed, material, cellX, cellY, cellZ)
         );
     }
 
-    /** Broad material vertical bias; geology and valid host rock still decide whether an active body can place. */
+    /** Compatibility helper; runtime depth bias now lives in the occurrence generation LUT. */
     static double activationDepthMultiplier(OreDepositCandidatePlanner.Proposal proposal) {
         if (proposal == null) {
             throw new IllegalArgumentException("ore proposal must not be null");
         }
-        return activationDepthMultiplier(proposal.material(), proposal.anchorY());
-    }
-
-    private static double activationDepthMultiplier(String material, int anchorY) {
-        if ("emerald".equals(material)) {
-            return Math.min(12.5, Math.max(0.0, (anchorY + 16) * 12.5 / 144.0));
-        }
-        if (!"iron".equals(material)) {
-            return 1.0;
-        }
-        if (anchorY < 0) {
-            return 0.5;
-        }
-        if (anchorY < 64) {
-            return 1.5;
-        }
-        if (anchorY < 128) {
-            return 1.9;
-        }
-        return 1.0;
+        OreOccurrenceCatalog.Occurrence occurrence = OreOccurrenceCatalog.current().byId().get(proposal.material());
+        return occurrence == null ? 1.0 : occurrence.generation().depthMultiplier(proposal.anchorY());
     }
 
     static double activationRoll(long worldSeed, OreDepositCandidatePlanner.Proposal proposal) {
@@ -178,14 +174,6 @@ public final class OreDepositExperiment {
                 cellZ,
                 ACTIVATION_SALT ^ materialSalt
         );
-    }
-
-    private static JsonObject requiredObject(JsonObject object, String key) {
-        JsonElement element = object.get(key);
-        if (element == null || !element.isJsonObject()) {
-            throw new IllegalArgumentException(key + " must be an object");
-        }
-        return element.getAsJsonObject();
     }
 
     private static String requireString(JsonObject object, String key) {

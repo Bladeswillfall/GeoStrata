@@ -12,12 +12,15 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 final class OreOccurrenceCatalogTest {
     @Test
-    void parsesHostOccurrenceAndOrderedGradeContract() {
+    void parsesHostOccurrenceGenerationAndOrderedGradeContract() {
         OreOccurrenceCatalog.Snapshot snapshot = OreOccurrenceCatalog.parse(lithologies(), occurrence("shale", "vein"));
 
         OreOccurrenceCatalog.Occurrence iron = snapshot.require("iron");
         assertEquals(List.of("shale"), iron.hostLithologies());
         assertEquals(List.of(GeologyProvince.OROGENIC_BELT), iron.provinceContexts());
+        assertEquals(0.5, iron.generation().activationChance(), 0.0);
+        assertEquals(160, iron.generation().candidateGrid().horizontalCellSize());
+        assertEquals(1.2, iron.generation().biomeMultiplier("geostrata:has_mountain_rocks"::equals), 0.0);
         assertEquals(List.of("poor", "medium", "rich", "massive"), snapshot.gradeModel().economicGrades());
         assertEquals(4, snapshot.gradeModel().require(OreGrade.RICH).baseYield());
         assertEquals(8, snapshot.gradeModel().require(OreGrade.MASSIVE).experienceMax());
@@ -47,6 +50,18 @@ final class OreOccurrenceCatalogTest {
         assertThrows(IllegalArgumentException.class, () -> OreOccurrenceCatalog.parse(lithologies(), root));
     }
 
+    @Test
+    void biomeAffinityIsBonusOnly() {
+        JsonObject root = occurrence("shale", "vein");
+        root.getAsJsonArray("occurrences")
+                .get(0).getAsJsonObject()
+                .getAsJsonObject("generation")
+                .getAsJsonObject("biomeMultipliers")
+                .addProperty("geostrata:has_mountain_rocks", 0.8);
+
+        assertThrows(IllegalArgumentException.class, () -> OreOccurrenceCatalog.parse(lithologies(), root));
+    }
+
     private static LithologyCatalog.Snapshot lithologies() {
         LithologyCatalog.Entry shale = new LithologyCatalog.Entry(
                 "shale",
@@ -65,7 +80,7 @@ final class OreOccurrenceCatalogTest {
     private static JsonObject occurrence(String host, String style) {
         return JsonParser.parseString("""
                 {
-                  "schemaVersion": 2,
+                  "schemaVersion": 3,
                   "model": "geostrata:ore_occurrence_catalog",
                   "runtimeStatus": "grade_economy_active",
                   "generationOwner": "geostrata",
@@ -92,6 +107,18 @@ final class OreOccurrenceCatalogTest {
                     "hostLithologies": ["%s"],
                     "provinceContexts": ["orogenic_belt"],
                     "depositStyles": ["%s"],
+                    "generation": {
+                      "activationChance": 0.5,
+                      "candidateGrid": {
+                        "horizontalCellSize": 160,
+                        "verticalCellSize": 64,
+                        "horizontalMargin": 16,
+                        "verticalMargin": 8,
+                        "horizontalSearchPaddingBlocks": 224,
+                        "verticalSearchPaddingBlocks": 224
+                      },
+                      "biomeMultipliers": {"geostrata:has_mountain_rocks": 1.2}
+                    },
                     "gradeBlocks": {
                       "poor": "geostrata:poor_iron_ore",
                       "medium": "geostrata:medium_iron_ore",

@@ -44,7 +44,7 @@ final class OreDepositCandidatePlannerTest {
     }
 
     @Test
-    void rareOresUseDenserCandidateProfilesWithoutExcessVerticalSearch() {
+    void candidateDensityComesFromOccurrenceData() {
         OreDepositCandidatePlanner.Frequency common = OreDepositCandidatePlanner.frequency(iron());
         OreDepositCandidatePlanner.Frequency gold = OreDepositCandidatePlanner.frequency(gold());
         OreDepositCandidatePlanner.Frequency emerald = OreDepositCandidatePlanner.frequency(emerald());
@@ -61,6 +61,26 @@ final class OreDepositCandidatePlannerTest {
         assertEquals(16, emerald.verticalCellSize());
         assertEquals(16, emerald.horizontalSearchPaddingBlocks());
         assertEquals(16, emerald.verticalSearchPaddingBlocks());
+    }
+
+    @Test
+    void zeroWeightDepositStyleIsNeverSelected() {
+        OreOccurrenceCatalog.Occurrence occurrence = occurrence(
+                "iron",
+                List.of("vein", "stratiform"),
+                new OreGenerationProfile(
+                        1.0,
+                        OreGenerationProfile.defaults().candidateGrid(),
+                        List.of(),
+                        Map.of(),
+                        Map.of(),
+                        Map.of("vein", 0.0, "stratiform", 1.0)
+                )
+        );
+
+        for (long seed = 0; seed < 32; seed++) {
+            assertEquals("stratiform", OreDepositCandidatePlanner.propose(seed, 0, 0, 0, occurrence).depositStyle());
+        }
     }
 
     @Test
@@ -136,15 +156,7 @@ final class OreDepositCandidatePlannerTest {
     }
 
     private static OreOccurrenceCatalog.Occurrence iron() {
-        return new OreOccurrenceCatalog.Occurrence(
-                "iron",
-                "minecraft",
-                "minecraft:raw_iron",
-                List.of("shale"),
-                List.of(GeologyProvince.OROGENIC_BELT),
-                List.of("vein", "stratiform", "massive_lens_or_pocket"),
-                gradeBlocks("iron")
-        );
+        return occurrence("iron", List.of("vein", "stratiform", "massive_lens_or_pocket"), OreGenerationProfile.defaults());
     }
 
     private static OreOccurrenceCatalog.Occurrence gold() {
@@ -155,6 +167,9 @@ final class OreDepositCandidatePlannerTest {
                 List.of("slate"),
                 List.of(GeologyProvince.OROGENIC_BELT),
                 List.of("vein", "disseminated"),
+                profile(new OreGenerationProfile.CandidateGrid(64, 64, 8, 8, 160, 64)),
+                OreOccurrenceCatalog.TerrainFilter.none(),
+                OreGrade.MASSIVE,
                 gradeBlocks("gold")
         );
     }
@@ -167,8 +182,34 @@ final class OreDepositCandidatePlannerTest {
                 List.of("schist"),
                 List.of(GeologyProvince.OROGENIC_BELT),
                 List.of("micro_vein"),
+                profile(new OreGenerationProfile.CandidateGrid(32, 16, 4, 2, 16, 16)),
+                OreOccurrenceCatalog.TerrainFilter.none(),
+                OreGrade.RICH,
                 gradeBlocks("emerald")
         );
+    }
+
+    private static OreOccurrenceCatalog.Occurrence occurrence(
+            String material,
+            List<String> styles,
+            OreGenerationProfile generation
+    ) {
+        return new OreOccurrenceCatalog.Occurrence(
+                material,
+                "minecraft",
+                "minecraft:raw_" + material,
+                List.of("shale"),
+                List.of(GeologyProvince.OROGENIC_BELT),
+                styles,
+                generation,
+                OreOccurrenceCatalog.TerrainFilter.none(),
+                OreGrade.MASSIVE,
+                gradeBlocks(material)
+        );
+    }
+
+    private static OreGenerationProfile profile(OreGenerationProfile.CandidateGrid grid) {
+        return new OreGenerationProfile(1.0, grid, List.of(), Map.of(), Map.of(), Map.of());
     }
 
     private static Map<OreGrade, String> gradeBlocks(String material) {

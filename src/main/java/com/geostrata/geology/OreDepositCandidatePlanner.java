@@ -7,18 +7,6 @@ public final class OreDepositCandidatePlanner {
     public static final int HORIZONTAL_CELL_SIZE = 160;
     public static final int VERTICAL_CELL_SIZE = 64;
 
-    private static final int HORIZONTAL_MARGIN = 16;
-    private static final int VERTICAL_MARGIN = 8;
-    private static final Frequency DEFAULT_FREQUENCY = new Frequency(
-            HORIZONTAL_CELL_SIZE,
-            VERTICAL_CELL_SIZE,
-            HORIZONTAL_MARGIN,
-            VERTICAL_MARGIN,
-            224,
-            224
-    );
-    private static final Frequency GOLD_FREQUENCY = new Frequency(64, 64, 8, 8, 160, 64);
-    private static final Frequency EMERALD_FREQUENCY = new Frequency(32, 16, 4, 2, 16, 16);
     private static final long MATERIAL_SALT = 0xA24BAED4963EE407L;
     private static final long ANCHOR_X_SALT = 0x9FB21C651E98DF25L;
     private static final long ANCHOR_Y_SALT = 0xC13FA9A902A6328FL;
@@ -28,20 +16,20 @@ public final class OreDepositCandidatePlanner {
     private OreDepositCandidatePlanner() {
     }
 
-    /** Material-specific candidate density without adding a second ore generator. */
+    /** Candidate density is defined entirely by the occurrence LUT. */
     public static Frequency frequency(OreOccurrenceCatalog.Occurrence occurrence) {
         if (occurrence == null) {
             throw new IllegalArgumentException("ore occurrence must not be null");
         }
-        return frequency(occurrence.id());
-    }
-
-    private static Frequency frequency(String material) {
-        return switch (material) {
-            case "gold" -> GOLD_FREQUENCY;
-            case "emerald" -> EMERALD_FREQUENCY;
-            default -> DEFAULT_FREQUENCY;
-        };
+        OreGenerationProfile.CandidateGrid grid = occurrence.generation().candidateGrid();
+        return new Frequency(
+                grid.horizontalCellSize(),
+                grid.verticalCellSize(),
+                grid.horizontalMargin(),
+                grid.verticalMargin(),
+                grid.horizontalSearchPaddingBlocks(),
+                grid.verticalSearchPaddingBlocks()
+        );
     }
 
     /**
@@ -88,20 +76,20 @@ public final class OreDepositCandidatePlanner {
                 frequency.horizontalMargin(),
                 GeologyDeterminism.unitRoll(worldSeed, cellX, cellY, cellZ, salt ^ ANCHOR_X_SALT)
         );
-        int anchorY = anchorYForCell(worldSeed, cellX, cellY, cellZ, occurrence.id());
+        int anchorY = anchorYForCell(worldSeed, cellX, cellY, cellZ, occurrence);
         int anchorZ = anchor(
                 cellZ,
                 frequency.horizontalCellSize(),
                 frequency.horizontalMargin(),
                 GeologyDeterminism.unitRoll(worldSeed, cellX, cellY, cellZ, salt ^ ANCHOR_Z_SALT)
         );
-        int styleIndex = (int) Math.floor(
+        String style = selectStyle(
+                occurrence,
                 GeologyDeterminism.unitRoll(worldSeed, cellX, cellY, cellZ, salt ^ STYLE_SALT)
-                        * occurrence.depositStyles().size()
         );
         return new Proposal(
                 occurrence.id(),
-                occurrence.depositStyles().get(styleIndex),
+                style,
                 cellX,
                 cellY,
                 cellZ,
@@ -111,17 +99,41 @@ public final class OreDepositCandidatePlanner {
         );
     }
 
-    /** Returns only the deterministic Y anchor when activation needs depth before proposal construction. */
-    static int anchorYForCell(long worldSeed, int cellX, int cellY, int cellZ, String material) {
-        if (material == null) {
-            throw new IllegalArgumentException("ore material must not be null");
+    /** Returns only the deterministic Y anchor when an occurrence is already available. */
+    static int anchorYForCell(
+            long worldSeed,
+            int cellX,
+            int cellY,
+            int cellZ,
+            OreOccurrenceCatalog.Occurrence occurrence
+    ) {
+        if (occurrence == null) {
+            throw new IllegalArgumentException("ore occurrence must not be null");
         }
-        Frequency frequency = frequency(material);
-        long salt = MATERIAL_SALT ^ Integer.toUnsignedLong(material.hashCode());
+        Frequency frequency = frequency(occurrence);
+        long salt = MATERIAL_SALT ^ Integer.toUnsignedLong(occurrence.id().hashCode());
         return anchor(
                 cellY,
                 frequency.verticalCellSize(),
                 frequency.verticalMargin(),
+                GeologyDeterminism.unitRoll(worldSeed, cellX, cellY, cellZ, salt ^ ANCHOR_Y_SALT)
+        );
+    }
+
+    /** Compatibility helper; loaded catalog data is preferred over any material-name special case. */
+    static int anchorYForCell(long worldSeed, int cellX, int cellY, int cellZ, String material) {
+        if (material == null) {
+            throw new IllegalArgumentException("ore material must not be null");
+        }
+        OreOccurrenceCatalog.Occurrence occurrence = OreOccurrenceCatalog.current().byId().get(material);
+        OreGenerationProfile.CandidateGrid grid = occurrence == null
+                ? OreGenerationProfile.defaults().candidateGrid()
+                : occurrence.generation().candidateGrid();
+        long salt = MATERIAL_SALT ^ Integer.toUnsignedLong(material.hashCode());
+        return anchor(
+                cellY,
+                grid.verticalCellSize(),
+                grid.verticalMargin(),
                 GeologyDeterminism.unitRoll(worldSeed, cellX, cellY, cellZ, salt ^ ANCHOR_Y_SALT)
         );
     }
@@ -146,6 +158,22 @@ public final class OreDepositCandidatePlanner {
             return Optional.empty();
         }
         return Optional.of(new Candidate(proposal, province, hostLithology));
+    }
+
+    private static String selectStyle(OreOccurrenceCatalog.Occurrence occurrence, double roll) {
+        double totalWeight = occurrence.depositStyles().stream()
+                .mapToDouble(occurrence.generation()::depositStyleWeight)
+                .sum();
+        double target = roll * totalWeight;
+        double cumulative = 0.0;
+        String fallback = occurrence.depositStyles().get(occurrence.depositStyles().size() - 1);
+        for (String style : occurrence.depositStyles()) {
+            cumulative += occurrence.generation().depositStyleWeight(style);
+            if (target < cumulative) {
+                return style;
+            }
+        }
+        return fallback;
     }
 
     private static int anchor(int cell, int size, int margin, double roll) {

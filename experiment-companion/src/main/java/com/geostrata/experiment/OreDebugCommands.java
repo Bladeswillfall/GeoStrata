@@ -15,12 +15,18 @@ import com.geostrata.geology.SedimentaryFieldProfiles;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.minecraft.block.BlockState;
+import net.minecraft.registry.RegistryKeys;
+import net.minecraft.registry.entry.RegistryEntry;
+import net.minecraft.registry.tag.TagKey;
 import net.minecraft.server.command.CommandManager;
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.Text;
+import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
+import net.minecraft.world.biome.Biome;
+import net.minecraft.world.biome.source.BiomeCoords;
 
 import java.util.EnumMap;
 import java.util.Map;
@@ -80,12 +86,12 @@ final class OreDebugCommands {
 
         Optional<LocatedOre> found = findNearby(source, occurrence, fieldProfiles, requestedStyle);
         if (found.isEmpty()) {
+            int cellSize = OreDepositCandidatePlanner.frequency(occurrence).horizontalCellSize();
             source.sendError(Text.literal(
                     "No placed GeoStrata " + material
                             + (requestedStyle == null ? "" : " " + requestedStyle)
-                            + " ore found within ~"
-                            + (SEARCH_RADIUS_CELLS * OreDepositCandidatePlanner.HORIZONTAL_CELL_SIZE)
-                            + " blocks. Move ~512 blocks and run the locate command again."
+                            + " ore found within ~" + (SEARCH_RADIUS_CELLS * cellSize)
+                            + " blocks. Move several candidate cells and run the locate command again."
             ));
             return 0;
         }
@@ -115,12 +121,13 @@ final class OreDebugCommands {
     ) {
         ServerWorld world = source.getWorld();
         long seed = world.getSeed();
+        OreDepositCandidatePlanner.Frequency frequency = OreDepositCandidatePlanner.frequency(occurrence);
         int originX = MathHelper.floor(source.getPosition().x);
         int originZ = MathHelper.floor(source.getPosition().z);
-        int originCellX = Math.floorDiv(originX, OreDepositCandidatePlanner.HORIZONTAL_CELL_SIZE);
-        int originCellZ = Math.floorDiv(originZ, OreDepositCandidatePlanner.HORIZONTAL_CELL_SIZE);
-        int minCellY = Math.floorDiv(world.getBottomY(), OreDepositCandidatePlanner.VERTICAL_CELL_SIZE);
-        int maxCellY = Math.floorDiv(world.getTopY() - 1, OreDepositCandidatePlanner.VERTICAL_CELL_SIZE);
+        int originCellX = Math.floorDiv(originX, frequency.horizontalCellSize());
+        int originCellZ = Math.floorDiv(originZ, frequency.horizontalCellSize());
+        int minCellY = Math.floorDiv(world.getBottomY(), frequency.verticalCellSize());
+        int maxCellY = Math.floorDiv(world.getTopY() - 1, frequency.verticalCellSize());
         double structuralCycle = fieldProfiles.parametersFor("regional").cycleThicknessBlocks();
 
         for (int ring = 0; ring <= SEARCH_RADIUS_CELLS; ring++) {
@@ -160,22 +167,27 @@ final class OreDebugCommands {
             double structuralCycle,
             String requestedStyle
     ) {
-        OreDepositCandidatePlanner.Proposal proposal = OreDepositCandidatePlanner.propose(
+        OreDepositCandidatePlanner.Proposal proposal = OreDepositCandidatePlanner.proposeCell(
                 seed,
-                cellX * OreDepositCandidatePlanner.HORIZONTAL_CELL_SIZE,
-                cellY * OreDepositCandidatePlanner.VERTICAL_CELL_SIZE,
-                cellZ * OreDepositCandidatePlanner.HORIZONTAL_CELL_SIZE,
+                cellX,
+                cellY,
+                cellZ,
                 occurrence
         );
-        if ((requestedStyle != null && !requestedStyle.equals(proposal.depositStyle()))
-                || !OreDepositExperiment.active(seed, proposal)) {
+        if (requestedStyle != null && !requestedStyle.equals(proposal.depositStyle())) {
             return Optional.empty();
         }
 
         FaultControlledOrePlanner.Binding binding = FaultControlledOrePlanner.bind(seed, proposal, structuralCycle);
         proposal = binding.proposal();
         GeologyProvince province = GeologyProvinceSampler.sample(seed, proposal.anchorX(), proposal.anchorZ()).province();
-        if (!occurrence.provinceContexts().contains(province)
+        if (!occurrence.provinceContexts().contains(province)) {
+            return Optional.empty();
+        }
+        double affinityMultiplier = occurrence.generation().depthMultiplier(proposal.anchorY())
+                * occurrence.generation().provinceMultiplier(province)
+                * surfaceBiomeMultiplier(world, occurrence, proposal);
+        if (!OreDepositExperiment.active(seed, proposal, affinityMultiplier)
                 || !occurrence.terrainFilter().matches(ChunkGeneratorTerrainMorphologySampler.sample(
                         world,
                         proposal.anchorX(),
@@ -189,6 +201,32 @@ final class OreDebugCommands {
             return Optional.empty();
         }
         return scanPlacedOre(world, body, occurrence.id(), 1);
+    }
+
+    private static double surfaceBiomeMultiplier(
+            ServerWorld world,
+            OreOccurrenceCatalog.Occurrence occurrence,
+            OreDepositCandidatePlanner.Proposal proposal
+    ) {
+        if (occurrence.generation().biomeMultipliers().isEmpty()) {
+            return 1.0;
+        }
+        var chunkManager = world.getChunkManager();
+        int surfaceY = Math.max(
+                world.getSeaLevel(),
+                (int) Math.floor(ChunkGeneratorTerrainMorphologySampler.terrainHeight(
+                        world,
+                        proposal.anchorX(),
+                        proposal.anchorZ()
+                ))
+        );
+        RegistryEntry<Biome> biome = chunkManager.getChunkGenerator().getBiomeSource().getBiome(
+                BiomeCoords.fromBlock(proposal.anchorX()),
+                BiomeCoords.fromBlock(surfaceY),
+                BiomeCoords.fromBlock(proposal.anchorZ()),
+                chunkManager.getNoiseConfig().getMultiNoiseSampler()
+        );
+        return occurrence.generation().biomeMultiplier(tag -> biome.isIn(biomeTag(tag)));
     }
 
     private static Optional<LocatedOre> scanPlacedOre(
@@ -250,6 +288,14 @@ final class OreDebugCommands {
             return ore.grade();
         }
         return null;
+    }
+
+    private static TagKey<Biome> biomeTag(String rawIdentifier) {
+        Identifier id = Identifier.tryParse(rawIdentifier);
+        if (id == null) {
+            throw new IllegalStateException("Invalid biome tag id: " + rawIdentifier);
+        }
+        return TagKey.of(RegistryKeys.BIOME, id);
     }
 
     private static String gradeSummary(Map<OreGrade, Integer> counts) {

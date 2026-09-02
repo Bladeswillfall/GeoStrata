@@ -99,6 +99,33 @@ final class OreDepositGeometryTest {
     }
 
     @Test
+    void bodyScaleComesFromGenerationTuning() {
+        OreDepositCandidatePlanner.Proposal proposal = candidate("stratiform").proposal();
+        OreDepositGeometry.Body baseline = OreDepositGeometry.forProposal(
+                8675309L,
+                proposal,
+                OreGenerationProfile.defaults()
+        );
+        OreGenerationProfile scaled = new OreGenerationProfile(
+                1.0,
+                OreGenerationProfile.defaults().candidateGrid(),
+                List.of(),
+                java.util.Map.of(),
+                java.util.Map.of(),
+                java.util.Map.of(),
+                1.65,
+                1.0,
+                OreGenerationProfile.GradeTuning.defaults(),
+                OreGenerationProfile.DiscoveryStringers.disabled()
+        );
+        OreDepositGeometry.Body larger = OreDepositGeometry.forProposal(8675309L, proposal, scaled);
+
+        assertEquals(baseline.lengthRadius() * 1.65, larger.lengthRadius(), 1.0e-12);
+        assertEquals(baseline.widthRadius() * 1.65, larger.widthRadius(), 1.0e-12);
+        assertEquals(baseline.thicknessRadius() * 1.65, larger.thicknessRadius(), 1.0e-12);
+    }
+
+    @Test
     void conservativeBoundsContainEconomicSamplesWithinTheFeatureSearchRadius() {
         for (String style : STYLES) {
             for (long seed = 0; seed < 64; seed++) {
@@ -165,14 +192,14 @@ final class OreDepositGeometryTest {
     }
 
     @Test
-    void coalTraceExtendsNormalToTheSeamWithoutGrowingEconomicCoal() {
-        OreDepositGeometry.Body coal = flatBody("coal");
-        OreDepositGeometry.Body control = flatBody("copper");
+    void traceScaleExtendsNormalEvidenceWithoutGrowingTheEconomicBody() {
+        OreDepositGeometry.Body broadTrace = flatBody(3.0);
+        OreDepositGeometry.Body control = flatBody(1.0);
 
-        assertTrue(coal.sample(0, 2, 0).economic());
+        assertTrue(broadTrace.sample(0, 2, 0).economic());
         assertTrue(control.sample(0, 2, 0).economic());
-        assertFalse(coal.sample(0, 5, 0).economic());
-        assertTrue(coal.sample(0, 5, 0).trace());
+        assertFalse(broadTrace.sample(0, 5, 0).economic());
+        assertTrue(broadTrace.sample(0, 5, 0).trace());
         assertFalse(control.sample(0, 5, 0).trace());
     }
 
@@ -202,10 +229,10 @@ final class OreDepositGeometryTest {
         );
     }
 
-    private static OreDepositGeometry.Body flatBody(String material) {
+    private static OreDepositGeometry.Body flatBody(double traceNormalScale) {
         return new OreDepositGeometry.Body(
                 1L,
-                material,
+                "test_ore",
                 "coal_seam",
                 0,
                 0,
@@ -218,7 +245,9 @@ final class OreDepositGeometryTest {
                 0.0,
                 56.0,
                 0.0,
-                List.of()
+                List.of(),
+                traceNormalScale,
+                OreGenerationProfile.GradeTuning.defaults()
         );
     }
 

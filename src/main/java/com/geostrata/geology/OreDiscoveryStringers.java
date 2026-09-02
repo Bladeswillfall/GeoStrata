@@ -3,17 +3,9 @@ package com.geostrata.geology;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Deterministic poor-grade fracture/stringer geometry genetically tied to a parent ore body.
- *
- * <p>Stringers are not independent ore candidates. They reuse the parent body's seed, anchor
- * and orientation, start near its economic margin, then extend outward as thin kinked fractures.
- * The worldgen consumer still applies normal host and structure protection before placing ore.</p>
- */
+/** Deterministic poor-grade discovery fractures genetically tied to a parent ore body. */
 public final class OreDiscoveryStringers {
     private static final double TWO_PI = Math.PI * 2.0;
-    private static final double IRON_EXPOSED_HALO_BLOCKS = 1.0;
-    private static final double COPPER_EXPOSED_HALO_BLOCKS = 4.0;
     private static final long STRINGER_SALT = 0x6A09E667F3BCC909L;
     private static final long LENGTH_SALT = 0xBB67AE8584CAA73BL;
     private static final long RADIUS_SALT = 0x3C6EF372FE94F82BL;
@@ -23,33 +15,44 @@ public final class OreDiscoveryStringers {
     private OreDiscoveryStringers() {
     }
 
+    /** Uses the loaded ore LUT when available; standalone bodies default to no discovery stringers. */
     public static Field forBody(OreDepositGeometry.Body body) {
         if (body == null) {
             throw new IllegalArgumentException("ore body must not be null");
         }
-        Profile profile = profile(body.material());
-        if (profile == null) {
-            return new Field(body, List.of(), body.bounds());
+        OreOccurrenceCatalog.Occurrence occurrence = OreOccurrenceCatalog.current().byId().get(body.material());
+        OreGenerationProfile.DiscoveryStringers profile = occurrence == null
+                ? OreGenerationProfile.DiscoveryStringers.disabled()
+                : occurrence.generation().discoveryStringers();
+        return forBody(body, profile);
+    }
+
+    public static Field forBody(
+            OreDepositGeometry.Body body,
+            OreGenerationProfile.DiscoveryStringers profile
+    ) {
+        if (body == null || profile == null) {
+            throw new IllegalArgumentException("ore body and discovery tuning must not be null");
+        }
+        if (!profile.enabled()) {
+            return new Field(body, List.of(), body.bounds(), profile.exposedHaloBlocks());
         }
 
         List<Segment> segments = new ArrayList<>(profile.count() * 2);
         for (int index = 0; index < profile.count(); index++) {
             addStringer(body, profile, index, segments);
         }
-        return new Field(body, List.copyOf(segments), bounds(body, segments));
-    }
-
-    private static Profile profile(String material) {
-        return switch (material) {
-            case "iron" -> new Profile(14, 52.0, 96.0, 0.62, 0.88);
-            case "copper" -> new Profile(12, 48.0, 88.0, 0.58, 0.84);
-            default -> null;
-        };
+        return new Field(
+                body,
+                List.copyOf(segments),
+                bounds(body, segments, profile.exposedHaloBlocks()),
+                profile.exposedHaloBlocks()
+        );
     }
 
     private static void addStringer(
             OreDepositGeometry.Body body,
-            Profile profile,
+            OreGenerationProfile.DiscoveryStringers profile,
             int index,
             List<Segment> segments
     ) {
@@ -65,7 +68,7 @@ public final class OreDiscoveryStringers {
         );
 
         double normalComponent = (roll(body, salt ^ (NORMAL_SALT << 1)) - 0.5) * 1.20;
-        double verticalBias = "copper".equals(body.material()) && index < 4 ? -1.0 : 0.0;
+        double verticalBias = index < profile.downwardBiasedCount() ? profile.downwardBias() : 0.0;
         double directionAlong = cos + verticalBias * Math.sin(body.dipRadians());
         double directionAcross = sin;
         double directionNormal = normalComponent + verticalBias * Math.cos(body.dipRadians());
@@ -99,28 +102,10 @@ public final class OreDiscoveryStringers {
         segments.add(new Segment(middle, end, radius * 0.82));
     }
 
-    private static double exposedHaloBlocks(OreDepositGeometry.Body body) {
-        return switch (body.material()) {
-            case "iron" -> IRON_EXPOSED_HALO_BLOCKS;
-            case "copper" -> COPPER_EXPOSED_HALO_BLOCKS;
-            default -> 0.0;
-        };
-    }
-
-    private static BoundsAccumulator worldBounds(
-            OreDepositGeometry.Body body,
-            Segment segment,
-            BoundsAccumulator bounds
-    ) {
-        WorldPoint start = toWorld(body, segment.start());
-        WorldPoint end = toWorld(body, segment.end());
-        double radius = segment.radius() + exposedHaloBlocks(body) + 1.0;
-        return bounds.include(start, radius).include(end, radius);
-    }
-
     private static OreDepositGeometry.Bounds bounds(
             OreDepositGeometry.Body body,
-            List<Segment> segments
+            List<Segment> segments,
+            double exposedHalo
     ) {
         OreDepositGeometry.Bounds bodyBounds = body.bounds();
         BoundsAccumulator bounds = new BoundsAccumulator(
@@ -132,7 +117,10 @@ public final class OreDiscoveryStringers {
                 bodyBounds.maxZ()
         );
         for (Segment segment : segments) {
-            bounds = worldBounds(body, segment, bounds);
+            WorldPoint start = toWorld(body, segment.start());
+            WorldPoint end = toWorld(body, segment.end());
+            double padding = segment.radius() + exposedHalo + 1.0;
+            bounds = bounds.include(start, padding).include(end, padding);
         }
         return bounds.toBounds();
     }
@@ -180,10 +168,6 @@ public final class OreDiscoveryStringers {
         );
     }
 
-    private static double distanceToSegment(LocalPoint point, Segment segment) {
-        return Math.sqrt(distanceSquaredToSegment(point, segment));
-    }
-
     private static double distanceSquaredToSegment(LocalPoint point, Segment segment) {
         double along = segment.end().along() - segment.start().along();
         double across = segment.end().across() - segment.start().across();
@@ -213,9 +197,6 @@ public final class OreDiscoveryStringers {
             normal += point.normal();
         }
         return new LocalPoint(along, across, normal);
-    }
-
-    private record Profile(int count, double minLength, double maxLength, double minRadius, double maxRadius) {
     }
 
     private record LocalPoint(double along, double across, double normal) {
@@ -332,10 +313,12 @@ public final class OreDiscoveryStringers {
 
         private Sampler(Field field) {
             this.field = field;
-            double exposedHalo = exposedHaloBlocks(field.body());
             segments = new SegmentSampler[field.segments().size()];
             for (int index = 0; index < segments.length; index++) {
-                segments[index] = new SegmentSampler(field.segments().get(index), exposedHalo);
+                segments[index] = new SegmentSampler(
+                        field.segments().get(index),
+                        field.exposedHaloBlocks()
+                );
             }
             cosAzimuth = Math.cos(field.body().azimuthRadians());
             sinAzimuth = Math.sin(field.body().azimuthRadians());
@@ -373,11 +356,13 @@ public final class OreDiscoveryStringers {
     public record Field(
             OreDepositGeometry.Body body,
             List<Segment> segments,
-            OreDepositGeometry.Bounds bounds
+            OreDepositGeometry.Bounds bounds,
+            double exposedHaloBlocks
     ) {
         public Field {
-            if (body == null || segments == null || bounds == null) {
-                throw new IllegalArgumentException("ore discovery field inputs must not be null");
+            if (body == null || segments == null || bounds == null
+                    || !Double.isFinite(exposedHaloBlocks) || exposedHaloBlocks < 0.0) {
+                throw new IllegalArgumentException("ore discovery field inputs must be valid");
             }
             segments = List.copyOf(segments);
         }
@@ -394,9 +379,9 @@ public final class OreDiscoveryStringers {
             return contains(x, y, z, 0.0);
         }
 
-        /** Broadens only cave-facing discovery; underground stringers remain their original thin radius. */
+        /** Broadens only cave-facing discovery; underground stringers retain their thin radius. */
         public boolean nearStringer(int x, int y, int z) {
-            return contains(x, y, z, exposedHaloBlocks(body));
+            return contains(x, y, z, exposedHaloBlocks);
         }
 
         private boolean contains(int x, int y, int z, double padding) {
@@ -404,8 +389,11 @@ public final class OreDiscoveryStringers {
                 return false;
             }
             LocalPoint point = toLocal(body, x, y, z);
+            double paddingSquared;
             for (Segment segment : segments) {
-                if (distanceToSegment(point, segment) <= segment.radius() + padding) {
+                double radius = segment.radius() + padding;
+                paddingSquared = radius * radius;
+                if (distanceSquaredToSegment(point, segment) <= paddingSquared) {
                     return true;
                 }
             }

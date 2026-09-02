@@ -21,12 +21,15 @@ import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.registry.Registries;
 import net.minecraft.registry.RegistryKeys;
+import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.registry.tag.TagKey;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockBox;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.Heightmap;
 import net.minecraft.world.StructureWorldAccess;
+import net.minecraft.world.biome.Biome;
+import net.minecraft.world.biome.source.BiomeCoords;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.chunk.ChunkSection;
 import net.minecraft.world.gen.feature.DefaultFeatureConfig;
@@ -137,15 +140,6 @@ public final class OreDepositFeature extends Feature<DefaultFeatureConfig> {
         for (int cellX = minCellX; cellX <= maxCellX; cellX++) {
             for (int cellZ = minCellZ; cellZ <= maxCellZ; cellZ++) {
                 for (int cellY = minCellY; cellY <= maxCellY; cellY++) {
-                    if (!OreDepositExperiment.active(
-                            worldSeed,
-                            occurrence.id(),
-                            cellX,
-                            cellY,
-                            cellZ
-                    )) {
-                        continue;
-                    }
                     OreDepositCandidatePlanner.Proposal proposal = OreDepositCandidatePlanner.proposeCell(
                             worldSeed,
                             cellX,
@@ -161,13 +155,17 @@ public final class OreDepositFeature extends Feature<DefaultFeatureConfig> {
                     );
                     proposal = binding.proposal();
 
+                    if (!activeCandidate(world, worldSeed, occurrence, proposal, provinces)) {
+                        continue;
+                    }
+                    if (!qualifiesTerrain(world, occurrence, proposal)) {
+                        continue;
+                    }
+
                     OreDepositGeometry.Body body = binding.body(worldSeed);
                     OreDiscoveryStringers.Field discovery = OreDiscoveryStringers.forBody(body);
                     OreDepositGeometry.Bounds bounds = OreExposurePlacement.placementBounds(body, discovery);
                     if (!intersectsChunk(bounds, startX, endX, startZ, endZ, occupied)) {
-                        continue;
-                    }
-                    if (!qualifiesLocation(world, occurrence, proposal, provinces)) {
                         continue;
                     }
                     placed += placeBody(
@@ -190,8 +188,9 @@ public final class OreDepositFeature extends Feature<DefaultFeatureConfig> {
         return placed;
     }
 
-    private static boolean qualifiesLocation(
+    private static boolean activeCandidate(
             StructureWorldAccess world,
+            long worldSeed,
             OreOccurrenceCatalog.Occurrence occurrence,
             OreDepositCandidatePlanner.Proposal proposal,
             ProvinceSampleCache provinces
@@ -200,6 +199,44 @@ public final class OreDepositFeature extends Feature<DefaultFeatureConfig> {
         if (!occurrence.provinceContexts().contains(province)) {
             return false;
         }
+        double affinityMultiplier = occurrence.generation().depthMultiplier(proposal.anchorY())
+                * occurrence.generation().provinceMultiplier(province)
+                * biomeMultiplier(world, occurrence, proposal);
+        return OreDepositExperiment.active(worldSeed, proposal, affinityMultiplier);
+    }
+
+    private static double biomeMultiplier(
+            StructureWorldAccess world,
+            OreOccurrenceCatalog.Occurrence occurrence,
+            OreDepositCandidatePlanner.Proposal proposal
+    ) {
+        if (occurrence.generation().biomeMultipliers().isEmpty()) {
+            return 1.0;
+        }
+        var serverWorld = world.toServerWorld();
+        var chunkManager = serverWorld.getChunkManager();
+        int surfaceY = Math.max(
+                serverWorld.getSeaLevel(),
+                (int) Math.floor(ChunkGeneratorTerrainMorphologySampler.terrainHeight(
+                        serverWorld,
+                        proposal.anchorX(),
+                        proposal.anchorZ()
+                ))
+        );
+        RegistryEntry<Biome> biome = chunkManager.getChunkGenerator().getBiomeSource().getBiome(
+                BiomeCoords.fromBlock(proposal.anchorX()),
+                BiomeCoords.fromBlock(surfaceY),
+                BiomeCoords.fromBlock(proposal.anchorZ()),
+                chunkManager.getNoiseConfig().getMultiNoiseSampler()
+        );
+        return occurrence.generation().biomeMultiplier(tag -> biome.isIn(biomeTag(tag)));
+    }
+
+    private static boolean qualifiesTerrain(
+            StructureWorldAccess world,
+            OreOccurrenceCatalog.Occurrence occurrence,
+            OreDepositCandidatePlanner.Proposal proposal
+    ) {
         OreOccurrenceCatalog.TerrainFilter terrainFilter = occurrence.terrainFilter();
         if (terrainFilter.minimumReliefBlocks() == 0 && !terrainFilter.requirePositiveProminence()) {
             return true;
@@ -417,6 +454,14 @@ public final class OreDepositFeature extends Feature<DefaultFeatureConfig> {
             throw new IllegalStateException("Invalid block tag id: " + rawIdentifier);
         }
         return TagKey.of(RegistryKeys.BLOCK, id);
+    }
+
+    private static TagKey<Biome> biomeTag(String rawIdentifier) {
+        Identifier id = Identifier.tryParse(rawIdentifier);
+        if (id == null) {
+            throw new IllegalStateException("Invalid biome tag id: " + rawIdentifier);
+        }
+        return TagKey.of(RegistryKeys.BIOME, id);
     }
 
     private record VerticalEnvelope(int minY, int maxY) {
