@@ -1,0 +1,256 @@
+name: Correlated geology runtime readiness
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/geology-runtime-readiness.yml'
+      - 'build.gradle'
+      - 'gradle.properties'
+      - 'settings.gradle'
+      - 'experiment-companion/**'
+      - 'src/main/java/com/geostrata/geology/**'
+      - 'src/main/java/com/geostrata/platform/fabric/**'
+      - 'src/main/java/com/geostrata/worldgen/**'
+      - 'src/main/resources/data/geostrata/geology/**'
+      - 'src/main/resources/data/geostrata/tags/**'
+      - 'src/main/resources/data/geostrata/worldgen/**'
+
+permissions:
+  contents: read
+
+jobs:
+  extreme-height:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Java 21 for Gradle and Loom
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Set up Gradle 9.4
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: 9.4.0
+
+      - name: Build mod and experiment companion
+        run: gradle build :experiment-companion:build --stacktrace
+
+      - name: Install pinned terrain test stack
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p run/mods run/results
+          rm -f run/mods/geostrata-correlated-experiment-*.jar
+          python3 - <<'PY'
+          import json
+          import pathlib
+          import urllib.parse
+          import urllib.request
+
+          requested = {
+              'tectonic': '3.0.15',
+              'lithostitched': '1.4.11-fabric-1.20',
+          }
+          mods = pathlib.Path('run/mods')
+          for project, version_number in requested.items():
+              query = urllib.parse.urlencode({
+                  'loaders': json.dumps(['fabric']),
+                  'game_versions': json.dumps(['1.20.1']),
+              })
+              url = f'https://api.modrinth.com/v2/project/{project}/version?{query}'
+              with urllib.request.urlopen(url) as response:
+                  versions = json.load(response)
+              version = next(
+                  (candidate for candidate in versions if candidate['version_number'] == version_number),
+                  None,
+              )
+              if version is None:
+                  raise SystemExit(f'Pinned {project} version not found: {version_number}')
+              primary = next((file for file in version['files'] if file.get('primary')), version['files'][0])
+              target = mods / primary['filename']
+              print(f'Downloading {project} {version_number} -> {target}')
+              urllib.request.urlretrieve(primary['url'], target)
+          PY
+
+      - name: Prepare dedicated server
+        shell: bash
+        run: |
+          set -euo pipefail
+          printf 'eula=true\n' > run/eula.txt
+          cat > run/server.properties <<'EOF'
+          level-name=geostrata-runtime-readiness
+          level-seed=8675309
+          level-type=minecraft:normal
+          online-mode=false
+          spawn-protection=0
+          view-distance=2
+          simulation-distance=2
+          max-tick-time=-1
+          enable-command-block=false
+          EOF
+
+      - name: Bootstrap Tectonic config
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf run/geostrata-runtime-readiness run/logs run/config/tectonic.json
+          setsid gradle :runServer --stacktrace > run/bootstrap.stdout.log 2>&1 &
+          pid=$!
+          found=0
+          for _ in $(seq 1 120); do
+              if [ -f run/config/tectonic.json ]; then
+                  found=1
+                  break
+              fi
+              if ! kill -0 "$pid" 2>/dev/null; then
+                  cat run/bootstrap.stdout.log
+                  exit 1
+              fi
+              sleep 2
+          done
+          kill -TERM -- "-$pid" 2>/dev/null || true
+          wait "$pid" 2>/dev/null || true
+          if [ "$found" -ne 1 ]; then
+              echo 'Tectonic did not create its config file.'
+              cat run/bootstrap.stdout.log
+              exit 1
+          fi
+
+      - name: Configure extreme-height terrain
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          path = Path('run/config/tectonic.json')
+          data = json.loads(path.read_text())
+          terrain = data.setdefault('global_terrain', {})
+          terrain['max_y'] = 640
+          terrain['min_y'] = -128
+          if 'vertical_scale' in terrain:
+              terrain['vertical_scale'] = max(float(terrain['vertical_scale']), 1.25)
+          path.write_text(json.dumps(data, indent=2) + '\n')
+          PY
+          rm -rf run/geostrata-runtime-readiness run/logs
+
+      - name: Benchmark baseline and correlated geology
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          run_scenario() {
+              scenario="$1"
+              rm -rf run/geostrata-runtime-readiness run/logs
+              if [ "$scenario" = correlated ]; then
+                  companion_jar=$(find experiment-companion/build/libs -maxdepth 1 -type f \
+                      -name 'geostrata-correlated-experiment-*.jar' \
+                      ! -name '*-sources.jar' ! -name '*-dev.jar' -print -quit)
+                  test -n "$companion_jar"
+                  cp "$companion_jar" run/mods/
+              else
+                  rm -f run/mods/geostrata-correlated-experiment-*.jar
+              fi
+
+              setsid gradle :runServer --stacktrace > "run/results/${scenario}.stdout.log" 2>&1 &
+              pid=$!
+              started=0
+              for _ in $(seq 1 390); do
+                  if [ -f run/logs/latest.log ] && grep -q 'Done (' run/logs/latest.log; then
+                      started=1
+                      break
+                  fi
+                  if ! kill -0 "$pid" 2>/dev/null; then
+                      echo "Minecraft server exited before reaching Done for ${scenario}."
+                      cat "run/results/${scenario}.stdout.log"
+                      [ -f run/logs/latest.log ] && cat run/logs/latest.log
+                      exit 1
+                  fi
+                  sleep 2
+              done
+              if [ "$started" -ne 1 ]; then
+                  echo "Minecraft server did not reach Done for ${scenario}."
+                  cat "run/results/${scenario}.stdout.log"
+                  [ -f run/logs/latest.log ] && cat run/logs/latest.log
+                  kill -TERM -- "-$pid" 2>/dev/null || true
+                  exit 1
+              fi
+
+              python3 - "$scenario" <<'PY'
+          import pathlib
+          import re
+          import sys
+
+          scenario = sys.argv[1]
+          text = pathlib.Path('run/logs/latest.log').read_text(errors='replace')
+          matches = re.findall(r'Done \(([0-9]+(?:\.[0-9]+)?)s\)', text)
+          if not matches:
+              raise SystemExit(f'Could not parse Minecraft Done time for {scenario}')
+          seconds = float(matches[-1])
+          pathlib.Path(f'run/results/{scenario}.startup-seconds.txt').write_text(f'{seconds:.3f}\n')
+          print(f'{scenario} Minecraft Done time: {seconds:.3f}s')
+          PY
+
+              cp run/logs/latest.log "run/results/${scenario}.latest.log"
+              kill -TERM -- "-$pid" 2>/dev/null || true
+              wait "$pid" 2>/dev/null || true
+          }
+
+          run_scenario baseline
+          run_scenario correlated
+
+      - name: Assert runtime and performance budget
+        shell: bash
+        run: |
+          set -euo pipefail
+          for scenario in baseline correlated; do
+              log="run/results/${scenario}.latest.log"
+              test -f "$log"
+              grep -q 'Done (' "$log"
+              if grep -E '\[(Server thread|Worker-Main-[^]]+)\/ERROR\]|Exception generating new chunk|Crash report saved|Couldn.t load tag geostrata:' "$log"; then
+                  echo "Worldgen/runtime errors detected for ${scenario}:"
+                  grep -nE '\[(Server thread|Worker-Main-[^]]+)\/ERROR\]|Exception generating new chunk|Crash report saved|Couldn.t load tag geostrata:' "$log"
+                  exit 1
+              fi
+          done
+
+          python3 - <<'PY'
+          from pathlib import Path
+
+          baseline = float(Path('run/results/baseline.startup-seconds.txt').read_text())
+          correlated = float(Path('run/results/correlated.startup-seconds.txt').read_text())
+          ratio = correlated / baseline
+          maximum_ratio = 2.5
+          summary = (
+              '# Correlated geology runtime readiness\n\n'
+              'Pinned terrain stack: Tectonic 3.0.15 + Lithostitched 1.4.11 on Minecraft 1.20.1.\n\n'
+              'Extreme-height terrain: Y -128..640.\n\n'
+              f'Baseline startup: {baseline:.3f}s  \n'
+              f'Correlated startup: {correlated:.3f}s  \n'
+              f'Startup ratio: **{ratio:.2f}x** (budget <= {maximum_ratio:.2f}x)\n'
+          )
+          Path('run/results/paired-summary.md').write_text(summary)
+          print(summary)
+          if ratio > maximum_ratio:
+              raise SystemExit(
+                  f'Correlated startup ratio {ratio:.2f}x exceeds {maximum_ratio:.2f}x budget'
+              )
+          PY
+          cat run/results/paired-summary.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload runtime logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: geostrata-correlated-runtime-readiness
+          path: |
+            run/results/*
+            run/bootstrap.stdout.log
+            run/config/tectonic.json
+          if-no-files-found: warn
