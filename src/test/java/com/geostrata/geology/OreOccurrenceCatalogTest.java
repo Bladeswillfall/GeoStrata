@@ -18,6 +18,7 @@ final class OreOccurrenceCatalogTest {
         OreOccurrenceCatalog.Occurrence iron = snapshot.require("iron");
         assertEquals(List.of("shale"), iron.hostLithologies());
         assertEquals(List.of(GeologyProvince.OROGENIC_BELT), iron.provinceContexts());
+        assertEquals(List.of("baseline"), iron.formationRoutes().stream().map(OreOccurrenceCatalog.FormationRoute::id).toList());
         assertEquals(0.5, iron.generation().activationChance(), 0.0);
         assertEquals(160, iron.generation().candidateGrid().horizontalCellSize());
         assertEquals(1.2, iron.generation().biomeMultiplier("geostrata:has_mountain_rocks"::equals), 0.0);
@@ -37,6 +38,19 @@ final class OreOccurrenceCatalogTest {
                 IllegalArgumentException.class,
                 () -> OreOccurrenceCatalog.parse(lithologies(), occurrence("shale", "blob"))
         );
+    }
+
+    @Test
+    void rejectsFormationRouteSummaryDrift() {
+        JsonObject root = occurrence("shale", "vein");
+        root.getAsJsonArray("occurrences")
+                .get(0).getAsJsonObject()
+                .getAsJsonArray("formationRoutes")
+                .get(0).getAsJsonObject()
+                .getAsJsonArray("depositStyles")
+                .set(0, JsonParser.parseString("\"stratiform\""));
+
+        assertThrows(IllegalArgumentException.class, () -> OreOccurrenceCatalog.parse(lithologies(), root));
     }
 
     @Test
@@ -107,6 +121,12 @@ final class OreOccurrenceCatalogTest {
                     "hostLithologies": ["%s"],
                     "provinceContexts": ["orogenic_belt"],
                     "depositStyles": ["%s"],
+                    "formationRoutes": [{
+                      "id": "baseline",
+                      "hostLithologies": ["%s"],
+                      "provinceContexts": ["orogenic_belt"],
+                      "depositStyles": ["%s"]
+                    }],
                     "generation": {
                       "activationChance": 0.5,
                       "candidateGrid": {
@@ -127,6 +147,6 @@ final class OreOccurrenceCatalogTest {
                     }
                   }]
                 }
-                """.formatted(host, style)).getAsJsonObject();
+                """.formatted(host, style, host, style)).getAsJsonObject();
     }
 }
