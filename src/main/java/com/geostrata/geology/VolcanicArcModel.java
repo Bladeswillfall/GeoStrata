@@ -25,6 +25,7 @@ public final class VolcanicArcModel {
     private static final double COMPLEX_HALO_SCALE = 1.18;
     private static final double PLUTON_TOP_NORMALIZED_Y = -0.20;
     private static final double GRANITE_CORE_RADIUS = 0.58;
+    private static final double PEGMATITE_FERTILE_INNER_RADIUS = 0.42;
     private static final double RHYOLITE_CORE_RADIUS = 0.52;
 
     private static final long DIKE_ANGLE_SALT = 0x8EBC6AF09C88C6E3L;
@@ -207,9 +208,15 @@ public final class VolcanicArcModel {
 
         private Sample complexRock(double vertical, double complexRadius) {
             if (vertical <= PLUTON_TOP_NORMALIZED_Y) {
-                return complexRadius <= GRANITE_CORE_RADIUS
-                        ? new Sample("granite", "plutonic_core")
-                        : new Sample("diorite", "plutonic_margin");
+                if (complexRadius <= GRANITE_CORE_RADIUS) {
+                    return new Sample(
+                            "granite",
+                            complexRadius >= PEGMATITE_FERTILE_INNER_RADIUS
+                                    ? "pegmatite_fertile_margin"
+                                    : "plutonic_core"
+                    );
+                }
+                return new Sample("diorite", "plutonic_margin");
             }
             return complexRadius <= RHYOLITE_CORE_RADIUS
                     ? new Sample("rhyolite", "rhyolite_body")
