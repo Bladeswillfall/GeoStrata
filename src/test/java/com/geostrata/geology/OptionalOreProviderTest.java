@@ -7,8 +7,10 @@ import org.junit.jupiter.api.Test;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.function.Predicate;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -17,20 +19,20 @@ final class OptionalOreProviderTest {
     private static final Path GEOLOGY = Path.of("src/main/resources/data/geostrata/geology");
 
     @Test
-    void missingOptionalProviderOutputRemovesOccurrenceAndActivation() throws IOException {
-        JsonObject ores = read("ore_occurrences.json");
-        JsonObject optional = ores.getAsJsonArray("occurrences").get(0).getAsJsonObject().deepCopy();
-        optional.addProperty("id", "zinc");
-        optional.addProperty("providerMod", "create");
-        optional.addProperty("outputItem", "create:raw_zinc");
-        JsonObject gradeBlocks = optional.getAsJsonObject("gradeBlocks");
-        gradeBlocks.addProperty("poor", "geostrata:poor_zinc_ore");
-        gradeBlocks.addProperty("medium", "geostrata:medium_zinc_ore");
-        gradeBlocks.addProperty("rich", "geostrata:rich_zinc_ore");
-        gradeBlocks.addProperty("massive", "geostrata:massive_zinc_ore");
-        ores.getAsJsonArray("occurrences").add(optional);
+    void availableProviderAddsBundledZincOccurrenceAndActivation() throws IOException {
+        GeologyDataReload.State state = parse(output -> true);
 
-        GeologyDataReload.State state = parse(ores, output -> !"create:raw_zinc".equals(output));
+        OreOccurrenceCatalog.Occurrence zinc = state.oreOccurrences().require("zinc");
+        assertEquals("create", zinc.providerMod());
+        assertEquals("create:raw_zinc", zinc.outputItem());
+        assertEquals(List.of("shale", "siltstone"), zinc.hostLithologies());
+        assertEquals(List.of("stratiform"), zinc.depositStyles());
+        assertEquals(0.5, state.oreExperiment().activationChance("zinc"), 1.0e-12);
+    }
+
+    @Test
+    void missingOptionalProviderOutputRemovesOccurrenceAndActivation() throws IOException {
+        GeologyDataReload.State state = parse(output -> !"create:raw_zinc".equals(output));
 
         assertFalse(state.oreOccurrences().byId().containsKey("zinc"));
         assertFalse(state.oreExperiment().activationChancePerCandidate().containsKey("zinc"));
@@ -41,15 +43,16 @@ final class OptionalOreProviderTest {
     void missingMinecraftOutputRemainsFatal() throws IOException {
         IllegalArgumentException exception = assertThrows(
                 IllegalArgumentException.class,
-                () -> parse(read("ore_occurrences.json"), output -> !"minecraft:coal".equals(output))
+                () -> parse(output -> !"minecraft:coal".equals(output))
         );
         assertTrue(exception.getMessage().contains("minecraft:coal"));
     }
 
-    private static GeologyDataReload.State parse(JsonObject ores, Predicate<String> outputAvailable) throws IOException {
-        return GeologyDataReload.parse(
+    private static GeologyDataReload.State parse(Predicate<String> outputAvailable) throws IOException {
+        return GeologyDataReload.parseIncludingExternal(
                 read("lithologies.json"),
-                ores,
+                read("ore_occurrences.json"),
+                read("external_ore_occurrences.json"),
                 read("ore_deposit_experiment.json"),
                 read("province_profiles.json"),
                 read("sedimentary_successions.json"),
