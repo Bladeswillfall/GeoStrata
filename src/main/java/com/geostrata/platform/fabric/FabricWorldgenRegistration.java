@@ -33,6 +33,10 @@ public final class FabricWorldgenRegistration {
     private static final TagKey<Biome> HAS_BADLANDS_SOILS = biomeTag("has_badlands_soils");
     private static final TagKey<Biome> HAS_EXPERIMENTAL_ORE_DEPOSITS = biomeTag("has_experimental_ore_deposits");
     private static final TagKey<Biome> HAS_EXPERIMENTAL_DIAMOND_GEOLOGY = biomeTag("has_experimental_diamond_geology");
+    private static final List<RegistryKey<PlacedFeature>> REPLACED_VANILLA_ANDESITE_BLOBS = List.of(
+            OrePlacedFeatures.ORE_ANDESITE_UPPER,
+            OrePlacedFeatures.ORE_ANDESITE_LOWER
+    );
 
     private FabricWorldgenRegistration() {
     }
@@ -41,7 +45,7 @@ public final class FabricWorldgenRegistration {
         if (commonOreOwnershipEnabled()) {
             removeCommonVanillaOres();
         }
-
+        removeVanillaAndesiteBlobs();
         addToTag("correlated_sedimentary_experiment", HAS_COMMON_ROCKS, GenerationStep.Feature.TOP_LAYER_MODIFICATION);
         addToTag("province_background_experiment", HAS_COMMON_ROCKS, GenerationStep.Feature.TOP_LAYER_MODIFICATION);
 
@@ -90,6 +94,19 @@ public final class FabricWorldgenRegistration {
                         ModificationPhase.REMOVALS,
                         BiomeSelectors.foundInOverworld(),
                         context -> REPLACED_VANILLA_COMMON_ORES.forEach(feature ->
+                                context.getGenerationSettings().removeFeature(
+                                        GenerationStep.Feature.UNDERGROUND_ORES,
+                                        feature
+                                ))
+                );
+    }
+
+    private static void removeVanillaAndesiteBlobs() {
+        BiomeModifications.create(GeoStrata.id("core_andesite_ownership"))
+                .add(
+                        ModificationPhase.REMOVALS,
+                        BiomeSelectors.foundInOverworld(),
+                        context -> REPLACED_VANILLA_ANDESITE_BLOBS.forEach(feature ->
                                 context.getGenerationSettings().removeFeature(
                                         GenerationStep.Feature.UNDERGROUND_ORES,
                                         feature

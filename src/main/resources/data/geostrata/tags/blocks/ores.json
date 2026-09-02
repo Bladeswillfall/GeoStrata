@@ -20,6 +20,10 @@
     "geostrata:poor_emerald_ore",
     "geostrata:medium_emerald_ore",
     "geostrata:rich_emerald_ore",
-    "geostrata:massive_emerald_ore"
+    "geostrata:massive_emerald_ore",
+    "geostrata:poor_zinc_ore",
+    "geostrata:medium_zinc_ore",
+    "geostrata:rich_zinc_ore",
+    "geostrata:massive_zinc_ore"
   ]
 }

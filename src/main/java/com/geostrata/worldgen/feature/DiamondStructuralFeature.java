@@ -55,8 +55,6 @@ public final class DiamondStructuralFeature extends Feature<DefaultFeatureConfig
         int endZ = startZ + CHUNK_SIZE - 1;
         long seed = world.getSeed();
         double cycleThickness = fieldProfiles.parametersFor(STRUCTURAL_CONTINUITY).cycleThicknessBlocks();
-        Chunk chunk = world.getChunk(Math.floorDiv(startX, CHUNK_SIZE), Math.floorDiv(startZ, CHUNK_SIZE));
-        List<BlockBox> protectedStructurePieces = StructurePieceProtection.forChunk(world, chunk);
 
         DiamondGeologyPlanner.StructuralCandidate candidate = DiamondGeologyPlanner.structural(
                 seed,
@@ -94,6 +92,8 @@ public final class DiamondStructuralFeature extends Feature<DefaultFeatureConfig
             return false;
         }
 
+        Chunk chunk = world.getChunk(Math.floorDiv(startX, CHUNK_SIZE), Math.floorDiv(startZ, CHUNK_SIZE));
+        List<BlockBox> protectedStructurePieces = StructurePieceProtection.forChunk(world, chunk);
         return placeCandidate(
                 world,
                 candidate,

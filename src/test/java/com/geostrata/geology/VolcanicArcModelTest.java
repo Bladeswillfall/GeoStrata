@@ -16,6 +16,7 @@ final class VolcanicArcModelTest {
             "quartzite",
             "basalt",
             "rhyolite",
+            "andesite",
             "granite",
             "diorite",
             "breccia"
@@ -69,7 +70,7 @@ final class VolcanicArcModelTest {
     }
 
     @Test
-    void volcanicComplexGradesFromRhyoliteThroughPlutonIntoContactAureole() {
+    void volcanicComplexGradesFromRhyoliteThroughAndesiteIntoPlutonAndContactAureole() {
         VolcanicArcModel.Context context = VolcanicArcModel.forSite(987654321L, 64, -128, 63.0);
         VolcanicArcModel.Column center = null;
 
@@ -85,8 +86,18 @@ final class VolcanicArcModelTest {
         assertNotNull(center, "expected a sampled column near the centre of a volcanic complex");
         assertEquals("rhyolite", center.sample(center.complexCenterY()).lithology());
         assertEquals(
+                new VolcanicArcModel.Sample("andesite", "andesite_body"),
+                center.sample(center.complexCenterY() + center.complexRadiusY() * 0.80),
+                "the outer shallow volcanic complex should grade into intermediate andesite"
+        );
+        assertEquals(
                 new VolcanicArcModel.Sample("granite", "plutonic_core"),
                 center.sample(center.complexCenterY() - center.complexRadiusY() * 0.40)
+        );
+        assertEquals(
+                new VolcanicArcModel.Sample("granite", "pegmatite_fertile_margin"),
+                center.sample(center.complexCenterY() - center.complexRadiusY() * 0.70),
+                "the evolved outer granite core should expose the reusable pegmatite formation context"
         );
         assertEquals(
                 new VolcanicArcModel.Sample("diorite", "plutonic_margin"),
@@ -98,7 +109,7 @@ final class VolcanicArcModelTest {
                 "deep country rock just outside the pluton should enter the contact aureole"
         );
         assertNotEquals(
-                "rhyolite_breccia",
+                "volcanic_breccia",
                 center.sample(center.complexCenterY() - center.complexRadiusY() * 1.02).bodyStyle(),
                 "deep plutonic roots must not inherit the shallow volcanic breccia halo"
         );

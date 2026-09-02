@@ -195,6 +195,18 @@
       "baselineFeature": "rhyolite_ore"
     },
     {
+      "id": "andesite",
+      "block": "minecraft:andesite",
+      "rockClass": "igneous",
+      "genesis": "intermediate_extrusive",
+      "bodyStyle": "volcanic_body",
+      "depthAffinity": "shallow_to_mid",
+      "continuity": "local",
+      "biomeTag": "geostrata:has_mountain_rocks",
+      "baselineFeature": null,
+      "runtimeAuthority": "volcanic_arc_complex"
+    },
+    {
       "id": "granite",
       "block": "minecraft:granite",
       "rockClass": "igneous",

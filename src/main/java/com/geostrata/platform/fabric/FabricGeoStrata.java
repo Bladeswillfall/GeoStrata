@@ -2,6 +2,7 @@ package com.geostrata.platform.fabric;
 
 import com.geostrata.GeoStrata;
 import com.geostrata.block.GeoStrataBlocks;
+import com.geostrata.command.ColdChunkGenerationBenchmarkCommands;
 import com.geostrata.command.GeoStrataCommands;
 import com.geostrata.command.GeologyResolveCommands;
 import com.geostrata.command.MetamorphismCommands;
@@ -20,6 +21,7 @@ public final class FabricGeoStrata implements ModInitializer {
         GeologyResolveCommands.register();
         MetamorphismCommands.register();
         StructuralCommands.register();
+        ColdChunkGenerationBenchmarkCommands.register();
         OreDistributionBenchmarkCommands.register();
         GeoStrata.LOGGER.info(
                 "GeoStrata initialized {} runtime blocks through the Fabric adapter",

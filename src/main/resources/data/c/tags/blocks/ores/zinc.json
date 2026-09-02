@@ -1,0 +1,9 @@
+{
+  "replace": false,
+  "values": [
+    "geostrata:poor_zinc_ore",
+    "geostrata:medium_zinc_ore",
+    "geostrata:rich_zinc_ore",
+    "geostrata:massive_zinc_ore"
+  ]
+}

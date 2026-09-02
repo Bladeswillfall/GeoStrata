@@ -79,6 +79,12 @@ public final class GeoStrataBlocks {
     public static final Block RICH_EMERALD_ORE = registerOre("rich_emerald_ore", "emerald", OreGrade.RICH, Blocks.EMERALD_ORE, 3.0F, BlockSoundGroup.STONE);
     public static final Block MASSIVE_EMERALD_ORE = registerOre("massive_emerald_ore", "emerald", OreGrade.MASSIVE, Blocks.EMERALD_ORE, 3.0F, BlockSoundGroup.STONE);
 
+    // Provider-owned ores use the same graded runtime blocks but remain outside the core material validator.
+    private static final Block POOR_ZINC_ORE = registerExternalOre("poor_zinc_ore", "zinc", OreGrade.POOR, Blocks.IRON_ORE, 3.0F, BlockSoundGroup.STONE);
+    private static final Block MEDIUM_ZINC_ORE = registerExternalOre("medium_zinc_ore", "zinc", OreGrade.MEDIUM, Blocks.IRON_ORE, 3.0F, BlockSoundGroup.STONE);
+    private static final Block RICH_ZINC_ORE = registerExternalOre("rich_zinc_ore", "zinc", OreGrade.RICH, Blocks.IRON_ORE, 3.0F, BlockSoundGroup.STONE);
+    private static final Block MASSIVE_ZINC_ORE = registerExternalOre("massive_zinc_ore", "zinc", OreGrade.MASSIVE, Blocks.IRON_ORE, 3.0F, BlockSoundGroup.STONE);
+
     private GeoStrataBlocks() {
     }
 
@@ -149,6 +155,17 @@ public final class GeoStrataBlocks {
         Block block = register(name, settings);
         EARTH_BLOCKS.add(block);
         return block;
+    }
+
+    private static Block registerExternalOre(
+            String name,
+            String material,
+            OreGrade grade,
+            Block base,
+            float hardness,
+            BlockSoundGroup soundGroup
+    ) {
+        return registerOre(name, material, grade, base, hardness, soundGroup);
     }
 
     private static Block registerOre(

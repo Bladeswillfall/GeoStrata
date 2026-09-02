@@ -1,0 +1,221 @@
+name: Cold chunk exploration benchmark
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/cold-chunk-benchmark.yml'
+      - 'build.gradle'
+      - 'gradle.properties'
+      - 'settings.gradle'
+      - 'experiment-companion/**'
+      - 'src/main/java/com/geostrata/command/ColdChunkGenerationBenchmarkCommands.java'
+      - 'src/main/java/com/geostrata/geology/**'
+      - 'src/main/java/com/geostrata/platform/fabric/**'
+      - 'src/main/java/com/geostrata/worldgen/**'
+      - 'src/main/resources/data/geostrata/geology/**'
+      - 'src/main/resources/data/geostrata/tags/**'
+      - 'src/main/resources/data/geostrata/worldgen/**'
+
+permissions:
+  contents: read
+
+jobs:
+  cold-chunks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Java 21 for Gradle and Loom
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Set up Gradle 9.4
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: 9.4.0
+
+      - name: Build mod and experiment companion
+        run: gradle build :experiment-companion:build --stacktrace
+
+      - name: Prepare dedicated server
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p run/mods run/results
+          printf 'eula=true\n' > run/eula.txt
+          cat > run/server.properties <<'EOF'
+          level-name=geostrata-cold-chunk-benchmark
+          level-seed=8675309
+          level-type=minecraft:normal
+          online-mode=false
+          spawn-protection=0
+          view-distance=2
+          simulation-distance=2
+          max-tick-time=-1
+          enable-command-block=false
+          EOF
+
+      - name: Benchmark post-startup cold generation
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          run_scenario() {
+              scenario="$1"
+              rm -rf run/geostrata-cold-chunk-benchmark run/logs
+              rm -f run/mods/geostrata-correlated-experiment-*.jar
+
+              if [ "$scenario" = disabled ]; then
+                  pack="run/geostrata-cold-chunk-benchmark/datapacks/geostrata-runtime-disabled"
+                  mkdir -p "$pack/data/geostrata/geology"
+                  cat > "$pack/pack.mcmeta" <<'EOF'
+          {"pack":{"pack_format":15,"description":"GeoStrata CI disabled geology cold-chunk baseline"}}
+          EOF
+                  cp src/main/resources/data/geostrata/geology/correlated_sedimentary_experiment.json \
+                      "$pack/data/geostrata/geology/correlated_sedimentary_experiment.json"
+                  python3 - "$pack/data/geostrata/geology/correlated_sedimentary_experiment.json" <<'PY'
+          import json
+          import pathlib
+          import sys
+
+          path = pathlib.Path(sys.argv[1])
+          data = json.loads(path.read_text())
+          data['runtimeStatus'] = 'metadata_only'
+          data['enabled'] = False
+          data['description'] = 'CI-only disabled baseline for cold chunk generation.'
+          path.write_text(json.dumps(data, indent=2) + '\n')
+          PY
+              elif [ "$scenario" = experimental ]; then
+                  companion_jar=$(find experiment-companion/build/libs -maxdepth 1 -type f \
+                      -name 'geostrata-correlated-experiment-*.jar' \
+                      ! -name '*-sources.jar' ! -name '*-dev.jar' -print -quit)
+                  test -n "$companion_jar"
+                  cp "$companion_jar" run/mods/
+              fi
+
+              fifo="run/${scenario}.console"
+              rm -f "$fifo"
+              mkfifo "$fifo"
+              exec 3<>"$fifo"
+              setsid gradle :runServer --stacktrace <"$fifo" >"run/results/${scenario}.stdout.log" 2>&1 &
+              pid=$!
+
+              started=0
+              for _ in $(seq 1 240); do
+                  if [ -f run/logs/latest.log ] && grep -q 'Done (' run/logs/latest.log; then
+                      started=1
+                      break
+                  fi
+                  if ! kill -0 "$pid" 2>/dev/null; then
+                      echo "Minecraft server exited before startup for ${scenario}."
+                      cat "run/results/${scenario}.stdout.log"
+                      [ -f run/logs/latest.log ] && cat run/logs/latest.log
+                      exit 1
+                  fi
+                  sleep 2
+              done
+              if [ "$started" -ne 1 ]; then
+                  echo "Minecraft server did not reach Done for ${scenario}."
+                  kill -TERM -- "-$pid" 2>/dev/null || true
+                  exit 1
+              fi
+
+              printf 'geostrata coldgen benchmark -44\n' >&3
+              found=0
+              for _ in $(seq 1 240); do
+                  if grep -q 'GEOSTRATA_COLDGEN_BENCHMARK ' run/logs/latest.log; then
+                      found=1
+                      break
+                  fi
+                  if ! kill -0 "$pid" 2>/dev/null; then
+                      echo "Minecraft server exited during cold generation for ${scenario}."
+                      cat "run/results/${scenario}.stdout.log"
+                      cat run/logs/latest.log
+                      exit 1
+                  fi
+                  sleep 1
+              done
+              if [ "$found" -ne 1 ]; then
+                  echo "Cold generation benchmark did not complete for ${scenario}."
+                  cat run/logs/latest.log
+                  kill -TERM -- "-$pid" 2>/dev/null || true
+                  exit 1
+              fi
+
+              python3 - "$scenario" <<'PY'
+          import json
+          import pathlib
+          import sys
+
+          scenario = sys.argv[1]
+          lines = pathlib.Path('run/logs/latest.log').read_text(errors='replace').splitlines()
+          marker = 'GEOSTRATA_COLDGEN_BENCHMARK '
+          payload = next(line.split(marker, 1)[1] for line in reversed(lines) if marker in line)
+          data = json.loads(payload)
+          pathlib.Path(f'run/results/{scenario}.coldgen.json').write_text(json.dumps(data, indent=2) + '\n')
+          print(scenario, json.dumps(data, separators=(',', ':')))
+          PY
+
+              cp run/logs/latest.log "run/results/${scenario}.latest.log"
+              printf 'stop\n' >&3
+              wait "$pid" || true
+              exec 3>&-
+              rm -f "$fifo"
+          }
+
+          run_scenario disabled
+          run_scenario core
+          run_scenario experimental
+
+      - name: Assert cold-generation budgets
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          disabled = json.loads(Path('run/results/disabled.coldgen.json').read_text())
+          core = json.loads(Path('run/results/core.coldgen.json').read_text())
+          experimental = json.loads(Path('run/results/experimental.coldgen.json').read_text())
+          disabled_ms = float(disabled['durationMillis'])
+          core_ms = float(core['durationMillis'])
+          experimental_ms = float(experimental['durationMillis'])
+          core_ratio = core_ms / disabled_ms
+          experimental_ratio = experimental_ms / core_ms
+          maximum_ratio = 2.5
+
+          failures = []
+          if disabled['generatedChunkRequests'] != 144 or core['generatedChunkRequests'] != 144 or experimental['generatedChunkRequests'] != 144:
+              failures.append('cold generation workload did not request exactly 144 chunks')
+          if core_ratio > maximum_ratio:
+              failures.append(f'core/disabled cold-generation ratio {core_ratio:.2f}x exceeds {maximum_ratio:.2f}x')
+          if experimental_ratio > maximum_ratio:
+              failures.append(f'experimental/core cold-generation ratio {experimental_ratio:.2f}x exceeds {maximum_ratio:.2f}x')
+
+          summary = (
+              '# Cold chunk exploration benchmark\n\n'
+              'Fixed seed 8675309; post-startup remote 10x10 region plus one-chunk halo (144 chunk requests).\n\n'
+              f'Disabled core geology: **{disabled_ms:.1f} ms**  \n'
+              f'Normal core geology: **{core_ms:.1f} ms** ({core_ratio:.2f}x disabled)  \n'
+              f'Experimental companion: **{experimental_ms:.1f} ms** ({experimental_ratio:.2f}x core)  \n'
+              f'Performance budget: each paired ratio must remain <= **{maximum_ratio:.2f}x**.\n'
+          )
+          Path('run/results/summary.md').write_text(summary)
+          print(summary)
+          if failures:
+              raise SystemExit('Cold chunk performance acceptance failed: ' + '; '.join(failures))
+          PY
+          cat run/results/summary.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload benchmark results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: geostrata-cold-chunk-benchmark
+          path: run/results/*
+          if-no-files-found: warn

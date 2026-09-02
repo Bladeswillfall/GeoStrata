@@ -8,7 +8,9 @@ import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 final class OreOccurrenceCatalogTest {
     @Test
@@ -18,6 +20,7 @@ final class OreOccurrenceCatalogTest {
         OreOccurrenceCatalog.Occurrence iron = snapshot.require("iron");
         assertEquals(List.of("shale"), iron.hostLithologies());
         assertEquals(List.of(GeologyProvince.OROGENIC_BELT), iron.provinceContexts());
+        assertEquals(List.of("baseline"), iron.formationRoutes().stream().map(OreOccurrenceCatalog.FormationRoute::id).toList());
         assertEquals(0.5, iron.generation().activationChance(), 0.0);
         assertEquals(160, iron.generation().candidateGrid().horizontalCellSize());
         assertEquals(1.2, iron.generation().biomeMultiplier("geostrata:has_mountain_rocks"::equals), 0.0);
@@ -25,6 +28,32 @@ final class OreOccurrenceCatalogTest {
         assertEquals(4, snapshot.gradeModel().require(OreGrade.RICH).baseYield());
         assertEquals(8, snapshot.gradeModel().require(OreGrade.MASSIVE).experienceMax());
         assertEquals("geostrata:rich_iron_ore", iron.gradeBlocks().get(OreGrade.RICH));
+    }
+
+    @Test
+    void bodyStyleConstraintIsOptionalAndFailsClosedWithoutContext() {
+        JsonObject root = occurrence("shale", "vein");
+        root.getAsJsonArray("occurrences")
+                .get(0).getAsJsonObject()
+                .getAsJsonArray("formationRoutes")
+                .get(0).getAsJsonObject()
+                .add("bodyStyles", JsonParser.parseString("[\"pegmatite_fertile_margin\"]"));
+
+        OreOccurrenceCatalog.Occurrence iron = OreOccurrenceCatalog.parse(lithologies(), root).require("iron");
+        assertEquals(List.of("pegmatite_fertile_margin"), iron.formationRoutes().get(0).bodyStyles());
+        assertTrue(iron.requiresBodyStyleContext("vein", GeologyProvince.OROGENIC_BELT));
+        assertEquals(List.of(), iron.hostLithologiesFor("vein", GeologyProvince.OROGENIC_BELT));
+        assertEquals(
+                List.of("shale"),
+                iron.hostLithologiesFor("vein", GeologyProvince.OROGENIC_BELT, "pegmatite_fertile_margin")
+        );
+        assertFalse(iron.matchesFormationRoute("vein", GeologyProvince.OROGENIC_BELT, "shale"));
+        assertTrue(iron.matchesFormationRoute(
+                "vein",
+                GeologyProvince.OROGENIC_BELT,
+                "shale",
+                "pegmatite_fertile_margin"
+        ));
     }
 
     @Test
@@ -37,6 +66,19 @@ final class OreOccurrenceCatalogTest {
                 IllegalArgumentException.class,
                 () -> OreOccurrenceCatalog.parse(lithologies(), occurrence("shale", "blob"))
         );
+    }
+
+    @Test
+    void rejectsFormationRouteSummaryDrift() {
+        JsonObject root = occurrence("shale", "vein");
+        root.getAsJsonArray("occurrences")
+                .get(0).getAsJsonObject()
+                .getAsJsonArray("formationRoutes")
+                .get(0).getAsJsonObject()
+                .getAsJsonArray("depositStyles")
+                .set(0, JsonParser.parseString("\"stratiform\""));
+
+        assertThrows(IllegalArgumentException.class, () -> OreOccurrenceCatalog.parse(lithologies(), root));
     }
 
     @Test
@@ -107,6 +149,12 @@ final class OreOccurrenceCatalogTest {
                     "hostLithologies": ["%s"],
                     "provinceContexts": ["orogenic_belt"],
                     "depositStyles": ["%s"],
+                    "formationRoutes": [{
+                      "id": "baseline",
+                      "hostLithologies": ["%s"],
+                      "provinceContexts": ["orogenic_belt"],
+                      "depositStyles": ["%s"]
+                    }],
                     "generation": {
                       "activationChance": 0.5,
                       "candidateGrid": {
@@ -127,6 +175,6 @@ final class OreOccurrenceCatalogTest {
                     }
                   }]
                 }
-                """.formatted(host, style)).getAsJsonObject();
+                """.formatted(host, style, host, style)).getAsJsonObject();
     }
 }

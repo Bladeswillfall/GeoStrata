@@ -1,0 +1,18 @@
+{
+  "variants": {
+    "host=limestone": {"model": "geostrata:block/ore/zinc/shale/rich"},
+    "host=chalk": {"model": "geostrata:block/ore/zinc/shale/rich"},
+    "host=shale": {"model": "geostrata:block/ore/zinc/shale/rich"},
+    "host=slate": {"model": "geostrata:block/ore/zinc/shale/rich"},
+    "host=mudstone": {"model": "geostrata:block/ore/zinc/shale/rich"},
+    "host=siltstone": {"model": "geostrata:block/ore/zinc/siltstone/rich"},
+    "host=marble": {"model": "geostrata:block/ore/zinc/shale/rich"},
+    "host=quartzite": {"model": "geostrata:block/ore/zinc/shale/rich"},
+    "host=schist": {"model": "geostrata:block/ore/zinc/shale/rich"},
+    "host=gneiss": {"model": "geostrata:block/ore/zinc/shale/rich"},
+    "host=basalt": {"model": "geostrata:block/ore/zinc/shale/rich"},
+    "host=rhyolite": {"model": "geostrata:block/ore/zinc/shale/rich"},
+    "host=conglomerate": {"model": "geostrata:block/ore/zinc/shale/rich"},
+    "host=breccia": {"model": "geostrata:block/ore/zinc/shale/rich"}
+  }
+}

@@ -90,6 +90,7 @@ public final class OreDepositFeature extends Feature<DefaultFeatureConfig> {
             return false;
         }
         ProvinceSampleCache provinces = new ProvinceSampleCache(worldSeed);
+        FormationContextCache formationContexts = new FormationContextCache(world);
         List<BlockBox> protectedStructurePieces = StructurePieceProtection.forChunk(world, chunk);
 
         int placed = 0;
@@ -105,6 +106,7 @@ public final class OreDepositFeature extends Feature<DefaultFeatureConfig> {
                     hosts,
                     structuralCycleThickness,
                     provinces,
+                    formationContexts,
                     occupied,
                     protectedStructurePieces
             );
@@ -123,10 +125,13 @@ public final class OreDepositFeature extends Feature<DefaultFeatureConfig> {
             LazyHostResolver hosts,
             double structuralCycleThickness,
             ProvinceSampleCache provinces,
+            FormationContextCache formationContexts,
             VerticalEnvelope occupied,
             List<BlockBox> protectedStructurePieces
     ) {
         OreDepositCandidatePlanner.Frequency frequency = OreDepositCandidatePlanner.frequency(occurrence);
+        boolean usesBodyStyleContext = occurrence.formationRoutes().stream()
+                .anyMatch(OreOccurrenceCatalog.FormationRoute::requiresBodyStyle);
         int horizontalPadding = frequency.horizontalSearchPaddingBlocks();
         int verticalPadding = frequency.verticalSearchPaddingBlocks();
         int minCellX = Math.floorDiv(startX - horizontalPadding, frequency.horizontalCellSize());
@@ -155,7 +160,15 @@ public final class OreDepositFeature extends Feature<DefaultFeatureConfig> {
                     );
                     proposal = binding.proposal();
 
-                    if (!activeCandidate(world, worldSeed, occurrence, proposal, provinces)) {
+                    GeologyProvince province = provinces.sample(proposal.anchorX(), proposal.anchorZ()).province();
+                    List<String> routeHosts = routeHostsForCandidate(
+                            occurrence,
+                            proposal,
+                            province,
+                            formationContexts,
+                            usesBodyStyleContext
+                    );
+                    if (routeHosts.isEmpty() || !activeCandidate(world, worldSeed, occurrence, proposal, province)) {
                         continue;
                     }
                     if (!qualifiesTerrain(world, occurrence, proposal)) {
@@ -179,6 +192,7 @@ public final class OreDepositFeature extends Feature<DefaultFeatureConfig> {
                             discovery,
                             bounds,
                             hosts,
+                            Set.copyOf(routeHosts),
                             occupied,
                             protectedStructurePieces
                     );
@@ -188,17 +202,31 @@ public final class OreDepositFeature extends Feature<DefaultFeatureConfig> {
         return placed;
     }
 
+    private static List<String> routeHostsForCandidate(
+            OreOccurrenceCatalog.Occurrence occurrence,
+            OreDepositCandidatePlanner.Proposal proposal,
+            GeologyProvince province,
+            FormationContextCache formationContexts,
+            boolean usesBodyStyleContext
+    ) {
+        if (!usesBodyStyleContext || !occurrence.requiresBodyStyleContext(proposal.depositStyle(), province)) {
+            return occurrence.hostLithologiesFor(proposal.depositStyle(), province);
+        }
+        String bodyStyle = formationContexts.bodyStyle(
+                proposal.anchorX(),
+                proposal.anchorY(),
+                proposal.anchorZ()
+        ).orElse(null);
+        return occurrence.hostLithologiesFor(proposal.depositStyle(), province, bodyStyle);
+    }
+
     private static boolean activeCandidate(
             StructureWorldAccess world,
             long worldSeed,
             OreOccurrenceCatalog.Occurrence occurrence,
             OreDepositCandidatePlanner.Proposal proposal,
-            ProvinceSampleCache provinces
+            GeologyProvince province
     ) {
-        GeologyProvince province = provinces.sample(proposal.anchorX(), proposal.anchorZ()).province();
-        if (!occurrence.provinceContexts().contains(province)) {
-            return false;
-        }
         double affinityMultiplier = occurrence.generation().depthMultiplier(proposal.anchorY())
                 * occurrence.generation().provinceMultiplier(province)
                 * biomeMultiplier(world, occurrence, proposal);
@@ -272,6 +300,7 @@ public final class OreDepositFeature extends Feature<DefaultFeatureConfig> {
             OreDiscoveryStringers.Field discovery,
             OreDepositGeometry.Bounds bounds,
             LazyHostResolver hosts,
+            Set<String> validHosts,
             VerticalEnvelope occupied,
             List<BlockBox> protectedStructurePieces
     ) {
@@ -281,7 +310,6 @@ public final class OreDepositFeature extends Feature<DefaultFeatureConfig> {
         int maxY = Math.min(occupied.maxY(), bounds.maxY());
         int minZ = Math.max(startZ, bounds.minZ());
         int maxZ = Math.min(endZ, bounds.maxZ());
-        Set<String> validHosts = Set.copyOf(occurrence.hostLithologies());
         OreDepositGeometry.Sampler sampler = body.sampler();
         OreDiscoveryStringers.Sampler discoverySampler = discovery.sampler();
         BlockPos.Mutable mutable = new BlockPos.Mutable();
@@ -494,6 +522,34 @@ public final class OreDepositFeature extends Feature<DefaultFeatureConfig> {
                         minZ + GeologyProvinceSampler.CELL_SIZE - 1
                 );
             });
+        }
+    }
+
+    private static final class FormationContextCache {
+        private final StructureWorldAccess world;
+        private Map<Long, Optional<GeologyResolver.PreparedChunk>> chunks;
+
+        private FormationContextCache(StructureWorldAccess world) {
+            this.world = world;
+        }
+
+        private Optional<String> bodyStyle(int x, int y, int z) {
+            return preparedChunk(x, z)
+                    .flatMap(chunk -> chunk.resolve(x, y, z))
+                    .flatMap(GeologyResolver.Result::bodyStyle);
+        }
+
+        private Optional<GeologyResolver.PreparedChunk> preparedChunk(int x, int z) {
+            if (chunks == null) {
+                chunks = new HashMap<>();
+            }
+            int chunkX = Math.floorDiv(x, CHUNK_SIZE);
+            int chunkZ = Math.floorDiv(z, CHUNK_SIZE);
+            long key = ((long) chunkX << 32) ^ Integer.toUnsignedLong(chunkZ);
+            return chunks.computeIfAbsent(
+                    key,
+                    ignored -> GeologyResolver.prepareChunk(world.toServerWorld(), x, z)
+            );
         }
     }
 

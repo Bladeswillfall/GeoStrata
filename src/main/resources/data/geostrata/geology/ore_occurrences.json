@@ -68,6 +68,23 @@
       "depositStyles": [
         "coal_seam"
       ],
+      "formationRoutes": [
+        {
+          "id": "baseline",
+          "hostLithologies": [
+            "shale",
+            "mudstone",
+            "siltstone"
+          ],
+          "provinceContexts": [
+            "sedimentary_basin",
+            "rift_province"
+          ],
+          "depositStyles": [
+            "coal_seam"
+          ]
+        }
+      ],
       "generation": {
         "activationChance": 0.8,
         "candidateGrid": {
@@ -113,6 +130,31 @@
         "stratiform",
         "disseminated",
         "massive_lens_or_pocket"
+      ],
+      "formationRoutes": [
+        {
+          "id": "baseline",
+          "hostLithologies": [
+            "shale",
+            "limestone",
+            "quartzite",
+            "basalt",
+            "rhyolite"
+          ],
+          "provinceContexts": [
+            "sedimentary_basin",
+            "cratonic_shield",
+            "orogenic_belt",
+            "volcanic_arc",
+            "rift_province"
+          ],
+          "depositStyles": [
+            "vein",
+            "stratiform",
+            "disseminated",
+            "massive_lens_or_pocket"
+          ]
+        }
       ],
       "generation": {
         "activationChance": 0.5,
@@ -183,6 +225,28 @@
         "disseminated",
         "massive_lens_or_pocket"
       ],
+      "formationRoutes": [
+        {
+          "id": "baseline",
+          "hostLithologies": [
+            "shale",
+            "limestone",
+            "basalt",
+            "rhyolite"
+          ],
+          "provinceContexts": [
+            "sedimentary_basin",
+            "volcanic_arc",
+            "rift_province"
+          ],
+          "depositStyles": [
+            "vein",
+            "stratiform",
+            "disseminated",
+            "massive_lens_or_pocket"
+          ]
+        }
+      ],
       "generation": {
         "activationChance": 0.36,
         "candidateGrid": {
@@ -233,6 +297,29 @@
         "vein",
         "disseminated"
       ],
+      "formationRoutes": [
+        {
+          "id": "baseline",
+          "hostLithologies": [
+            "slate",
+            "marble",
+            "quartzite",
+            "schist",
+            "gneiss",
+            "basalt",
+            "rhyolite"
+          ],
+          "provinceContexts": [
+            "cratonic_shield",
+            "orogenic_belt",
+            "volcanic_arc"
+          ],
+          "depositStyles": [
+            "vein",
+            "disseminated"
+          ]
+        }
+      ],
       "generation": {
         "activationChance": 0.8,
         "candidateGrid": {
@@ -276,6 +363,25 @@
       },
       "depositStyles": [
         "micro_vein"
+      ],
+      "formationRoutes": [
+        {
+          "id": "baseline",
+          "hostLithologies": [
+            "schist",
+            "shale",
+            "marble",
+            "gneiss",
+            "limestone",
+            "slate"
+          ],
+          "provinceContexts": [
+            "orogenic_belt"
+          ],
+          "depositStyles": [
+            "micro_vein"
+          ]
+        }
       ],
       "generation": {
         "activationChance": 0.08,
