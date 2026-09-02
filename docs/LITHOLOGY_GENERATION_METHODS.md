@@ -28,7 +28,7 @@ Generation is a separate contract. Every lithology declares exactly one of:
 
 A provider-owned block cannot claim a GeoStrata fallback feature. A GeoStrata-owned block may be runtime-only, but it still has to satisfy the ordinary GeoStrata material, asset, mining and tag contracts.
 
-Vanilla granite and diorite use `runtimeAuthority: volcanic_arc_complex`, so GeoStrata gives the vanilla blocks geological meaning and coherent placement without creating duplicate granite/diorite blocks or fallback features.
+Vanilla andesite, granite and diorite use `runtimeAuthority: volcanic_arc_complex`, so GeoStrata gives those vanilla blocks geological meaning and coherent placement without creating duplicate blocks or fallback features.
 
 Vanilla sandstone is the first provider-owned sedimentary example. It uses `runtimeAuthority: sedimentary_stratigraphy`: GeoStrata reuses `minecraft:sandstone` in the shared succession/stratigraphic runtime rather than adding a duplicate sandstone block or an independent sandstone blob feature. Correlated owned chunks and the province-background sedimentary path can therefore share the same parent semantics.
 
@@ -44,14 +44,15 @@ The core Volcanic Arc runtime reuses its existing deterministic volcanic-complex
 
 Within that same complex:
 
-- the shallow zone remains rhyolite;
+- the shallow evolved core resolves to rhyolite;
+- the surrounding shallow/intermediate shell resolves to vanilla andesite;
 - the deeper inner root resolves to vanilla granite;
 - the deeper outer margin resolves to vanilla diorite;
-- the existing rhyolite breccia halo applies only to the shallow volcanic zone;
+- the existing breccia halo applies only to the shallow volcanic zone;
 - existing basalt dikes retain first precedence and may cross-cut the complex;
 - existing finite basalt sills retain their current geometry and ordering.
 
-The granite/diorite split is therefore compositional zoning inside geometry GeoStrata already calculates. It adds no new noise, cell lattice, random roll or mutable geology state.
+The rhyolite/andesite/granite/diorite split is therefore compositional zoning inside geometry GeoStrata already calculates. It adds no new noise, cell lattice, random roll, block registration or mutable geology state.
 
 ### Contact aureole
 
