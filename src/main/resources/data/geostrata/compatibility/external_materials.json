@@ -5,7 +5,7 @@
   "rules": {
     "generationOwnership": "GeoStrata may own natural occurrence only after provider detection, provider-output mapping, replacement generation and safe native-worldgen suppression are implemented and tested.",
     "providerOwnership": "The provider mod keeps item, recipe and processing ownership.",
-    "hostPolicy": "Host-rock entries describe geology GeoStrata should preserve or eventually own; they do not imply the listed consumer mod owns the block.",
+    "hostPolicy": "Core host-rock gaps are unconditional GeoStrata geology work. Compatibility consumers only explain why a host is useful; they never gate whether that lithology exists.",
     "missingHostPolicy": "futureHostRoles are planning targets, not permission to substitute an unrelated current lithology."
   },
   "providers": [
@@ -157,6 +157,7 @@
     {
       "id": "andesite",
       "kind": "host_rock",
+      "scope": "core_geology",
       "providerBlock": "minecraft:andesite",
       "canonicalRole": "geostrata:rock/igneous/andesite",
       "priorityConsumers": ["create"],
@@ -166,6 +167,7 @@
     {
       "id": "granite",
       "kind": "host_rock",
+      "scope": "core_geology",
       "providerBlock": "minecraft:granite",
       "canonicalRole": "geostrata:rock/igneous/granite",
       "priorityConsumers": ["create", "create_dreams_and_desires", "create_new_age", "tfmg", "create_nuclear"],
@@ -175,6 +177,7 @@
     {
       "id": "diorite",
       "kind": "host_rock",
+      "scope": "core_geology",
       "providerBlock": "minecraft:diorite",
       "canonicalRole": "geostrata:rock/igneous/diorite",
       "priorityConsumers": ["create"],
