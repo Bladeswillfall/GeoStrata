@@ -1,0 +1,51 @@
+{
+  "schemaVersion": 1,
+  "model": "geostrata:external_ore_profile_catalog",
+  "runtimeStatus": "optional_provider_assets",
+  "materials": [
+    {
+      "id": "zinc_ore",
+      "primaryBlock": "geostrata:poor_zinc_ore",
+      "derivedBlocks": [
+        "geostrata:medium_zinc_ore",
+        "geostrata:rich_zinc_ore",
+        "geostrata:massive_zinc_ore"
+      ],
+      "family": "ore",
+      "compatibilityRole": "geostrata:ore/zinc",
+      "semanticTags": [
+        "geostrata:ores"
+      ],
+      "gameplay": {
+        "breaking": {
+          "copyFrom": "minecraft:iron_ore",
+          "hardness": 3.0,
+          "blastResistance": 3.0,
+          "requiresTool": true,
+          "mineableWith": "pickaxe",
+          "minimumToolTier": "stone",
+          "soundGroup": "stone"
+        },
+        "cultivation": {
+          "status": "not_applicable"
+        },
+        "oreEconomy": {
+          "material": "zinc",
+          "outputItem": "create:raw_zinc",
+          "outputTag": "geostrata:provider_outputs/zinc",
+          "gradeOrder": [
+            "poor",
+            "medium",
+            "rich",
+            "massive"
+          ],
+          "source": "geostrata:geology/external_ore_occurrences"
+        }
+      },
+      "assets": {
+        "textureMatrix": "geostrata:materials/external_ore_texture_matrix",
+        "material": "zinc"
+      }
+    }
+  ]
+}
