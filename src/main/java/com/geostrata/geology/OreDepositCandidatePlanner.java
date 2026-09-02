@@ -138,7 +138,7 @@ public final class OreDepositCandidatePlanner {
         );
     }
 
-    /** Accepts a proposal only when its anchor has a declared province and host-rock context. */
+    /** Accepts a proposal only when its style, province and host share one declared formation route. */
     public static Optional<Candidate> accept(
             Proposal proposal,
             OreOccurrenceCatalog.Occurrence occurrence,
@@ -151,10 +151,7 @@ public final class OreDepositCandidatePlanner {
         if (!proposal.material().equals(occurrence.id())) {
             throw new IllegalArgumentException("candidate material does not match occurrence: " + proposal.material());
         }
-        if (hostLithology == null
-                || !occurrence.depositStyles().contains(proposal.depositStyle())
-                || !occurrence.provinceContexts().contains(province)
-                || !occurrence.hostLithologies().contains(hostLithology)) {
+        if (!occurrence.matchesFormationRoute(proposal.depositStyle(), province, hostLithology)) {
             return Optional.empty();
         }
         return Optional.of(new Candidate(proposal, province, hostLithology));
