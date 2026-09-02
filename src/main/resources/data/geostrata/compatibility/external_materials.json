@@ -1,0 +1,185 @@
+{
+  "schemaVersion": 1,
+  "model": "geostrata:external_material_catalog",
+  "runtimeStatus": "planning_metadata_only",
+  "rules": {
+    "generationOwnership": "GeoStrata may own natural occurrence only after provider detection, provider-output mapping, replacement generation and safe native-worldgen suppression are implemented and tested.",
+    "providerOwnership": "The provider mod keeps item, recipe and processing ownership.",
+    "hostPolicy": "Host-rock entries describe geology GeoStrata should preserve or eventually own; they do not imply the listed consumer mod owns the block.",
+    "missingHostPolicy": "futureHostRoles are planning targets, not permission to substitute an unrelated current lithology."
+  },
+  "providers": [
+    {
+      "id": "create",
+      "displayName": "Create",
+      "modIds": ["create"],
+      "materials": [
+        {
+          "id": "zinc",
+          "kind": "ore",
+          "canonicalRole": "geostrata:ore/zinc",
+          "providerBlocks": ["create:zinc_ore", "create:deepslate_zinc_ore"],
+          "providerOutput": "create:raw_zinc",
+          "commonTags": ["c:ores/zinc", "c:raw_materials/zinc"],
+          "preferredFormationStyles": ["vein", "stratiform"],
+          "currentGeoStrataHosts": ["limestone", "shale", "marble"],
+          "futureHostRoles": ["carbonate", "felsic_intrusive"],
+          "status": "catalogued"
+        }
+      ]
+    },
+    {
+      "id": "create_dreams_and_desires",
+      "displayName": "Create: Dreams & Desires",
+      "modIds": ["create_dd"],
+      "materials": [
+        {
+          "id": "tin",
+          "kind": "ore",
+          "canonicalRole": "geostrata:ore/tin",
+          "providerBlocks": ["create_dd:tin_ore", "create_dd:deepslate_tin_ore"],
+          "providerOutput": "create_dd:raw_tin",
+          "commonTags": ["c:ores/tin", "c:raw_materials/tin"],
+          "preferredFormationStyles": ["vein", "disseminated"],
+          "currentGeoStrataHosts": ["rhyolite", "schist", "gneiss"],
+          "futureHostRoles": ["granite", "pegmatite", "felsic_intrusive"],
+          "status": "catalogued"
+        }
+      ]
+    },
+    {
+      "id": "create_new_age",
+      "displayName": "Create: New Age",
+      "modIds": ["create_new_age"],
+      "materials": [
+        {
+          "id": "thorium",
+          "kind": "ore",
+          "canonicalRole": "geostrata:ore/thorium",
+          "providerBlocks": ["create_new_age:thorium_ore"],
+          "providerOutput": null,
+          "commonTags": ["c:ores/thorium"],
+          "preferredFormationStyles": ["vein", "disseminated"],
+          "currentGeoStrataHosts": ["rhyolite", "gneiss", "schist"],
+          "futureHostRoles": ["granite", "pegmatite", "heavy_mineral_accessory"],
+          "status": "catalogued"
+        },
+        {
+          "id": "magnetite",
+          "kind": "mineral_deposit",
+          "canonicalRole": "geostrata:mineral/magnetite",
+          "providerBlocks": ["create_new_age:magnetite_block"],
+          "providerOutput": null,
+          "commonTags": [],
+          "preferredFormationStyles": ["massive_lens_or_pocket", "disseminated"],
+          "currentGeoStrataHosts": ["basalt", "gneiss", "marble"],
+          "futureHostRoles": ["ultramafic", "skarn", "banded_iron_formation"],
+          "status": "catalogued"
+        }
+      ]
+    },
+    {
+      "id": "tfmg",
+      "displayName": "Create: The Factory Must Grow",
+      "modIds": ["tfmg"],
+      "materials": [
+        {
+          "id": "lead",
+          "kind": "ore",
+          "canonicalRole": "geostrata:ore/lead",
+          "providerBlocks": ["tfmg:lead_ore", "tfmg:deepslate_lead_ore"],
+          "providerOutput": "tfmg:raw_lead",
+          "commonTags": ["c:ores/lead", "c:raw_materials/lead"],
+          "preferredFormationStyles": ["vein", "stratiform"],
+          "currentGeoStrataHosts": ["limestone", "shale", "marble"],
+          "futureHostRoles": ["carbonate", "sedimentary_basin"],
+          "status": "catalogued"
+        },
+        {
+          "id": "nickel",
+          "kind": "ore",
+          "canonicalRole": "geostrata:ore/nickel",
+          "providerBlocks": ["tfmg:nickel_ore", "tfmg:deepslate_nickel_ore"],
+          "providerOutput": "tfmg:raw_nickel",
+          "commonTags": ["c:ores/nickel", "c:raw_materials/nickel"],
+          "preferredFormationStyles": ["disseminated", "massive_lens_or_pocket"],
+          "currentGeoStrataHosts": ["basalt", "gneiss"],
+          "futureHostRoles": ["ultramafic", "mafic_intrusive"],
+          "status": "catalogued"
+        },
+        {
+          "id": "lithium",
+          "kind": "ore",
+          "canonicalRole": "geostrata:ore/lithium",
+          "providerBlocks": ["tfmg:lithium_ore", "tfmg:deepslate_lithium_ore"],
+          "providerOutput": "tfmg:raw_lithium",
+          "commonTags": ["c:ores/lithium", "c:raw_materials/lithium"],
+          "preferredFormationStyles": ["vein", "massive_lens_or_pocket"],
+          "currentGeoStrataHosts": ["rhyolite", "gneiss"],
+          "futureHostRoles": ["granite", "pegmatite", "evaporite_brine"],
+          "status": "catalogued"
+        }
+      ]
+    },
+    {
+      "id": "create_nuclear",
+      "displayName": "Create: Nuclear",
+      "modIds": ["createnuclear"],
+      "materials": [
+        {
+          "id": "uranium",
+          "kind": "ore",
+          "canonicalRole": "geostrata:ore/uranium",
+          "providerBlocks": ["createnuclear:uranium_ore", "createnuclear:deepslate_uranium_ore"],
+          "providerOutput": null,
+          "commonTags": ["c:ores/uranium"],
+          "preferredFormationStyles": ["vein", "disseminated", "stratiform"],
+          "currentGeoStrataHosts": ["shale", "rhyolite", "gneiss"],
+          "futureHostRoles": ["granite", "sandstone", "unconformity"],
+          "status": "catalogued"
+        },
+        {
+          "id": "lead",
+          "kind": "ore_alias",
+          "canonicalRole": "geostrata:ore/lead",
+          "providerBlocks": ["createnuclear:lead_ore", "createnuclear:deepslate_lead_ore"],
+          "providerOutput": null,
+          "commonTags": ["c:ores/lead"],
+          "preferredFormationStyles": ["vein", "stratiform"],
+          "currentGeoStrataHosts": ["limestone", "shale", "marble"],
+          "futureHostRoles": ["carbonate", "sedimentary_basin"],
+          "status": "catalogued_alias"
+        }
+      ]
+    }
+  ],
+  "priorityHostRocks": [
+    {
+      "id": "andesite",
+      "kind": "host_rock",
+      "providerBlock": "minecraft:andesite",
+      "canonicalRole": "geostrata:rock/igneous/andesite",
+      "priorityConsumers": ["create"],
+      "targetOwnership": "geostrata_geology",
+      "status": "missing_geo_strata_lithology"
+    },
+    {
+      "id": "granite",
+      "kind": "host_rock",
+      "providerBlock": "minecraft:granite",
+      "canonicalRole": "geostrata:rock/igneous/granite",
+      "priorityConsumers": ["create", "create_dreams_and_desires", "create_new_age", "tfmg", "create_nuclear"],
+      "targetOwnership": "geostrata_geology",
+      "status": "missing_geo_strata_lithology"
+    },
+    {
+      "id": "diorite",
+      "kind": "host_rock",
+      "providerBlock": "minecraft:diorite",
+      "canonicalRole": "geostrata:rock/igneous/diorite",
+      "priorityConsumers": ["create"],
+      "targetOwnership": "geostrata_geology",
+      "status": "missing_geo_strata_lithology"
+    }
+  ]
+}
