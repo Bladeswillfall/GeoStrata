@@ -83,8 +83,10 @@ jobs:
               scenario="$1"
               rm -rf run/geostrata-ore-benchmark run/logs
               rm -f run/mods/geostrata-correlated-experiment-*.jar
+              unset GEOSTRATA_BENCHMARK_SUPPRESS_VANILLA_DIAMOND || true
               if [ "$scenario" = geostrata ]; then
                   cp experiment-companion/build/libs/geostrata-correlated-experiment-0.2.0.jar run/mods/
+                  export GEOSTRATA_BENCHMARK_SUPPRESS_VANILLA_DIAMOND=true
               fi
 
               fifo="run/${scenario}.console"
@@ -195,7 +197,7 @@ jobs:
           region = os.environ['BENCHMARK_REGION']
           overlapping = ('coal', 'iron', 'copper', 'gold', 'emerald')
           common = ('coal', 'iron', 'copper')
-          preserved = ('redstone', 'lapis')
+          preserved = ('gold', 'emerald', 'redstone', 'lapis')
           owned_vanilla_blocks = ('diamond',)
 
           def aggregate(data, materials, graded=False):
@@ -268,6 +270,8 @@ jobs:
               }
               if target is not None and owned_patches < target:
                   failures.append(f"{material}: {owned_patches} < {target} patches")
+              if material in common and after['vanillaTaggedBlocks'] != 0:
+                  failures.append(f"{material}: vanilla generation was not fully suppressed")
               if material in preserved and before['total'] > 0 and after['vanillaTaggedBlocks'] == 0:
                   failures.append(f"{material}: vanilla fallback disappeared")
 
@@ -305,10 +309,10 @@ jobs:
               '',
               'Performance acceptance: GeoStrata Minecraft startup must remain at or below 2.5x the paired vanilla startup time.',
               'Common-resource acceptance floor: each of coal, iron and copper must retain at least 50% of the vanilla exposed-patch count.',
-              'Vanilla fallback preservation: redstone and lapis remain vanilla-owned.',
+              'Ownership acceptance: coal, iron and copper have no residual vanilla generation; gold, emerald, redstone and lapis retain vanilla fallback wherever the paired baseline contains them.',
               'Reproducibility note: raw vanilla ore block totals are informational and may vary by a few blocks across identical parallel worldgen reruns; exposed-patch acceptance metrics are the regression signal.',
-              'Diamond accounting: vanilla diamond is suppressed in GeoStrata mode and calibrated in the dedicated cratonic fault region.',
-              'Gold is reported here; emerald is calibrated separately in geologically appropriate mountain/orogenic terrain.',
+              'Diamond accounting: CI sets a benchmark-only environment switch that suppresses vanilla diamond in GeoStrata mode so vanilla diamond-block IDs can be attributed to GeoStrata.',
+              'Normal experiment-companion worlds keep vanilla gold, emerald and diamond generation as fallbacks.',
               f"- vanilla overlapping total: {summary['vanilla']['total']}",
               f"- GeoStrata graded overlapping total: {summary['geostrataGraded']['total']}",
           ])
