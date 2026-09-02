@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "model": "geostrata:external_ore_texture_matrix",
+  "resolution": 16,
+  "hostTextureRoot": "geostrata:block/host",
+  "overlayTextureRoot": "geostrata:block/ore_source",
+  "compositeTextureRoot": "geostrata:block/ore",
+  "grades": {
+    "poor": {
+      "targetPixels": 18
+    },
+    "medium": {
+      "targetPixels": 38
+    },
+    "rich": {
+      "targetPixels": 68
+    },
+    "massive": {
+      "targetPixels": 118
+    }
+  },
+  "hosts": [
+    "shale",
+    "siltstone"
+  ],
+  "ores": {
+    "zinc": {
+      "defaultHost": "shale",
+      "validHosts": [
+        "shale",
+        "siltstone"
+      ],
+      "continuity": false
+    }
+  }
+}
