@@ -12,7 +12,10 @@ import net.minecraft.util.Identifier;
 
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.function.Predicate;
 
 /** Loads and publishes the shared geology resource graph in dependency order. */
 public final class GeologyDataReload {
@@ -53,7 +56,8 @@ public final class GeologyDataReload {
                     readObject(manager, PROVINCES),
                     readObject(manager, SUCCESSIONS),
                     readObject(manager, FIELD_PROFILES),
-                    readObject(manager, EXPERIMENT)
+                    readObject(manager, EXPERIMENT),
+                    GeologyDataReload::registeredItem
             );
             OreDepositExperiment.Snapshot oreExperiment = loaded.oreExperiment().activated(companionLoaded);
             DiamondGeologyExperiment.Snapshot diamondExperiment = DiamondGeologyExperiment.parse(
@@ -74,6 +78,11 @@ public final class GeologyDataReload {
         } catch (IOException | JsonParseException | IllegalArgumentException exception) {
             throw new IllegalStateException("Failed to load GeoStrata geology data", exception);
         }
+    }
+
+    private static boolean registeredItem(String rawIdentifier) {
+        Identifier id = Identifier.tryParse(rawIdentifier);
+        return id != null && Registries.ITEM.containsId(id);
     }
 
     private static void validateOreRegistries(OreOccurrenceCatalog.Snapshot occurrences) {
@@ -100,11 +109,33 @@ public final class GeologyDataReload {
             JsonObject fieldProfilesRoot,
             JsonObject experimentRoot
     ) {
+        return parse(
+                lithologiesRoot,
+                oreOccurrencesRoot,
+                oreDepositExperimentRoot,
+                provincesRoot,
+                successionsRoot,
+                fieldProfilesRoot,
+                experimentRoot,
+                ignored -> true
+        );
+    }
+
+    static State parse(
+            JsonObject lithologiesRoot,
+            JsonObject oreOccurrencesRoot,
+            JsonObject oreDepositExperimentRoot,
+            JsonObject provincesRoot,
+            JsonObject successionsRoot,
+            JsonObject fieldProfilesRoot,
+            JsonObject experimentRoot,
+            Predicate<String> outputAvailable
+    ) {
         LithologyCatalog.Snapshot lithologies = LithologyCatalog.parse(lithologiesRoot);
         validateRuntimeArchitectureLithologies(lithologies);
-        OreOccurrenceCatalog.Snapshot oreOccurrences = OreOccurrenceCatalog.parse(
-                lithologies,
-                oreOccurrencesRoot
+        OreOccurrenceCatalog.Snapshot oreOccurrences = availableOreOccurrences(
+                OreOccurrenceCatalog.parse(lithologies, oreOccurrencesRoot),
+                outputAvailable
         );
         OreDepositExperiment.Snapshot oreExperiment = OreDepositExperiment.parse(
                 oreDepositExperimentRoot,
@@ -130,6 +161,40 @@ public final class GeologyDataReload {
                 successions,
                 fieldProfiles,
                 experiment
+        );
+    }
+
+    private static OreOccurrenceCatalog.Snapshot availableOreOccurrences(
+            OreOccurrenceCatalog.Snapshot occurrences,
+            Predicate<String> outputAvailable
+    ) {
+        if (outputAvailable == null) {
+            throw new IllegalArgumentException("ore output availability predicate must not be null");
+        }
+        LinkedHashMap<String, OreOccurrenceCatalog.Occurrence> available = new LinkedHashMap<>();
+        for (OreOccurrenceCatalog.Occurrence occurrence : occurrences.occurrences()) {
+            if (outputAvailable.test(occurrence.outputItem())) {
+                available.put(occurrence.id(), occurrence);
+                continue;
+            }
+            if ("minecraft".equals(occurrence.providerMod())) {
+                throw new IllegalArgumentException(
+                        occurrence.id() + " references unavailable core output item " + occurrence.outputItem()
+                );
+            }
+            GeoStrata.LOGGER.info(
+                    "Skipping optional GeoStrata ore occurrence {} because provider output {} is not registered",
+                    occurrence.id(),
+                    occurrence.outputItem()
+            );
+        }
+        return new OreOccurrenceCatalog.Snapshot(
+                occurrences.runtimeStatus(),
+                occurrences.generationOwner(),
+                occurrences.nativeGenerationSuppression(),
+                occurrences.gradeModel(),
+                List.copyOf(available.values()),
+                Collections.unmodifiableMap(available)
         );
     }
 
