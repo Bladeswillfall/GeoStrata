@@ -32,9 +32,13 @@ public record OreGenerationProfile(
         if (!Double.isFinite(activationChance) || activationChance < 0.0 || activationChance > 1.0) {
             throw new IllegalArgumentException("ore activation chance must be between 0 and 1");
         }
-        if (candidateGrid == null) {
-            throw new IllegalArgumentException("ore candidate grid must not be null");
+        if (candidateGrid == null || depthAffinity == null || provinceMultipliers == null
+                || biomeMultipliers == null || depositStyleWeights == null) {
+            throw new IllegalArgumentException("ore generation profile fields must not be null");
         }
+        validateMultipliers(provinceMultipliers, 0.0, "province");
+        validateMultipliers(biomeMultipliers, 1.0, "biome");
+        validateMultipliers(depositStyleWeights, 0.0, "deposit style");
         depthAffinity = List.copyOf(depthAffinity);
         provinceMultipliers = Collections.unmodifiableMap(new LinkedHashMap<>(provinceMultipliers));
         biomeMultipliers = Collections.unmodifiableMap(new LinkedHashMap<>(biomeMultipliers));
@@ -242,6 +246,17 @@ public record OreGenerationProfile(
             }
         }
         return null;
+    }
+
+    private static void validateMultipliers(Map<?, Double> multipliers, double minimum, String kind) {
+        for (Map.Entry<?, Double> entry : multipliers.entrySet()) {
+            Double value = entry.getValue();
+            if (entry.getKey() == null || value == null || !Double.isFinite(value) || value < minimum) {
+                throw new IllegalArgumentException(
+                        "ore " + kind + " multipliers must have non-null keys and finite values >= " + minimum
+                );
+            }
+        }
     }
 
     private static JsonObject requiredObject(JsonObject object, String key) {
