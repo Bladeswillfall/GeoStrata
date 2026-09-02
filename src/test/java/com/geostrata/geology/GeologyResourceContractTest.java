@@ -26,7 +26,7 @@ final class GeologyResourceContractTest {
 
     @Test
     void bundledResourcesFormAValidRuntimeGraph() throws IOException {
-        GeologyDataReload.State core = parseGeology(false);
+        GeologyDataReload.State core = parseGeology();
         assertTrue(core.lithologies().loaded());
         assertTrue(core.oreOccurrences().loaded());
         assertTrue(core.oreExperiment().loaded());
@@ -68,12 +68,6 @@ final class GeologyResourceContractTest {
         assertFalse(core.oreOccurrences().gradeModel().traceEconomic());
         assertEquals("not_implemented", core.oreOccurrences().nativeGenerationSuppression());
 
-        GeologyDataReload.State activated = parseGeology(true);
-        assertTrue(activated.experiment().enabled());
-        assertEquals("core_runtime", activated.experiment().runtimeStatus());
-        assertTrue(activated.experiment().verticalWindow().isFullDimension());
-        assertFalse(activated.oreExperiment().enabled());
-
         assertCharacteristicProvincePalettes(core);
         assertOrdinaryProvinceMatrixCandidates(core);
         assertSuccessionContextCoverage(core.successions());
@@ -104,14 +98,13 @@ final class GeologyResourceContractTest {
                         read(GEOLOGY.resolve("province_profiles.json")),
                         read(GEOLOGY.resolve("sedimentary_successions.json")),
                         read(GEOLOGY.resolve("sedimentary_field_profiles.json")),
-                        read(GEOLOGY.resolve("correlated_sedimentary_experiment.json")),
-                        false
+                        read(GEOLOGY.resolve("correlated_sedimentary_experiment.json"))
                 )
         );
         assertTrue(exception.getMessage().contains("phyllite"));
     }
 
-    private static GeologyDataReload.State parseGeology(boolean companionLoaded) throws IOException {
+    private static GeologyDataReload.State parseGeology() throws IOException {
         return GeologyDataReload.parse(
                 read(GEOLOGY.resolve("lithologies.json")),
                 read(GEOLOGY.resolve("ore_occurrences.json")),
@@ -119,8 +112,7 @@ final class GeologyResourceContractTest {
                 read(GEOLOGY.resolve("province_profiles.json")),
                 read(GEOLOGY.resolve("sedimentary_successions.json")),
                 read(GEOLOGY.resolve("sedimentary_field_profiles.json")),
-                read(GEOLOGY.resolve("correlated_sedimentary_experiment.json")),
-                companionLoaded
+                read(GEOLOGY.resolve("correlated_sedimentary_experiment.json"))
         );
     }
 
