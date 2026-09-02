@@ -213,10 +213,19 @@ public final class OreDepositFeature extends Feature<DefaultFeatureConfig> {
         if (occurrence.generation().biomeMultipliers().isEmpty()) {
             return 1.0;
         }
-        var chunkManager = world.toServerWorld().getChunkManager();
+        var serverWorld = world.toServerWorld();
+        var chunkManager = serverWorld.getChunkManager();
+        int surfaceY = Math.max(
+                serverWorld.getSeaLevel(),
+                (int) Math.floor(ChunkGeneratorTerrainMorphologySampler.terrainHeight(
+                        serverWorld,
+                        proposal.anchorX(),
+                        proposal.anchorZ()
+                ))
+        );
         RegistryEntry<Biome> biome = chunkManager.getChunkGenerator().getBiomeSource().getBiome(
                 BiomeCoords.fromBlock(proposal.anchorX()),
-                BiomeCoords.fromBlock(proposal.anchorY()),
+                BiomeCoords.fromBlock(surfaceY),
                 BiomeCoords.fromBlock(proposal.anchorZ()),
                 chunkManager.getNoiseConfig().getMultiNoiseSampler()
         );
