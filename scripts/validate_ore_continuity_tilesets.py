@@ -28,6 +28,7 @@ TEXTURE_ROOT = ASSETS / "textures" / "optifine" / "ctm" / "ore"
 PREVIEW_PATH = ROOT / "docs" / "images" / "ore-ctm-tileset-preview.png"
 GRADES = ("poor", "medium", "rich", "massive")
 HOST_VARIANT_COUNT = 4
+VANILLA_HOST_TILES = {"granite": "minecraft:block/granite"}
 REPEAT_WIDTH = 4
 REPEAT_HEIGHT = 4
 REPEAT_TILE_COUNT = REPEAT_WIDTH * REPEAT_HEIGHT
@@ -74,7 +75,7 @@ def host_properties_text(host: str) -> str:
     )
     return (
         "method=random\n"
-        f"matchTiles=geostrata:block/host/{host}\n"
+        f"matchTiles={VANILLA_HOST_TILES.get(host, f'geostrata:block/host/{host}')}\n"
         "prioritize=false\n"
         f"tiles={tiles}\n"
     )

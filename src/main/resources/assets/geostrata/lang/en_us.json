@@ -54,5 +54,9 @@
   "modmenu.descriptionTranslation.geostrata": "Runtime geology block catalog with placeholder textures and data-driven compatibility hooks.",
   "block.geostrata.limestone_stairs": "Limestone Stairs",
   "block.geostrata.limestone_slab": "Limestone Slab",
-  "block.geostrata.limestone_wall": "Limestone Wall"
+  "block.geostrata.limestone_wall": "Limestone Wall",
+  "block.geostrata.poor_tin_ore": "Poor Tin Ore",
+  "block.geostrata.medium_tin_ore": "Medium Tin Ore",
+  "block.geostrata.rich_tin_ore": "Rich Tin Ore",
+  "block.geostrata.massive_tin_ore": "Massive Tin Ore"
 }

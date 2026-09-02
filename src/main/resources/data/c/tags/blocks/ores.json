@@ -1,6 +1,7 @@
 {
   "replace": false,
   "values": [
-    "#c:ores/zinc"
+    "#c:ores/zinc",
+    "#c:ores/tin"
   ]
 }

@@ -24,6 +24,10 @@
     "geostrata:poor_zinc_ore",
     "geostrata:medium_zinc_ore",
     "geostrata:rich_zinc_ore",
-    "geostrata:massive_zinc_ore"
+    "geostrata:massive_zinc_ore",
+    "geostrata:poor_tin_ore",
+    "geostrata:medium_tin_ore",
+    "geostrata:rich_tin_ore",
+    "geostrata:massive_tin_ore"
   ]
 }
