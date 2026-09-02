@@ -79,6 +79,30 @@ final class CorrelatedSedimentaryExperimentTest {
     }
 
     @Test
+    void backgroundRuntimeAcceptsBothEnabledRuntimeStates() {
+        Fixture fixture = fixture();
+        CorrelatedSedimentaryExperiment.Snapshot core = fixture.parse(
+                experiment(true, "core_runtime", 96, "alpha", "beta")
+        );
+        CorrelatedSedimentaryExperiment.Snapshot companion = fixture.parse(
+                experiment(false, "metadata_only", 96, "alpha", "beta")
+        ).activated(true);
+        CorrelatedSedimentaryExperiment.Snapshot disabled = fixture.parse(
+                experiment(false, "metadata_only", 96, "alpha", "beta")
+        );
+
+        assertTrue(ProvinceBackgroundRuntime.ready(
+                core, fixture.profiles(), fixture.successions(), fixture.fieldProfiles()
+        ));
+        assertTrue(ProvinceBackgroundRuntime.ready(
+                companion, fixture.profiles(), fixture.successions(), fixture.fieldProfiles()
+        ));
+        assertFalse(ProvinceBackgroundRuntime.ready(
+                disabled, fixture.profiles(), fixture.successions(), fixture.fieldProfiles()
+        ));
+    }
+
+    @Test
     void rejectsPartialBaselineSuppression() {
         assertThrows(
                 IllegalArgumentException.class,
