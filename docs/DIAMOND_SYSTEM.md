@@ -32,11 +32,11 @@ X/Z is still divided into deterministic 256-block candidate cells to control abu
 
 Accepted anchors are projected onto the nearest qualifying fault. Two or three compact diamond clusters are then distributed through the deepest part of the active dimension with small along-fault and across-fault jitter. Because the current first-pass faults are vertical planes, the resulting diamond occurrence is strongly vertical as well. The depth window remains relative to the active dimension bottom rather than hard-coded to vanilla Y values.
 
-The bundled `structuralActivationChancePerCell` is currently 45%. This is intentionally higher than the old proxy-corridor value because the activation roll now occurs in addition to the real-fault proximity gate; most candidate cells are not close enough to a fault to qualify. The resulting world abundance therefore remains much lower than the raw 45% suggests.
+The bundled `structuralActivationChancePerCell` is currently 18%. This activation roll is combined with the real-fault proximity and cratonic-interior gates, so only a subset of candidate cells produce structural diamonds. The calibrated structural depth window is the deepest 8% of the active dimension, with a 28-block minimum window for shorter dimensions.
 
 This removes the old duplicated fault direction/tilt salts from `DiamondGeologyPlanner`: candidate cells own rarity, while `TectonicStructuralField` owns structural geometry. A visible faulted contact and a structural diamond occurrence can therefore refer to the same deterministic geological structure.
 
-Most clusters are compact. A small minority use the larger prototype radius. The intent is vertical follow-up mining along geological structure rather than broad horizontal diamond blankets.
+Cluster radius is also part of the measured calibration: 65% of structural clusters use radius 3 and the remaining 35% use radius 2. The intent is vertical follow-up mining along geological structure rather than broad horizontal diamond blankets.
 
 ## Rare intrusive route
 
