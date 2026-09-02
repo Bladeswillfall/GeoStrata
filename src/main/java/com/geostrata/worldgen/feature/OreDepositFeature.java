@@ -161,18 +161,12 @@ public final class OreDepositFeature extends Feature<DefaultFeatureConfig> {
                     proposal = binding.proposal();
 
                     GeologyProvince province = provinces.sample(proposal.anchorX(), proposal.anchorZ()).province();
-                    String bodyStyle = usesBodyStyleContext
-                            && occurrence.requiresBodyStyleContext(proposal.depositStyle(), province)
-                            ? formationContexts.bodyStyle(
-                                    proposal.anchorX(),
-                                    proposal.anchorY(),
-                                    proposal.anchorZ()
-                            ).orElse(null)
-                            : null;
-                    List<String> routeHosts = occurrence.hostLithologiesFor(
-                            proposal.depositStyle(),
+                    List<String> routeHosts = routeHostsForCandidate(
+                            occurrence,
+                            proposal,
                             province,
-                            bodyStyle
+                            formationContexts,
+                            usesBodyStyleContext
                     );
                     if (routeHosts.isEmpty() || !activeCandidate(world, worldSeed, occurrence, proposal, province)) {
                         continue;
@@ -206,6 +200,24 @@ public final class OreDepositFeature extends Feature<DefaultFeatureConfig> {
             }
         }
         return placed;
+    }
+
+    private static List<String> routeHostsForCandidate(
+            OreOccurrenceCatalog.Occurrence occurrence,
+            OreDepositCandidatePlanner.Proposal proposal,
+            GeologyProvince province,
+            FormationContextCache formationContexts,
+            boolean usesBodyStyleContext
+    ) {
+        if (!usesBodyStyleContext || !occurrence.requiresBodyStyleContext(proposal.depositStyle(), province)) {
+            return occurrence.hostLithologiesFor(proposal.depositStyle(), province);
+        }
+        String bodyStyle = formationContexts.bodyStyle(
+                proposal.anchorX(),
+                proposal.anchorY(),
+                proposal.anchorZ()
+        ).orElse(null);
+        return occurrence.hostLithologiesFor(proposal.depositStyle(), province, bodyStyle);
     }
 
     private static boolean activeCandidate(
