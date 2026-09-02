@@ -3,6 +3,7 @@ package com.geostrata.geology;
 import org.junit.jupiter.api.Test;
 
 import java.util.Map;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -11,13 +12,13 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 final class ExperimentCompanionActivationTest {
     @Test
-    void companionPromotesExperimentsWithoutRetuningOreChances() {
+    void companionPromotesRareOreAndDiamondExperimentsWithoutRetuning() {
         OreDepositExperiment.Snapshot ore = new OreDepositExperiment.Snapshot(
                 "experimental_opt_in",
                 false,
                 "chunk_local_valid_host_clipping",
                 "not_implemented",
-                Map.of("emerald", 0.08, "coal", 0.8, "iron", 1.0)
+                Map.of("emerald", 0.08, "coal", 0.8, "iron", 1.0, "copper", 0.36)
         );
         DiamondGeologyExperiment.Snapshot diamond = new DiamondGeologyExperiment.Snapshot(
                 "experimental_opt_in",
@@ -27,16 +28,21 @@ final class ExperimentCompanionActivationTest {
                 0.12
         );
 
-        OreDepositExperiment.Snapshot activeOre = ore.activated(true);
+        OreDepositExperiment.Snapshot coreOre = ore.activated(false, true);
+        OreDepositExperiment.Snapshot activeOre = ore.activated(true, true);
         DiamondGeologyExperiment.Snapshot activeDiamond = diamond.activated(true);
+
+        assertTrue(coreOre.enabled());
+        assertEquals("core_common_runtime", coreOre.runtimeStatus());
+        assertEquals(Set.of("coal", "iron", "copper"), coreOre.activationChancePerCandidate().keySet());
 
         assertTrue(activeOre.enabled());
         assertEquals("experimental_runtime", activeOre.runtimeStatus());
-        assertEquals("experimental_companion_overworld", activeOre.nativeGenerationSuppression());
+        assertEquals("core_common_overworld", activeOre.nativeGenerationSuppression());
         assertEquals(0.08, activeOre.activationChance("emerald"), 1.0e-12);
         assertEquals(0.8, activeOre.activationChance("coal"), 1.0e-12);
         assertEquals(1.0, activeOre.activationChance("iron"), 1.0e-12);
-        assertSame(activeOre, activeOre.activated(true));
+        assertEquals(0.36, activeOre.activationChance("copper"), 1.0e-12);
 
         assertTrue(activeDiamond.enabled());
         assertEquals("experimental_runtime", activeDiamond.runtimeStatus());
@@ -45,7 +51,7 @@ final class ExperimentCompanionActivationTest {
 
         assertFalse(ore.enabled());
         assertFalse(diamond.enabled());
-        assertSame(ore, ore.activated(false));
+        assertSame(ore, ore.activated(false, false));
         assertSame(diamond, diamond.activated(false));
     }
 }
