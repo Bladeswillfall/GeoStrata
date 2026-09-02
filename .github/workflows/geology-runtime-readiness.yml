@@ -99,7 +99,7 @@ jobs:
         run: |
           set -euo pipefail
           rm -rf run/geostrata-runtime-readiness run/logs run/config/tectonic.json
-          setsid gradle runServer --stacktrace > run/bootstrap.stdout.log 2>&1 &
+          setsid gradle :runServer --stacktrace > run/bootstrap.stdout.log 2>&1 &
           pid=$!
           found=0
           for _ in $(seq 1 120); do
@@ -158,7 +158,7 @@ jobs:
                   rm -f run/mods/geostrata-correlated-experiment-*.jar
               fi
 
-              setsid gradle runServer --stacktrace > "run/results/${scenario}.stdout.log" 2>&1 &
+              setsid gradle :runServer --stacktrace > "run/results/${scenario}.stdout.log" 2>&1 &
               pid=$!
               started=0
               for _ in $(seq 1 390); do
