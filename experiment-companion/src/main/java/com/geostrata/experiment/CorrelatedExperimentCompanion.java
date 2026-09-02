@@ -17,6 +17,7 @@ import java.util.List;
 
 /** Explicit opt-in companion that makes GeoStrata's experimental worldgen reachable. */
 public final class CorrelatedExperimentCompanion implements ModInitializer {
+    private static final String BENCHMARK_SUPPRESS_DIAMOND_ENV = "GEOSTRATA_BENCHMARK_SUPPRESS_VANILLA_DIAMOND";
     private static final TagKey<Biome> REGISTRATION_BIOMES = TagKey.of(
             RegistryKeys.BIOME,
             GeoStrata.id("has_common_rocks")
@@ -30,11 +31,9 @@ public final class CorrelatedExperimentCompanion implements ModInitializer {
             OrePlacedFeatures.ORE_IRON_MIDDLE,
             OrePlacedFeatures.ORE_IRON_SMALL,
             OrePlacedFeatures.ORE_COPPER,
-            OrePlacedFeatures.ORE_COPPER_LARGE,
-            OrePlacedFeatures.ORE_GOLD_EXTRA,
-            OrePlacedFeatures.ORE_GOLD,
-            OrePlacedFeatures.ORE_GOLD_LOWER,
-            OrePlacedFeatures.ORE_EMERALD,
+            OrePlacedFeatures.ORE_COPPER_LARGE
+    );
+    private static final List<RegistryKey<PlacedFeature>> BENCHMARK_DIAMOND_ORES = List.of(
             OrePlacedFeatures.ORE_DIAMOND,
             OrePlacedFeatures.ORE_DIAMOND_LARGE,
             OrePlacedFeatures.ORE_DIAMOND_BURIED
@@ -58,6 +57,7 @@ public final class CorrelatedExperimentCompanion implements ModInitializer {
 
     @Override
     public void onInitialize() {
+        boolean benchmarkSuppressVanillaDiamond = Boolean.parseBoolean(System.getenv(BENCHMARK_SUPPRESS_DIAMOND_ENV));
         BiomeModifications.create(GeoStrata.id("experimental_worldgen_ownership"))
                 .add(
                         ModificationPhase.REMOVALS,
@@ -68,6 +68,13 @@ public final class CorrelatedExperimentCompanion implements ModInitializer {
                                             GenerationStep.Feature.UNDERGROUND_ORES,
                                             feature
                                     ));
+                            if (benchmarkSuppressVanillaDiamond) {
+                                BENCHMARK_DIAMOND_ORES.forEach(feature ->
+                                        context.getGenerationSettings().removeFeature(
+                                                GenerationStep.Feature.UNDERGROUND_ORES,
+                                                feature
+                                        ));
+                            }
                             REPLACED_GEOSTRATA_FALLBACK_ROCKS.forEach(feature ->
                                     context.getGenerationSettings().removeFeature(
                                             GenerationStep.Feature.UNDERGROUND_ORES,
@@ -87,8 +94,11 @@ public final class CorrelatedExperimentCompanion implements ModInitializer {
         );
         OreDebugCommands.register();
         GeoStrata.LOGGER.info(
-                "GeoStrata experimental worldgen companion enabled; authoritative geology and owned overworld ores replace fallback rock blobs and native ore generation"
+                "GeoStrata experimental worldgen companion enabled; authoritative geology and proven common overworld ores replace fallback rock blobs and native coal/iron/copper generation"
         );
+        if (benchmarkSuppressVanillaDiamond) {
+            GeoStrata.LOGGER.info("GeoStrata benchmark mode: vanilla diamond generation suppressed for attribution");
+        }
     }
 
     private static RegistryKey<PlacedFeature> geostrataFeature(String path) {
