@@ -7,12 +7,17 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 final class OreDiscoveryStringersTest {
+    private static final OreGenerationProfile.DiscoveryStringers IRON =
+            new OreGenerationProfile.DiscoveryStringers(14, 52.0, 96.0, 0.62, 0.88, 1.0, 0, 0.0);
+    private static final OreGenerationProfile.DiscoveryStringers COPPER =
+            new OreGenerationProfile.DiscoveryStringers(12, 48.0, 88.0, 0.58, 0.84, 4.0, 4, -1.0);
+
     @Test
-    void commonMetalStringersAreDeterministicAndExtendBeyondTheParentBody() {
-        for (String material : new String[]{"iron", "copper"}) {
-            OreDepositGeometry.Body body = body(material, 8675309L);
-            OreDiscoveryStringers.Field first = OreDiscoveryStringers.forBody(body);
-            OreDiscoveryStringers.Field repeated = OreDiscoveryStringers.forBody(body);
+    void configuredStringersAreDeterministicAndExtendBeyondTheParentBody() {
+        for (OreGenerationProfile.DiscoveryStringers tuning : new OreGenerationProfile.DiscoveryStringers[]{IRON, COPPER}) {
+            OreDepositGeometry.Body body = body(8675309L);
+            OreDiscoveryStringers.Field first = OreDiscoveryStringers.forBody(body, tuning);
+            OreDiscoveryStringers.Field repeated = OreDiscoveryStringers.forBody(body, tuning);
 
             assertTrue(first.enabled());
             assertEquals(first, repeated);
@@ -22,17 +27,20 @@ final class OreDiscoveryStringersTest {
     }
 
     @Test
-    void commonMetalsHaveCaveFacingCandidateSpaceOutsideTheirThinStringers() {
-        for (String material : new String[]{"iron", "copper"}) {
-            OreDiscoveryStringers.Field field = OreDiscoveryStringers.forBody(body(material, 8675309L));
+    void configuredStringersHaveCaveFacingCandidateSpaceOutsideTheirThinCore() {
+        for (OreGenerationProfile.DiscoveryStringers tuning : new OreGenerationProfile.DiscoveryStringers[]{IRON, COPPER}) {
+            OreDiscoveryStringers.Field field = OreDiscoveryStringers.forBody(body(8675309L), tuning);
             assertTrue(hasHaloOnlyVoxel(field));
         }
     }
 
     @Test
-    void otherMaterialsDoNotGainDiscoveryStringersYet() {
-        OreDepositGeometry.Body body = body("gold", 8675309L);
-        OreDiscoveryStringers.Field field = OreDiscoveryStringers.forBody(body);
+    void disabledProfileCreatesNoDiscoveryStringers() {
+        OreDepositGeometry.Body body = body(8675309L);
+        OreDiscoveryStringers.Field field = OreDiscoveryStringers.forBody(
+                body,
+                OreGenerationProfile.DiscoveryStringers.disabled()
+        );
 
         assertFalse(field.enabled());
         assertEquals(body.bounds(), field.bounds());
@@ -84,9 +92,9 @@ final class OreDiscoveryStringersTest {
         return false;
     }
 
-    private static OreDepositGeometry.Body body(String material, long seed) {
+    private static OreDepositGeometry.Body body(long seed) {
         OreDepositCandidatePlanner.Proposal proposal = new OreDepositCandidatePlanner.Proposal(
-                material,
+                "test_ore",
                 "stratiform",
                 -1,
                 0,
