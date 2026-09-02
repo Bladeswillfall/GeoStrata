@@ -30,7 +30,8 @@ public final class FabricGeologyReloadRegistration implements SimpleSynchronousR
     public void reload(ResourceManager manager) {
         GeologyDataReload.reload(
                 manager,
-                FabricLoader.getInstance().isModLoaded(GeologyDataReload.COMPANION_MOD_ID)
+                FabricLoader.getInstance().isModLoaded(GeologyDataReload.COMPANION_MOD_ID),
+                FabricWorldgenRegistration.commonOreOwnershipEnabled()
         );
     }
 }
