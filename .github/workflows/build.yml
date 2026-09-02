@@ -27,6 +27,9 @@ jobs:
       - name: Validate optional integration data
         run: python3 scripts/validate_optional_integrations.py
 
+      - name: Validate external ore runtime
+        run: python3 scripts/validate_external_ore_runtime.py
+
       - name: Set up Java 21 for Gradle and Loom
         uses: actions/setup-java@v4
         with:
