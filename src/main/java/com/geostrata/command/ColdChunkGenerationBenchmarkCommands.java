@@ -43,13 +43,13 @@ public final class ColdChunkGenerationBenchmarkCommands {
         int maxChunk = minChunk + GRID_CHUNKS - 1;
         int minGeneratedChunk = minChunk - GENERATION_HALO_CHUNKS;
         int maxGeneratedChunk = maxChunk + GENERATION_HALO_CHUNKS;
-        int generatedChunkRequests = 0;
+        int generatedWidth = maxGeneratedChunk - minGeneratedChunk + 1;
+        int generatedChunkRequests = generatedWidth * generatedWidth;
 
         long started = System.nanoTime();
         for (int chunkX = minGeneratedChunk; chunkX <= maxGeneratedChunk; chunkX++) {
             for (int chunkZ = minGeneratedChunk; chunkZ <= maxGeneratedChunk; chunkZ++) {
                 world.getChunk(chunkX, chunkZ);
-                generatedChunkRequests++;
             }
         }
         long elapsedNanos = System.nanoTime() - started;
