@@ -28,6 +28,14 @@ public final class ChunkGeneratorTerrainMorphologySampler {
         return sample(cachedHeightSource(world), x, z, DEFAULT_SAMPLE_SPACING_BLOCKS);
     }
 
+    /** Returns the cached active-generator terrain height without loading a neighboring chunk. */
+    public static double terrainHeight(ServerWorld world, int x, int z) {
+        if (world == null) {
+            throw new IllegalArgumentException("server world must not be null");
+        }
+        return cachedHeightSource(world).heightAt(x, z);
+    }
+
     public static TerrainAwareStructuralField.Field structuralField(
             ServerWorld world,
             int x,
