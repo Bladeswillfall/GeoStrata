@@ -6,6 +6,7 @@ import com.geostrata.geology.GeologyProvinceSampler;
 import com.geostrata.geology.OreDepositExperiment;
 import com.geostrata.geology.OreGrade;
 import com.google.gson.JsonObject;
+import com.mojang.brigadier.arguments.IntegerArgumentType;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.minecraft.block.BlockState;
 import net.minecraft.registry.tag.BlockTags;
@@ -27,9 +28,11 @@ import java.util.Set;
 /** Developer-only distribution scan for comparing vanilla and GeoStrata ore visibility. */
 public final class OreDistributionBenchmarkCommands {
     private static final int GRID_CHUNKS = 10;
-    private static final int MIN_CHUNK = -44;
-    private static final int MAX_CHUNK = MIN_CHUNK + GRID_CHUNKS - 1;
     private static final int GENERATION_HALO_CHUNKS = 1;
+    private static final int MAX_WORLD_CHUNK = 1_874_999;
+    private static final int MIN_BENCHMARK_CHUNK = -MAX_WORLD_CHUNK + GENERATION_HALO_CHUNKS;
+    private static final int MAX_BENCHMARK_CHUNK = MAX_WORLD_CHUNK - (GRID_CHUNKS - 1) - GENERATION_HALO_CHUNKS;
+    private static final int DEFAULT_MIN_CHUNK = -44;
     private static final int AIR_PROXIMITY_RADIUS = 12;
     private static final int PLANE_LOCAL_X = 8;
     private static final int Y_BAND_HEIGHT = 16;
@@ -53,14 +56,22 @@ public final class OreDistributionBenchmarkCommands {
                         .then(CommandManager.literal("ore")
                                 .then(CommandManager.literal("benchmark")
                                         .requires(source -> source.hasPermissionLevel(2))
-                                        .executes(context -> run(context.getSource())))))
+                                        .executes(context -> run(context.getSource(), DEFAULT_MIN_CHUNK))
+                                        .then(CommandManager.argument(
+                                                "minChunk",
+                                                IntegerArgumentType.integer(MIN_BENCHMARK_CHUNK, MAX_BENCHMARK_CHUNK)
+                                        ).executes(context -> run(
+                                                context.getSource(),
+                                                IntegerArgumentType.getInteger(context, "minChunk")
+                                        ))))))
         );
     }
 
-    private static int run(ServerCommandSource source) {
+    private static int run(ServerCommandSource source, int minChunk) {
         ServerWorld world = source.getWorld();
-        BenchmarkStats stats = scan(world);
-        JsonObject result = stats.toJson(world);
+        int maxChunk = minChunk + GRID_CHUNKS - 1;
+        BenchmarkStats stats = scan(world, minChunk, maxChunk);
+        JsonObject result = stats.toJson(world, minChunk, maxChunk);
         String json = result.toString();
         GeoStrata.LOGGER.info("GEOSTRATA_ORE_BENCHMARK {}", json);
         source.sendFeedback(
@@ -74,12 +85,12 @@ public final class OreDistributionBenchmarkCommands {
         return 1;
     }
 
-    private static BenchmarkStats scan(ServerWorld world) {
-        for (int chunkX = MIN_CHUNK - GENERATION_HALO_CHUNKS;
-                chunkX <= MAX_CHUNK + GENERATION_HALO_CHUNKS;
+    private static BenchmarkStats scan(ServerWorld world, int minChunk, int maxChunk) {
+        for (int chunkX = minChunk - GENERATION_HALO_CHUNKS;
+                chunkX <= maxChunk + GENERATION_HALO_CHUNKS;
                 chunkX++) {
-            for (int chunkZ = MIN_CHUNK - GENERATION_HALO_CHUNKS;
-                    chunkZ <= MAX_CHUNK + GENERATION_HALO_CHUNKS;
+            for (int chunkZ = minChunk - GENERATION_HALO_CHUNKS;
+                    chunkZ <= maxChunk + GENERATION_HALO_CHUNKS;
                     chunkZ++) {
                 world.getChunk(chunkX, chunkZ);
             }
@@ -88,8 +99,8 @@ public final class OreDistributionBenchmarkCommands {
         BenchmarkStats stats = new BenchmarkStats(world.getBottomY(), world.getTopY());
         BlockPos.Mutable pos = new BlockPos.Mutable();
         BlockPos.Mutable neighbor = new BlockPos.Mutable();
-        for (int chunkX = MIN_CHUNK; chunkX <= MAX_CHUNK; chunkX++) {
-            for (int chunkZ = MIN_CHUNK; chunkZ <= MAX_CHUNK; chunkZ++) {
+        for (int chunkX = minChunk; chunkX <= maxChunk; chunkX++) {
+            for (int chunkZ = minChunk; chunkZ <= maxChunk; chunkZ++) {
                 scanChunk(world, chunkX, chunkZ, stats, pos, neighbor);
             }
         }
@@ -462,12 +473,12 @@ public final class OreDistributionBenchmarkCommands {
             return materials.values().stream().mapToLong(stats -> stats.exposed).sum();
         }
 
-        private JsonObject toJson(ServerWorld world) {
+        private JsonObject toJson(ServerWorld world, int minChunk, int maxChunk) {
             JsonObject root = new JsonObject();
             root.addProperty("mode", OreDepositExperiment.current().enabled() ? "geostrata_experiment" : "vanilla_baseline");
             root.addProperty("seed", world.getSeed());
-            root.addProperty("chunkMin", MIN_CHUNK);
-            root.addProperty("chunkMax", MAX_CHUNK);
+            root.addProperty("chunkMin", minChunk);
+            root.addProperty("chunkMax", maxChunk);
             root.addProperty("chunkCount", GRID_CHUNKS * GRID_CHUNKS);
             root.addProperty("generationHaloChunks", GENERATION_HALO_CHUNKS);
             root.addProperty("airProximityRadius", AIR_PROXIMITY_RADIUS);

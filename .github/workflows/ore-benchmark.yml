@@ -25,7 +25,18 @@ permissions:
 
 jobs:
   ore-benchmark:
+    name: ore-benchmark (${{ matrix.region }})
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - region: common
+            min_chunk: -44
+          - region: diamond
+            min_chunk: 57
+          - region: emerald
+            min_chunk: -1049
     timeout-minutes: 25
     steps:
       - name: Checkout
@@ -118,7 +129,7 @@ jobs:
           print(f'{scenario} Minecraft Done time: {seconds:.3f}s')
           PY
 
-              printf 'geostrata ore benchmark\n' >&3
+              printf 'geostrata ore benchmark ${{ matrix.min_chunk }}\n' >&3
               found=0
               for _ in $(seq 1 360); do
                   if grep -q 'GEOSTRATA_ORE_BENCHMARK ' run/logs/latest.log; then
@@ -166,10 +177,13 @@ jobs:
 
       - name: Summarize paired benchmark
         shell: bash
+        env:
+          BENCHMARK_REGION: ${{ matrix.region }}
         run: |
           set -euo pipefail
           python3 - <<'PY'
           import json
+          import os
           from pathlib import Path
 
           baseline = json.loads(Path('run/results/vanilla.json').read_text())
@@ -178,6 +192,7 @@ jobs:
           geostrata_startup = float(Path('run/results/geostrata.startup-seconds.txt').read_text())
           startup_ratio = geostrata_startup / vanilla_startup
           maximum_startup_ratio = 2.5
+          region = os.environ['BENCHMARK_REGION']
           overlapping = ('coal', 'iron', 'copper', 'gold', 'emerald')
           common = ('coal', 'iron', 'copper')
           preserved = ('redstone', 'lapis')
@@ -199,6 +214,9 @@ jobs:
 
           summary = {
               'seed': baseline['seed'],
+              'region': region,
+              'chunkMin': baseline['chunkMin'],
+              'chunkMax': baseline['chunkMax'],
               'chunkCount': baseline['chunkCount'],
               'startup': {
                   'vanillaSeconds': vanilla_startup,
@@ -234,7 +252,7 @@ jobs:
                   owned_patches = after['gradedAirExposedClusters']
                   residual_vanilla = after['vanillaTaggedBlocks']
                   residual_vanilla_patches = after['vanillaTaggedAirExposedClusters']
-              target = (vanilla_patches + 1) // 2 if material in common else None
+              target = (vanilla_patches + 1) // 2 if region == 'common' and material in common else None
               ratio = 0.0 if vanilla_patches == 0 else owned_patches * 100.0 / vanilla_patches
               summary['materials'][material] = {
                   'vanillaTotal': before['total'],
@@ -253,11 +271,24 @@ jobs:
               if material in preserved and before['total'] > 0 and after['vanillaTaggedBlocks'] == 0:
                   failures.append(f"{material}: vanilla fallback disappeared")
 
+          if region == 'diamond':
+              diamond = summary['materials']['diamond']
+              if not 1250 <= diamond['geostrataOwnedTotal'] <= 1450:
+                  failures.append(f"diamond: {diamond['geostrataOwnedTotal']} blocks outside 1250..1450")
+              if not 80.0 <= diamond['ownedPatchPercentOfVanilla'] <= 100.0:
+                  failures.append(
+                      f"diamond: {diamond['ownedPatchPercentOfVanilla']:.1f}% exposure outside 80..100%"
+                  )
+          elif region == 'emerald':
+              emerald = summary['materials']['emerald']
+              if not 190 <= emerald['geostrataOwnedTotal'] <= 240:
+                  failures.append(f"emerald: {emerald['geostrataOwnedTotal']} blocks outside 190..240")
+
           Path('run/results/paired.json').write_text(json.dumps(summary, indent=2) + '\n')
           lines = [
               '# Ore distribution benchmark',
               '',
-              f"Seed: {summary['seed']} | chunks: {summary['chunkCount']} (10x10)",
+              f"Region: {region} | seed: {summary['seed']} | chunks: {summary['chunkCount']} (10x10) | chunk range: {summary['chunkMin']}..{summary['chunkMax']}",
               '',
               f"Startup: vanilla {vanilla_startup:.3f}s | GeoStrata {geostrata_startup:.3f}s | {startup_ratio:.2f}x (budget <= {maximum_startup_ratio:.2f}x)",
               '',
@@ -275,7 +306,8 @@ jobs:
               'Performance acceptance: GeoStrata Minecraft startup must remain at or below 2.5x the paired vanilla startup time.',
               'Common-resource acceptance floor: each of coal, iron and copper must retain at least 50% of the vanilla exposed-patch count.',
               'Vanilla fallback preservation: redstone and lapis remain vanilla-owned.',
-              'Diamond accounting: vanilla diamond is suppressed here, but structural/pipe abundance is calibrated in a dedicated cratonic fault region; zero in this arbitrary square is not a failure.',
+              'Reproducibility note: raw vanilla ore block totals are informational and may vary by a few blocks across identical parallel worldgen reruns; exposed-patch acceptance metrics are the regression signal.',
+              'Diamond accounting: vanilla diamond is suppressed in GeoStrata mode and calibrated in the dedicated cratonic fault region.',
               'Gold is reported here; emerald is calibrated separately in geologically appropriate mountain/orogenic terrain.',
               f"- vanilla overlapping total: {summary['vanilla']['total']}",
               f"- GeoStrata graded overlapping total: {summary['geostrataGraded']['total']}",
@@ -290,6 +322,6 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: geostrata-ore-distribution-benchmark
+          name: geostrata-ore-distribution-benchmark-${{ matrix.region }}
           path: run/results/*
           if-no-files-found: warn
