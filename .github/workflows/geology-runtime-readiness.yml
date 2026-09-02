@@ -194,7 +194,6 @@ jobs:
           PY
 
               cp run/logs/latest.log "run/results/${scenario}.latest.log"
-              printf 'stop\n' > "run/${scenario}.stop" || true
               kill -TERM -- "-$pid" 2>/dev/null || true
               wait "$pid" 2>/dev/null || true
           }
@@ -226,8 +225,8 @@ jobs:
           maximum_ratio = 2.5
           summary = (
               '# Correlated geology runtime readiness\n\n'
-              f'Pinned terrain stack: Tectonic 3.0.15 + Lithostitched 1.4.8 on Minecraft 1.20.1.\n\n'
-              f'Extreme-height terrain: Y -128..640.\n\n'
+              'Pinned terrain stack: Tectonic 3.0.15 + Lithostitched 1.4.8 on Minecraft 1.20.1.\n\n'
+              'Extreme-height terrain: Y -128..640.\n\n'
               f'Baseline startup: {baseline:.3f}s  \n'
               f'Correlated startup: {correlated:.3f}s  \n'
               f'Startup ratio: **{ratio:.2f}x** (budget <= {maximum_ratio:.2f}x)\n'
