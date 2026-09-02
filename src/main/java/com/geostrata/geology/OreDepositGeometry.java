@@ -7,11 +7,6 @@ public final class OreDepositGeometry {
     private static final double TWO_PI = Math.PI * 2.0;
     private static final double TRACE_LIMIT = 1.25;
     private static final double TRACE_LIMIT_SQUARED = TRACE_LIMIT * TRACE_LIMIT;
-    private static final double COAL_TRACE_NORMAL_SCALE = 3.0;
-    private static final double GRADE_DITHER = 0.12;
-    private static final double IRON_LINEAR_SCALE = 1.65;
-    private static final double GOLD_LINEAR_SCALE = 0.45;
-    private static final double EMERALD_LINEAR_SCALE = 1.35;
 
     private static final long AZIMUTH_SALT = 0x243F6A8885A308D3L;
     private static final long DIP_SALT = 0x13198A2E03707344L;
@@ -30,25 +25,37 @@ public final class OreDepositGeometry {
     }
 
     public static Body forCandidate(long worldSeed, OreDepositCandidatePlanner.Candidate candidate) {
+        return forCandidate(worldSeed, candidate, OreGenerationProfile.defaults());
+    }
+
+    public static Body forCandidate(
+            long worldSeed,
+            OreDepositCandidatePlanner.Candidate candidate,
+            OreGenerationProfile generation
+    ) {
         if (candidate == null) {
             throw new IllegalArgumentException("ore candidate must not be null");
         }
-        return forProposal(worldSeed, candidate.proposal());
+        return forProposal(worldSeed, candidate.proposal(), generation);
+    }
+
+    /** Compatibility overload using neutral material tuning. */
+    public static Body forProposal(long worldSeed, OreDepositCandidatePlanner.Proposal proposal) {
+        return forProposal(worldSeed, proposal, OreGenerationProfile.defaults());
     }
 
     /** Builds geometry before local host clipping; the host does not alter deposit shape. */
-    public static Body forProposal(long worldSeed, OreDepositCandidatePlanner.Proposal proposal) {
-        if (proposal == null) {
-            throw new IllegalArgumentException("ore proposal must not be null");
+    public static Body forProposal(
+            long worldSeed,
+            OreDepositCandidatePlanner.Proposal proposal,
+            OreGenerationProfile generation
+    ) {
+        if (proposal == null || generation == null) {
+            throw new IllegalArgumentException("ore proposal and generation tuning must not be null");
         }
 
         Profile profile = profile(proposal.depositStyle());
-        double materialScale = switch (proposal.material()) {
-            case "iron" -> IRON_LINEAR_SCALE;
-            case "gold" -> GOLD_LINEAR_SCALE;
-            case "emerald" -> EMERALD_LINEAR_SCALE;
-            default -> 1.0;
-        };
+        double materialScale = generation.bodyScale();
         double azimuth = TWO_PI * roll(worldSeed, proposal, AZIMUTH_SALT);
         double dip = profile.maximumDipRadians() * (roll(worldSeed, proposal, DIP_SALT) * 2.0 - 1.0);
         double length = varied(profile.lengthRadius() * materialScale, roll(worldSeed, proposal, LENGTH_SALT), 0.20);
@@ -75,7 +82,9 @@ public final class OreDepositGeometry {
                 warp,
                 Math.max(8.0, length * 0.85),
                 phase,
-                branches
+                branches,
+                generation.traceNormalScale(),
+                generation.grades()
         );
     }
 
@@ -182,18 +191,60 @@ public final class OreDepositGeometry {
             double warpAmplitude,
             double warpWavelength,
             double warpPhase,
-            List<Branch> branches
+            List<Branch> branches,
+            double traceNormalScale,
+            OreGenerationProfile.GradeTuning grades
     ) {
         public Body {
-            if (material == null || material.isBlank() || style == null || style.isBlank()) {
-                throw new IllegalArgumentException("ore body material and style must not be blank");
+            if (material == null || material.isBlank() || style == null || style.isBlank() || grades == null) {
+                throw new IllegalArgumentException("ore body material, style and grade tuning must be valid");
             }
             if (!positive(lengthRadius) || !positive(widthRadius) || !positive(thicknessRadius)
-                    || !positive(warpWavelength) || !finite(azimuthRadians) || !finite(dipRadians)
+                    || !positive(warpWavelength) || !positive(traceNormalScale)
+                    || !finite(azimuthRadians) || !finite(dipRadians)
                     || !finite(warpAmplitude) || warpAmplitude < 0.0 || !finite(warpPhase)) {
                 throw new IllegalArgumentException("ore body geometry must be finite with positive dimensions");
             }
             branches = List.copyOf(branches);
+        }
+
+        /** Compatibility constructor using neutral trace and grade tuning. */
+        public Body(
+                long worldSeed,
+                String material,
+                String style,
+                int anchorX,
+                int anchorY,
+                int anchorZ,
+                double lengthRadius,
+                double widthRadius,
+                double thicknessRadius,
+                double azimuthRadians,
+                double dipRadians,
+                double warpAmplitude,
+                double warpWavelength,
+                double warpPhase,
+                List<Branch> branches
+        ) {
+            this(
+                    worldSeed,
+                    material,
+                    style,
+                    anchorX,
+                    anchorY,
+                    anchorZ,
+                    lengthRadius,
+                    widthRadius,
+                    thicknessRadius,
+                    azimuthRadians,
+                    dipRadians,
+                    warpAmplitude,
+                    warpWavelength,
+                    warpPhase,
+                    branches,
+                    1.0,
+                    OreGenerationProfile.GradeTuning.defaults()
+            );
         }
 
         public Sample sample(int x, int y, int z) {
@@ -275,35 +326,15 @@ public final class OreDepositGeometry {
                 for (Branch branch : branches) {
                     double normalRadius = thicknessRadius * branch.radiusScale();
                     double acrossRadius = widthRadius * branch.radiusScale();
-                    minAlong = Math.min(
-                            minAlong,
-                            Math.min(branch.startAlong(), branch.endAlong()) - normalRadius
-                    );
-                    maxAlong = Math.max(
-                            maxAlong,
-                            Math.max(branch.startAlong(), branch.endAlong()) + normalRadius
-                    );
-                    minAcross = Math.min(
-                            minAcross,
-                            Math.min(branch.startAcross(), branch.endAcross()) - acrossRadius
-                    );
-                    maxAcross = Math.max(
-                            maxAcross,
-                            Math.max(branch.startAcross(), branch.endAcross()) + acrossRadius
-                    );
-                    minNormal = Math.min(
-                            minNormal,
-                            Math.min(branch.startNormal(), branch.endNormal()) - normalRadius
-                    );
-                    maxNormal = Math.max(
-                            maxNormal,
-                            Math.max(branch.startNormal(), branch.endNormal()) + normalRadius
-                    );
+                    minAlong = Math.min(minAlong, Math.min(branch.startAlong(), branch.endAlong()) - normalRadius);
+                    maxAlong = Math.max(maxAlong, Math.max(branch.startAlong(), branch.endAlong()) + normalRadius);
+                    minAcross = Math.min(minAcross, Math.min(branch.startAcross(), branch.endAcross()) - acrossRadius);
+                    maxAcross = Math.max(maxAcross, Math.max(branch.startAcross(), branch.endAcross()) + acrossRadius);
+                    minNormal = Math.min(minNormal, Math.min(branch.startNormal(), branch.endNormal()) - normalRadius);
+                    maxNormal = Math.max(maxNormal, Math.max(branch.startNormal(), branch.endNormal()) + normalRadius);
                 }
             }
 
-            // The warp equations are differences of sine/cosine terms. Across can shift by
-            // two amplitudes and normal by one amplitude relative to the unwarped local body.
             return new LocalBounds(
                     minAlong,
                     maxAlong,
@@ -325,8 +356,8 @@ public final class OreDepositGeometry {
             }
 
             double dither = (GeologyDeterminism.unitRoll(worldSeed, x, y, z, GRADE_SALT) - 0.5)
-                    * GRADE_DITHER;
-            return new Sample(concentration, grade(clamp(concentration + dither)), false);
+                    * grades.dither();
+            return new Sample(concentration, grades.grade(clamp(concentration + dither)), false);
         }
 
         private LocalPoint localPoint(int x, int y, int z) {
@@ -360,12 +391,12 @@ public final class OreDepositGeometry {
         }
 
         private double traceDistanceSquared(LocalPoint point, double normalizedDistanceSquared) {
-            if (!"coal".equals(material)) {
+            if (traceNormalScale == 1.0) {
                 return normalizedDistanceSquared;
             }
             return square(point.along() / lengthRadius)
                     + square(point.across() / widthRadius)
-                    + square(point.normal() / (thicknessRadius * COAL_TRACE_NORMAL_SCALE));
+                    + square(point.normal() / (thicknessRadius * traceNormalScale));
         }
 
         private double veinDistanceSquared(LocalPoint point) {
@@ -506,19 +537,6 @@ public final class OreDepositGeometry {
         double deltaAcross = point.across() - (startAcross + across * fraction);
         double deltaNormal = point.normal() - (startNormal + normal * fraction);
         return square(deltaAlong) + square(deltaAcross) + square(deltaNormal);
-    }
-
-    private static OreGrade grade(double concentration) {
-        if (concentration < 0.35) {
-            return OreGrade.POOR;
-        }
-        if (concentration < 0.60) {
-            return OreGrade.MEDIUM;
-        }
-        if (concentration < 0.82) {
-            return OreGrade.RICH;
-        }
-        return OreGrade.MASSIVE;
     }
 
     private static boolean positive(double value) {
