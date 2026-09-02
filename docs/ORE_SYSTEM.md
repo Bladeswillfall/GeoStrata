@@ -123,15 +123,16 @@ For each nearby deterministic candidate, runtime placement now performs the
 following sequence:
 
 1. create the occurrence-specific candidate;
-2. reject candidates outside the occurrence's hard geological province list;
-3. combine the occurrence's depth, province and surface-biome affinity at the
+2. for fracture-style veins, compute the optional shared-fault binding while
+   retaining the original candidate as the owner of eligibility and abundance;
+3. reject candidates outside the occurrence's hard geological province list;
+4. combine the occurrence's depth, province and surface-biome affinity at the
    original candidate location;
-4. apply that affinity to the occurrence's deterministic base activation roll;
-5. apply any hard terrain filter;
-6. where applicable, bind the surviving fracture-vein body to the shared fault
-   field; and
-7. construct and clip economic voxels to valid local host lithologies and the
-   current chunk.
+5. apply that affinity to the occurrence's deterministic base activation roll;
+6. apply any hard terrain filter; and
+7. for candidates that survive those gates, construct the body from the bound
+   geometry (if any) and clip economic voxels to valid local host lithologies
+   and the current chunk.
 
 Biome affinity is sampled from the active chunk generator's biome source at the
 surface environment above the deterministic candidate X/Z. The surface Y comes
@@ -171,10 +172,11 @@ generation owner.
 `FaultControlledOrePlanner` is the single structural binding for experimental
 `vein` proposals. Candidate cells continue to own the deterministic random roll,
 hard province eligibility, terrain requirements and environmental affinity.
-Fault binding does not generate a second candidate, consume a second random
-stream, or reroll abundance after moving the eventual body. The binding keeps
-the original proposal for those candidate-owned decisions and separately holds
-the fault-snapped body proposal used only for geometry.
+The binding may be computed before those cheap gates, but it does not generate a
+second candidate, consume a second random stream, or reroll abundance after
+moving the eventual body. It keeps the original proposal for candidate-owned
+decisions and separately holds the fault-snapped body proposal used only for
+geometry after the candidate survives.
 
 A vein whose original anchor lies within 96 blocks of the shared fault family,
 and safely inside its owning province rather than near a province boundary, is
