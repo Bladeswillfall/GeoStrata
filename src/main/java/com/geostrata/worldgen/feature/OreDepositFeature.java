@@ -155,7 +155,9 @@ public final class OreDepositFeature extends Feature<DefaultFeatureConfig> {
                     );
                     proposal = binding.proposal();
 
-                    if (!activeCandidate(world, worldSeed, occurrence, proposal, provinces)) {
+                    GeologyProvince province = provinces.sample(proposal.anchorX(), proposal.anchorZ()).province();
+                    List<String> routeHosts = occurrence.hostLithologiesFor(proposal.depositStyle(), province);
+                    if (routeHosts.isEmpty() || !activeCandidate(world, worldSeed, occurrence, proposal, province)) {
                         continue;
                     }
                     if (!qualifiesTerrain(world, occurrence, proposal)) {
@@ -179,6 +181,7 @@ public final class OreDepositFeature extends Feature<DefaultFeatureConfig> {
                             discovery,
                             bounds,
                             hosts,
+                            Set.copyOf(routeHosts),
                             occupied,
                             protectedStructurePieces
                     );
@@ -193,12 +196,8 @@ public final class OreDepositFeature extends Feature<DefaultFeatureConfig> {
             long worldSeed,
             OreOccurrenceCatalog.Occurrence occurrence,
             OreDepositCandidatePlanner.Proposal proposal,
-            ProvinceSampleCache provinces
+            GeologyProvince province
     ) {
-        GeologyProvince province = provinces.sample(proposal.anchorX(), proposal.anchorZ()).province();
-        if (!occurrence.provinceContexts().contains(province)) {
-            return false;
-        }
         double affinityMultiplier = occurrence.generation().depthMultiplier(proposal.anchorY())
                 * occurrence.generation().provinceMultiplier(province)
                 * biomeMultiplier(world, occurrence, proposal);
@@ -272,6 +271,7 @@ public final class OreDepositFeature extends Feature<DefaultFeatureConfig> {
             OreDiscoveryStringers.Field discovery,
             OreDepositGeometry.Bounds bounds,
             LazyHostResolver hosts,
+            Set<String> validHosts,
             VerticalEnvelope occupied,
             List<BlockBox> protectedStructurePieces
     ) {
@@ -281,7 +281,6 @@ public final class OreDepositFeature extends Feature<DefaultFeatureConfig> {
         int maxY = Math.min(occupied.maxY(), bounds.maxY());
         int minZ = Math.max(startZ, bounds.minZ());
         int maxZ = Math.min(endZ, bounds.maxZ());
-        Set<String> validHosts = Set.copyOf(occurrence.hostLithologies());
         OreDepositGeometry.Sampler sampler = body.sampler();
         OreDiscoveryStringers.Sampler discoverySampler = discovery.sampler();
         BlockPos.Mutable mutable = new BlockPos.Mutable();
