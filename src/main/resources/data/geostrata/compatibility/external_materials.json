@@ -58,7 +58,7 @@
           "id": "pegmatite_greisen",
           "hostLithologies": ["granite", "gneiss"],
           "futureHostRoles": ["pegmatite"],
-          "provinceContexts": ["volcanic_arc", "orogenic_belt", "cratonic_shield"],
+          "provinceContexts": ["volcanic_arc"],
           "depositStyles": ["vein", "massive_lens_or_pocket"],
           "bodyStyles": ["pegmatite_fertile_margin"],
           "requiredGeology": ["pegmatite_system"]
@@ -82,7 +82,7 @@
           "id": "pegmatite_accessory",
           "hostLithologies": ["granite", "gneiss"],
           "futureHostRoles": ["pegmatite"],
-          "provinceContexts": ["volcanic_arc", "cratonic_shield", "orogenic_belt"],
+          "provinceContexts": ["volcanic_arc"],
           "depositStyles": ["disseminated", "vein"],
           "bodyStyles": ["pegmatite_fertile_margin"],
           "requiredGeology": ["pegmatite_system"]
@@ -183,7 +183,7 @@
           "id": "granitic_pegmatite",
           "hostLithologies": ["granite", "gneiss"],
           "futureHostRoles": ["pegmatite"],
-          "provinceContexts": ["volcanic_arc", "orogenic_belt", "cratonic_shield"],
+          "provinceContexts": ["volcanic_arc"],
           "depositStyles": ["vein", "massive_lens_or_pocket"],
           "bodyStyles": ["pegmatite_fertile_margin"],
           "requiredGeology": ["pegmatite_system"]
