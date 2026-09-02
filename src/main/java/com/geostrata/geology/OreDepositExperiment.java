@@ -5,11 +5,13 @@ import com.google.gson.JsonObject;
 
 import java.util.Collections;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
-/** Disabled-by-default activation boundary for real ore-deposit placement. */
+/** Activation boundary for core common ores and companion-only rare ore experiments. */
 public final class OreDepositExperiment {
     private static final long ACTIVATION_SALT = 0xDB4F0B9175AE2165L;
+    private static final List<String> CORE_COMMON_MATERIALS = List.of("coal", "iron", "copper");
     private static volatile Snapshot snapshot = Snapshot.unloaded();
 
     private OreDepositExperiment() {
@@ -254,16 +256,34 @@ public final class OreDepositExperiment {
             return !activationChancePerCandidate.isEmpty();
         }
 
-        Snapshot activated(boolean companionLoaded) {
-            if (!companionLoaded || "experimental_runtime".equals(runtimeStatus)) {
+        Snapshot activated(boolean companionLoaded, boolean coreCommonOwnershipEnabled) {
+            if (companionLoaded) {
+                return new Snapshot(
+                        "experimental_runtime",
+                        true,
+                        placementMode,
+                        coreCommonOwnershipEnabled ? "core_common_overworld" : "not_implemented",
+                        activationChancePerCandidate
+                );
+            }
+            if (!coreCommonOwnershipEnabled) {
                 return this;
             }
+
+            LinkedHashMap<String, Double> commonChances = new LinkedHashMap<>();
+            for (String material : CORE_COMMON_MATERIALS) {
+                Double chance = activationChancePerCandidate.get(material);
+                if (chance == null) {
+                    throw new IllegalArgumentException("core common ore runtime requires material " + material);
+                }
+                commonChances.put(material, chance);
+            }
             return new Snapshot(
-                    "experimental_runtime",
+                    "core_common_runtime",
                     true,
                     placementMode,
-                    "experimental_companion_overworld",
-                    activationChancePerCandidate
+                    "core_common_overworld",
+                    commonChances
             );
         }
 
