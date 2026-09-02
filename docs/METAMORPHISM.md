@@ -1,6 +1,6 @@
-# Metamorphic intensity and experimental runtime
+# Metamorphic intensity and runtime
 
-GeoStrata has a deterministic metamorphic-intensity field and an opt-in runtime consumer for parent-aware regional metamorphism.
+GeoStrata has a deterministic metamorphic-intensity field and a core runtime consumer for parent-aware regional metamorphism.
 
 The field answers a deliberately narrow question: **how strongly has this broad area been metamorphosed?** It does not try to decide every metamorphic rock from intensity alone.
 
@@ -80,7 +80,7 @@ The diagnostic reports:
 - the active terrain generator's adjustment;
 - the primary and neighboring geological provinces.
 
-The command is read-only. It remains useful for tuning the broad field independently of whether the correlated experiment companion is installed.
+The command is read-only and is available in ordinary core worlds.
 
 ## Structural band ownership
 
@@ -97,11 +97,11 @@ Each site/band pair receives one stable `GeologyDeterminism` roll. The local sla
 - nearby blocks in the same folded/draped structural band do not independently roll into salt-and-pepper metamorphic blocks;
 - broad metamorphic intensity still controls the geological outcome, so a structural band cannot create a grade whose suitability is zero.
 
-The experimental runtime introduces no second band-scale tuning value. It reuses the active correlated succession's existing cycle thickness as the band thickness. If playtesting later proves that grade zones need a different scale, that should become an explicit tuning decision rather than an accidental constant now.
+The runtime introduces no second band-scale tuning value. It reuses the active correlated succession's existing cycle thickness as the band thickness. If playtesting later proves that grade zones need a different scale, that should become an explicit tuning decision rather than an accidental constant now.
 
 ## Parent rock controls the product
 
-`CorrelatedSedimentaryRuntime.TerrainAwareSite.outputLithology(...)` first resolves the exact virtual parent bed from the correlated structural field. In an experiment-owned **orogenic belt** chunk, metamorphic suitability only enables transformations that are valid for that parent's catalog `genesis`:
+`CorrelatedSedimentaryRuntime.TerrainAwareSite.outputLithology(...)` first resolves the exact virtual parent bed from the correlated structural field. In a correlated-owned **orogenic belt** chunk, metamorphic suitability only enables transformations that are valid for that parent's catalog `genesis`:
 
 - `mudrock` → slate/phyllite/schist/gneiss through the grade-band selector;
 - `carbonate` → marble;
@@ -112,11 +112,11 @@ The quartz-rich sedimentary parent is provider-owned vanilla `minecraft:sandston
 
 This is more important than the grade number itself: high intensity is not permission to turn arbitrary rock into gneiss, marble or quartzite.
 
-## Experimental world mutation
+## World mutation
 
 Runtime metamorphism is part of the existing correlated feature rather than a second registered feature.
 
-When the optional correlated experiment companion is installed and the experiment owns an orogenic chunk:
+When the correlated runtime owns an orogenic chunk:
 
 1. the correlated structural field resolves the virtual sedimentary parent bed;
 2. the same terrain-aware structural offset determines metamorphic suitability and, for mudrock, the grade band;
@@ -131,13 +131,13 @@ The correlated feature still runs at `UNDERGROUND_DECORATION` and preserves ordi
 
 ### Legacy metamorphic cleanup inside owned chunks
 
-Standalone GeoStrata still has old independent baseline features for slate, marble, quartzite, schist and gneiss. Those may already have run before the correlated experiment's decoration pass. Phyllite is deliberately different: it is runtime-only and has no independent `phyllite_ore` fallback feature.
+The old `*_ore`/`strata_lens` rock resources remain as stable datapack/compatibility identifiers, but the fourteen ordinary fallback rock features are no longer attached to overworld biomes by normal core worldgen. Phyllite remains runtime-only and has no independent `phyllite_ore` fallback feature.
 
-Inside an experiment-owned orogenic chunk only, the correlated pass therefore also treats an existing GeoStrata lithology-catalog block with `rockClass=metamorphic` as replaceable legacy placeholder material. The position is then rewritten from the authoritative correlated parent/output model.
+The correlated mutation path still treats an existing GeoStrata lithology-catalog block with `rockClass=metamorphic` as replaceable legacy placeholder material inside a correlated-owned orogenic chunk. This is defensive compatibility for older generated material or datapacks, not a second baseline generator. The position is rewritten from the authoritative correlated parent/output model.
 
-This keeps the experimental geology readable without globally suppressing those baseline features. It does **not** match graded ore blocks, because ore blocks are not lithology-catalog rock entries.
+It does **not** match graded ore blocks, because ore blocks are not lithology-catalog rock entries.
 
-Marble and quartzite now regenerate only where their required parent semantics exist. Limestone/carbonate beds can become marble; the correlated sandstone bed can become quartzite. Old random marble/quartzite fallback blocks inside owned chunks are therefore replaced by the parent-aware answer rather than retained merely because they happened to generate first.
+Marble and quartzite regenerate only where their required parent semantics exist. Limestone/carbonate beds can become marble; the correlated sandstone bed can become quartzite. Legacy random marble/quartzite blocks encountered inside owned chunks are therefore replaced by the parent-aware answer rather than retained merely because they happened to generate first.
 
 ## Why intensity and parent semantics remain separate
 
@@ -155,9 +155,7 @@ The same principle is reused by contact metamorphism around plutonic roots. Its 
 
 ## Runtime boundary
 
-Standalone GeoStrata remains unchanged: installing only the core mod does not add the correlated feature to biome generation and does not activate the parent-aware replacement path. Phyllite has no standalone random fallback body.
-
-With the optional experiment companion installed:
+Normal core GeoStrata installs attach the correlated sedimentary and province-background geology runtime directly. The experiment companion is not required for regional metamorphism or phyllite generation.
 
 - sedimentary-basin and rift correlated chunks preserve sandstone and other sedimentary parents unless another valid process transforms them;
 - orogenic correlated chunks may transform mudrock parents into slate/phyllite/schist/gneiss, carbonate into marble, and quartz sandstone into quartzite;
@@ -166,4 +164,4 @@ With the optional experiment companion installed:
 - no runtime UUID, first-visited state or process-local random source participates;
 - no new feature type or second metamorphic worldgen registration is introduced.
 
-This remains experimental worldgen and should be evaluated in fresh/disposable worlds before the baseline metamorphic generators are retired more broadly.
+GeoStrata remains pre-alpha worldgen, so geometry changes should still be evaluated in fresh/disposable worlds.
