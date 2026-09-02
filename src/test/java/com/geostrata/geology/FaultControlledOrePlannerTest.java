@@ -4,6 +4,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 final class FaultControlledOrePlannerTest {
@@ -29,6 +30,7 @@ final class FaultControlledOrePlannerTest {
 
         assertFalse(binding.faultAligned());
         assertEquals(proposal, binding.proposal());
+        assertEquals(proposal, binding.bodyProposal());
         assertEquals(
                 OreDepositGeometry.forProposal(123456789L, proposal),
                 binding.body(123456789L)
@@ -36,7 +38,7 @@ final class FaultControlledOrePlannerTest {
     }
 
     @Test
-    void capturedVeinUsesTheSharedFaultTraceAndLocalStrike() {
+    void capturedVeinKeepsCandidateIdentityButMovesBodyToTheSharedFault() {
         BoundCase found = boundCase();
         FaultControlledOrePlanner.Binding binding = found.binding();
         OreDepositGeometry.Body body = binding.body(found.seed());
@@ -54,6 +56,11 @@ final class FaultControlledOrePlannerTest {
         );
 
         assertTrue(binding.faultAligned());
+        assertEquals(found.original(), binding.proposal());
+        assertNotEquals(found.original(), binding.bodyProposal());
+        assertEquals(binding.bodyProposal().anchorX(), body.anchorX());
+        assertEquals(binding.bodyProposal().anchorY(), body.anchorY());
+        assertEquals(binding.bodyProposal().anchorZ(), body.anchorZ());
         assertEquals(0.0, body.dipRadians(), 0.0);
         assertTrue(tectonics.nearestFault(body.anchorX(), body.anchorY(), body.anchorZ()).distanceToFault() <= 1.5);
 
