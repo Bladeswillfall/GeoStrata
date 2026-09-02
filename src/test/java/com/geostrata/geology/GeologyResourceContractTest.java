@@ -85,7 +85,7 @@ final class GeologyResourceContractTest {
     }
 
     @Test
-    void companionRejectsCatalogMissingPhyllite() throws IOException {
+    void coreRejectsCatalogMissingPhyllite() throws IOException {
         JsonObject lithologies = read(GEOLOGY.resolve("lithologies.json"));
         JsonArray entries = lithologies.getAsJsonArray("lithologies");
         for (int index = 0; index < entries.size(); index++) {
@@ -105,7 +105,7 @@ final class GeologyResourceContractTest {
                         read(GEOLOGY.resolve("sedimentary_successions.json")),
                         read(GEOLOGY.resolve("sedimentary_field_profiles.json")),
                         read(GEOLOGY.resolve("correlated_sedimentary_experiment.json")),
-                        true
+                        false
                 )
         );
         assertTrue(exception.getMessage().contains("phyllite"));
