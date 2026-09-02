@@ -155,14 +155,7 @@ public final class OreDepositFeature extends Feature<DefaultFeatureConfig> {
                     );
                     proposal = binding.proposal();
 
-                    GeologyProvince province = provinces.sample(proposal.anchorX(), proposal.anchorZ()).province();
-                    if (!occurrence.provinceContexts().contains(province)) {
-                        continue;
-                    }
-                    double affinityMultiplier = occurrence.generation().depthMultiplier(proposal.anchorY())
-                            * occurrence.generation().provinceMultiplier(province)
-                            * biomeMultiplier(world, occurrence, proposal);
-                    if (!OreDepositExperiment.active(worldSeed, proposal, affinityMultiplier)) {
+                    if (!activeCandidate(world, worldSeed, occurrence, proposal, provinces)) {
                         continue;
                     }
                     if (!qualifiesTerrain(world, occurrence, proposal)) {
@@ -193,6 +186,23 @@ public final class OreDepositFeature extends Feature<DefaultFeatureConfig> {
             }
         }
         return placed;
+    }
+
+    private static boolean activeCandidate(
+            StructureWorldAccess world,
+            long worldSeed,
+            OreOccurrenceCatalog.Occurrence occurrence,
+            OreDepositCandidatePlanner.Proposal proposal,
+            ProvinceSampleCache provinces
+    ) {
+        GeologyProvince province = provinces.sample(proposal.anchorX(), proposal.anchorZ()).province();
+        if (!occurrence.provinceContexts().contains(province)) {
+            return false;
+        }
+        double affinityMultiplier = occurrence.generation().depthMultiplier(proposal.anchorY())
+                * occurrence.generation().provinceMultiplier(province)
+                * biomeMultiplier(world, occurrence, proposal);
+        return OreDepositExperiment.active(worldSeed, proposal, affinityMultiplier);
     }
 
     private static double biomeMultiplier(
