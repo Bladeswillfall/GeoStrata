@@ -9,7 +9,8 @@ on:
       - 'src/main/java/com/geostrata/block/OreHost.java'
       - 'src/main/java/com/geostrata/command/OreDistributionBenchmarkCommands.java'
       - 'src/main/java/com/geostrata/geology/**'
-      - 'src/main/java/com/geostrata/worldgen/feature/OreDepositFeature.java'
+      - 'src/main/java/com/geostrata/platform/fabric/**'
+      - 'src/main/java/com/geostrata/worldgen/**'
       - 'src/main/resources/data/geostrata/geology/**'
       - 'src/main/resources/data/geostrata/worldgen/**'
 
@@ -247,8 +248,6 @@ jobs:
           report = '\n'.join(lines) + '\n'
           Path('run/results/core-readiness.md').write_text(report)
           print(report)
-          with Path('/dev/stdout').open('w') as output:
-              pass
           PY
           cat run/results/core-readiness.md >> "$GITHUB_STEP_SUMMARY"
 
