@@ -46,6 +46,50 @@
         "textureMatrix": "geostrata:materials/external_ore_texture_matrix",
         "material": "zinc"
       }
+    },
+    {
+      "id": "tin_ore",
+      "primaryBlock": "geostrata:poor_tin_ore",
+      "derivedBlocks": [
+        "geostrata:medium_tin_ore",
+        "geostrata:rich_tin_ore",
+        "geostrata:massive_tin_ore"
+      ],
+      "family": "ore",
+      "compatibilityRole": "geostrata:ore/tin",
+      "semanticTags": [
+        "geostrata:ores"
+      ],
+      "gameplay": {
+        "breaking": {
+          "copyFrom": "minecraft:iron_ore",
+          "hardness": 3.0,
+          "blastResistance": 3.0,
+          "requiresTool": true,
+          "mineableWith": "pickaxe",
+          "minimumToolTier": "stone",
+          "soundGroup": "stone"
+        },
+        "cultivation": {
+          "status": "not_applicable"
+        },
+        "oreEconomy": {
+          "material": "tin",
+          "outputItem": "create_dd:raw_tin",
+          "outputTag": "geostrata:provider_outputs/tin",
+          "gradeOrder": [
+            "poor",
+            "medium",
+            "rich",
+            "massive"
+          ],
+          "source": "geostrata:geology/external_ore_occurrences"
+        }
+      },
+      "assets": {
+        "textureMatrix": "geostrata:materials/external_ore_texture_matrix",
+        "material": "tin"
+      }
     }
   ]
 }

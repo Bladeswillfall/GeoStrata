@@ -16,6 +16,7 @@ HOST_ROOT = ASSETS / "textures" / "block" / "host"
 PROPERTIES_ROOT = ASSETS / "optifine" / "ctm" / "_host_transitions"
 TEXTURE_ROOT = ASSETS / "textures" / "optifine" / "ctm" / "host_transition"
 TILE_COUNT = 17
+VANILLA_HOST_BLOCKS = {"granite": "minecraft:granite"}
 
 # Continuity's standard overlay tile order, using screen-space
 # up/right/down/left orientation supplied by the renderer.
@@ -58,11 +59,15 @@ def ore_states_by_host(hosts: tuple[str, ...]) -> dict[str, tuple[str, ...]]:
     return {host: tuple(values) for host, values in states.items()}
 
 
+def host_block(host: str) -> str:
+    return VANILLA_HOST_BLOCKS.get(host, f"geostrata:{host}")
+
+
 def geological_states(hosts: tuple[str, ...], ore_states: dict[str, tuple[str, ...]]) -> tuple[str, ...]:
     return tuple(
         state
         for host in hosts
-        for state in (f"geostrata:{host}", *ore_states[host])
+        for state in (host_block(host), *ore_states[host])
     )
 
 
@@ -71,7 +76,7 @@ def property_text(
     hosts: tuple[str, ...],
     ore_states: dict[str, tuple[str, ...]],
 ) -> str:
-    own_states = (f"geostrata:{host}", *ore_states[host])
+    own_states = (host_block(host), *ore_states[host])
     own_set = set(own_states)
     match_blocks = " ".join(
         state

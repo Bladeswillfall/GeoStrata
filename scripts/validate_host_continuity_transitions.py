@@ -19,6 +19,7 @@ LEGACY_TILESET_ROOT = ASSETS / "textures" / "block" / "ore_source" / "tileset"
 MATRIX_PATH = RESOURCES / "data" / "geostrata" / "materials" / "ore_texture_matrix.json"
 TILE_COUNT = 17
 GRADES = ("poor", "medium", "rich", "massive")
+VANILLA_HOST_BLOCKS = {"granite": "minecraft:granite"}
 
 
 def fail(message: str) -> None:
@@ -72,11 +73,15 @@ def ore_states_by_host(hosts: tuple[str, ...]) -> dict[str, tuple[str, ...]]:
     return {host: tuple(values) for host, values in states.items()}
 
 
+def host_block(host: str) -> str:
+    return VANILLA_HOST_BLOCKS.get(host, f"geostrata:{host}")
+
+
 def geological_states(hosts: tuple[str, ...], ore_states: dict[str, tuple[str, ...]]) -> tuple[str, ...]:
     return tuple(
         state
         for host in hosts
-        for state in (f"geostrata:{host}", *ore_states[host])
+        for state in (host_block(host), *ore_states[host])
     )
 
 
@@ -85,7 +90,7 @@ def property_text(
     hosts: tuple[str, ...],
     ore_states: dict[str, tuple[str, ...]],
 ) -> str:
-    own_states = (f"geostrata:{host}", *ore_states[host])
+    own_states = (host_block(host), *ore_states[host])
     own_set = set(own_states)
     match_blocks = " ".join(
         state
@@ -138,7 +143,7 @@ def main() -> None:
         if actual != property_text(host, hosts, ore_states):
             fail(f"{property_path.relative_to(ROOT)} has drifted from the host transition contract")
 
-        own_states = {f"geostrata:{host}", *ore_states[host]}
+        own_states = {host_block(host), *ore_states[host]}
         if ore_states[host] and not all(f":host={host}" in state for state in ore_states[host]):
             fail(f"{host} ore transition states must preserve the host property")
         if any(state in property_text(host, hosts, ore_states).split("\n")[1] for state in own_states):

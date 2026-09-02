@@ -154,7 +154,7 @@ def main() -> None:
             if registration is None or registration["material"] != material or registration["grade"].lower() != grade:
                 fail(f"missing Java external ore registration for {name}")
             if (registration["base"], registration["hardness"], registration["sound"]) != ("IRON_ORE", "3.0", "STONE"):
-                fail(f"{name} must use the shared zinc breaking profile")
+                fail(f"{name} must use the shared external-ore breaking profile")
             if block not in ores_tag or block not in pickaxe or block not in stone:
                 fail(f"{block} is missing ore/pickaxe/stone-tool classification")
             require_png(ASSETS / f"textures/block/external_ore_source/{material}/{grade}.png")
@@ -179,14 +179,20 @@ def main() -> None:
                     fail(f"{name} host={host} must fall back to {rendered}")
             validate_loot(material, grade, block, output_tag)
 
-    if occurrences.keys() == {"zinc"} and tag_values(RESOURCES / "data/c/tags/blocks/ores/zinc.json") != {
-        f"geostrata:{grade}_zinc_ore" for grade in GRADES
-    }:
-        fail("c:ores/zinc must contain all four GeoStrata zinc grades")
+        if tag_values(RESOURCES / f"data/c/tags/blocks/ores/{material}.json") != set(expected_blocks):
+            fail(f"c:ores/{material} must contain all four GeoStrata grades")
 
     companion = COMPANION_SOURCE.read_text(encoding="utf-8")
-    if 'new Identifier("create", "raw_zinc")' not in companion or 'new Identifier("create", "zinc_ore")' not in companion:
-        fail("experimental companion must gate Create zinc suppression on provider output and placed feature ids")
+    suppression_contracts = {
+        "zinc": ("create", "raw_zinc", "zinc_ore"),
+        "tin": ("create_dd", "raw_tin", "tin_ore"),
+    }
+    for material, (namespace, output, placed_feature) in suppression_contracts.items():
+        if material not in occurrences:
+            continue
+        if (f'new Identifier("{namespace}", "{output}")' not in companion
+                or f'new Identifier("{namespace}", "{placed_feature}")' not in companion):
+            fail(f"experimental companion must gate {material} suppression on provider output and placed feature ids")
 
     print(f"external ore validation OK: {len(occurrences)} materials, {total_blocks} graded blocks")
 

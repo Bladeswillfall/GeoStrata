@@ -596,6 +596,7 @@ def validate_material_catalog() -> int:
             f"extra={sorted(catalog_blocks - set(source_profiles))}"
         )
     rock_materials = {entry["id"] for entry in materials if entry["family"] == "rock"}
+    lithology_hosts = {entry["id"] for entry in load_json(CATALOG)["lithologies"]}
     matrix_host_set = set(matrix_hosts)
     required_ore_hosts = {
         host
@@ -607,10 +608,10 @@ def validate_material_catalog() -> int:
             "ore texture matrix must cover every lithology used by an ore occurrence; "
             f"missing={sorted(required_ore_hosts - matrix_host_set)}"
         )
-    if not matrix_host_set.issubset(rock_materials):
+    if not matrix_host_set.issubset(rock_materials | lithology_hosts):
         fail(
-            "ore texture matrix may only contain registered rock materials; "
-            f"unknown={sorted(matrix_host_set - rock_materials)}"
+            "ore texture matrix may only contain registered rock materials or lithologies; "
+            f"unknown={sorted(matrix_host_set - rock_materials - lithology_hosts)}"
         )
     try:
         host_source = ORE_HOST_SOURCE.read_text(encoding="utf-8")

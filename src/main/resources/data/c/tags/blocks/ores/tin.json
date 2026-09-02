@@ -1,0 +1,9 @@
+{
+  "replace": false,
+  "values": [
+    "geostrata:poor_tin_ore",
+    "geostrata:medium_tin_ore",
+    "geostrata:rich_tin_ore",
+    "geostrata:massive_tin_ore"
+  ]
+}

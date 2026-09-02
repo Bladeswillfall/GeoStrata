@@ -1,0 +1,49 @@
+{
+  "variants": {
+    "host=limestone": {
+      "model": "geostrata:block/ore/tin/granite/massive"
+    },
+    "host=chalk": {
+      "model": "geostrata:block/ore/tin/granite/massive"
+    },
+    "host=shale": {
+      "model": "geostrata:block/ore/tin/granite/massive"
+    },
+    "host=slate": {
+      "model": "geostrata:block/ore/tin/granite/massive"
+    },
+    "host=mudstone": {
+      "model": "geostrata:block/ore/tin/granite/massive"
+    },
+    "host=siltstone": {
+      "model": "geostrata:block/ore/tin/granite/massive"
+    },
+    "host=marble": {
+      "model": "geostrata:block/ore/tin/granite/massive"
+    },
+    "host=quartzite": {
+      "model": "geostrata:block/ore/tin/granite/massive"
+    },
+    "host=schist": {
+      "model": "geostrata:block/ore/tin/granite/massive"
+    },
+    "host=gneiss": {
+      "model": "geostrata:block/ore/tin/gneiss/massive"
+    },
+    "host=granite": {
+      "model": "geostrata:block/ore/tin/granite/massive"
+    },
+    "host=basalt": {
+      "model": "geostrata:block/ore/tin/granite/massive"
+    },
+    "host=rhyolite": {
+      "model": "geostrata:block/ore/tin/granite/massive"
+    },
+    "host=conglomerate": {
+      "model": "geostrata:block/ore/tin/granite/massive"
+    },
+    "host=breccia": {
+      "model": "geostrata:block/ore/tin/granite/massive"
+    }
+  }
+}

@@ -21,7 +21,9 @@
   },
   "hosts": [
     "shale",
-    "siltstone"
+    "siltstone",
+    "granite",
+    "gneiss"
   ],
   "ores": {
     "zinc": {
@@ -29,6 +31,14 @@
       "validHosts": [
         "shale",
         "siltstone"
+      ],
+      "continuity": false
+    },
+    "tin": {
+      "defaultHost": "granite",
+      "validHosts": [
+        "granite",
+        "gneiss"
       ],
       "continuity": false
     }

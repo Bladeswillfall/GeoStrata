@@ -30,6 +30,9 @@
     "host=gneiss": {
       "model": "geostrata:block/ore/copper/gneiss/medium"
     },
+    "host=granite": {
+      "model": "geostrata:block/ore/copper/granite/medium"
+    },
     "host=basalt": {
       "model": "geostrata:block/ore/copper/basalt/medium"
     },

@@ -85,6 +85,104 @@
         "rich": "geostrata:rich_zinc_ore",
         "massive": "geostrata:massive_zinc_ore"
       }
+    },
+    {
+      "id": "tin",
+      "providerMod": "create_dreams_and_desires",
+      "outputItem": "create_dd:raw_tin",
+      "hostLithologies": [
+        "granite",
+        "gneiss"
+      ],
+      "provinceContexts": [
+        "volcanic_arc",
+        "orogenic_belt"
+      ],
+      "depositStyles": [
+        "vein",
+        "disseminated",
+        "massive_lens_or_pocket"
+      ],
+      "formationRoutes": [
+        {
+          "id": "granite_hydrothermal",
+          "hostLithologies": [
+            "granite",
+            "gneiss"
+          ],
+          "provinceContexts": [
+            "volcanic_arc",
+            "orogenic_belt"
+          ],
+          "depositStyles": [
+            "vein",
+            "disseminated"
+          ]
+        },
+        {
+          "id": "pegmatite_greisen",
+          "hostLithologies": [
+            "granite",
+            "gneiss"
+          ],
+          "provinceContexts": [
+            "volcanic_arc"
+          ],
+          "depositStyles": [
+            "vein",
+            "massive_lens_or_pocket"
+          ],
+          "bodyStyles": [
+            "pegmatite_fertile_margin"
+          ]
+        }
+      ],
+      "generation": {
+        "activationChance": 0.28,
+        "candidateGrid": {
+          "horizontalCellSize": 160,
+          "verticalCellSize": 80,
+          "horizontalMargin": 12,
+          "verticalMargin": 8,
+          "horizontalSearchPaddingBlocks": 176,
+          "verticalSearchPaddingBlocks": 160
+        },
+        "depthAffinity": [
+          {
+            "maxY": -49,
+            "multiplier": 0.5
+          },
+          {
+            "minY": -48,
+            "maxY": 24,
+            "multiplier": 1.15
+          },
+          {
+            "minY": 25,
+            "maxY": 80,
+            "multiplier": 0.7
+          },
+          {
+            "minY": 81,
+            "multiplier": 0.0
+          }
+        ],
+        "bodyScale": 0.72,
+        "discoveryStringers": {
+          "count": 6,
+          "minLength": 28.0,
+          "maxLength": 52.0,
+          "minRadius": 0.52,
+          "maxRadius": 0.74,
+          "exposedHaloBlocks": 2.0
+        }
+      },
+      "gradeBlocks": {
+        "poor": "geostrata:poor_tin_ore",
+        "medium": "geostrata:medium_tin_ore",
+        "rich": "geostrata:rich_tin_ore",
+        "massive": "geostrata:massive_tin_ore"
+      }
     }
   ]
 }

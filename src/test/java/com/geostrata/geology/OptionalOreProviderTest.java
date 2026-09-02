@@ -19,7 +19,7 @@ final class OptionalOreProviderTest {
     private static final Path GEOLOGY = Path.of("src/main/resources/data/geostrata/geology");
 
     @Test
-    void availableProviderAddsBundledZincOccurrenceAndActivation() throws IOException {
+    void availableProvidersAddBundledOccurrencesAndActivation() throws IOException {
         GeologyDataReload.State state = parse(output -> true);
 
         OreOccurrenceCatalog.Occurrence zinc = state.oreOccurrences().require("zinc");
@@ -28,6 +28,21 @@ final class OptionalOreProviderTest {
         assertEquals(List.of("shale", "siltstone"), zinc.hostLithologies());
         assertEquals(List.of("stratiform"), zinc.depositStyles());
         assertEquals(0.5, state.oreExperiment().activationChance("zinc"), 1.0e-12);
+
+        OreOccurrenceCatalog.Occurrence tin = state.oreOccurrences().require("tin");
+        assertEquals("create_dreams_and_desires", tin.providerMod());
+        assertEquals("create_dd:raw_tin", tin.outputItem());
+        assertEquals(List.of("granite", "gneiss"), tin.hostLithologies());
+        assertEquals(List.of("vein", "disseminated", "massive_lens_or_pocket"), tin.depositStyles());
+        assertEquals(0.28, state.oreExperiment().activationChance("tin"), 1.0e-12);
+        assertEquals(
+                List.of("pegmatite_fertile_margin"),
+                tin.formationRoutes().stream()
+                        .filter(route -> "pegmatite_greisen".equals(route.id()))
+                        .findFirst()
+                        .orElseThrow()
+                        .bodyStyles()
+        );
     }
 
     @Test
@@ -37,6 +52,15 @@ final class OptionalOreProviderTest {
         assertFalse(state.oreOccurrences().byId().containsKey("zinc"));
         assertFalse(state.oreExperiment().activationChancePerCandidate().containsKey("zinc"));
         assertTrue(state.oreOccurrences().byId().containsKey("coal"));
+    }
+
+    @Test
+    void missingTinProviderOutputRemovesOnlyTin() throws IOException {
+        GeologyDataReload.State state = parse(output -> !"create_dd:raw_tin".equals(output));
+
+        assertFalse(state.oreOccurrences().byId().containsKey("tin"));
+        assertFalse(state.oreExperiment().activationChancePerCandidate().containsKey("tin"));
+        assertTrue(state.oreOccurrences().byId().containsKey("zinc"));
     }
 
     @Test

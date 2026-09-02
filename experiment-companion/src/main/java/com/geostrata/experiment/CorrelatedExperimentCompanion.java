@@ -23,6 +23,11 @@ public final class CorrelatedExperimentCompanion implements ModInitializer {
             RegistryKeys.PLACED_FEATURE,
             new Identifier("create", "zinc_ore")
     );
+    private static final Identifier CREATE_DD_RAW_TIN = new Identifier("create_dd", "raw_tin");
+    private static final RegistryKey<PlacedFeature> CREATE_DD_TIN_ORE = RegistryKey.of(
+            RegistryKeys.PLACED_FEATURE,
+            new Identifier("create_dd", "tin_ore")
+    );
     private static final List<RegistryKey<PlacedFeature>> BENCHMARK_DIAMOND_ORES = List.of(
             OrePlacedFeatures.ORE_DIAMOND,
             OrePlacedFeatures.ORE_DIAMOND_LARGE,
@@ -32,7 +37,9 @@ public final class CorrelatedExperimentCompanion implements ModInitializer {
     @Override
     public void onInitialize() {
         boolean benchmarkSuppressVanillaDiamond = Boolean.parseBoolean(System.getenv(BENCHMARK_SUPPRESS_DIAMOND_ENV));
-        if (Registries.ITEM.containsId(CREATE_RAW_ZINC) || benchmarkSuppressVanillaDiamond) {
+        if (Registries.ITEM.containsId(CREATE_RAW_ZINC)
+                || Registries.ITEM.containsId(CREATE_DD_RAW_TIN)
+                || benchmarkSuppressVanillaDiamond) {
             BiomeModifications.create(GeoStrata.id("companion_ore_worldgen_ownership"))
                     .add(
                             ModificationPhase.REMOVALS,
@@ -42,6 +49,12 @@ public final class CorrelatedExperimentCompanion implements ModInitializer {
                                     context.getGenerationSettings().removeFeature(
                                             GenerationStep.Feature.UNDERGROUND_ORES,
                                             CREATE_ZINC_ORE
+                                    );
+                                }
+                                if (Registries.ITEM.containsId(CREATE_DD_RAW_TIN)) {
+                                    context.getGenerationSettings().removeFeature(
+                                            GenerationStep.Feature.UNDERGROUND_ORES,
+                                            CREATE_DD_TIN_ORE
                                     );
                                 }
                                 if (benchmarkSuppressVanillaDiamond) {

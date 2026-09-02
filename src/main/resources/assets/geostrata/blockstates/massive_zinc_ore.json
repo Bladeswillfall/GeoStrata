@@ -10,6 +10,7 @@
     "host=quartzite": {"model": "geostrata:block/ore/zinc/shale/massive"},
     "host=schist": {"model": "geostrata:block/ore/zinc/shale/massive"},
     "host=gneiss": {"model": "geostrata:block/ore/zinc/shale/massive"},
+    "host=granite": {"model": "geostrata:block/ore/zinc/shale/massive"},
     "host=basalt": {"model": "geostrata:block/ore/zinc/shale/massive"},
     "host=rhyolite": {"model": "geostrata:block/ore/zinc/shale/massive"},
     "host=conglomerate": {"model": "geostrata:block/ore/zinc/shale/massive"},
