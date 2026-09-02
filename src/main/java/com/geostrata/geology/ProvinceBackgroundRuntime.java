@@ -11,7 +11,6 @@ import java.util.function.IntFunction;
 public final class ProvinceBackgroundRuntime {
     private static final int CHUNK_SIZE = 16;
     private static final String ARCHITECTURE_CONTINUITY = "regional";
-    private static final String COMPANION_RUNTIME_STATUS = "experimental_runtime";
     private static final String CONTACT_AUREOLE = "contact_aureole";
 
     private ProvinceBackgroundRuntime() {
@@ -25,18 +24,26 @@ public final class ProvinceBackgroundRuntime {
         GeologyProvinceProfiles.Snapshot profiles = GeologyProvinceProfiles.current();
         SedimentarySuccessions.Snapshot successions = SedimentarySuccessions.current();
         SedimentaryFieldProfiles.Snapshot fieldProfiles = SedimentaryFieldProfiles.current();
-        if (!experiment.loaded()
-                || !experiment.enabled()
-                || !COMPANION_RUNTIME_STATUS.equals(experiment.runtimeStatus())
-                || !profiles.loaded()
-                || !successions.loaded()
-                || !fieldProfiles.loaded()) {
+        if (!ready(experiment, profiles, successions, fieldProfiles)) {
             return Optional.empty();
         }
 
         int startX = Math.floorDiv(blockX, CHUNK_SIZE) * CHUNK_SIZE;
         int startZ = Math.floorDiv(blockZ, CHUNK_SIZE) * CHUNK_SIZE;
         return Optional.of(build(world, startX, startZ, profiles, successions, fieldProfiles));
+    }
+
+    static boolean ready(
+            CorrelatedSedimentaryExperiment.Snapshot experiment,
+            GeologyProvinceProfiles.Snapshot profiles,
+            SedimentarySuccessions.Snapshot successions,
+            SedimentaryFieldProfiles.Snapshot fieldProfiles
+    ) {
+        return experiment.loaded()
+                && experiment.enabled()
+                && profiles.loaded()
+                && successions.loaded()
+                && fieldProfiles.loaded();
     }
 
     private static Chunk build(

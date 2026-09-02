@@ -85,7 +85,11 @@ jobs:
               rm -f run/mods/geostrata-correlated-experiment-*.jar
               unset GEOSTRATA_BENCHMARK_SUPPRESS_VANILLA_DIAMOND || true
               if [ "$scenario" = geostrata ]; then
-                  cp experiment-companion/build/libs/geostrata-correlated-experiment-0.2.0.jar run/mods/
+                  companion_jar=$(find experiment-companion/build/libs -maxdepth 1 -type f \
+                      -name 'geostrata-correlated-experiment-*.jar' \
+                      ! -name '*-sources.jar' ! -name '*-dev.jar' -print -quit)
+                  test -n "$companion_jar"
+                  cp "$companion_jar" run/mods/
                   export GEOSTRATA_BENCHMARK_SUPPRESS_VANILLA_DIAMOND=true
               fi
 
@@ -93,7 +97,7 @@ jobs:
               rm -f "$fifo"
               mkfifo "$fifo"
               exec 3<>"$fifo"
-              setsid gradle runServer --stacktrace <"$fifo" >"run/results/${scenario}.stdout.log" 2>&1 &
+              setsid gradle :runServer --stacktrace <"$fifo" >"run/results/${scenario}.stdout.log" 2>&1 &
               pid=$!
 
               started=0
@@ -199,6 +203,8 @@ jobs:
           common = ('coal', 'iron', 'copper')
           preserved = ('gold', 'emerald', 'redstone', 'lapis')
           owned_vanilla_blocks = ('diamond',)
+          diamond_min_exposed_patches = 6
+          diamond_max_exposed_patches = 9
 
           def aggregate(data, materials, graded=False):
               rows = [data['materials'][material] for material in materials]
@@ -279,9 +285,11 @@ jobs:
               diamond = summary['materials']['diamond']
               if not 1250 <= diamond['geostrataOwnedTotal'] <= 1450:
                   failures.append(f"diamond: {diamond['geostrataOwnedTotal']} blocks outside 1250..1450")
-              if not 80.0 <= diamond['ownedPatchPercentOfVanilla'] <= 100.0:
+              diamond_patches = diamond['geostrataOwnedExposedClusters']
+              if not diamond_min_exposed_patches <= diamond_patches <= diamond_max_exposed_patches:
                   failures.append(
-                      f"diamond: {diamond['ownedPatchPercentOfVanilla']:.1f}% exposure outside 80..100%"
+                      f"diamond: {diamond_patches} exposed patches outside "
+                      f"{diamond_min_exposed_patches}..{diamond_max_exposed_patches}"
                   )
           elif region == 'emerald':
               emerald = summary['materials']['emerald']
@@ -310,7 +318,8 @@ jobs:
               'Performance acceptance: GeoStrata Minecraft startup must remain at or below 2.5x the paired vanilla startup time.',
               'Common-resource acceptance floor: each of coal, iron and copper must retain at least 50% of the vanilla exposed-patch count.',
               'Ownership acceptance: coal, iron and copper have no residual vanilla generation; gold, emerald, redstone and lapis retain vanilla fallback wherever the paired baseline contains them.',
-              'Reproducibility note: raw vanilla ore block totals are informational and may vary by a few blocks across identical parallel worldgen reruns; exposed-patch acceptance metrics are the regression signal.',
+              'Reproducibility note: raw vanilla ore block totals and tiny vanilla exposed-patch samples may vary across identical parallel worldgen reruns.',
+              f'Diamond exposure acceptance: the fixed cratonic region must contain {diamond_min_exposed_patches}..{diamond_max_exposed_patches} GeoStrata exposed patches; the vanilla percentage is informational.',
               'Diamond accounting: CI sets a benchmark-only environment switch that suppresses vanilla diamond in GeoStrata mode so vanilla diamond-block IDs can be attributed to GeoStrata.',
               'Normal experiment-companion worlds keep vanilla gold, emerald and diamond generation as fallbacks.',
               f"- vanilla overlapping total: {summary['vanilla']['total']}",

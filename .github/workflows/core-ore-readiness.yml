@@ -90,7 +90,7 @@ jobs:
               rm -f "$fifo"
               mkfifo "$fifo"
               exec 3<>"$fifo"
-              setsid gradle runServer --stacktrace <"$fifo" >"run/results/${scenario}.stdout.log" 2>&1 &
+              setsid gradle :runServer --stacktrace <"$fifo" >"run/results/${scenario}.stdout.log" 2>&1 &
               pid=$!
 
               started=0

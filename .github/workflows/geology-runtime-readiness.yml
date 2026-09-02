@@ -7,7 +7,6 @@ on:
       - 'build.gradle'
       - 'gradle.properties'
       - 'settings.gradle'
-      - 'experiment-companion/**'
       - 'src/main/java/com/geostrata/geology/**'
       - 'src/main/java/com/geostrata/platform/fabric/**'
       - 'src/main/java/com/geostrata/worldgen/**'
@@ -37,8 +36,8 @@ jobs:
         with:
           gradle-version: 9.4.0
 
-      - name: Build mod and experiment companion
-        run: gradle build :experiment-companion:build --stacktrace
+      - name: Build core mod
+        run: gradle build --stacktrace
 
       - name: Install pinned terrain test stack
         shell: bash
@@ -140,7 +139,7 @@ jobs:
           PY
           rm -rf run/geostrata-runtime-readiness run/logs
 
-      - name: Benchmark baseline and correlated geology
+      - name: Benchmark disabled and core geology
         shell: bash
         run: |
           set -euo pipefail
@@ -148,14 +147,27 @@ jobs:
           run_scenario() {
               scenario="$1"
               rm -rf run/geostrata-runtime-readiness run/logs
-              if [ "$scenario" = correlated ]; then
-                  companion_jar=$(find experiment-companion/build/libs -maxdepth 1 -type f \
-                      -name 'geostrata-correlated-experiment-*.jar' \
-                      ! -name '*-sources.jar' ! -name '*-dev.jar' -print -quit)
-                  test -n "$companion_jar"
-                  cp "$companion_jar" run/mods/
-              else
-                  rm -f run/mods/geostrata-correlated-experiment-*.jar
+
+              if [ "$scenario" = disabled ]; then
+                  pack="run/geostrata-runtime-readiness/datapacks/geostrata-runtime-disabled"
+                  mkdir -p "$pack/data/geostrata/geology"
+                  cat > "$pack/pack.mcmeta" <<'EOF'
+          {"pack":{"pack_format":15,"description":"GeoStrata CI disabled correlated geology baseline"}}
+          EOF
+                  cp src/main/resources/data/geostrata/geology/correlated_sedimentary_experiment.json \
+                      "$pack/data/geostrata/geology/correlated_sedimentary_experiment.json"
+                  python3 - "$pack/data/geostrata/geology/correlated_sedimentary_experiment.json" <<'PY'
+          import json
+          import pathlib
+          import sys
+
+          path = pathlib.Path(sys.argv[1])
+          data = json.loads(path.read_text())
+          data['runtimeStatus'] = 'metadata_only'
+          data['enabled'] = False
+          data['description'] = 'CI-only disabled baseline for correlated geology runtime readiness.'
+          path.write_text(json.dumps(data, indent=2) + '\n')
+          PY
               fi
 
               setsid gradle :runServer --stacktrace > "run/results/${scenario}.stdout.log" 2>&1 &
@@ -202,14 +214,14 @@ jobs:
               wait "$pid" 2>/dev/null || true
           }
 
-          run_scenario baseline
-          run_scenario correlated
+          run_scenario disabled
+          run_scenario core
 
       - name: Assert runtime and performance budget
         shell: bash
         run: |
           set -euo pipefail
-          for scenario in baseline correlated; do
+          for scenario in disabled core; do
               log="run/results/${scenario}.latest.log"
               test -f "$log"
               grep -q 'Done (' "$log"
@@ -220,26 +232,30 @@ jobs:
               fi
           done
 
+          grep -q 'correlated experiment enabled=false' run/results/disabled.latest.log
+          grep -q 'correlated experiment enabled=true' run/results/core.latest.log
+
           python3 - <<'PY'
           from pathlib import Path
 
-          baseline = float(Path('run/results/baseline.startup-seconds.txt').read_text())
-          correlated = float(Path('run/results/correlated.startup-seconds.txt').read_text())
-          ratio = correlated / baseline
+          disabled = float(Path('run/results/disabled.startup-seconds.txt').read_text())
+          core = float(Path('run/results/core.startup-seconds.txt').read_text())
+          ratio = core / disabled
           maximum_ratio = 2.5
           summary = (
               '# Correlated geology runtime readiness\n\n'
               'Pinned terrain stack: Tectonic 3.0.15 + Lithostitched 1.4.11 on Minecraft 1.20.1.\n\n'
               'Extreme-height terrain: Y -128..640.\n\n'
-              f'Baseline startup: {baseline:.3f}s  \n'
-              f'Correlated startup: {correlated:.3f}s  \n'
+              'Baseline: core mod with correlated geology disabled by a temporary datapack.\n\n'
+              f'Disabled-geology startup: {disabled:.3f}s  \n'
+              f'Core-geology startup: {core:.3f}s  \n'
               f'Startup ratio: **{ratio:.2f}x** (budget <= {maximum_ratio:.2f}x)\n'
           )
           Path('run/results/paired-summary.md').write_text(summary)
           print(summary)
           if ratio > maximum_ratio:
               raise SystemExit(
-                  f'Correlated startup ratio {ratio:.2f}x exceeds {maximum_ratio:.2f}x budget'
+                  f'Core geology startup ratio {ratio:.2f}x exceeds {maximum_ratio:.2f}x budget'
               )
           PY
           cat run/results/paired-summary.md >> "$GITHUB_STEP_SUMMARY"

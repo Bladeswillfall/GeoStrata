@@ -19,14 +19,14 @@ The current pre-alpha includes rock families such as:
 - Conglomerate and breccia.
 - Several types of soil and clay.
 
-Natural lithologies use coherent body-style generation rather than vanilla ore blobs, and an opt-in companion exercises correlated sedimentary strata, terrain-aware deformation and parent-aware metamorphism while those systems are evaluated before broader activation.
+Natural lithologies use coherent province/correlated body-style generation rather than vanilla ore blobs. Correlated sedimentary strata, terrain-aware deformation and parent-aware metamorphism now run in normal core worlds; the optional companion remains for experimental ore ownership, benchmark-only diamond suppression and developer diagnostics.
 
 The mod also leaves room for other mods to join in. A modpack can add its own biomes, terrain blocks, or geological rules without GeoStrata needing to be rewritten for every individual mod.
 
 ## Where things live
 
 - `src/` — shared GeoStrata source/resources plus the current Fabric adapter under `com.geostrata.platform.fabric`.
-- `experiment-companion/` — the current Fabric experimental worldgen activation artifact.
+- `experiment-companion/` — the current Fabric experimental ore-ownership and developer-diagnostics artifact.
 - `pack/` — the development and integration modpack. This is not included in the core mod jar and is not part of the multi-loader mod architecture.
 - `compat/` — optional compatibility projects and add-ons.
 - `scripts/` — scripts used for checking and supporting the build.

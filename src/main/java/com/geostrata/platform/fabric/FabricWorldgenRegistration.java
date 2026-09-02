@@ -13,8 +13,6 @@ import net.minecraft.world.gen.feature.PlacedFeature;
 /** Fabric biome-modification adapter for GeoStrata's shared data-driven placed features. */
 public final class FabricWorldgenRegistration {
     private static final TagKey<Biome> HAS_COMMON_ROCKS = biomeTag("has_common_rocks");
-    private static final TagKey<Biome> HAS_MOUNTAIN_ROCKS = biomeTag("has_mountain_rocks");
-    private static final TagKey<Biome> HAS_FLUVIAL_ROCKS = biomeTag("has_fluvial_rocks");
     private static final TagKey<Biome> HAS_COASTAL_ROCKS = biomeTag("has_coastal_rocks");
     private static final TagKey<Biome> HAS_SURFACE_SEDIMENTS = biomeTag("has_surface_sediments");
     private static final TagKey<Biome> HAS_BADLANDS_SOILS = biomeTag("has_badlands_soils");
@@ -25,22 +23,8 @@ public final class FabricWorldgenRegistration {
     }
 
     public static void register() {
-        addToTag("limestone_ore", HAS_COMMON_ROCKS);
-        addToTag("shale_ore", HAS_COMMON_ROCKS);
-        addToTag("mudstone_ore", HAS_COMMON_ROCKS);
-        addToTag("basalt_ore", HAS_COMMON_ROCKS);
-
-        addToTag("chalk_ore", HAS_COASTAL_ROCKS);
-        addToTag("siltstone_ore", HAS_FLUVIAL_ROCKS);
-        addToTag("conglomerate_ore", HAS_FLUVIAL_ROCKS);
-
-        addToTag("slate_ore", HAS_MOUNTAIN_ROCKS);
-        addToTag("marble_ore", HAS_MOUNTAIN_ROCKS);
-        addToTag("quartzite_ore", HAS_MOUNTAIN_ROCKS);
-        addToTag("schist_ore", HAS_MOUNTAIN_ROCKS);
-        addToTag("gneiss_ore", HAS_MOUNTAIN_ROCKS);
-        addToTag("rhyolite_ore", HAS_MOUNTAIN_ROCKS);
-        addToTag("breccia_ore", HAS_MOUNTAIN_ROCKS);
+        addToTag("correlated_sedimentary_experiment", HAS_COMMON_ROCKS, GenerationStep.Feature.TOP_LAYER_MODIFICATION);
+        addToTag("province_background_experiment", HAS_COMMON_ROCKS, GenerationStep.Feature.TOP_LAYER_MODIFICATION);
 
         addToTag("clay_loam_patch", HAS_SURFACE_SEDIMENTS);
         addToTag("silty_loam_patch", HAS_SURFACE_SEDIMENTS);

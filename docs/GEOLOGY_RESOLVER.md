@@ -14,7 +14,7 @@ Geological geometry remains owned by the existing model:
 
 1. province/context selection;
 2. correlated succession/contact planning where that runtime owns the chunk;
-3. province-background architecture everywhere else in the advanced runtime;
+3. province-background architecture everywhere else in the core runtime;
 4. terrain-aware structural deformation and sutures;
 5. metamorphic, intrusive and fault-damage bodies already owned by those runtimes;
 6. future queryable special-event geology.
@@ -23,7 +23,7 @@ The resolver only composes those answers and returns semantic provenance. It mus
 
 ## Current scope
 
-The resolver covers both queryable authorities used by the advanced companion runtime:
+The resolver covers both queryable authorities used by the core geology runtime:
 
 - `CorrelatedSedimentaryRuntime.TerrainAwareSite` has first authority in chunks it owns;
 - `ProvinceBackgroundRuntime.Chunk` supplies the remaining province architecture.
@@ -46,7 +46,7 @@ Province, lithology and body provenance follow the same depth-dependent suture o
 
 Coordinates not owned by either queryable semantic runtime return `Optional.empty()`.
 
-Baseline fallback lenses/bodies still exist and still generate as before. The resolver does not reverse-engineer those from placed blocks or create replacement geometry. Each body system should join the resolver only when its existing geometry can be exposed as a deterministic query.
+Legacy fallback lens/body resources may still exist for stable identifiers and datapack compatibility, but normal core worldgen no longer attaches the fourteen ordinary rock fallbacks to overworld biomes. The resolver does not reverse-engineer legacy placed blocks or create replacement geometry. Each body system should join the resolver only when its existing geometry can be exposed as a deterministic query.
 
 ## Prepared chunk queries
 
@@ -54,7 +54,7 @@ One-off callers may use `GeologyResolver.resolve(world, x, y, z)` directly.
 
 Worldgen paths that inspect many blocks should call `GeologyResolver.prepareChunk(...)` once and reuse the returned `PreparedChunk`. This preserves the existing chunk-level terrain/province work instead of rebuilding semantic geology for every voxel.
 
-The experimental ore host resolver is the first production consumer. It still gives already-placed GeoStrata host blocks first priority, but virtual host qualification asks one prepared `GeologyResolver` context instead of independently knowing about correlated and province-background runtimes.
+The ore host resolver is the first production consumer. It still gives already-placed GeoStrata host blocks first priority, but virtual host qualification asks one prepared `GeologyResolver` context instead of independently knowing about correlated and province-background runtimes.
 
 ## Parity rule
 
@@ -94,7 +94,7 @@ material adapter
 
 Extend the resolver only as existing systems become queryable:
 
-- baseline strata/lens bodies;
+- legacy/optional strata-lens bodies where needed by a real consumer;
 - correlated process/body provenance where the authoritative runtime can expose it;
 - special event geology such as kimberlite/lamproite;
 - additional process provenance where a real consumer needs it.

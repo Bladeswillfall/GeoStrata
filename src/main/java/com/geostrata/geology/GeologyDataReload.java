@@ -26,7 +26,7 @@ public final class GeologyDataReload {
     private static final Identifier SUCCESSIONS = GeoStrata.id("geology/sedimentary_successions.json");
     private static final Identifier FIELD_PROFILES = GeoStrata.id("geology/sedimentary_field_profiles.json");
     private static final Identifier EXPERIMENT = GeoStrata.id("geology/correlated_sedimentary_experiment.json");
-    private static final List<String> COMPANION_ARCHITECTURE_LITHOLOGIES = List.of(
+    private static final List<String> RUNTIME_ARCHITECTURE_LITHOLOGIES = List.of(
             "gneiss",
             "schist",
             "phyllite",
@@ -53,8 +53,7 @@ public final class GeologyDataReload {
                     readObject(manager, PROVINCES),
                     readObject(manager, SUCCESSIONS),
                     readObject(manager, FIELD_PROFILES),
-                    readObject(manager, EXPERIMENT),
-                    companionLoaded
+                    readObject(manager, EXPERIMENT)
             );
             OreDepositExperiment.Snapshot oreExperiment = loaded.oreExperiment().activated(companionLoaded);
             DiamondGeologyExperiment.Snapshot diamondExperiment = DiamondGeologyExperiment.parse(
@@ -99,13 +98,10 @@ public final class GeologyDataReload {
             JsonObject provincesRoot,
             JsonObject successionsRoot,
             JsonObject fieldProfilesRoot,
-            JsonObject experimentRoot,
-            boolean companionLoaded
+            JsonObject experimentRoot
     ) {
         LithologyCatalog.Snapshot lithologies = LithologyCatalog.parse(lithologiesRoot);
-        if (companionLoaded) {
-            validateCompanionArchitectureLithologies(lithologies);
-        }
+        validateRuntimeArchitectureLithologies(lithologies);
         OreOccurrenceCatalog.Snapshot oreOccurrences = OreOccurrenceCatalog.parse(
                 lithologies,
                 oreOccurrencesRoot
@@ -125,7 +121,7 @@ public final class GeologyDataReload {
                 successions,
                 lithologies,
                 provinces
-        ).activated(companionLoaded);
+        );
         return new State(
                 lithologies,
                 oreOccurrences,
@@ -137,13 +133,13 @@ public final class GeologyDataReload {
         );
     }
 
-    private static void validateCompanionArchitectureLithologies(LithologyCatalog.Snapshot lithologies) {
-        for (String lithology : COMPANION_ARCHITECTURE_LITHOLOGIES) {
+    private static void validateRuntimeArchitectureLithologies(LithologyCatalog.Snapshot lithologies) {
+        for (String lithology : RUNTIME_ARCHITECTURE_LITHOLOGIES) {
             try {
                 lithologies.require(lithology);
             } catch (IllegalArgumentException exception) {
                 throw new IllegalArgumentException(
-                        "companion province architecture requires lithology " + lithology,
+                        "core province architecture requires lithology " + lithology,
                         exception
                 );
             }

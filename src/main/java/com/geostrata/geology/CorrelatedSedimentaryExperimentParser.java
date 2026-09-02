@@ -27,9 +27,13 @@ final class CorrelatedSedimentaryExperimentParser {
 
         requireInt(experiment, "schemaVersion", 2);
         requireString(experiment, "model", "geostrata:correlated_sedimentary_experiment");
-        requireString(experiment, "runtimeStatus", "metadata_only");
-        if (requireBoolean(experiment, "enabled")) {
-            throw new IllegalArgumentException("core correlated experiment must remain disabled");
+        String runtimeStatus = requireString(experiment, "runtimeStatus");
+        boolean enabled = requireBoolean(experiment, "enabled");
+        if (!"metadata_only".equals(runtimeStatus) && !"core_runtime".equals(runtimeStatus)) {
+            throw new IllegalArgumentException("runtimeStatus must be metadata_only or core_runtime");
+        }
+        if (enabled != "core_runtime".equals(runtimeStatus)) {
+            throw new IllegalArgumentException("enabled must match core_runtime status");
         }
 
         Set<String> targetIds = stringSet(requiredArray(experiment, "targetSuccessionIds"), "targetSuccessionIds");
@@ -45,8 +49,8 @@ final class CorrelatedSedimentaryExperimentParser {
         requireString(experiment, "verticalDomain", "dimension_bounds");
 
         return new CorrelatedSedimentaryExperiment.Snapshot(
-                "metadata_only",
-                false,
+                runtimeStatus,
+                enabled,
                 immutableCopy(targetIds),
                 immutableCopy(allowedProvinces),
                 immutableCopy(supersededLithologies),

@@ -11,7 +11,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 final class CorrelatedSedimentaryExperimentTest {
     @Test
-    void parsesDisabledCoreContract() {
+    void parsesDisabledMetadataContract() {
         CorrelatedSedimentaryExperiment.Snapshot snapshot = fixture().parse(
                 experiment(false, "metadata_only", 96, "alpha", "beta")
         );
@@ -23,6 +23,17 @@ final class CorrelatedSedimentaryExperimentTest {
     }
 
     @Test
+    void parsesEnabledCoreRuntimeContract() {
+        CorrelatedSedimentaryExperiment.Snapshot snapshot = fixture().parse(
+                experiment(true, "core_runtime", 96, "alpha", "beta")
+        );
+
+        assertTrue(snapshot.enabled());
+        assertEquals("core_runtime", snapshot.runtimeStatus());
+        assertTrue(snapshot.verticalWindow().isFullDimension());
+    }
+
+    @Test
     void rejectsLegacySeaLevelWindowSchema() {
         JsonObject legacy = experiment(false, "metadata_only", 96, "alpha", "beta");
         legacy.addProperty("schemaVersion", 1);
@@ -30,11 +41,15 @@ final class CorrelatedSedimentaryExperimentTest {
     }
 
     @Test
-    void coreContractRejectsEmbeddedActivation() {
+    void rejectsMismatchedRuntimeState() {
         Fixture fixture = fixture();
         assertThrows(
                 IllegalArgumentException.class,
                 () -> fixture.parse(experiment(true, "metadata_only", 96, "alpha", "beta"))
+        );
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> fixture.parse(experiment(false, "core_runtime", 96, "alpha", "beta"))
         );
         assertThrows(
                 IllegalArgumentException.class,
@@ -43,14 +58,21 @@ final class CorrelatedSedimentaryExperimentTest {
     }
 
     @Test
-    void companionPresenceActivatesCoreContract() {
-        CorrelatedSedimentaryExperiment.Snapshot active = fixture().parse(
+    void backgroundRuntimeAcceptsEnabledCoreAndRejectsDisabled() {
+        Fixture fixture = fixture();
+        CorrelatedSedimentaryExperiment.Snapshot core = fixture.parse(
+                experiment(true, "core_runtime", 96, "alpha", "beta")
+        );
+        CorrelatedSedimentaryExperiment.Snapshot disabled = fixture.parse(
                 experiment(false, "metadata_only", 96, "alpha", "beta")
-        ).activated(true);
+        );
 
-        assertTrue(active.enabled());
-        assertEquals("experimental_runtime", active.runtimeStatus());
-        assertTrue(active.verticalWindow().isFullDimension());
+        assertTrue(ProvinceBackgroundRuntime.ready(
+                core, fixture.profiles(), fixture.successions(), fixture.fieldProfiles()
+        ));
+        assertFalse(ProvinceBackgroundRuntime.ready(
+                disabled, fixture.profiles(), fixture.successions(), fixture.fieldProfiles()
+        ));
     }
 
     @Test
@@ -65,8 +87,8 @@ final class CorrelatedSedimentaryExperimentTest {
     void evaluatesOwnedSedimentaryBasinInteriorDeterministically() {
         Fixture fixture = fixture();
         CorrelatedSedimentaryExperiment.Snapshot active = fixture.parse(
-                experiment(false, "metadata_only", 96, "alpha", "beta")
-        ).activated(true);
+                experiment(true, "core_runtime", 96, "alpha", "beta")
+        );
 
         CorrelatedSedimentaryExperiment.Ownership ownership = CorrelatedSedimentaryExperiment.evaluate(
                 0L,
@@ -87,8 +109,8 @@ final class CorrelatedSedimentaryExperimentTest {
     void boundaryExclusionWinsBeforeMutationOwnership() {
         Fixture fixture = fixture();
         CorrelatedSedimentaryExperiment.Snapshot active = fixture.parse(
-                experiment(false, "metadata_only", 180, "alpha", "beta")
-        ).activated(true);
+                experiment(true, "core_runtime", 180, "alpha", "beta")
+        );
 
         CorrelatedSedimentaryExperiment.Ownership ownership = CorrelatedSedimentaryExperiment.evaluate(
                 0L,
@@ -127,8 +149,8 @@ final class CorrelatedSedimentaryExperimentTest {
     void runtimeResolutionUsesOneFieldForTheWholeChunk() {
         Fixture fixture = fixture();
         CorrelatedSedimentaryExperiment.Snapshot active = fixture.parse(
-                experiment(false, "metadata_only", 96, "alpha", "beta")
-        ).activated(true);
+                experiment(true, "core_runtime", 96, "alpha", "beta")
+        );
 
         var first = CorrelatedSedimentaryRuntime.resolve(
                 0L,

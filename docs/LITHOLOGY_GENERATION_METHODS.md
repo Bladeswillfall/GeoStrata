@@ -2,20 +2,20 @@
 
 GeoStrata no longer uses vanilla `minecraft:ore` blobs as the baseline generator for natural rock or soil blocks.
 
-## Baseline geometry
+## Legacy/fallback geometry
 
-The existing `*_ore` feature IDs are retained as stable datapack/worldgen identifiers, but the names are historical. All fourteen ordinary GeoStrata rock fallbacks use `geostrata:strata_lens` with data-driven geometry suited to their body style and province suitability.
+The existing `*_ore` feature IDs are retained as stable datapack/worldgen identifiers, but the names are historical. The fourteen ordinary GeoStrata rock fallback resources use `geostrata:strata_lens` with data-driven geometry suited to their body style and province suitability; normal core worldgen no longer attaches those fallback rock placed features to overworld biomes.
 
 - Bedded sedimentary rocks use broad, comparatively planar lenses.
 - Coarse clastics use local tapered lenses/beds.
 - Slate, schist and quartzite use thinner, more deformed fallback bands; gneiss uses a broader, thicker fallback body; marble uses a local band/lens.
 - Basalt uses a broad, thin sheet-like profile; rhyolite uses a smaller, thicker local volcanic-body profile.
 
-Baseline placed features use `geostrata:subsurface_anchor` instead of a fixed Minecraft `height_range`. After the ordinary in-chunk X/Z choice, the modifier reads that column's `OCEAN_FLOOR_WG` height and chooses the body's Y anchor between the active world's real bottom and the generated rock surface. A tall mountain can therefore receive fallback geology even when the dimension's ceiling is unchanged, while a deeper custom dimension naturally exposes a larger subsurface column.
+If explicitly re-enabled by a datapack or compatibility layer, those placed features use `geostrata:subsurface_anchor` instead of a fixed Minecraft `height_range`. After the ordinary in-chunk X/Z choice, the modifier reads that column's `OCEAN_FLOOR_WG` height and chooses the body's Y anchor between the active world's real bottom and the generated rock surface. A tall mountain can therefore receive fallback geology even when the dimension's ceiling is unchanged, while a deeper custom dimension naturally exposes a larger subsurface column.
 
 The replacement predicate remains authoritative: bedrock, air, caves, fluids and unrelated blocks are skipped rather than overwritten. Body thickness and shape are **not** scaled with either terrain height or dimension height.
 
-The independent lenses remain conservative compatibility fallbacks: terrain height does not increase their per-chunk attempt count. Coherent full-domain geology is the responsibility of the correlated field where that experiment owns a chunk.
+These independent lenses are compatibility resources rather than the normal core authority. Coherent full-domain geology is owned by the correlated sedimentary and province-background runtimes.
 
 ## Block ownership and generation authority
 
@@ -30,7 +30,7 @@ A provider-owned block cannot claim a GeoStrata fallback feature. A GeoStrata-ow
 
 Vanilla granite and diorite use `runtimeAuthority: volcanic_arc_complex`, so GeoStrata gives the vanilla blocks geological meaning and coherent placement without creating duplicate granite/diorite blocks or fallback features.
 
-Vanilla sandstone is the first provider-owned sedimentary example. It uses `runtimeAuthority: sedimentary_stratigraphy`: GeoStrata reuses `minecraft:sandstone` in the shared succession/stratigraphic runtime rather than adding a duplicate sandstone block or an independent sandstone blob feature. Correlated owned chunks and the advanced province-background sedimentary path can therefore share the same parent semantics.
+Vanilla sandstone is the first provider-owned sedimentary example. It uses `runtimeAuthority: sedimentary_stratigraphy`: GeoStrata reuses `minecraft:sandstone` in the shared succession/stratigraphic runtime rather than adding a duplicate sandstone block or an independent sandstone blob feature. Correlated owned chunks and the province-background sedimentary path can therefore share the same parent semantics.
 
 Hornfels is a GeoStrata-owned runtime-only contact product. It uses `runtimeAuthority: contact_metamorphism`; there is deliberately no `hornfels_ore` feature and therefore no independent random hornfels body.
 
@@ -40,7 +40,7 @@ The same ownership rule is intended for compatibility adapters: a loaded third-p
 
 ## Volcanic-arc intrusive zoning
 
-The advanced Volcanic Arc runtime reuses its existing deterministic volcanic-complex ellipsoid rather than adding a second intrusion generator.
+The core Volcanic Arc runtime reuses its existing deterministic volcanic-complex ellipsoid rather than adding a second intrusion generator.
 
 Within that same complex:
 
@@ -68,7 +68,7 @@ The aureole reuses the existing complex radius and adds no second thermal noise 
 
 ## Correlated authority
 
-With the experiment companion active, the correlated runtime is authoritative for the configured sedimentary-basin, rift and orogenic successions. All target succession lithologies are emitted from the shared terrain-aware stratigraphic field instead of independent fallback bodies where the experiment owns a chunk.
+In normal core worlds, the correlated runtime is authoritative for the configured sedimentary-basin, rift and orogenic successions. All target succession lithologies are emitted from the shared terrain-aware stratigraphic field instead of independent fallback bodies where the correlated contract owns a chunk.
 
 The correlated contract uses the active dimension bounds as its vertical domain rather than a fixed sea-level-relative window. Bed/cycle thickness stays geological rather than scaling with the number of vertical blocks in the world.
 
@@ -87,12 +87,12 @@ In owned orogenic chunks, metamorphic suitability combines with the resolved par
 - quartz-sandstone parents → quartzite;
 - unsupported parents remain unchanged.
 
-Sandstone outside an orogenic metamorphic context remains ordinary vanilla sandstone. Baseline metamorphic lenses remain a compatibility fallback outside correlated ownership; phyllite is runtime-only and therefore does not add another baseline lens.
+Sandstone outside an orogenic metamorphic context remains ordinary vanilla sandstone. Province-background metamorphic architecture owns the remaining appropriate metamorphic terrain; phyllite is runtime-only and therefore does not add another baseline lens.
 
 Basalt and rhyolite remain independent bodies and may cut sedimentary strata; that is intentional for igneous rock.
 
 ## Remaining boundary
 
-Provider-owned sandstone deliberately has no independent GeoStrata fallback feature. It exists only where the advanced sedimentary-stratigraphy runtime owns the geology. If standalone/non-companion worlds later need coherent sandstone geology, that should reuse native/platform terrain geology rather than reintroducing a random duplicate sandstone body solely to increase coverage.
+Provider-owned sandstone deliberately has no independent GeoStrata fallback feature. It exists where the core sedimentary-stratigraphy runtime owns the geology. Disabling the correlated contract with a datapack is a diagnostic/recovery action and does not resurrect a random duplicate sandstone body or the retired legacy rock attachments.
 
 Sandy loam uses the same native `minecraft:disk` plus terrain/biome suitability approach as the other surface loams rather than an underground ore feature.

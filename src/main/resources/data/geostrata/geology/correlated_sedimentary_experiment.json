@@ -1,9 +1,9 @@
 {
   "schemaVersion": 2,
   "model": "geostrata:correlated_sedimentary_experiment",
-  "runtimeStatus": "metadata_only",
-  "enabled": false,
-  "description": "Disabled-by-default contract for correlated sedimentary worldgen experiments. The separate experimental companion mod activates the validated contract across the active dimension's real vertical bounds.",
+  "runtimeStatus": "core_runtime",
+  "enabled": true,
+  "description": "Core correlated sedimentary geology contract. GeoStrata owns coherent province/succession host geology across the active dimension's real vertical bounds.",
   "targetSuccessionIds": [
     "basin_mudrock_carbonate_cycle",
     "shelf_chalk_carbonate_cycle",

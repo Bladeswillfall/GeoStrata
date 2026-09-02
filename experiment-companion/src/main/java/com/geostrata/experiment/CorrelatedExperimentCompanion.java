@@ -6,24 +6,15 @@ import net.fabricmc.fabric.api.biome.v1.BiomeModifications;
 import net.fabricmc.fabric.api.biome.v1.BiomeSelectors;
 import net.fabricmc.fabric.api.biome.v1.ModificationPhase;
 import net.minecraft.registry.RegistryKey;
-import net.minecraft.registry.RegistryKeys;
-import net.minecraft.registry.tag.TagKey;
-import net.minecraft.world.biome.Biome;
 import net.minecraft.world.gen.GenerationStep;
 import net.minecraft.world.gen.feature.OrePlacedFeatures;
 import net.minecraft.world.gen.feature.PlacedFeature;
 
 import java.util.List;
 
-/** Explicit opt-in companion that makes GeoStrata's experimental worldgen reachable. */
+/** Explicit opt-in companion for experimental ore/diamond worldgen and debug tools. */
 public final class CorrelatedExperimentCompanion implements ModInitializer {
     private static final String BENCHMARK_SUPPRESS_DIAMOND_ENV = "GEOSTRATA_BENCHMARK_SUPPRESS_VANILLA_DIAMOND";
-    private static final TagKey<Biome> REGISTRATION_BIOMES = TagKey.of(
-            RegistryKeys.BIOME,
-            GeoStrata.id("has_common_rocks")
-    );
-    private static final RegistryKey<PlacedFeature> CORRELATED_FEATURE = geostrataFeature("correlated_sedimentary_experiment");
-    private static final RegistryKey<PlacedFeature> BACKGROUND_FEATURE = geostrataFeature("province_background_experiment");
     private static final List<RegistryKey<PlacedFeature>> REPLACED_VANILLA_OVERWORLD_ORES = List.of(
             OrePlacedFeatures.ORE_COAL_UPPER,
             OrePlacedFeatures.ORE_COAL_LOWER,
@@ -37,22 +28,6 @@ public final class CorrelatedExperimentCompanion implements ModInitializer {
             OrePlacedFeatures.ORE_DIAMOND,
             OrePlacedFeatures.ORE_DIAMOND_LARGE,
             OrePlacedFeatures.ORE_DIAMOND_BURIED
-    );
-    private static final List<RegistryKey<PlacedFeature>> REPLACED_GEOSTRATA_FALLBACK_ROCKS = List.of(
-            geostrataFeature("limestone_ore"),
-            geostrataFeature("shale_ore"),
-            geostrataFeature("mudstone_ore"),
-            geostrataFeature("basalt_ore"),
-            geostrataFeature("chalk_ore"),
-            geostrataFeature("siltstone_ore"),
-            geostrataFeature("conglomerate_ore"),
-            geostrataFeature("slate_ore"),
-            geostrataFeature("marble_ore"),
-            geostrataFeature("quartzite_ore"),
-            geostrataFeature("schist_ore"),
-            geostrataFeature("gneiss_ore"),
-            geostrataFeature("rhyolite_ore"),
-            geostrataFeature("breccia_ore")
     );
 
     @Override
@@ -75,33 +50,14 @@ public final class CorrelatedExperimentCompanion implements ModInitializer {
                                                 feature
                                         ));
                             }
-                            REPLACED_GEOSTRATA_FALLBACK_ROCKS.forEach(feature ->
-                                    context.getGenerationSettings().removeFeature(
-                                            GenerationStep.Feature.UNDERGROUND_ORES,
-                                            feature
-                                    ));
                         }
                 );
-        BiomeModifications.addFeature(
-                BiomeSelectors.tag(REGISTRATION_BIOMES),
-                GenerationStep.Feature.TOP_LAYER_MODIFICATION,
-                CORRELATED_FEATURE
-        );
-        BiomeModifications.addFeature(
-                BiomeSelectors.tag(REGISTRATION_BIOMES),
-                GenerationStep.Feature.TOP_LAYER_MODIFICATION,
-                BACKGROUND_FEATURE
-        );
         OreDebugCommands.register();
         GeoStrata.LOGGER.info(
-                "GeoStrata experimental worldgen companion enabled; authoritative geology and proven common overworld ores replace fallback rock blobs and native coal/iron/copper generation"
+                "GeoStrata experimental worldgen companion enabled; proven common overworld ores replace native coal/iron/copper generation"
         );
         if (benchmarkSuppressVanillaDiamond) {
             GeoStrata.LOGGER.info("GeoStrata benchmark mode: vanilla diamond generation suppressed for attribution");
         }
-    }
-
-    private static RegistryKey<PlacedFeature> geostrataFeature(String path) {
-        return RegistryKey.of(RegistryKeys.PLACED_FEATURE, GeoStrata.id(path));
     }
 }

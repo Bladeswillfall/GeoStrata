@@ -4,13 +4,13 @@ GeoStrata is a world-level geology system rather than a collection of decorative
 
 ## Runtime authority
 
-Standalone GeoStrata retains the natural-rock `strata_lens` compatibility fallback. The opt-in experiment companion enables the advanced runtime.
+Normal GeoStrata core worlds enable the correlated sedimentary and province-background geology runtime directly. The fourteen ordinary legacy rock-lens placed features are no longer attached to overworld biomes; their stable resource IDs may remain for datapack/compatibility purposes. The optional experiment companion does not own geology activation.
 
-Advanced authority is layered rather than monolithic:
+Core authority is layered rather than monolithic:
 
 1. the active terrain generator creates terrain;
 2. `GeologyProvinceSampler` resolves regional province/site context;
-3. `CorrelatedSedimentaryRuntime` owns eligible ordered sedimentary host in experiment-owned chunks;
+3. `CorrelatedSedimentaryRuntime` owns eligible ordered sedimentary host in correlated-owned chunks;
 4. `ProvinceBackgroundRuntime` resolves the remaining province architecture;
 5. the shared structural field deforms those geological authorities;
 6. metamorphism, fault damage, diamonds and ore deposits consume the same semantic geology;
@@ -68,7 +68,7 @@ Uses metamorphic basement cut by igneous/volcanic bodies:
 
 The plutonic root reuses the same deterministic complex geometry as the rhyolite body rather than adding a second intrusion engine. Contact aureole geometry likewise reuses that complex and lets parent lithology decide the thermal product.
 
-The rejected one-rock-per-province fill and later repeated four-lithology background matrix are no longer part of the advanced runtime.
+The rejected one-rock-per-province fill and later repeated four-lithology background matrix are no longer part of the core runtime.
 
 ## Province contacts
 
