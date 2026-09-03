@@ -6,9 +6,18 @@ GeoStrata exposes subtle player-facing signs of geology without adding a second 
 
 `HydrocarbonReservoirField` is a deterministic semantic field keyed by world seed and 384-block cells. A reservoir can only exist where the resolved deep lithology is sedimentary. Source-rich mudrocks are favored, followed by carbonates, sandstone, silt-rich sediments and coarse clastics.
 
-The field does not place an oil block or invent a processing chain. That is deliberate: GeoStrata owns the geological occurrence, while a future optional petroleum mod can own fluids, pumps and refining. The returned reservoir record provides stable center/radius, pressure, concentration and seep coordinates for those integrations.
+The field does not place an oil fluid or invent a processing chain. That is deliberate: GeoStrata owns the geological occurrence, while a future optional petroleum mod can own fluids, pumps and refining. The returned reservoir record provides stable center/radius, pressure, concentration and seep coordinates for those integrations.
 
-For current gameplay, sufficiently pressured reservoirs can produce sparse black seep particles at their deterministic surface seep point while a player is nearby. This makes oil-bearing ground discoverable without permanently painting the surface or running another chunk feature.
+Sufficiently pressured reservoirs now leave two linked clues at their deterministic surface seep point while a player is nearby:
+
+- sparse black seep/smoke particles show that the seep is active;
+- a persistent `petroleum_stain` multiface block marks a small deterministic patch of affected ground and exposed rock.
+
+`petroleum_stain` deliberately reuses Minecraft's native sculk-vein / lichen-style multiface behavior instead of replacing every possible host with a petroleum-specific block. One stain block can cling to several adjacent faces, including sloped terrain and exposed rock edges.
+
+The patch uses only existing vanilla dark/brown textures and thin model geometry, so no custom renderer or host-by-host texture matrix is required. It attaches only to plausible natural supports: dirt, sand, clay, mud, gravel, vanilla Overworld base stone and GeoStrata rock blocks. It does not replace vegetation or arbitrary occupied blocks.
+
+The stain is materialized lazily from the same seep query that already drives particles. Once placed it persists normally in the world, and repeated checks become read-only. This gives existing saves the physical clue without adding another chunk-generation pass.
 
 ## Firedamp mist
 
@@ -41,11 +50,12 @@ The scan is bounded to a 13 x 9 x 13 volume around each underground player and r
 These indicators are deliberately post-generation and local:
 
 - no new worldgen pass;
-- no persistent per-chunk state;
+- no persistent per-chunk geology state;
 - no per-tick full-radius scan;
 - hydrocarbon geometry and gas potential are reconstructed from seed + geology;
+- petroleum stain writes are bounded to a tiny patch and stop once the deterministic faces already exist;
 - coal haze only examines a small loaded neighborhood once per second;
 - firedamp scans for nearby heat sources only after a rare gas-prone geology match;
-- particles are cosmetic evidence, not geological authority.
+- particles and stain blocks are evidence, not geological authority.
 
 Future indicators should reuse this pattern: query existing semantic geology or generated blocks, remain deterministic where appropriate, and avoid creating a parallel geology model.

@@ -1,0 +1,42 @@
+{
+  "ambientocclusion": false,
+  "textures": {
+    "particle": "minecraft:block/brown_concrete_powder",
+    "dark": "minecraft:block/black_concrete_powder",
+    "brown": "minecraft:block/brown_concrete_powder"
+  },
+  "elements": [
+    {
+      "from": [1, 1, 0.1],
+      "to": [8, 6, 0.1],
+      "faces": {
+        "north": {"uv": [1, 1, 8, 6], "texture": "#dark"},
+        "south": {"uv": [1, 1, 8, 6], "texture": "#dark"}
+      }
+    },
+    {
+      "from": [6, 4, 0.1],
+      "to": [15, 10, 0.1],
+      "faces": {
+        "north": {"uv": [6, 4, 15, 10], "texture": "#brown"},
+        "south": {"uv": [6, 4, 15, 10], "texture": "#brown"}
+      }
+    },
+    {
+      "from": [3, 9, 0.1],
+      "to": [10, 15, 0.1],
+      "faces": {
+        "north": {"uv": [3, 9, 10, 15], "texture": "#dark"},
+        "south": {"uv": [3, 9, 10, 15], "texture": "#dark"}
+      }
+    },
+    {
+      "from": [11, 11, 0.1],
+      "to": [15, 14, 0.1],
+      "faces": {
+        "north": {"uv": [11, 11, 15, 14], "texture": "#brown"},
+        "south": {"uv": [11, 11, 15, 14], "texture": "#brown"}
+      }
+    }
+  ]
+}

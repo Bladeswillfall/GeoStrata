@@ -1,0 +1,10 @@
+{
+  "multipart": [
+    {"when": {"north": "true"}, "apply": {"model": "geostrata:block/petroleum_stain"}},
+    {"when": {"east": "true"}, "apply": {"model": "geostrata:block/petroleum_stain", "y": 90, "uvlock": true}},
+    {"when": {"south": "true"}, "apply": {"model": "geostrata:block/petroleum_stain", "y": 180, "uvlock": true}},
+    {"when": {"west": "true"}, "apply": {"model": "geostrata:block/petroleum_stain", "y": 270, "uvlock": true}},
+    {"when": {"up": "true"}, "apply": {"model": "geostrata:block/petroleum_stain", "x": 270, "uvlock": true}},
+    {"when": {"down": "true"}, "apply": {"model": "geostrata:block/petroleum_stain", "x": 90, "uvlock": true}}
+  ]
+}
