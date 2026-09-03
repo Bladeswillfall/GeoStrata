@@ -247,6 +247,20 @@
       ]
     },
     {
+      "id": "modern_industrialization",
+      "displayName": "Modern Industrialization",
+      "modIds": ["modern_industrialization"],
+      "materials": [
+        {
+          "canonicalMaterial": "tin",
+          "providerBlocks": ["modern_industrialization:tin_ore", "modern_industrialization:deepslate_tin_ore"],
+          "providerOutput": "modern_industrialization:raw_tin",
+          "commonTags": ["c:ores/tin", "c:raw_materials/tin"],
+          "status": "catalogued"
+        }
+      ]
+    },
+    {
       "id": "create_new_age",
       "displayName": "Create: New Age",
       "modIds": ["create_new_age"],
@@ -333,7 +347,7 @@
       "scope": "core_geology",
       "canonicalRole": "geostrata:rock/igneous/granite",
       "minecraftBlock": "minecraft:granite",
-      "priorityConsumers": ["create", "create_dreams_and_desires", "create_new_age", "tfmg", "create_nuclear"],
+      "priorityConsumers": ["create", "create_dreams_and_desires", "modern_industrialization", "create_new_age", "tfmg", "create_nuclear"],
       "status": "implemented"
     },
     {

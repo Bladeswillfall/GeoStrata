@@ -77,8 +77,21 @@ final class OptionalOreProviderTest {
     }
 
     @Test
-    void missingTinProviderOutputRemovesOnlyTin() throws IOException {
+    void missingPreferredTinProviderFallsBackToModernIndustrialization() throws IOException {
         GeologyDataReload.State state = parse(output -> !"create_dd:raw_tin".equals(output));
+
+        OreOccurrenceCatalog.Occurrence tin = state.oreOccurrences().require("tin");
+        assertEquals("modern_industrialization", tin.providerMod());
+        assertEquals("modern_industrialization:raw_tin", tin.outputItem());
+        assertEquals(0.28, state.oreExperiment().activationChance("tin"), 1.0e-12);
+    }
+
+    @Test
+    void missingAllTinProviderOutputsRemovesOnlyTin() throws IOException {
+        GeologyDataReload.State state = parse(output ->
+                !"create_dd:raw_tin".equals(output)
+                        && !"modern_industrialization:raw_tin".equals(output)
+        );
 
         assertFalse(state.oreOccurrences().byId().containsKey("tin"));
         assertFalse(state.oreExperiment().activationChancePerCandidate().containsKey("tin"));

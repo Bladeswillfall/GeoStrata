@@ -28,6 +28,20 @@ public final class CorrelatedExperimentCompanion implements ModInitializer {
             RegistryKeys.PLACED_FEATURE,
             new Identifier("create_dd", "tin_ore")
     );
+    private static final Identifier MODERN_INDUSTRIALIZATION_RAW_TIN = new Identifier(
+            "modern_industrialization",
+            "raw_tin"
+    );
+    private static final List<RegistryKey<PlacedFeature>> MODERN_INDUSTRIALIZATION_TIN_ORES = List.of(
+            RegistryKey.of(
+                    RegistryKeys.PLACED_FEATURE,
+                    new Identifier("modern_industrialization", "ore_generator_tin")
+            ),
+            RegistryKey.of(
+                    RegistryKeys.PLACED_FEATURE,
+                    new Identifier("modern_industrialization", "deepslate_ore_generator_tin")
+            )
+    );
     private static final Identifier CREATE_NEW_AGE_THORIUM = new Identifier("create_new_age", "thorium");
     private static final RegistryKey<PlacedFeature> CREATE_NEW_AGE_THORIUM_ORE = RegistryKey.of(
             RegistryKeys.PLACED_FEATURE,
@@ -63,6 +77,13 @@ public final class CorrelatedExperimentCompanion implements ModInitializer {
                                             GenerationStep.Feature.UNDERGROUND_ORES,
                                             CREATE_DD_TIN_ORE
                                     );
+                                }
+                                if (Registries.ITEM.containsId(MODERN_INDUSTRIALIZATION_RAW_TIN)) {
+                                    MODERN_INDUSTRIALIZATION_TIN_ORES.forEach(feature ->
+                                            context.getGenerationSettings().removeFeature(
+                                                    GenerationStep.Feature.UNDERGROUND_ORES,
+                                                    feature
+                                            ));
                                 }
                                 if (Registries.ITEM.containsId(CREATE_NEW_AGE_THORIUM)) {
                                     context.getGenerationSettings().removeFeature(
