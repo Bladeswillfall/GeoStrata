@@ -288,6 +288,10 @@ def main() -> None:
                 ("ore_generator_uranium", "deepslate_ore_generator_uranium"),
             ),
         ],
+        "lead": [
+            ("tfmg", "raw_lead", ("lead_ore",)),
+            ("createnuclear", "raw_lead", ("lead_ore",)),
+        ],
     }
     for material, contracts in suppression_contracts.items():
         if material not in occurrences:
