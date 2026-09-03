@@ -12,6 +12,7 @@ import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.Heightmap;
+import net.minecraft.world.World;
 
 import java.util.Optional;
 
@@ -31,7 +32,7 @@ public final class FabricGeologicalIndicatorRegistration {
     }
 
     private static void tickWorld(ServerWorld world) {
-        if (world.getTime() % TICK_INTERVAL != 0L) {
+        if (!World.OVERWORLD.equals(world.getRegistryKey()) || world.getTime() % TICK_INTERVAL != 0L) {
             return;
         }
         for (ServerPlayerEntity player : world.getPlayers()) {
@@ -128,6 +129,11 @@ public final class FabricGeologicalIndicatorRegistration {
         }
 
         int seepY = world.getTopY(Heightmap.Type.MOTION_BLOCKING_NO_LEAVES, body.seepX(), body.seepZ());
+        BlockState surface = world.getBlockState(new BlockPos(body.seepX(), seepY - 1, body.seepZ()));
+        if (!supportsOilSeep(surface)) {
+            return;
+        }
+
         world.spawnParticles(
                 ParticleTypes.SQUID_INK,
                 body.seepX() + 0.5,
@@ -150,5 +156,13 @@ public final class FabricGeologicalIndicatorRegistration {
                 0.2,
                 0.002
         );
+    }
+
+    private static boolean supportsOilSeep(BlockState state) {
+        return state.isIn(BlockTags.DIRT)
+                || state.isIn(BlockTags.SAND)
+                || state.isOf(Blocks.CLAY)
+                || state.isOf(Blocks.MUD)
+                || state.isOf(Blocks.GRAVEL);
     }
 }
