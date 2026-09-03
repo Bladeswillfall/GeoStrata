@@ -15,6 +15,7 @@ import com.geostrata.geology.SedimentaryFieldProfiles;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.minecraft.block.BlockState;
+import net.minecraft.registry.Registries;
 import net.minecraft.registry.RegistryKeys;
 import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.registry.tag.TagKey;
@@ -197,10 +198,10 @@ final class OreDebugCommands {
         }
 
         OreDepositGeometry.Body body = binding.body(seed);
-        if (scanPlacedOre(world, body, occurrence.id(), STRUCTURAL_SCAN_STRIDE).isEmpty()) {
+        if (scanPlacedOre(world, body, occurrence, STRUCTURAL_SCAN_STRIDE).isEmpty()) {
             return Optional.empty();
         }
-        return scanPlacedOre(world, body, occurrence.id(), 1);
+        return scanPlacedOre(world, body, occurrence, 1);
     }
 
     private static double surfaceBiomeMultiplier(
@@ -232,7 +233,7 @@ final class OreDebugCommands {
     private static Optional<LocatedOre> scanPlacedOre(
             ServerWorld world,
             OreDepositGeometry.Body body,
-            String material,
+            OreOccurrenceCatalog.Occurrence occurrence,
             int stride
     ) {
         OreDepositGeometry.Bounds bounds = OreExposurePlacement.placementBounds(body);
@@ -246,7 +247,7 @@ final class OreDebugCommands {
         for (int x = bounds.minX(); x <= bounds.maxX(); x += stride) {
             for (int z = bounds.minZ(); z <= bounds.maxZ(); z += stride) {
                 for (int y = minY; y <= maxY; y += stride) {
-                    OreGrade grade = placedGrade(world, body, material, mutable, x, y, z);
+                    OreGrade grade = placedGrade(world, body, occurrence, mutable, x, y, z);
                     if (grade == null) {
                         continue;
                     }
@@ -272,7 +273,7 @@ final class OreDebugCommands {
     private static OreGrade placedGrade(
             ServerWorld world,
             OreDepositGeometry.Body body,
-            String material,
+            OreOccurrenceCatalog.Occurrence occurrence,
             BlockPos.Mutable mutable,
             int x,
             int y,
@@ -284,8 +285,14 @@ final class OreDebugCommands {
         }
         mutable.set(x, y, z);
         BlockState state = world.getBlockState(mutable);
-        if (state.getBlock() instanceof GradedOreBlock ore && ore.material().equals(material)) {
+        if (state.getBlock() instanceof GradedOreBlock ore && ore.material().equals(occurrence.id())) {
             return ore.grade();
+        }
+        String blockId = Registries.BLOCK.getId(state.getBlock()).toString();
+        for (Map.Entry<OreGrade, String> entry : occurrence.naturalBlockOverrides().entrySet()) {
+            if (entry.getValue().equals(blockId)) {
+                return entry.getKey();
+            }
         }
         return null;
     }
