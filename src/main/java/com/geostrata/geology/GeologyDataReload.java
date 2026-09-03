@@ -106,6 +106,12 @@ public final class GeologyDataReload {
                     throw new IllegalArgumentException(occurrence.id() + " references unregistered grade block " + block);
                 }
             }
+            for (String blockId : occurrence.naturalBlockOverrides().values()) {
+                Identifier block = new Identifier(blockId);
+                if (!Registries.BLOCK.containsId(block)) {
+                    throw new IllegalArgumentException(occurrence.id() + " references unregistered natural block " + block);
+                }
+            }
         }
     }
 
