@@ -3,19 +3,16 @@ package com.geostrata.block;
 import com.geostrata.geology.GeologyProvince;
 import com.geostrata.geology.OreGrade;
 import com.geostrata.geology.OreOccurrenceCatalog;
-import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.loot.context.LootContextParameterSet;
 import net.minecraft.util.Identifier;
 import org.junit.jupiter.api.Test;
 
-import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class ProviderResolvedOreLootTest {
@@ -31,22 +28,19 @@ class ProviderResolvedOreLootTest {
                 gradeBlocks("zinc")
         );
         CapturingLootBuilder builder = new CapturingLootBuilder();
-        Item expected = new Item(new Item.Settings());
 
         assertThrows(CapturedDrop.class, () -> GradedOreBlock.addProviderOutputDrop(
                 "zinc",
                 zinc,
                 builder,
                 outputId -> {
-                    assertEquals(new Identifier("test", "resolved_zinc"), outputId);
-                    return new ItemStack(expected);
+                    throw new CapturedOutput(outputId);
                 }
         ));
 
-        List<ItemStack> drops = new ArrayList<>();
-        builder.dynamicDrop.add(drops::add);
-        assertEquals(1, drops.size());
-        assertSame(expected, drops.get(0).getItem());
+        CapturedOutput output = assertThrows(CapturedOutput.class, () -> builder.dynamicDrop.add(ignored -> {
+        }));
+        assertEquals(new Identifier("test", "resolved_zinc"), output.outputId);
     }
 
     private static Map<OreGrade, String> gradeBlocks(String material) {
@@ -76,5 +70,13 @@ class ProviderResolvedOreLootTest {
     }
 
     private static final class CapturedDrop extends RuntimeException {
+    }
+
+    private static final class CapturedOutput extends RuntimeException {
+        private final Identifier outputId;
+
+        private CapturedOutput(Identifier outputId) {
+            this.outputId = outputId;
+        }
     }
 }
