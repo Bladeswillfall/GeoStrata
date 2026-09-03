@@ -293,6 +293,7 @@ def main() -> None:
             ("createnuclear", "raw_lead", ("lead_ore",)),
         ],
         "nickel": [("tfmg", "raw_nickel", ("nickel_ore",))],
+        "lithium": [("tfmg", "raw_lithium", ("lithium_ore",))],
     }
     for material, contracts in suppression_contracts.items():
         if material not in occurrences:

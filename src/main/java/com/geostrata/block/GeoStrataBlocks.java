@@ -127,6 +127,10 @@ public final class GeoStrataBlocks {
     private static final Block MEDIUM_NICKEL_ORE = registerExternalOre("medium_nickel_ore", "nickel", OreGrade.MEDIUM, Blocks.IRON_ORE, 3.0F, BlockSoundGroup.STONE);
     private static final Block RICH_NICKEL_ORE = registerExternalOre("rich_nickel_ore", "nickel", OreGrade.RICH, Blocks.IRON_ORE, 3.0F, BlockSoundGroup.STONE);
     private static final Block MASSIVE_NICKEL_ORE = registerExternalOre("massive_nickel_ore", "nickel", OreGrade.MASSIVE, Blocks.IRON_ORE, 3.0F, BlockSoundGroup.STONE);
+    private static final Block POOR_LITHIUM_ORE = registerExternalOre("poor_lithium_ore", "lithium", OreGrade.POOR, Blocks.IRON_ORE, 3.0F, BlockSoundGroup.STONE);
+    private static final Block MEDIUM_LITHIUM_ORE = registerExternalOre("medium_lithium_ore", "lithium", OreGrade.MEDIUM, Blocks.IRON_ORE, 3.0F, BlockSoundGroup.STONE);
+    private static final Block RICH_LITHIUM_ORE = registerExternalOre("rich_lithium_ore", "lithium", OreGrade.RICH, Blocks.IRON_ORE, 3.0F, BlockSoundGroup.STONE);
+    private static final Block MASSIVE_LITHIUM_ORE = registerExternalOre("massive_lithium_ore", "lithium", OreGrade.MASSIVE, Blocks.IRON_ORE, 3.0F, BlockSoundGroup.STONE);
 
     private GeoStrataBlocks() {
     }

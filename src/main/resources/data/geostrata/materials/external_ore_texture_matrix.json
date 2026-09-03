@@ -14,6 +14,7 @@
     "uranium": {"defaultHost":"granite","validHosts":["granite","rhyolite","gneiss"],"continuity":false},
     "silver": {"defaultHost":"granite","validHosts":["granite","rhyolite","gneiss"],"continuity":false},
     "lead": {"defaultHost":"limestone","validHosts":["limestone","marble","shale","siltstone"],"continuity":false},
-    "nickel": {"defaultHost":"gabbro","validHosts":["gabbro","peridotite"],"continuity":false}
+    "nickel": {"defaultHost":"gabbro","validHosts":["gabbro","peridotite"],"continuity":false},
+    "lithium": {"defaultHost":"granite","validHosts":["granite","gneiss"],"continuity":false}
   }
 }
