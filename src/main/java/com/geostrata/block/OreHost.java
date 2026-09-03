@@ -56,7 +56,7 @@ public enum OreHost implements StringIdentifiable {
             case "coal", "iron", "copper", "zinc" -> SHALE;
             case "lead" -> LIMESTONE;
             case "nickel" -> GABBRO;
-            case "tin", "thorium", "uranium", "silver" -> GRANITE;
+            case "tin", "thorium", "uranium", "silver", "lithium" -> GRANITE;
             case "gold" -> SLATE;
             case "emerald" -> SCHIST;
             default -> throw new IllegalArgumentException("unknown ore material: " + material);
