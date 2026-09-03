@@ -98,6 +98,10 @@ public final class GeoStrataBlocks {
     private static final Block MEDIUM_URANIUM_ORE = registerExternalOre("medium_uranium_ore", "uranium", OreGrade.MEDIUM, Blocks.IRON_ORE, 3.0F, BlockSoundGroup.STONE);
     private static final Block RICH_URANIUM_ORE = registerExternalOre("rich_uranium_ore", "uranium", OreGrade.RICH, Blocks.IRON_ORE, 3.0F, BlockSoundGroup.STONE);
     private static final Block MASSIVE_URANIUM_ORE = registerExternalOre("massive_uranium_ore", "uranium", OreGrade.MASSIVE, Blocks.IRON_ORE, 3.0F, BlockSoundGroup.STONE);
+    private static final Block POOR_SILVER_ORE = registerExternalOre("poor_silver_ore", "silver", OreGrade.POOR, Blocks.IRON_ORE, 3.0F, BlockSoundGroup.STONE);
+    private static final Block MEDIUM_SILVER_ORE = registerExternalOre("medium_silver_ore", "silver", OreGrade.MEDIUM, Blocks.IRON_ORE, 3.0F, BlockSoundGroup.STONE);
+    private static final Block RICH_SILVER_ORE = registerExternalOre("rich_silver_ore", "silver", OreGrade.RICH, Blocks.IRON_ORE, 3.0F, BlockSoundGroup.STONE);
+    private static final Block MASSIVE_SILVER_ORE = registerExternalOre("massive_silver_ore", "silver", OreGrade.MASSIVE, Blocks.IRON_ORE, 3.0F, BlockSoundGroup.STONE);
 
     private GeoStrataBlocks() {
     }
