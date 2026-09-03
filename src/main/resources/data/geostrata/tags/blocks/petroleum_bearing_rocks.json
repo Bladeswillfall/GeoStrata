@@ -1,0 +1,7 @@
+{
+  "replace": false,
+  "values": [
+    "geostrata:oil_shale",
+    "geostrata:oil_sands"
+  ]
+}
