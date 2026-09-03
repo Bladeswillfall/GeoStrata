@@ -5,60 +5,13 @@
   "hostTextureRoot": "geostrata:block/host",
   "overlayTextureRoot": "geostrata:block/external_ore_source",
   "compositeTextureRoot": "geostrata:block/external_ore",
-  "grades": {
-    "poor": {
-      "targetPixels": 18
-    },
-    "medium": {
-      "targetPixels": 38
-    },
-    "rich": {
-      "targetPixels": 68
-    },
-    "massive": {
-      "targetPixels": 118
-    }
-  },
-  "hosts": [
-    "shale",
-    "siltstone",
-    "granite",
-    "gneiss"
-  ],
+  "grades": {"poor":{"targetPixels":18},"medium":{"targetPixels":38},"rich":{"targetPixels":68},"massive":{"targetPixels":118}},
+  "hosts": ["shale","siltstone","granite","gneiss"],
   "ores": {
-    "zinc": {
-      "defaultHost": "shale",
-      "validHosts": [
-        "shale",
-        "siltstone"
-      ],
-      "continuity": false
-    },
-    "tin": {
-      "defaultHost": "granite",
-      "validHosts": [
-        "granite",
-        "gneiss"
-      ],
-      "continuity": false
-    },
-    "thorium": {
-      "defaultHost": "granite",
-      "validHosts": [
-        "granite",
-        "rhyolite",
-        "gneiss"
-      ],
-      "continuity": false
-    },
-    "uranium": {
-      "defaultHost": "granite",
-      "validHosts": [
-        "granite",
-        "rhyolite",
-        "gneiss"
-      ],
-      "continuity": false
-    }
+    "zinc": {"defaultHost":"shale","validHosts":["shale","siltstone"],"continuity":false},
+    "tin": {"defaultHost":"granite","validHosts":["granite","gneiss"],"continuity":false},
+    "thorium": {"defaultHost":"granite","validHosts":["granite","rhyolite","gneiss"],"continuity":false},
+    "uranium": {"defaultHost":"granite","validHosts":["granite","rhyolite","gneiss"],"continuity":false},
+    "silver": {"defaultHost":"granite","validHosts":["granite","rhyolite","gneiss"],"continuity":false}
   }
 }
