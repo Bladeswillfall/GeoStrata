@@ -7,389 +7,53 @@
       "id": "zinc",
       "providerMod": "create",
       "outputItem": "create:raw_zinc",
-      "hostLithologies": [
-        "shale",
-        "siltstone"
-      ],
-      "provinceContexts": [
-        "sedimentary_basin",
-        "rift_province"
-      ],
-      "depositStyles": [
-        "stratiform"
-      ],
-      "formationRoutes": [
-        {
-          "id": "clastic_sediment_hosted",
-          "hostLithologies": [
-            "shale",
-            "siltstone"
-          ],
-          "provinceContexts": [
-            "sedimentary_basin",
-            "rift_province"
-          ],
-          "depositStyles": [
-            "stratiform"
-          ]
-        }
-      ],
-      "generation": {
-        "activationChance": 0.5,
-        "candidateGrid": {
-          "horizontalCellSize": 128,
-          "verticalCellSize": 64,
-          "horizontalMargin": 12,
-          "verticalMargin": 8,
-          "horizontalSearchPaddingBlocks": 176,
-          "verticalSearchPaddingBlocks": 160
-        },
-        "depthAffinity": [
-          {
-            "maxY": -33,
-            "multiplier": 0.45
-          },
-          {
-            "minY": -32,
-            "maxY": 0,
-            "multiplier": 0.9
-          },
-          {
-            "minY": 1,
-            "maxY": 64,
-            "multiplier": 1.25
-          },
-          {
-            "minY": 65,
-            "maxY": 96,
-            "multiplier": 0.55
-          },
-          {
-            "minY": 97,
-            "multiplier": 0.0
-          }
-        ],
-        "bodyScale": 0.85,
-        "discoveryStringers": {
-          "count": 8,
-          "minLength": 32.0,
-          "maxLength": 60.0,
-          "minRadius": 0.52,
-          "maxRadius": 0.74,
-          "exposedHaloBlocks": 2.0
-        }
-      },
-      "gradeBlocks": {
-        "poor": "geostrata:poor_zinc_ore",
-        "medium": "geostrata:medium_zinc_ore",
-        "rich": "geostrata:rich_zinc_ore",
-        "massive": "geostrata:massive_zinc_ore"
-      }
+      "hostLithologies": ["shale", "siltstone"],
+      "provinceContexts": ["sedimentary_basin", "rift_province"],
+      "depositStyles": ["stratiform"],
+      "formationRoutes": [{"id":"clastic_sediment_hosted","hostLithologies":["shale","siltstone"],"provinceContexts":["sedimentary_basin","rift_province"],"depositStyles":["stratiform"]}],
+      "generation": {"activationChance":0.5,"candidateGrid":{"horizontalCellSize":128,"verticalCellSize":64,"horizontalMargin":12,"verticalMargin":8,"horizontalSearchPaddingBlocks":176,"verticalSearchPaddingBlocks":160},"depthAffinity":[{"maxY":-33,"multiplier":0.45},{"minY":-32,"maxY":0,"multiplier":0.9},{"minY":1,"maxY":64,"multiplier":1.25},{"minY":65,"maxY":96,"multiplier":0.55},{"minY":97,"multiplier":0.0}],"bodyScale":0.85,"discoveryStringers":{"count":8,"minLength":32.0,"maxLength":60.0,"minRadius":0.52,"maxRadius":0.74,"exposedHaloBlocks":2.0}},
+      "gradeBlocks": {"poor":"geostrata:poor_zinc_ore","medium":"geostrata:medium_zinc_ore","rich":"geostrata:rich_zinc_ore","massive":"geostrata:massive_zinc_ore"}
     },
     {
       "id": "tin",
-      "providers": [
-        {
-          "providerMod": "create_dreams_and_desires",
-          "outputItem": "create_dd:raw_tin"
-        },
-        {
-          "providerMod": "modern_industrialization",
-          "outputItem": "modern_industrialization:raw_tin"
-        },
-        {
-          "providerMod": "techreborn",
-          "outputItem": "techreborn:raw_tin"
-        }
-      ],
-      "hostLithologies": [
-        "granite",
-        "gneiss"
-      ],
-      "provinceContexts": [
-        "volcanic_arc",
-        "orogenic_belt"
-      ],
-      "depositStyles": [
-        "vein",
-        "disseminated",
-        "massive_lens_or_pocket"
-      ],
-      "formationRoutes": [
-        {
-          "id": "granite_hydrothermal",
-          "hostLithologies": [
-            "granite",
-            "gneiss"
-          ],
-          "provinceContexts": [
-            "volcanic_arc",
-            "orogenic_belt"
-          ],
-          "depositStyles": [
-            "vein",
-            "disseminated"
-          ]
-        },
-        {
-          "id": "pegmatite_greisen",
-          "hostLithologies": [
-            "granite",
-            "gneiss"
-          ],
-          "provinceContexts": [
-            "volcanic_arc"
-          ],
-          "depositStyles": [
-            "vein",
-            "massive_lens_or_pocket"
-          ],
-          "bodyStyles": [
-            "pegmatite_fertile_margin"
-          ]
-        }
-      ],
-      "generation": {
-        "activationChance": 0.28,
-        "candidateGrid": {
-          "horizontalCellSize": 160,
-          "verticalCellSize": 80,
-          "horizontalMargin": 12,
-          "verticalMargin": 8,
-          "horizontalSearchPaddingBlocks": 176,
-          "verticalSearchPaddingBlocks": 160
-        },
-        "depthAffinity": [
-          {
-            "maxY": -49,
-            "multiplier": 0.5
-          },
-          {
-            "minY": -48,
-            "maxY": 24,
-            "multiplier": 1.15
-          },
-          {
-            "minY": 25,
-            "maxY": 80,
-            "multiplier": 0.7
-          },
-          {
-            "minY": 81,
-            "multiplier": 0.0
-          }
-        ],
-        "bodyScale": 0.72,
-        "discoveryStringers": {
-          "count": 6,
-          "minLength": 28.0,
-          "maxLength": 52.0,
-          "minRadius": 0.52,
-          "maxRadius": 0.74,
-          "exposedHaloBlocks": 2.0
-        }
-      },
-      "gradeBlocks": {
-        "poor": "geostrata:poor_tin_ore",
-        "medium": "geostrata:medium_tin_ore",
-        "rich": "geostrata:rich_tin_ore",
-        "massive": "geostrata:massive_tin_ore"
-      }
+      "providers": [{"providerMod":"create_dreams_and_desires","outputItem":"create_dd:raw_tin"},{"providerMod":"modern_industrialization","outputItem":"modern_industrialization:raw_tin"},{"providerMod":"techreborn","outputItem":"techreborn:raw_tin"}],
+      "hostLithologies": ["granite", "gneiss"],
+      "provinceContexts": ["volcanic_arc", "orogenic_belt"],
+      "depositStyles": ["vein", "disseminated", "massive_lens_or_pocket"],
+      "formationRoutes": [{"id":"granite_hydrothermal","hostLithologies":["granite","gneiss"],"provinceContexts":["volcanic_arc","orogenic_belt"],"depositStyles":["vein","disseminated"]},{"id":"pegmatite_greisen","hostLithologies":["granite","gneiss"],"provinceContexts":["volcanic_arc"],"depositStyles":["vein","massive_lens_or_pocket"],"bodyStyles":["pegmatite_fertile_margin"]}],
+      "generation": {"activationChance":0.28,"candidateGrid":{"horizontalCellSize":160,"verticalCellSize":80,"horizontalMargin":12,"verticalMargin":8,"horizontalSearchPaddingBlocks":176,"verticalSearchPaddingBlocks":160},"depthAffinity":[{"maxY":-49,"multiplier":0.5},{"minY":-48,"maxY":24,"multiplier":1.15},{"minY":25,"maxY":80,"multiplier":0.7},{"minY":81,"multiplier":0.0}],"bodyScale":0.72,"discoveryStringers":{"count":6,"minLength":28.0,"maxLength":52.0,"minRadius":0.52,"maxRadius":0.74,"exposedHaloBlocks":2.0}},
+      "gradeBlocks": {"poor":"geostrata:poor_tin_ore","medium":"geostrata:medium_tin_ore","rich":"geostrata:rich_tin_ore","massive":"geostrata:massive_tin_ore"}
     },
     {
       "id": "thorium",
       "providerMod": "create_new_age",
       "outputItem": "create_new_age:thorium",
-      "hostLithologies": [
-        "granite",
-        "rhyolite",
-        "gneiss"
-      ],
-      "provinceContexts": [
-        "volcanic_arc",
-        "cratonic_shield",
-        "orogenic_belt"
-      ],
-      "depositStyles": [
-        "disseminated",
-        "vein",
-        "massive_lens_or_pocket"
-      ],
-      "formationRoutes": [
-        {
-          "id": "felsic_accessory",
-          "hostLithologies": [
-            "granite",
-            "rhyolite",
-            "gneiss"
-          ],
-          "provinceContexts": [
-            "volcanic_arc",
-            "cratonic_shield",
-            "orogenic_belt"
-          ],
-          "depositStyles": [
-            "disseminated",
-            "vein"
-          ]
-        },
-        {
-          "id": "pegmatite_accessory",
-          "hostLithologies": [
-            "granite",
-            "gneiss"
-          ],
-          "provinceContexts": [
-            "volcanic_arc"
-          ],
-          "depositStyles": [
-            "disseminated",
-            "vein",
-            "massive_lens_or_pocket"
-          ],
-          "bodyStyles": [
-            "pegmatite_fertile_margin"
-          ]
-        }
-      ],
-      "generation": {
-        "activationChance": 0.2,
-        "candidateGrid": {
-          "horizontalCellSize": 176,
-          "verticalCellSize": 88,
-          "horizontalMargin": 12,
-          "verticalMargin": 8,
-          "horizontalSearchPaddingBlocks": 192,
-          "verticalSearchPaddingBlocks": 176
-        },
-        "depthAffinity": [
-          {
-            "maxY": -49,
-            "multiplier": 0.4
-          },
-          {
-            "minY": -48,
-            "maxY": 16,
-            "multiplier": 1.15
-          },
-          {
-            "minY": 17,
-            "maxY": 72,
-            "multiplier": 0.65
-          },
-          {
-            "minY": 73,
-            "multiplier": 0.0
-          }
-        ],
-        "bodyScale": 0.68,
-        "discoveryStringers": {
-          "count": 5,
-          "minLength": 26.0,
-          "maxLength": 48.0,
-          "minRadius": 0.5,
-          "maxRadius": 0.7,
-          "exposedHaloBlocks": 2.0
-        }
-      },
-      "gradeBlocks": {
-        "poor": "geostrata:poor_thorium_ore",
-        "medium": "geostrata:medium_thorium_ore",
-        "rich": "geostrata:rich_thorium_ore",
-        "massive": "geostrata:massive_thorium_ore"
-      }
+      "hostLithologies": ["granite", "rhyolite", "gneiss"],
+      "provinceContexts": ["volcanic_arc", "cratonic_shield", "orogenic_belt"],
+      "depositStyles": ["disseminated", "vein", "massive_lens_or_pocket"],
+      "formationRoutes": [{"id":"felsic_accessory","hostLithologies":["granite","rhyolite","gneiss"],"provinceContexts":["volcanic_arc","cratonic_shield","orogenic_belt"],"depositStyles":["disseminated","vein"]},{"id":"pegmatite_accessory","hostLithologies":["granite","gneiss"],"provinceContexts":["volcanic_arc"],"depositStyles":["disseminated","vein","massive_lens_or_pocket"],"bodyStyles":["pegmatite_fertile_margin"]}],
+      "generation": {"activationChance":0.2,"candidateGrid":{"horizontalCellSize":176,"verticalCellSize":88,"horizontalMargin":12,"verticalMargin":8,"horizontalSearchPaddingBlocks":192,"verticalSearchPaddingBlocks":176},"depthAffinity":[{"maxY":-49,"multiplier":0.4},{"minY":-48,"maxY":16,"multiplier":1.15},{"minY":17,"maxY":72,"multiplier":0.65},{"minY":73,"multiplier":0.0}],"bodyScale":0.68,"discoveryStringers":{"count":5,"minLength":26.0,"maxLength":48.0,"minRadius":0.5,"maxRadius":0.7,"exposedHaloBlocks":2.0}},
+      "gradeBlocks": {"poor":"geostrata:poor_thorium_ore","medium":"geostrata:medium_thorium_ore","rich":"geostrata:rich_thorium_ore","massive":"geostrata:massive_thorium_ore"}
     },
     {
       "id": "uranium",
-      "providers": [
-        {
-          "providerMod": "create_nuclear",
-          "outputItem": "createnuclear:raw_uranium"
-        },
-        {
-          "providerMod": "modern_industrialization",
-          "outputItem": "modern_industrialization:raw_uranium"
-        }
-      ],
-      "hostLithologies": [
-        "granite",
-        "rhyolite",
-        "gneiss"
-      ],
-      "provinceContexts": [
-        "cratonic_shield",
-        "volcanic_arc",
-        "orogenic_belt"
-      ],
-      "depositStyles": [
-        "vein",
-        "disseminated"
-      ],
-      "formationRoutes": [
-        {
-          "id": "felsic_hydrothermal",
-          "hostLithologies": [
-            "granite",
-            "rhyolite",
-            "gneiss"
-          ],
-          "provinceContexts": [
-            "cratonic_shield",
-            "volcanic_arc",
-            "orogenic_belt"
-          ],
-          "depositStyles": [
-            "vein",
-            "disseminated"
-          ]
-        }
-      ],
-      "generation": {
-        "activationChance": 0.16,
-        "candidateGrid": {
-          "horizontalCellSize": 192,
-          "verticalCellSize": 96,
-          "horizontalMargin": 12,
-          "verticalMargin": 8,
-          "horizontalSearchPaddingBlocks": 208,
-          "verticalSearchPaddingBlocks": 192
-        },
-        "depthAffinity": [
-          {
-            "maxY": -49,
-            "multiplier": 0.55
-          },
-          {
-            "minY": -48,
-            "maxY": 8,
-            "multiplier": 1.2
-          },
-          {
-            "minY": 9,
-            "maxY": 64,
-            "multiplier": 0.5
-          },
-          {
-            "minY": 65,
-            "multiplier": 0.0
-          }
-        ],
-        "bodyScale": 0.62,
-        "discoveryStringers": {
-          "count": 5,
-          "minLength": 24.0,
-          "maxLength": 46.0,
-          "minRadius": 0.5,
-          "maxRadius": 0.68,
-          "exposedHaloBlocks": 2.0
-        }
-      },
-      "gradeBlocks": {
-        "poor": "geostrata:poor_uranium_ore",
-        "medium": "geostrata:medium_uranium_ore",
-        "rich": "geostrata:rich_uranium_ore",
-        "massive": "geostrata:massive_uranium_ore"
-      }
+      "providers": [{"providerMod":"create_nuclear","outputItem":"createnuclear:raw_uranium"},{"providerMod":"modern_industrialization","outputItem":"modern_industrialization:raw_uranium"}],
+      "hostLithologies": ["granite", "rhyolite", "gneiss"],
+      "provinceContexts": ["cratonic_shield", "volcanic_arc", "orogenic_belt"],
+      "depositStyles": ["vein", "disseminated"],
+      "formationRoutes": [{"id":"felsic_hydrothermal","hostLithologies":["granite","rhyolite","gneiss"],"provinceContexts":["cratonic_shield","volcanic_arc","orogenic_belt"],"depositStyles":["vein","disseminated"]}],
+      "generation": {"activationChance":0.16,"candidateGrid":{"horizontalCellSize":192,"verticalCellSize":96,"horizontalMargin":12,"verticalMargin":8,"horizontalSearchPaddingBlocks":208,"verticalSearchPaddingBlocks":192},"depthAffinity":[{"maxY":-49,"multiplier":0.55},{"minY":-48,"maxY":8,"multiplier":1.2},{"minY":9,"maxY":64,"multiplier":0.5},{"minY":65,"multiplier":0.0}],"bodyScale":0.62,"discoveryStringers":{"count":5,"minLength":24.0,"maxLength":46.0,"minRadius":0.5,"maxRadius":0.68,"exposedHaloBlocks":2.0}},
+      "gradeBlocks": {"poor":"geostrata:poor_uranium_ore","medium":"geostrata:medium_uranium_ore","rich":"geostrata:rich_uranium_ore","massive":"geostrata:massive_uranium_ore"}
+    },
+    {
+      "id": "silver",
+      "providers": [{"providerMod":"modern_industrialization","outputItem":"modern_industrialization:raw_silver"},{"providerMod":"techreborn","outputItem":"techreborn:raw_silver"}],
+      "hostLithologies": ["granite", "rhyolite", "gneiss"],
+      "provinceContexts": ["volcanic_arc", "orogenic_belt"],
+      "depositStyles": ["vein", "disseminated"],
+      "formationRoutes": [{"id":"felsic_hydrothermal","hostLithologies":["granite","rhyolite","gneiss"],"provinceContexts":["volcanic_arc","orogenic_belt"],"depositStyles":["vein","disseminated"]},{"id":"orogenic_vein","hostLithologies":["gneiss","granite"],"provinceContexts":["orogenic_belt"],"depositStyles":["vein"]}],
+      "generation": {"activationChance":0.22,"candidateGrid":{"horizontalCellSize":176,"verticalCellSize":88,"horizontalMargin":12,"verticalMargin":8,"horizontalSearchPaddingBlocks":192,"verticalSearchPaddingBlocks":176},"depthAffinity":[{"maxY":-49,"multiplier":0.55},{"minY":-48,"maxY":24,"multiplier":1.15},{"minY":25,"maxY":80,"multiplier":0.65},{"minY":81,"multiplier":0.0}],"bodyScale":0.66,"discoveryStringers":{"count":5,"minLength":26.0,"maxLength":48.0,"minRadius":0.5,"maxRadius":0.7,"exposedHaloBlocks":2.0}},
+      "gradeBlocks": {"poor":"geostrata:poor_silver_ore","medium":"geostrata:medium_silver_ore","rich":"geostrata:rich_silver_ore","massive":"geostrata:massive_silver_ore"}
     }
   ]
 }
