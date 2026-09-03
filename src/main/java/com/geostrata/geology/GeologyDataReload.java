@@ -44,6 +44,8 @@ public final class GeologyDataReload {
             "andesite",
             "granite",
             "diorite",
+            "gabbro",
+            "peridotite",
             "breccia"
     );
 
@@ -205,10 +207,7 @@ public final class GeologyDataReload {
             if (!rawOccurrence.isJsonObject()) {
                 throw new IllegalArgumentException("external ore occurrence entry must be an object");
             }
-            JsonObject occurrence = resolveExternalProvider(rawOccurrence.getAsJsonObject(), outputAvailable);
-            if (occurrence != null) {
-                occurrences.add(occurrence);
-            }
+            occurrences.add(resolveExternalProvider(rawOccurrence.getAsJsonObject(), outputAvailable));
         }
         return merged;
     }
@@ -222,8 +221,7 @@ public final class GeologyDataReload {
             return legacyExternalOccurrence(occurrence);
         }
         JsonArray providers = requireProviderArray(occurrence, rawProviders);
-        ProviderCandidate selected = firstAvailableProvider(providers, outputAvailable);
-        return selected == null ? null : resolvedOccurrence(occurrence, selected);
+        return resolvedOccurrence(occurrence, selectedOrFallbackProvider(providers, outputAvailable));
     }
 
     private static JsonObject legacyExternalOccurrence(JsonObject occurrence) {
@@ -245,18 +243,22 @@ public final class GeologyDataReload {
         return rawProviders.getAsJsonArray();
     }
 
-    private static ProviderCandidate firstAvailableProvider(
+    private static ProviderCandidate selectedOrFallbackProvider(
             JsonArray providers,
             Predicate<String> outputAvailable
     ) {
+        ProviderCandidate fallback = null;
         ProviderCandidate selected = null;
         for (JsonElement rawProvider : providers) {
             ProviderCandidate candidate = parseProviderCandidate(rawProvider);
+            if (fallback == null) {
+                fallback = candidate;
+            }
             if (selected == null && outputAvailable.test(candidate.outputItem())) {
                 selected = candidate;
             }
         }
-        return selected;
+        return selected != null ? selected : fallback;
     }
 
     private static ProviderCandidate parseProviderCandidate(JsonElement rawProvider) {
