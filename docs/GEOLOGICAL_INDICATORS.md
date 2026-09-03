@@ -36,6 +36,19 @@ Bitumen currently has no survival drop. It is geological evidence, not a new han
 
 Both stain and bitumen are materialized lazily from the same seep query that already drives particles. Once placed they persist normally in the world. This gives existing saves the physical clues without adding another chunk-generation pass.
 
+### Subsurface petroleum-bearing hosts
+
+The correlated sedimentary writer can also expose petroleum-bearing variants inside the same rock bodies it is already generating. This does not add another feature or scan: once the existing writer has resolved a bed, it can reuse the deterministic reservoir field before committing that block state.
+
+Two deliberately narrow host expressions are supported:
+
+- `oil_shale` is a shale-bed expression inside the richer core of a mudrock-associated hydrocarbon body;
+- `oil_sands` is a sandstone-bed expression where a sandstone-associated body has both sufficient concentration and pressure.
+
+These are host-rock variants, not new lithologies or ores. The semantic geology remains `shale` or `sandstone`, so stratigraphy, metamorphism and other geology consumers do not acquire petroleum-specific rock types. Mudstone is intentionally not renamed to oil shale, and metamorphosed shale/sandstone remains its metamorphic product rather than receiving a petroleum variant.
+
+Mining the variants returns the ordinary host (`shale` or `sandstone`) rather than crude, bitumen or a petroleum item. Their role is discoverability and a future in-place integration point. Both are exposed through the `geostrata:petroleum_bearing_rocks` block tag so an eventual pump/drill integration can recognise them without GeoStrata defining machinery or processing rules.
+
 ## Firedamp mist
 
 Deep sedimentary geology can also expose a sparse deterministic gas-proneness signal. Mudrock is favored most strongly, followed by silt-rich sediment, carbonate, sandstone and coarse clastics. Burial increases the signal; shallow geology does not display firedamp.
@@ -64,12 +77,13 @@ The scan is bounded to a 13 x 9 x 13 volume around each underground player and r
 
 ## Performance boundary
 
-These indicators are deliberately post-generation and local:
+These indicators and host expressions reuse existing geology work rather than building a parallel system:
 
-- no new worldgen pass;
+- no new petroleum worldgen pass;
 - no persistent per-chunk geology state;
 - no per-tick full-radius scan;
 - hydrocarbon geometry and gas potential are reconstructed from seed + geology;
+- petroleum-bearing shale/sands are selected inside the already-running correlated sedimentary replacement pass, with reservoir sampling cached per relevant column;
 - petroleum stain and bitumen writes are bounded to tiny deterministic patches near an already-resolved seep;
 - coal haze only examines a small loaded neighborhood once per second;
 - firedamp scans for nearby heat sources only after a rare gas-prone geology match;
