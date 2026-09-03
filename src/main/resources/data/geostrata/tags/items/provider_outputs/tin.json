@@ -4,6 +4,10 @@
     {
       "id": "create_dd:raw_tin",
       "required": false
+    },
+    {
+      "id": "modern_industrialization:raw_tin",
+      "required": false
     }
   ]
 }
