@@ -1,5 +1,6 @@
 package com.geostrata.platform.fabric;
 
+import com.geostrata.GeoStrata;
 import com.geostrata.block.GeoStrataBlocks;
 import com.geostrata.block.GradedOreBlock;
 import com.geostrata.geology.GeologyResolver;
@@ -9,8 +10,10 @@ import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.particle.ParticleTypes;
+import net.minecraft.registry.RegistryKeys;
 import net.minecraft.registry.tag.BlockTags;
 import net.minecraft.registry.tag.FluidTags;
+import net.minecraft.registry.tag.TagKey;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.state.property.Properties;
@@ -30,6 +33,10 @@ public final class FabricGeologicalIndicatorRegistration {
     private static final int OIL_SEEP_VISIBILITY_RADIUS = 20;
     private static final int FIREDAMP_SUPPRESSION_RADIUS = 4;
     private static final double FIREDAMP_THRESHOLD = 0.68;
+    private static final TagKey<Block> PETROLEUM_BEARING_ROCKS = TagKey.of(
+            RegistryKeys.BLOCK,
+            GeoStrata.id("petroleum_bearing_rocks")
+    );
 
     private FabricGeologicalIndicatorRegistration() {
     }
@@ -204,6 +211,7 @@ public final class FabricGeologicalIndicatorRegistration {
             return;
         }
 
+        FabricCreateDieselGeneratorsIntegration.materializeFreeCrude(world, body, seepY);
         materializeOilStain(world, body);
         BitumenSurfaceEvidence.materialize(world, body);
         world.spawnParticles(
@@ -325,6 +333,7 @@ public final class FabricGeologicalIndicatorRegistration {
         return state.isIn(BlockTags.DIRT)
                 || state.isIn(BlockTags.SAND)
                 || state.isIn(BlockTags.BASE_STONE_OVERWORLD)
+                || state.isIn(PETROLEUM_BEARING_ROCKS)
                 || state.isOf(Blocks.CLAY)
                 || state.isOf(Blocks.MUD)
                 || state.isOf(Blocks.GRAVEL)
