@@ -1,9 +1,11 @@
 package com.geostrata.platform.fabric;
 
+import com.geostrata.block.GeoStrataBlocks;
 import com.geostrata.block.GradedOreBlock;
 import com.geostrata.geology.GeologyResolver;
 import com.geostrata.geology.HydrocarbonReservoirField;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
+import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.particle.ParticleTypes;
@@ -13,6 +15,7 @@ import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.state.property.Properties;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Direction;
 import net.minecraft.world.Heightmap;
 import net.minecraft.world.World;
 
@@ -197,10 +200,11 @@ public final class FabricGeologicalIndicatorRegistration {
 
         int seepY = world.getTopY(Heightmap.Type.MOTION_BLOCKING_NO_LEAVES, body.seepX(), body.seepZ());
         BlockState surface = world.getBlockState(new BlockPos(body.seepX(), seepY - 1, body.seepZ()));
-        if (!supportsOilSeep(surface)) {
+        if (!supportsOilStain(surface)) {
             return;
         }
 
+        materializeOilStain(world, body);
         world.spawnParticles(
                 ParticleTypes.SQUID_INK,
                 body.seepX() + 0.5,
@@ -225,11 +229,77 @@ public final class FabricGeologicalIndicatorRegistration {
         );
     }
 
-    private static boolean supportsOilSeep(BlockState state) {
+    private static void materializeOilStain(
+            ServerWorld world,
+            HydrocarbonReservoirField.Reservoir reservoir
+    ) {
+        int radius = reservoir.pressure() >= 0.8 ? 3 : 2;
+        for (int dx = -radius; dx <= radius; dx++) {
+            for (int dz = -radius; dz <= radius; dz++) {
+                int distanceSquared = dx * dx + dz * dz;
+                if (distanceSquared > radius * radius || !stainSelected(world, reservoir, dx, dz, distanceSquared)) {
+                    continue;
+                }
+
+                int x = reservoir.seepX() + dx;
+                int z = reservoir.seepZ() + dz;
+                int y = world.getTopY(Heightmap.Type.MOTION_BLOCKING_NO_LEAVES, x, z);
+                BlockPos target = new BlockPos(x, y, z);
+                BlockState existing = world.getBlockState(target);
+                if (!existing.isAir() && !existing.isOf(GeoStrataBlocks.PETROLEUM_STAIN)) {
+                    continue;
+                }
+
+                BlockState stain = existing.isOf(GeoStrataBlocks.PETROLEUM_STAIN)
+                        ? existing
+                        : GeoStrataBlocks.PETROLEUM_STAIN.getDefaultState();
+                boolean attached = false;
+                for (Direction direction : Direction.values()) {
+                    if (direction == Direction.UP || !supportsOilStain(world.getBlockState(target.offset(direction)))) {
+                        continue;
+                    }
+                    BlockState attachedState = GeoStrataBlocks.PETROLEUM_STAIN.withDirection(
+                            stain,
+                            world,
+                            target,
+                            direction
+                    );
+                    if (attachedState != null) {
+                        stain = attachedState;
+                        attached = true;
+                    }
+                }
+                if (attached && !stain.equals(existing)) {
+                    world.setBlockState(target, stain, Block.NOTIFY_LISTENERS);
+                }
+            }
+        }
+    }
+
+    private static boolean stainSelected(
+            ServerWorld world,
+            HydrocarbonReservoirField.Reservoir reservoir,
+            int dx,
+            int dz,
+            int distanceSquared
+    ) {
+        if (dx == 0 && dz == 0) {
+            return true;
+        }
+        int chance = Math.max(8, (int) Math.round(28.0 + reservoir.pressure() * 28.0) - distanceSquared * 6);
+        long position = BlockPos.asLong(reservoir.seepX() + dx, 0, reservoir.seepZ() + dz);
+        long reservoirSalt = ((long) reservoir.cellX() << 32) ^ (reservoir.cellZ() & 0xFFFF_FFFFL);
+        int roll = Math.floorMod(Long.hashCode(world.getSeed() ^ position ^ reservoirSalt), 100);
+        return roll < chance;
+    }
+
+    private static boolean supportsOilStain(BlockState state) {
         return state.isIn(BlockTags.DIRT)
                 || state.isIn(BlockTags.SAND)
+                || state.isIn(BlockTags.BASE_STONE_OVERWORLD)
                 || state.isOf(Blocks.CLAY)
                 || state.isOf(Blocks.MUD)
-                || state.isOf(Blocks.GRAVEL);
+                || state.isOf(Blocks.GRAVEL)
+                || GeoStrataBlocks.isRock(state.getBlock());
     }
 }
