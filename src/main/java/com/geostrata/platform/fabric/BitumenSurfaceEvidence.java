@@ -21,11 +21,7 @@ final class BitumenSurfaceEvidence {
             return;
         }
 
-        int seepSurfaceY = world.getTopY(
-                Heightmap.Type.MOTION_BLOCKING_NO_LEAVES,
-                reservoir.seepX(),
-                reservoir.seepZ()
-        );
+        int seepSurfaceY = surfaceY(world, reservoir.seepX(), reservoir.seepZ());
         int radius = reservoir.pressure() >= 0.9 ? 3 : 2;
         for (int dx = -radius; dx <= radius; dx++) {
             for (int dz = -radius; dz <= radius; dz++) {
@@ -49,7 +45,7 @@ final class BitumenSurfaceEvidence {
 
         int x = reservoir.seepX() + dx;
         int z = reservoir.seepZ() + dz;
-        int surfaceY = world.getTopY(Heightmap.Type.MOTION_BLOCKING_NO_LEAVES, x, z);
+        int surfaceY = surfaceY(world, x, z);
         int heightDelta = surfaceY - seepSurfaceY;
         if (heightDelta > 1 || heightDelta < -2) {
             return;
@@ -68,6 +64,12 @@ final class BitumenSurfaceEvidence {
         int layers = layerCount(reservoir.pressure(), heightDelta, distanceSquared);
         BlockState bitumen = GeoStrataBlocks.BITUMEN.getDefaultState().with(SnowBlock.LAYERS, layers);
         world.setBlockState(target, bitumen, Block.NOTIFY_LISTENERS);
+    }
+
+    static int surfaceY(ServerWorld world, int x, int z) {
+        int topY = world.getTopY(Heightmap.Type.MOTION_BLOCKING_NO_LEAVES, x, z);
+        BlockPos topBlock = new BlockPos(x, topY - 1, z);
+        return world.getBlockState(topBlock).isOf(GeoStrataBlocks.BITUMEN) ? topY - 1 : topY;
     }
 
     private static boolean replaceableEvidence(BlockState state) {
