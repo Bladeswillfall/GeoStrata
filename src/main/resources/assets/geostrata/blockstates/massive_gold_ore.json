@@ -39,6 +39,12 @@
     "host=rhyolite": {
       "model": "geostrata:block/ore/gold/rhyolite/massive"
     },
+    "host=gabbro": {
+      "model": "geostrata:block/ore/gold/gabbro/massive"
+    },
+    "host=peridotite": {
+      "model": "geostrata:block/ore/gold/peridotite/massive"
+    },
     "host=conglomerate": {
       "model": "geostrata:block/ore/gold/conglomerate/massive"
     },

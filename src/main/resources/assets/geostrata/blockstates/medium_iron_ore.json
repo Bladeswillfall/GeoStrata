@@ -39,6 +39,12 @@
     "host=rhyolite": {
       "model": "geostrata:block/ore/iron/rhyolite/medium"
     },
+    "host=gabbro": {
+      "model": "geostrata:block/ore/iron/gabbro/medium"
+    },
+    "host=peridotite": {
+      "model": "geostrata:block/ore/iron/peridotite/medium"
+    },
     "host=conglomerate": {
       "model": "geostrata:block/ore/iron/conglomerate/medium"
     },

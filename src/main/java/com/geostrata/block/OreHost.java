@@ -20,6 +20,8 @@ public enum OreHost implements StringIdentifiable {
     GRANITE("granite"),
     BASALT("basalt"),
     RHYOLITE("rhyolite"),
+    GABBRO("gabbro"),
+    PERIDOTITE("peridotite"),
     CONGLOMERATE("conglomerate"),
     BRECCIA("breccia");
 

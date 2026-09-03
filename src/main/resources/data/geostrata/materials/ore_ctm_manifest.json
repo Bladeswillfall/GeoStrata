@@ -11,11 +11,13 @@
     "src/main/resources/assets/geostrata/textures/block/host/breccia.png": "2f02a787fd5509a6afda8658af5d190636e7c546ee4ca209bd4a308656145879",
     "src/main/resources/assets/geostrata/textures/block/host/chalk.png": "a86678ee83180e075678daf4875b13df63fa1c100f1add8f64af64f60ebdb557",
     "src/main/resources/assets/geostrata/textures/block/host/conglomerate.png": "aa4823474190faf7dff131d3928d6331a599effed7fabac35bc4558f28947918",
+    "src/main/resources/assets/geostrata/textures/block/host/gabbro.png": "cd69357daad0f2093052981753b4101025c0a9fac93048d36b3d6869ed4aec70",
     "src/main/resources/assets/geostrata/textures/block/host/gneiss.png": "1d0b7cd89e3b2499b8ababe5fc07064a1f1a92c9fbee4450d22f645652394efc",
     "src/main/resources/assets/geostrata/textures/block/host/granite.png": "bdc834c252df9d7a2bdc2e08eda9d5822fa15f7bb877e0cdb620a3ec71b76ce5",
     "src/main/resources/assets/geostrata/textures/block/host/limestone.png": "ba04cf81852f24371e83baffc1e9a8bb526df378f8672d1ca3b40039ef17733f",
     "src/main/resources/assets/geostrata/textures/block/host/marble.png": "489714b2f450f1003e31c4500096c81d25108d8d769726d1765e8c372c7b77d5",
     "src/main/resources/assets/geostrata/textures/block/host/mudstone.png": "54ad46ae30db1a264c2a4b0f8ae8e631d731125b69450be3a48cbe7160705ddf",
+    "src/main/resources/assets/geostrata/textures/block/host/peridotite.png": "171dc89c780b99ff9b38f220ecdceab75955abf4fdc7f309fd8792d79e289d0f",
     "src/main/resources/assets/geostrata/textures/block/host/quartzite.png": "7bc9ba5d2ccb3a7812950144497b35e12b953b5a5bf262fe163dbaf6de87c2f7",
     "src/main/resources/assets/geostrata/textures/block/host/rhyolite.png": "f386322260167e0e1ec6c928748ddb2ad10ca066401b9b89d9abd24b605f1b14",
     "src/main/resources/assets/geostrata/textures/block/host/schist.png": "97a419d9e07d71058552e2d14fd69f0033cf198a40f987ccc78c26dec9f0fc8b",
@@ -47,7 +49,7 @@
     "src/main/resources/assets/geostrata/textures/block/ore_source/master/emerald.png": "3b8fbcbc1b409aed1dd7cdefc474ae42ab75de74e26bbb373309f17e64ecdbc9",
     "src/main/resources/assets/geostrata/textures/block/ore_source/master/gold.png": "dce395da5f1a800268b392ea01527feacb075dc738d91e8dc01b8cc4a905de3c",
     "src/main/resources/assets/geostrata/textures/block/ore_source/master/iron.png": "053778f9603cea66f548c76bf95e2b9a4325ba10c0831d895850f21a26f9c8b0",
-    "src/main/resources/data/geostrata/materials/ore_texture_matrix.json": "2b082a84e28233af378ea1b875eab9a93d27c4091ff7bda325741493afa5e312"
+    "src/main/resources/data/geostrata/materials/ore_texture_matrix.json": "1848db155cd4f1e1409264f6acf01ce2c94d69852d896d7fc003c8ab8d88035d"
   },
   "files": {
     "docs/images/ore-ctm-tileset-preview.png": "e8e2a24d2613d8c4bfca83e59fbd3ef3d252c0f1f065f313a1d45b980f47894e",

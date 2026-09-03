@@ -28,6 +28,8 @@
         "andesite": 0.08,
         "granite": 0.08,
         "diorite": 0.06,
+        "gabbro": 0.04,
+        "peridotite": 0.02,
         "kimberlite": 0.01,
         "lamproite": 0.01
       }
@@ -55,6 +57,8 @@
         "andesite": 0.1,
         "granite": 0.85,
         "diorite": 0.7,
+        "gabbro": 0.45,
+        "peridotite": 0.55,
         "kimberlite": 0.65,
         "lamproite": 0.65
       }
@@ -82,6 +86,8 @@
         "andesite": 0.45,
         "granite": 0.85,
         "diorite": 0.9,
+        "gabbro": 0.65,
+        "peridotite": 0.3,
         "kimberlite": 0.02,
         "lamproite": 0.02
       }
@@ -109,6 +115,8 @@
         "andesite": 1.0,
         "granite": 0.85,
         "diorite": 0.9,
+        "gabbro": 0.95,
+        "peridotite": 0.8,
         "kimberlite": 0.01,
         "lamproite": 0.03
       }
@@ -136,6 +144,8 @@
         "andesite": 0.25,
         "granite": 0.12,
         "diorite": 0.18,
+        "gabbro": 0.65,
+        "peridotite": 0.55,
         "kimberlite": 0.01,
         "lamproite": 0.02
       }

@@ -231,6 +231,30 @@
       "runtimeAuthority": "volcanic_arc_complex"
     },
     {
+      "id": "gabbro",
+      "block": "geostrata:gabbro",
+      "rockClass": "igneous",
+      "genesis": "mafic_intrusive",
+      "bodyStyle": "mafic_intrusive",
+      "depthAffinity": "mid_to_deep",
+      "continuity": "local",
+      "biomeTag": "geostrata:has_mountain_rocks",
+      "baselineFeature": null,
+      "runtimeAuthority": "mafic_ultramafic_intrusive_system"
+    },
+    {
+      "id": "peridotite",
+      "block": "geostrata:peridotite",
+      "rockClass": "igneous",
+      "genesis": "ultramafic_intrusive",
+      "bodyStyle": "ultramafic_intrusive",
+      "depthAffinity": "deep",
+      "continuity": "local",
+      "biomeTag": "geostrata:has_mountain_rocks",
+      "baselineFeature": null,
+      "runtimeAuthority": "mafic_ultramafic_intrusive_system"
+    },
+    {
       "id": "kimberlite",
       "block": "geostrata:kimberlite",
       "rockClass": "igneous",

@@ -20,6 +20,8 @@ final class OreHostTest {
     void semanticLithologyWithoutBakedOreTextureIsNotRenderable() {
         assertTrue(OreHost.supports("granite"));
         assertEquals(OreHost.GRANITE, OreHost.byId("granite"));
+        assertTrue(OreHost.supports("gabbro"));
+        assertTrue(OreHost.supports("peridotite"));
         assertFalse(OreHost.supports("diorite"));
         assertFalse(OreHost.supports("hornfels"));
         assertThrows(IllegalArgumentException.class, () -> OreHost.byId("diorite"));
