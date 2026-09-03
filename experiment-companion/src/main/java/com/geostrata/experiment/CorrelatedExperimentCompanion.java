@@ -76,6 +76,16 @@ public final class CorrelatedExperimentCompanion implements ModInitializer {
                     new Identifier("modern_industrialization", "deepslate_ore_generator_uranium")
             )
     );
+    private static final Identifier TFMG_RAW_LEAD = new Identifier("tfmg", "raw_lead");
+    private static final RegistryKey<PlacedFeature> TFMG_LEAD_ORE = RegistryKey.of(
+            RegistryKeys.PLACED_FEATURE,
+            new Identifier("tfmg", "lead_ore")
+    );
+    private static final Identifier CREATE_NUCLEAR_RAW_LEAD = new Identifier("createnuclear", "raw_lead");
+    private static final RegistryKey<PlacedFeature> CREATE_NUCLEAR_LEAD_ORE = RegistryKey.of(
+            RegistryKeys.PLACED_FEATURE,
+            new Identifier("createnuclear", "lead_ore")
+    );
     private static final List<RegistryKey<PlacedFeature>> BENCHMARK_DIAMOND_ORES = List.of(
             OrePlacedFeatures.ORE_DIAMOND,
             OrePlacedFeatures.ORE_DIAMOND_LARGE,
@@ -139,6 +149,18 @@ public final class CorrelatedExperimentCompanion implements ModInitializer {
                                                     GenerationStep.Feature.UNDERGROUND_ORES,
                                                     feature
                                             ));
+                                }
+                                if (Registries.ITEM.containsId(TFMG_RAW_LEAD)) {
+                                    context.getGenerationSettings().removeFeature(
+                                            GenerationStep.Feature.UNDERGROUND_ORES,
+                                            TFMG_LEAD_ORE
+                                    );
+                                }
+                                if (Registries.ITEM.containsId(CREATE_NUCLEAR_RAW_LEAD)) {
+                                    context.getGenerationSettings().removeFeature(
+                                            GenerationStep.Feature.UNDERGROUND_ORES,
+                                            CREATE_NUCLEAR_LEAD_ORE
+                                    );
                                 }
                                 if (benchmarkSuppressVanillaDiamond) {
                                     BENCHMARK_DIAMOND_ORES.forEach(feature ->
