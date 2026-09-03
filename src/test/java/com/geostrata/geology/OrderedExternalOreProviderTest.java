@@ -66,6 +66,14 @@ final class OrderedExternalOreProviderTest {
     }
 
     @Test
+    void validatesOccurrenceBeforeOmittingUnavailableProviders() throws IOException {
+        JsonObject external = zincWithProviders(provider("preferred", "preferred:raw_zinc"));
+        zinc(external).remove("hostLithologies");
+
+        assertThrows(IllegalArgumentException.class, () -> parse(external, available()));
+    }
+
+    @Test
     void rejectsMixedLegacyAndOrderedProviderDeclarations() throws IOException {
         JsonObject external = zincWithProviders(provider("preferred", "preferred:raw_zinc"));
         zinc(external).addProperty("providerMod", "legacy");
