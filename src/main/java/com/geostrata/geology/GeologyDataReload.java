@@ -219,11 +219,21 @@ public final class GeologyDataReload {
     ) {
         JsonElement rawProviders = occurrence.get("providers");
         if (rawProviders == null) {
-            if ("minecraft".equals(stringValue(occurrence, "providerMod"))) {
-                throw new IllegalArgumentException("external ore occurrence must not declare minecraft as its provider");
-            }
-            return occurrence.deepCopy();
+            return legacyExternalOccurrence(occurrence);
         }
+        JsonArray providers = requireProviderArray(occurrence, rawProviders);
+        ProviderCandidate selected = firstAvailableProvider(providers, outputAvailable);
+        return selected == null ? null : resolvedOccurrence(occurrence, selected);
+    }
+
+    private static JsonObject legacyExternalOccurrence(JsonObject occurrence) {
+        if ("minecraft".equals(stringValue(occurrence, "providerMod"))) {
+            throw new IllegalArgumentException("external ore occurrence must not declare minecraft as its provider");
+        }
+        return occurrence.deepCopy();
+    }
+
+    private static JsonArray requireProviderArray(JsonObject occurrence, JsonElement rawProviders) {
         if (occurrence.has("providerMod") || occurrence.has("outputItem")) {
             throw new IllegalArgumentException(
                     "external ore occurrence must declare either providerMod/outputItem or providers, not both"
@@ -232,35 +242,44 @@ public final class GeologyDataReload {
         if (!rawProviders.isJsonArray() || rawProviders.getAsJsonArray().isEmpty()) {
             throw new IllegalArgumentException("external ore occurrence providers must be a non-empty array");
         }
+        return rawProviders.getAsJsonArray();
+    }
 
-        String selectedProvider = null;
-        String selectedOutput = null;
-        for (JsonElement rawProvider : rawProviders.getAsJsonArray()) {
-            if (!rawProvider.isJsonObject()) {
-                throw new IllegalArgumentException("external ore provider candidate must be an object");
-            }
-            JsonObject provider = rawProvider.getAsJsonObject();
-            String providerMod = stringValue(provider, "providerMod");
-            String outputItem = stringValue(provider, "outputItem");
-            if (providerMod == null || outputItem == null) {
-                throw new IllegalArgumentException("external ore provider candidate requires providerMod and outputItem");
-            }
-            if ("minecraft".equals(providerMod)) {
-                throw new IllegalArgumentException("external ore occurrence must not declare minecraft as its provider");
-            }
-            if (selectedProvider == null && outputAvailable.test(outputItem)) {
-                selectedProvider = providerMod;
-                selectedOutput = outputItem;
+    private static ProviderCandidate firstAvailableProvider(
+            JsonArray providers,
+            Predicate<String> outputAvailable
+    ) {
+        ProviderCandidate selected = null;
+        for (JsonElement rawProvider : providers) {
+            ProviderCandidate candidate = parseProviderCandidate(rawProvider);
+            if (selected == null && outputAvailable.test(candidate.outputItem())) {
+                selected = candidate;
             }
         }
-        if (selectedProvider == null) {
-            return null;
-        }
+        return selected;
+    }
 
+    private static ProviderCandidate parseProviderCandidate(JsonElement rawProvider) {
+        if (!rawProvider.isJsonObject()) {
+            throw new IllegalArgumentException("external ore provider candidate must be an object");
+        }
+        JsonObject provider = rawProvider.getAsJsonObject();
+        String providerMod = stringValue(provider, "providerMod");
+        String outputItem = stringValue(provider, "outputItem");
+        if (providerMod == null || outputItem == null) {
+            throw new IllegalArgumentException("external ore provider candidate requires providerMod and outputItem");
+        }
+        if ("minecraft".equals(providerMod)) {
+            throw new IllegalArgumentException("external ore occurrence must not declare minecraft as its provider");
+        }
+        return new ProviderCandidate(providerMod, outputItem);
+    }
+
+    private static JsonObject resolvedOccurrence(JsonObject occurrence, ProviderCandidate provider) {
         JsonObject resolved = occurrence.deepCopy();
         resolved.remove("providers");
-        resolved.addProperty("providerMod", selectedProvider);
-        resolved.addProperty("outputItem", selectedOutput);
+        resolved.addProperty("providerMod", provider.providerMod());
+        resolved.addProperty("outputItem", provider.outputItem());
         return resolved;
     }
 
@@ -385,6 +404,9 @@ public final class GeologyDataReload {
                 || value.getAsDouble() != expected) {
             throw new IllegalArgumentException(key + " must be " + expected);
         }
+    }
+
+    private record ProviderCandidate(String providerMod, String outputItem) {
     }
 
     record State(
