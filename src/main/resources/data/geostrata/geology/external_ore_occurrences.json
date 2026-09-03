@@ -88,8 +88,16 @@
     },
     {
       "id": "tin",
-      "providerMod": "create_dreams_and_desires",
-      "outputItem": "create_dd:raw_tin",
+      "providers": [
+        {
+          "providerMod": "create_dreams_and_desires",
+          "outputItem": "create_dd:raw_tin"
+        },
+        {
+          "providerMod": "modern_industrialization",
+          "outputItem": "modern_industrialization:raw_tin"
+        }
+      ],
       "hostLithologies": [
         "granite",
         "gneiss"
