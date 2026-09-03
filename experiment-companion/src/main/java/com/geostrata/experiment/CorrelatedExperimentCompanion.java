@@ -14,6 +14,7 @@ import net.minecraft.world.gen.feature.OrePlacedFeatures;
 import net.minecraft.world.gen.feature.PlacedFeature;
 
 import java.util.List;
+import java.util.function.Consumer;
 
 /** Explicit opt-in companion for rare ore/diamond experiments and debug tools. */
 public final class CorrelatedExperimentCompanion implements ModInitializer {
@@ -75,6 +76,16 @@ public final class CorrelatedExperimentCompanion implements ModInitializer {
                     RegistryKeys.PLACED_FEATURE,
                     new Identifier("modern_industrialization", "deepslate_ore_generator_uranium")
             )
+    );
+    private static final Identifier TFMG_RAW_LEAD = new Identifier("tfmg", "raw_lead");
+    private static final RegistryKey<PlacedFeature> TFMG_LEAD_ORE = RegistryKey.of(
+            RegistryKeys.PLACED_FEATURE,
+            new Identifier("tfmg", "lead_ore")
+    );
+    private static final Identifier CREATE_NUCLEAR_RAW_LEAD = new Identifier("createnuclear", "raw_lead");
+    private static final RegistryKey<PlacedFeature> CREATE_NUCLEAR_LEAD_ORE = RegistryKey.of(
+            RegistryKeys.PLACED_FEATURE,
+            new Identifier("createnuclear", "lead_ore")
     );
     private static final List<RegistryKey<PlacedFeature>> BENCHMARK_DIAMOND_ORES = List.of(
             OrePlacedFeatures.ORE_DIAMOND,
@@ -140,6 +151,10 @@ public final class CorrelatedExperimentCompanion implements ModInitializer {
                                                     feature
                                             ));
                                 }
+                                suppressLeadWorldgen(feature -> context.getGenerationSettings().removeFeature(
+                                        GenerationStep.Feature.UNDERGROUND_ORES,
+                                        feature
+                                ));
                                 if (benchmarkSuppressVanillaDiamond) {
                                     BENCHMARK_DIAMOND_ORES.forEach(feature ->
                                             context.getGenerationSettings().removeFeature(
@@ -153,6 +168,15 @@ public final class CorrelatedExperimentCompanion implements ModInitializer {
         GeoStrata.LOGGER.info("GeoStrata experiment companion enabled; rare ore/diamond experiments and debug tools active");
         if (benchmarkSuppressVanillaDiamond) {
             GeoStrata.LOGGER.info("GeoStrata benchmark mode: vanilla diamond generation suppressed for attribution");
+        }
+    }
+
+    private static void suppressLeadWorldgen(Consumer<RegistryKey<PlacedFeature>> remove) {
+        if (Registries.ITEM.containsId(TFMG_RAW_LEAD)) {
+            remove.accept(TFMG_LEAD_ORE);
+        }
+        if (Registries.ITEM.containsId(CREATE_NUCLEAR_RAW_LEAD)) {
+            remove.accept(CREATE_NUCLEAR_LEAD_ORE);
         }
     }
 }

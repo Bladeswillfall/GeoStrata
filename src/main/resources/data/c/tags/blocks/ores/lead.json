@@ -1,0 +1,9 @@
+{
+  "replace": false,
+  "values": [
+    "geostrata:poor_lead_ore",
+    "geostrata:medium_lead_ore",
+    "geostrata:rich_lead_ore",
+    "geostrata:massive_lead_ore"
+  ]
+}
