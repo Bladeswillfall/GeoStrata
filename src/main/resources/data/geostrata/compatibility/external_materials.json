@@ -251,7 +251,7 @@
         {
           "canonicalMaterial": "thorium",
           "providerBlocks": ["create_new_age:thorium_ore"],
-          "providerOutput": null,
+          "providerOutput": "create_new_age:thorium",
           "commonTags": ["c:ores/thorium"],
           "status": "catalogued"
         },

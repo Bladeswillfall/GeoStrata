@@ -37,6 +37,10 @@
     "geostrata:poor_tin_ore",
     "geostrata:medium_tin_ore",
     "geostrata:rich_tin_ore",
-    "geostrata:massive_tin_ore"
+    "geostrata:massive_tin_ore",
+    "geostrata:poor_thorium_ore",
+    "geostrata:medium_thorium_ore",
+    "geostrata:rich_thorium_ore",
+    "geostrata:massive_thorium_ore"
   ]
 }

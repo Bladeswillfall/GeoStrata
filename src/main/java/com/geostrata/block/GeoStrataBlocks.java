@@ -88,6 +88,10 @@ public final class GeoStrataBlocks {
     private static final Block MEDIUM_TIN_ORE = registerExternalOre("medium_tin_ore", "tin", OreGrade.MEDIUM, Blocks.IRON_ORE, 3.0F, BlockSoundGroup.STONE);
     private static final Block RICH_TIN_ORE = registerExternalOre("rich_tin_ore", "tin", OreGrade.RICH, Blocks.IRON_ORE, 3.0F, BlockSoundGroup.STONE);
     private static final Block MASSIVE_TIN_ORE = registerExternalOre("massive_tin_ore", "tin", OreGrade.MASSIVE, Blocks.IRON_ORE, 3.0F, BlockSoundGroup.STONE);
+    private static final Block POOR_THORIUM_ORE = registerExternalOre("poor_thorium_ore", "thorium", OreGrade.POOR, Blocks.IRON_ORE, 3.0F, BlockSoundGroup.STONE);
+    private static final Block MEDIUM_THORIUM_ORE = registerExternalOre("medium_thorium_ore", "thorium", OreGrade.MEDIUM, Blocks.IRON_ORE, 3.0F, BlockSoundGroup.STONE);
+    private static final Block RICH_THORIUM_ORE = registerExternalOre("rich_thorium_ore", "thorium", OreGrade.RICH, Blocks.IRON_ORE, 3.0F, BlockSoundGroup.STONE);
+    private static final Block MASSIVE_THORIUM_ORE = registerExternalOre("massive_thorium_ore", "thorium", OreGrade.MASSIVE, Blocks.IRON_ORE, 3.0F, BlockSoundGroup.STONE);
 
     private GeoStrataBlocks() {
     }

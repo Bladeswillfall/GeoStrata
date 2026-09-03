@@ -41,6 +41,15 @@
         "gneiss"
       ],
       "continuity": false
+    },
+    "thorium": {
+      "defaultHost": "granite",
+      "validHosts": [
+        "granite",
+        "rhyolite",
+        "gneiss"
+      ],
+      "continuity": false
     }
   }
 }

@@ -183,6 +183,109 @@
         "rich": "geostrata:rich_tin_ore",
         "massive": "geostrata:massive_tin_ore"
       }
+    },
+    {
+      "id": "thorium",
+      "providerMod": "create_new_age",
+      "outputItem": "create_new_age:thorium",
+      "hostLithologies": [
+        "granite",
+        "rhyolite",
+        "gneiss"
+      ],
+      "provinceContexts": [
+        "volcanic_arc",
+        "cratonic_shield",
+        "orogenic_belt"
+      ],
+      "depositStyles": [
+        "disseminated",
+        "vein",
+        "massive_lens_or_pocket"
+      ],
+      "formationRoutes": [
+        {
+          "id": "felsic_accessory",
+          "hostLithologies": [
+            "granite",
+            "rhyolite",
+            "gneiss"
+          ],
+          "provinceContexts": [
+            "volcanic_arc",
+            "cratonic_shield",
+            "orogenic_belt"
+          ],
+          "depositStyles": [
+            "disseminated",
+            "vein"
+          ]
+        },
+        {
+          "id": "pegmatite_accessory",
+          "hostLithologies": [
+            "granite",
+            "gneiss"
+          ],
+          "provinceContexts": [
+            "volcanic_arc"
+          ],
+          "depositStyles": [
+            "disseminated",
+            "vein",
+            "massive_lens_or_pocket"
+          ],
+          "bodyStyles": [
+            "pegmatite_fertile_margin"
+          ]
+        }
+      ],
+      "generation": {
+        "activationChance": 0.2,
+        "candidateGrid": {
+          "horizontalCellSize": 176,
+          "verticalCellSize": 88,
+          "horizontalMargin": 12,
+          "verticalMargin": 8,
+          "horizontalSearchPaddingBlocks": 192,
+          "verticalSearchPaddingBlocks": 176
+        },
+        "depthAffinity": [
+          {
+            "maxY": -49,
+            "multiplier": 0.4
+          },
+          {
+            "minY": -48,
+            "maxY": 16,
+            "multiplier": 1.15
+          },
+          {
+            "minY": 17,
+            "maxY": 72,
+            "multiplier": 0.65
+          },
+          {
+            "minY": 73,
+            "multiplier": 0.0
+          }
+        ],
+        "bodyScale": 0.68,
+        "discoveryStringers": {
+          "count": 5,
+          "minLength": 26.0,
+          "maxLength": 48.0,
+          "minRadius": 0.5,
+          "maxRadius": 0.7,
+          "exposedHaloBlocks": 2.0
+        }
+      },
+      "gradeBlocks": {
+        "poor": "geostrata:poor_thorium_ore",
+        "medium": "geostrata:medium_thorium_ore",
+        "rich": "geostrata:rich_thorium_ore",
+        "massive": "geostrata:massive_thorium_ore"
+      }
     }
   ]
 }

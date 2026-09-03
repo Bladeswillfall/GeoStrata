@@ -1,0 +1,9 @@
+{
+  "replace": false,
+  "values": [
+    {
+      "id": "create_new_age:thorium",
+      "required": false
+    }
+  ]
+}

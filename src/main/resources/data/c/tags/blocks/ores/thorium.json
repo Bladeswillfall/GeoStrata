@@ -1,0 +1,9 @@
+{
+  "replace": false,
+  "values": [
+    "geostrata:poor_thorium_ore",
+    "geostrata:medium_thorium_ore",
+    "geostrata:rich_thorium_ore",
+    "geostrata:massive_thorium_ore"
+  ]
+}
