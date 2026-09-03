@@ -236,44 +236,71 @@ public final class FabricGeologicalIndicatorRegistration {
         int radius = reservoir.pressure() >= 0.8 ? 3 : 2;
         for (int dx = -radius; dx <= radius; dx++) {
             for (int dz = -radius; dz <= radius; dz++) {
-                int distanceSquared = dx * dx + dz * dz;
-                if (distanceSquared > radius * radius || !stainSelected(world, reservoir, dx, dz, distanceSquared)) {
-                    continue;
-                }
-
-                int x = reservoir.seepX() + dx;
-                int z = reservoir.seepZ() + dz;
-                int y = world.getTopY(Heightmap.Type.MOTION_BLOCKING_NO_LEAVES, x, z);
-                BlockPos target = new BlockPos(x, y, z);
-                BlockState existing = world.getBlockState(target);
-                if (!existing.isAir() && !existing.isOf(GeoStrataBlocks.PETROLEUM_STAIN)) {
-                    continue;
-                }
-
-                BlockState stain = existing.isOf(GeoStrataBlocks.PETROLEUM_STAIN)
-                        ? existing
-                        : GeoStrataBlocks.PETROLEUM_STAIN.getDefaultState();
-                boolean attached = false;
-                for (Direction direction : Direction.values()) {
-                    if (direction == Direction.UP || !supportsOilStain(world.getBlockState(target.offset(direction)))) {
-                        continue;
-                    }
-                    BlockState attachedState = GeoStrataBlocks.PETROLEUM_STAIN.withDirection(
-                            stain,
-                            world,
-                            target,
-                            direction
-                    );
-                    if (attachedState != null) {
-                        stain = attachedState;
-                        attached = true;
-                    }
-                }
-                if (attached && !stain.equals(existing)) {
-                    world.setBlockState(target, stain, Block.NOTIFY_LISTENERS);
+                if (isSelectedStainTarget(world, reservoir, radius, dx, dz)) {
+                    materializeOilStainAt(world, reservoir, dx, dz);
                 }
             }
         }
+    }
+
+    private static boolean isSelectedStainTarget(
+            ServerWorld world,
+            HydrocarbonReservoirField.Reservoir reservoir,
+            int radius,
+            int dx,
+            int dz
+    ) {
+        int distanceSquared = dx * dx + dz * dz;
+        return distanceSquared <= radius * radius
+                && stainSelected(world, reservoir, dx, dz, distanceSquared);
+    }
+
+    private static void materializeOilStainAt(
+            ServerWorld world,
+            HydrocarbonReservoirField.Reservoir reservoir,
+            int dx,
+            int dz
+    ) {
+        int x = reservoir.seepX() + dx;
+        int z = reservoir.seepZ() + dz;
+        int y = world.getTopY(Heightmap.Type.MOTION_BLOCKING_NO_LEAVES, x, z);
+        BlockPos target = new BlockPos(x, y, z);
+        BlockState existing = world.getBlockState(target);
+        if (!existing.isAir() && !existing.isOf(GeoStrataBlocks.PETROLEUM_STAIN)) {
+            return;
+        }
+
+        Optional<BlockState> stain = withOilStainFaces(world, target, existing);
+        if (stain.isPresent() && !stain.get().equals(existing)) {
+            world.setBlockState(target, stain.get(), Block.NOTIFY_LISTENERS);
+        }
+    }
+
+    private static Optional<BlockState> withOilStainFaces(
+            ServerWorld world,
+            BlockPos target,
+            BlockState existing
+    ) {
+        BlockState stain = existing.isOf(GeoStrataBlocks.PETROLEUM_STAIN)
+                ? existing
+                : GeoStrataBlocks.PETROLEUM_STAIN.getDefaultState();
+        boolean attached = existing.isOf(GeoStrataBlocks.PETROLEUM_STAIN);
+        for (Direction direction : Direction.values()) {
+            if (direction == Direction.UP || !supportsOilStain(world.getBlockState(target.offset(direction)))) {
+                continue;
+            }
+            BlockState attachedState = GeoStrataBlocks.PETROLEUM_STAIN.withDirection(
+                    stain,
+                    world,
+                    target,
+                    direction
+            );
+            if (attachedState != null) {
+                stain = attachedState;
+                attached = true;
+            }
+        }
+        return attached ? Optional.of(stain) : Optional.empty();
     }
 
     private static boolean stainSelected(
