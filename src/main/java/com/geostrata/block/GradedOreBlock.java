@@ -15,6 +15,7 @@ import net.minecraft.util.Identifier;
 import net.minecraft.util.math.intprovider.UniformIntProvider;
 
 import java.util.List;
+import java.util.function.Function;
 
 /** Ore block whose mining XP follows the shared grade contract. */
 public final class GradedOreBlock extends ExperienceDroppingBlock {
@@ -37,15 +38,24 @@ public final class GradedOreBlock extends ExperienceDroppingBlock {
 
     @Override
     public List<ItemStack> getDroppedStacks(BlockState state, LootContextParameterSet.Builder builder) {
-        OreOccurrenceCatalog.Occurrence occurrence = OreOccurrenceCatalog.current().byId().get(material);
-        if (occurrence != null && !"minecraft".equals(occurrence.providerMod())) {
-            Identifier outputId = new Identifier(occurrence.outputItem());
-            builder.addDynamicDrop(
-                    GeoStrata.id("provider_output/" + material),
-                    consumer -> consumer.accept(new ItemStack(Registries.ITEM.get(outputId)))
-            );
-        }
+        addProviderOutputDrop(material, builder, outputId -> new ItemStack(Registries.ITEM.get(outputId)));
         return super.getDroppedStacks(state, builder);
+    }
+
+    static void addProviderOutputDrop(
+            String material,
+            LootContextParameterSet.Builder builder,
+            Function<Identifier, ItemStack> outputResolver
+    ) {
+        OreOccurrenceCatalog.Occurrence occurrence = OreOccurrenceCatalog.current().byId().get(material);
+        if (occurrence == null || "minecraft".equals(occurrence.providerMod())) {
+            return;
+        }
+        Identifier outputId = new Identifier(occurrence.outputItem());
+        builder.addDynamicDrop(
+                GeoStrata.id("provider_output/" + material),
+                consumer -> consumer.accept(outputResolver.apply(outputId))
+        );
     }
 
     public String material() {
