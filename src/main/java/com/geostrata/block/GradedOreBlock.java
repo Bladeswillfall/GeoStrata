@@ -38,16 +38,21 @@ public final class GradedOreBlock extends ExperienceDroppingBlock {
 
     @Override
     public List<ItemStack> getDroppedStacks(BlockState state, LootContextParameterSet.Builder builder) {
-        addProviderOutputDrop(material, builder, outputId -> new ItemStack(Registries.ITEM.get(outputId)));
+        addProviderOutputDrop(
+                material,
+                OreOccurrenceCatalog.current().byId().get(material),
+                builder,
+                outputId -> new ItemStack(Registries.ITEM.get(outputId))
+        );
         return super.getDroppedStacks(state, builder);
     }
 
     static void addProviderOutputDrop(
             String material,
+            OreOccurrenceCatalog.Occurrence occurrence,
             LootContextParameterSet.Builder builder,
             Function<Identifier, ItemStack> outputResolver
     ) {
-        OreOccurrenceCatalog.Occurrence occurrence = OreOccurrenceCatalog.current().byId().get(material);
         if (occurrence == null || "minecraft".equals(occurrence.providerMod())) {
             return;
         }
