@@ -8,8 +8,10 @@ import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.particle.ParticleTypes;
 import net.minecraft.registry.tag.BlockTags;
+import net.minecraft.registry.tag.FluidTags;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
+import net.minecraft.state.property.Properties;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.Heightmap;
 import net.minecraft.world.World;
@@ -23,6 +25,8 @@ public final class FabricGeologicalIndicatorRegistration {
     private static final int COAL_RADIUS_Y = 4;
     private static final int COAL_SIGNAL_CAP = 16;
     private static final int OIL_SEEP_VISIBILITY_RADIUS = 20;
+    private static final int FIREDAMP_SUPPRESSION_RADIUS = 4;
+    private static final double FIREDAMP_THRESHOLD = 0.68;
 
     private FabricGeologicalIndicatorRegistration() {
     }
@@ -40,6 +44,7 @@ public final class FabricGeologicalIndicatorRegistration {
                 continue;
             }
             emitCoalHaze(world, player);
+            emitFiredampMist(world, player);
             emitOilSeep(world, player);
         }
     }
@@ -92,6 +97,68 @@ public final class FabricGeologicalIndicatorRegistration {
             return graded.grade().baseYield();
         }
         return state.isIn(BlockTags.COAL_ORES) ? 1 : 0;
+    }
+
+    private static void emitFiredampMist(ServerWorld world, ServerPlayerEntity player) {
+        int surfaceY = world.getTopY(
+                Heightmap.Type.MOTION_BLOCKING_NO_LEAVES,
+                player.getBlockX(),
+                player.getBlockZ()
+        );
+        if (player.getBlockY() >= surfaceY - 8) {
+            return;
+        }
+
+        BlockPos floor = player.getBlockPos().down();
+        BlockState floorState = world.getBlockState(floor);
+        if (floorState.isAir() || !floorState.getFluidState().isEmpty()) {
+            return;
+        }
+
+        double potential = GeologyResolver.resolve(world, floor.getX(), floor.getY(), floor.getZ())
+                .map(geology -> HydrocarbonReservoirField.gasPotential(
+                        world.getSeed(),
+                        floor.getX(),
+                        floor.getY(),
+                        floor.getZ(),
+                        geology
+                ))
+                .orElse(0.0);
+        if (potential < FIREDAMP_THRESHOLD || nearFiredampSuppressor(world, player.getBlockPos())) {
+            return;
+        }
+
+        int particles = 2 + (int) Math.floor((potential - FIREDAMP_THRESHOLD) * 8.0);
+        world.spawnParticles(
+                ParticleTypes.CLOUD,
+                player.getX(),
+                floor.getY() + 1.05,
+                player.getZ(),
+                Math.min(4, particles),
+                2.5,
+                0.05,
+                2.5,
+                0.001
+        );
+    }
+
+    private static boolean nearFiredampSuppressor(ServerWorld world, BlockPos origin) {
+        for (BlockPos pos : BlockPos.iterateOutwards(
+                origin,
+                FIREDAMP_SUPPRESSION_RADIUS,
+                3,
+                FIREDAMP_SUPPRESSION_RADIUS
+        )) {
+            BlockState state = world.getBlockState(pos);
+            if (state.getFluidState().isIn(FluidTags.LAVA)
+                    || state.isOf(Blocks.FIRE)
+                    || state.isOf(Blocks.SOUL_FIRE)
+                    || ((state.isOf(Blocks.CAMPFIRE) || state.isOf(Blocks.SOUL_CAMPFIRE))
+                    && state.get(Properties.LIT))) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private static void emitOilSeep(ServerWorld world, ServerPlayerEntity player) {
