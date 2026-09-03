@@ -64,6 +64,17 @@
       "formationRoutes": [{"id":"carbonate_replacement","hostLithologies":["limestone","marble"],"provinceContexts":["sedimentary_basin","orogenic_belt"],"depositStyles":["vein","stratiform"]},{"id":"clastic_sediment_hosted","hostLithologies":["shale","siltstone"],"provinceContexts":["sedimentary_basin","rift_province"],"depositStyles":["stratiform","vein"]}],
       "generation": {"activationChance":0.34,"candidateGrid":{"horizontalCellSize":144,"verticalCellSize":72,"horizontalMargin":12,"verticalMargin":8,"horizontalSearchPaddingBlocks":176,"verticalSearchPaddingBlocks":160},"depthAffinity":[{"maxY":-33,"multiplier":0.35},{"minY":-32,"maxY":16,"multiplier":0.85},{"minY":17,"maxY":64,"multiplier":1.2},{"minY":65,"maxY":96,"multiplier":0.6},{"minY":97,"multiplier":0.0}],"bodyScale":0.78,"discoveryStringers":{"count":7,"minLength":30.0,"maxLength":56.0,"minRadius":0.52,"maxRadius":0.74,"exposedHaloBlocks":2.0}},
       "gradeBlocks": {"poor":"geostrata:poor_lead_ore","medium":"geostrata:medium_lead_ore","rich":"geostrata:rich_lead_ore","massive":"geostrata:massive_lead_ore"}
+    },
+    {
+      "id": "nickel",
+      "providerMod": "tfmg",
+      "outputItem": "tfmg:raw_nickel",
+      "hostLithologies": ["gabbro", "peridotite"],
+      "provinceContexts": ["rift_province", "volcanic_arc", "cratonic_shield"],
+      "depositStyles": ["disseminated", "massive_lens_or_pocket"],
+      "formationRoutes": [{"id":"mafic_disseminated","hostLithologies":["gabbro"],"provinceContexts":["rift_province","volcanic_arc"],"depositStyles":["disseminated"],"bodyStyles":["mafic_intrusive"]},{"id":"ultramafic_sulfide","hostLithologies":["peridotite"],"provinceContexts":["volcanic_arc","rift_province","cratonic_shield"],"depositStyles":["disseminated","massive_lens_or_pocket"],"bodyStyles":["ultramafic_intrusive"]}],
+      "generation": {"activationChance":0.26,"candidateGrid":{"horizontalCellSize":160,"verticalCellSize":80,"horizontalMargin":12,"verticalMargin":8,"horizontalSearchPaddingBlocks":176,"verticalSearchPaddingBlocks":160},"depthAffinity":[{"maxY":-49,"multiplier":1.15},{"minY":-48,"maxY":8,"multiplier":1.25},{"minY":9,"maxY":32,"multiplier":0.55},{"minY":33,"multiplier":0.0}],"bodyScale":0.72,"discoveryStringers":{"count":6,"minLength":28.0,"maxLength":52.0,"minRadius":0.52,"maxRadius":0.72,"exposedHaloBlocks":2.0}},
+      "gradeBlocks": {"poor":"geostrata:poor_nickel_ore","medium":"geostrata:medium_nickel_ore","rich":"geostrata:rich_nickel_ore","massive":"geostrata:massive_nickel_ore"}
     }
   ]
 }
