@@ -108,8 +108,21 @@ final class OptionalOreProviderTest {
     }
 
     @Test
-    void missingUraniumProviderOutputRemovesOnlyUranium() throws IOException {
+    void missingPreferredUraniumProviderFallsBackToModernIndustrialization() throws IOException {
         GeologyDataReload.State state = parse(output -> !"createnuclear:raw_uranium".equals(output));
+
+        OreOccurrenceCatalog.Occurrence uranium = state.oreOccurrences().require("uranium");
+        assertEquals("modern_industrialization", uranium.providerMod());
+        assertEquals("modern_industrialization:raw_uranium", uranium.outputItem());
+        assertEquals(0.16, state.oreExperiment().activationChance("uranium"), 1.0e-12);
+    }
+
+    @Test
+    void missingAllUraniumProviderOutputsRemovesOnlyUranium() throws IOException {
+        GeologyDataReload.State state = parse(output ->
+                !"createnuclear:raw_uranium".equals(output)
+                        && !"modern_industrialization:raw_uranium".equals(output)
+        );
 
         assertFalse(state.oreOccurrences().byId().containsKey("uranium"));
         assertFalse(state.oreExperiment().activationChancePerCandidate().containsKey("uranium"));
