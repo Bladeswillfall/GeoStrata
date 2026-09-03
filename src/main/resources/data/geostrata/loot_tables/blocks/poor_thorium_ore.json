@@ -36,9 +36,8 @@
               ]
             },
             {
-              "type": "minecraft:tag",
-              "name": "geostrata:provider_outputs/thorium",
-              "expand": true,
+              "type": "minecraft:dynamic",
+              "name": "geostrata:provider_output/thorium",
               "functions": [
                 {
                   "function": "minecraft:set_count",

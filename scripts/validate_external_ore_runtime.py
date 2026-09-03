@@ -108,7 +108,7 @@ def tag_values(path: Path) -> set[str]:
     return set(values)
 
 
-def validate_loot(material: str, grade: str, block: str, output_tag: str) -> None:
+def validate_loot(material: str, grade: str, block: str) -> None:
     path = DATA / f"loot_tables/blocks/{grade}_{material}_ore.json"
     try:
         children = load(path)["pools"][0]["entries"][0]["children"]
@@ -117,8 +117,9 @@ def validate_loot(material: str, grade: str, block: str, output_tag: str) -> Non
         fail(f"{path.relative_to(ROOT)} has unexpected loot shape")
     if silk.get("type") != "minecraft:item" or silk.get("name") != block:
         fail(f"{path.relative_to(ROOT)} must preserve the block with Silk Touch")
-    if output.get("type") != "minecraft:tag" or output.get("name") != output_tag or output.get("expand") is not True:
-        fail(f"{path.relative_to(ROOT)} must resolve provider output through {output_tag}")
+    dynamic_output = f"geostrata:provider_output/{material}"
+    if output.get("type") != "minecraft:dynamic" or output.get("name") != dynamic_output:
+        fail(f"{path.relative_to(ROOT)} must resolve provider output through {dynamic_output}")
     functions = output.get("functions", [])
     if not any(fn.get("function") == "minecraft:set_count" and fn.get("count") == YIELDS[grade] for fn in functions):
         fail(f"{path.relative_to(ROOT)} must use base yield {YIELDS[grade]}")
@@ -228,7 +229,7 @@ def main() -> None:
                 rendered = host if host in hosts else default_host
                 if variants[f"host={host}"] != {"model": f"geostrata:block/ore/{material}/{rendered}/{grade}"}:
                     fail(f"{name} host={host} must fall back to {rendered}")
-            validate_loot(material, grade, block, output_tag)
+            validate_loot(material, grade, block)
 
         if tag_values(RESOURCES / f"data/c/tags/blocks/ores/{material}.json") != set(expected_blocks):
             fail(f"c:ores/{material} must contain all four GeoStrata grades")

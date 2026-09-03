@@ -36,9 +36,8 @@
               ]
             },
             {
-              "type": "minecraft:tag",
-              "name": "geostrata:provider_outputs/uranium",
-              "expand": true,
+              "type": "minecraft:dynamic",
+              "name": "geostrata:provider_output/uranium",
               "functions": [
                 {
                   "function": "minecraft:set_count",

@@ -36,9 +36,8 @@
               ]
             },
             {
-              "type": "minecraft:tag",
-              "name": "geostrata:provider_outputs/tin",
-              "expand": true,
+              "type": "minecraft:dynamic",
+              "name": "geostrata:provider_output/tin",
               "functions": [
                 {
                   "function": "minecraft:set_count",
