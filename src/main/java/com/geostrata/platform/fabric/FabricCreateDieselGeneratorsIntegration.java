@@ -3,6 +3,7 @@ package com.geostrata.platform.fabric;
 import com.geostrata.GeoStrata;
 import com.geostrata.geology.GeologyResolver;
 import com.geostrata.geology.HydrocarbonReservoirField;
+import com.geostrata.geology.LithologyCatalog;
 import com.geostrata.geology.PetroleumChunkField;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerChunkEvents;
 import net.fabricmc.loader.api.FabricLoader;
@@ -49,7 +50,9 @@ public final class FabricCreateDieselGeneratorsIntegration {
 
     private static void onChunkLoad(ServerWorld world, net.minecraft.world.chunk.WorldChunk chunk) {
         OilStoreBridge bridge = oilStore;
-        if (bridge == null || !World.OVERWORLD.equals(world.getRegistryKey())) {
+        if (bridge == null
+                || !World.OVERWORLD.equals(world.getRegistryKey())
+                || !LithologyCatalog.current().loaded()) {
             return;
         }
         try {
