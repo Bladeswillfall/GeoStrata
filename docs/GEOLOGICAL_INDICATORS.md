@@ -40,6 +40,8 @@ On Fabric 1.20.1, GeoStrata integrates with Create: Diesel Generators (`createdi
 
 CDG already owns the correct crude-oil fluid, bucket transfer behavior, pumpjack, refining and its persistent per-chunk oil store. GeoStrata therefore does not register a second crude fluid or pump system.
 
+The compatibility rule is **provider adoption, not conversion**. While CDG is installed, the canonical runtime fluid for GeoStrata petroleum is the actual registered `createdieselgenerators:crude_oil` fluid. GeoStrata does not create a parallel `geostrata:crude_oil` fluid and does not require conversion recipes. Anything that GeoStrata materializes or exposes as free crude uses the provider fluid directly, so exact-fluid consumers, CDG buckets, Fabric fluid transfer, pipes and tanks see the same object. CDG also places that fluid in the common `c:crude_oil` tag, and its crude distillation recipe consumes that tag, so tag-aware recipes remain interoperable as well.
+
 When CDG is present:
 
 - GeoStrata seeds CDG's native `OilChunksSavedData` when a chunk is first encountered;
@@ -48,10 +50,11 @@ When CDG is present:
 - a geologically dry chunk is explicitly stored as `0`, preventing CDG's unrelated biome/RNG oil placement from becoming a second occurrence model;
 - GeoStrata only writes when CDG reports `-1` (uninitialized). Existing positive, zero or depleted values are never overwritten, so pumpjack depletion remains authoritative;
 - CDG's `oil_deposit` tag is vanilla bedrock, so its normal pipe-to-bedrock pumpjack validation, pumping cadence, fluid tank and depletion path remain unchanged;
+- the pumpjack therefore produces CDG's own `createdieselgenerators:crude_oil` from GeoStrata-selected geological oil chunks;
 - CDG's optional infinite-deposit mode still makes positive petroleum chunks infinite, while a tiny optional compatibility mixin preserves stored geological `0` chunks as dry instead of turning them into infinite wells;
 - reservoirs with pressure at least `0.90` may materialize CDG's native `crude_oil` source block at the seep. Because this is CDG's own source fluid, ordinary CDG bucket filling works without compatibility recipes or a duplicate bucket item.
 
-This is the intended ownership split: GeoStrata decides **where petroleum exists and how rich the geology is**; Create: Diesel Generators decides **how the oil is pumped, bucketed, processed and consumed**.
+This is the intended ownership split: GeoStrata decides **where petroleum exists and how rich the geology is**; Create: Diesel Generators supplies the adopted **runtime crude-oil identity** and decides **how the oil is pumped, bucketed, processed and consumed**.
 
 ## Firedamp mist
 
@@ -69,6 +72,7 @@ The petroleum system reuses existing geology work:
 
 - no second petroleum worldgen pass;
 - no GeoStrata per-chunk petroleum save state;
+- no duplicate GeoStrata crude fluid when a provider already supplies the canonical runtime fluid;
 - petroleum-bearing shale/sands are selected inside the existing correlated sedimentary replacement pass;
 - stain, bitumen and rare free crude are tiny lazy seep writes;
 - the CDG bridge runs only when CDG is installed and only for CDG-uninitialized chunks;
