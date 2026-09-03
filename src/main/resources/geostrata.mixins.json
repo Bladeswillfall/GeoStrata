@@ -1,0 +1,11 @@
+{
+  "required": false,
+  "package": "com.geostrata.platform.fabric.mixin",
+  "compatibilityLevel": "JAVA_17",
+  "mixins": [
+    "compat.cdg.OilChunksSavedDataMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

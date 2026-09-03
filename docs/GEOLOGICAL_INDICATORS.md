@@ -1,92 +1,83 @@
 # Geological indicators
 
-GeoStrata exposes subtle player-facing signs of geology without adding a second terrain-generation system.
+GeoStrata exposes player-facing signs of geology without adding a parallel terrain-generation system.
 
 ## Hydrocarbon reservoirs and oil seeps
 
-`HydrocarbonReservoirField` is a deterministic semantic field keyed by world seed and 384-block cells. A reservoir can only exist where the resolved deep lithology is sedimentary. Source-rich mudrocks are favored, followed by carbonates, sandstone, silt-rich sediments and coarse clastics.
+`HydrocarbonReservoirField` is a deterministic semantic field keyed by world seed and 384-block cells. A reservoir can only exist where resolved deep lithology is sedimentary. Source-rich mudrocks are favored, followed by carbonates, sandstone, silt-rich sediments and coarse clastics.
 
-The field does not place an oil fluid or invent a processing chain. That is deliberate: GeoStrata owns the geological occurrence, while a future optional petroleum mod can own fluids, pumps and refining. The returned reservoir record provides stable center/radius, pressure, concentration and seep coordinates for those integrations.
+GeoStrata owns petroleum occurrence, not a duplicate processing chain. The reservoir record provides stable center/radius, pressure, concentration and seep coordinates for evidence and optional technology integrations.
 
 Sufficiently pressured reservoirs leave linked clues at their deterministic surface seep point while a player is nearby:
 
 - sparse black seep/smoke particles show that the seep is active;
-- a persistent `petroleum_stain` multiface block marks a small deterministic patch of affected ground and exposed rock;
-- stronger reservoirs can additionally accumulate layered `bitumen` crust close to the seep.
+- a persistent `petroleum_stain` multiface block marks affected ground and exposed rock;
+- stronger reservoirs can accumulate layered `bitumen` crust;
+- when Create: Diesel Generators is installed, the rarest very-high-pressure reservoirs can expose that mod's native `crude_oil` source fluid.
 
-`petroleum_stain` deliberately reuses Minecraft's native sculk-vein / lichen-style multiface behavior instead of replacing every possible host with a petroleum-specific block. One stain block can cling to several adjacent faces, including sloped terrain and exposed rock edges.
-
-The stain patch uses only existing vanilla dark/brown textures and thin model geometry, so no custom renderer or host-by-host texture matrix is required. It attaches only to plausible natural supports: dirt, sand, clay, mud, gravel, vanilla Overworld base stone and GeoStrata rock blocks. It does not replace vegetation or arbitrary occupied blocks.
+`petroleum_stain` reuses Minecraft's native sculk-vein / lichen-style multiface behavior. It can cling to plausible natural supports including dirt, sand, clay, mud, gravel, vanilla Overworld base stone, GeoStrata rocks and `geostrata:petroleum_bearing_rocks`.
 
 ### Bitumen crust
 
-`bitumen` reuses Minecraft's snow-layer state and geometry: one block represents one through eight stacked layers instead of introducing separate thin/thick tar blocks.
+`bitumen` reuses Minecraft's snow-layer state and geometry: one block represents one through eight stacked layers. Only reservoirs with pressure of at least `0.72` can form it. The deterministic 2-3 block seep footprint favors level/downhill cells, rejects cliff-scale jumps, thickens in depressions and becomes progressively sticky from three layers upward.
 
-Bitumen is intentionally rarer than staining. Only reservoirs with pressure of at least `0.72` can form it. The footprint is a deterministic 2-3 block radius around the same seep coordinate already used by the particles and stain. Placement follows the local terrain rather than drawing a circular blob:
+Bitumen currently has no survival drop. It remains geological evidence rather than a hand-harvested petroleum economy.
 
-- level and downhill cells are favored;
-- uphill spread is strongly penalized;
-- drops greater than two blocks and climbs greater than one block are rejected;
-- depressions receive thicker accumulation;
-- higher-pressure reservoir centers receive the deepest crusts.
-
-Thin one- and two-layer crusts are mostly visual. From three layers upward, walking becomes progressively sticky; seven- and eight-layer crusts strongly reduce horizontal movement and also damp upward motion. This uses ordinary block/entity movement hooks rather than custom sinking physics.
-
-Bitumen currently has no survival drop. It is geological evidence, not a new hand-harvested petroleum economy. Extraction, refining, crude-fluid production and depletion remain future technology-integration concerns.
-
-Both stain and bitumen are materialized lazily from the same seep query that already drives particles. Once placed they persist normally in the world. This gives existing saves the physical clues without adding another chunk-generation pass.
+Both stain and bitumen are materialized lazily from the same seep query that already drives particles. Once placed they persist normally in the world.
 
 ### Subsurface petroleum-bearing hosts
 
-The correlated sedimentary writer can also expose petroleum-bearing variants inside the same rock bodies it is already generating. This does not add another feature or scan: once the existing writer has resolved a bed, it can reuse the deterministic reservoir field before committing that block state.
-
-Two deliberately narrow host expressions are supported:
+The correlated sedimentary writer can expose petroleum-bearing variants inside rock bodies it is already generating. This does not add another feature or scan.
 
 - `oil_shale` is a shale-bed expression inside the richer core of a mudrock-associated hydrocarbon body;
-- `oil_sands` is a sandstone-bed expression where a sandstone-associated body has both sufficient concentration and pressure.
+- `oil_sands` is a sandstone-bed expression where a sandstone-associated body has sufficient concentration and pressure.
 
-These are host-rock variants, not new lithologies or ores. The semantic geology remains `shale` or `sandstone`, so stratigraphy, metamorphism and other geology consumers do not acquire petroleum-specific rock types. Mudstone is intentionally not renamed to oil shale, and metamorphosed shale/sandstone remains its metamorphic product rather than receiving a petroleum variant.
+These are host-rock variants, not new lithologies or ores. Semantic geology remains `shale` or `sandstone`, so stratigraphy and metamorphism do not acquire petroleum-specific rock types. Mining returns the ordinary host rather than crude, bitumen or a petroleum item. Both are exposed through `geostrata:petroleum_bearing_rocks`.
 
-Mining the variants returns the ordinary host (`shale` or `sandstone`) rather than crude, bitumen or a petroleum item. Their role is discoverability and a future in-place integration point. Both are exposed through the `geostrata:petroleum_bearing_rocks` block tag so an eventual pump/drill integration can recognise them without GeoStrata defining machinery or processing rules.
+### Create: Diesel Generators
+
+On Fabric 1.20.1, GeoStrata integrates with Create: Diesel Generators (`createdieselgenerators`) without a hard compile dependency.
+
+CDG already owns the correct crude-oil fluid, bucket transfer behavior, pumpjack, refining and its persistent per-chunk oil store. GeoStrata therefore does not register a second crude fluid or pump system.
+
+The compatibility rule is **provider adoption, not conversion**. While CDG is installed, the canonical runtime fluid for GeoStrata petroleum is the actual registered `createdieselgenerators:crude_oil` fluid. GeoStrata does not create a parallel `geostrata:crude_oil` fluid and does not require conversion recipes. Anything that GeoStrata materializes or exposes as free crude uses the provider fluid directly, so exact-fluid consumers, CDG buckets, Fabric fluid transfer, pipes and tanks see the same object. CDG also places that fluid in the common `c:crude_oil` tag, and its crude distillation recipe consumes that tag, so tag-aware recipes remain interoperable as well.
+
+When CDG is present:
+
+- GeoStrata seeds CDG's native `OilChunksSavedData` when a chunk is first encountered;
+- five cached geology samples across the chunk resolve the richest intersecting GeoStrata reservoir;
+- reservoir pressure and concentration map into CDG's native Fabric 1.20.1 rich-deposit range of roughly `8,000` to `400,000` mB;
+- a geologically dry chunk is explicitly stored as `0`, preventing CDG's unrelated biome/RNG oil placement from becoming a second occurrence model;
+- GeoStrata only writes when CDG reports `-1` (uninitialized). Existing positive, zero or depleted values are never overwritten, so pumpjack depletion remains authoritative;
+- CDG's `oil_deposit` tag is vanilla bedrock, so its normal pipe-to-bedrock pumpjack validation, pumping cadence, fluid tank and depletion path remain unchanged;
+- the pumpjack therefore produces CDG's own `createdieselgenerators:crude_oil` from GeoStrata-selected geological oil chunks;
+- CDG's optional infinite-deposit mode still makes positive petroleum chunks infinite, while a tiny optional compatibility mixin preserves stored geological `0` chunks as dry instead of turning them into infinite wells;
+- reservoirs with pressure at least `0.90` may materialize CDG's native `crude_oil` source block at the seep. Because this is CDG's own source fluid, ordinary CDG bucket filling works without compatibility recipes or a duplicate bucket item.
+
+This is the intended ownership split: GeoStrata decides **where petroleum exists and how rich the geology is**; Create: Diesel Generators supplies the adopted **runtime crude-oil identity** and decides **how the oil is pumped, bucketed, processed and consumed**.
 
 ## Firedamp mist
 
-Deep sedimentary geology can also expose a sparse deterministic gas-proneness signal. Mudrock is favored most strongly, followed by silt-rich sediment, carbonate, sandstone and coarse clastics. Burial increases the signal; shallow geology does not display firedamp.
+Deep sedimentary geology exposes a sparse deterministic gas-proneness signal. Mudrock is favored most strongly, followed by silt-rich sediment, carbonate, sandstone and coarse clastics. Burial increases the signal; shallow geology does not display firedamp.
 
-Players in sufficiently gas-prone underground locations may see a small amount of low-lying cloud-like mist near the cave or mine floor. The mist is a visual gameplay shorthand for otherwise invisible methane-rich firedamp, not a claim that methane is visibly foggy.
-
-The implementation deliberately stops at the clue:
-
-- no gas block or collectable fluid;
-- no cave flood-fill or sealed-space simulation;
-- no poisoning, suffocation, ignition fronts or explosions;
-- no finite gas state or depletion model;
-- nearby fire, lit campfires and lava simply suppress the local mist presentation.
-
-The suppressor scan only runs after the cheap geology test has already found a rare firedamp-prone site.
+Players in sufficiently gas-prone underground locations may see a small amount of low-lying cloud-like mist. The implementation deliberately stops at the clue: no gas block/fluid, cave flood-fill, poisoning, explosions or finite gas state. Nearby fire, lit campfires and lava suppress the local presentation.
 
 ## Coal haze
 
-Underground players near a meaningful concentration of coal receive a light ash haze. The signal is derived from blocks already present in the loaded world:
-
-- vanilla coal ores count as a small signal;
-- GeoStrata Poor / Medium / Rich / Massive coal grades scale with their base yield;
-- vanilla coal blocks count as a strong signal, matching the Massive-coal natural override when that feature is enabled.
-
-The scan is bounded to a 13 x 9 x 13 volume around each underground player and runs once per second. It never loads chunks, searches for hidden deposits at long range, or participates in chunk generation.
+Underground players near meaningful coal concentrations receive a light ash haze. Vanilla coal ore is a small signal, GeoStrata graded coal scales with base yield, and natural coal blocks are a strong signal. The bounded 13 x 9 x 13 scan runs once per second and never loads chunks.
 
 ## Performance boundary
 
-These indicators and host expressions reuse existing geology work rather than building a parallel system:
+The petroleum system reuses existing geology work:
 
-- no new petroleum worldgen pass;
-- no persistent per-chunk geology state;
-- no per-tick full-radius scan;
-- hydrocarbon geometry and gas potential are reconstructed from seed + geology;
-- petroleum-bearing shale/sands are selected inside the already-running correlated sedimentary replacement pass, with reservoir sampling cached per relevant column;
-- petroleum stain and bitumen writes are bounded to tiny deterministic patches near an already-resolved seep;
-- coal haze only examines a small loaded neighborhood once per second;
-- firedamp scans for nearby heat sources only after a rare gas-prone geology match;
-- particles and petroleum evidence blocks are clues, not geological authority.
+- no second petroleum worldgen pass;
+- no GeoStrata per-chunk petroleum save state;
+- no duplicate GeoStrata crude fluid when a provider already supplies the canonical runtime fluid;
+- petroleum-bearing shale/sands are selected inside the existing correlated sedimentary replacement pass;
+- stain, bitumen and rare free crude are tiny lazy seep writes;
+- the CDG bridge runs only when CDG is installed and only for CDG-uninitialized chunks;
+- one prepared semantic geology context is reused for the bridge's five chunk samples;
+- once CDG has any saved value, future chunk loads do no geology work for that CDG deposit;
+- CDG itself owns depletion, pumpjack behavior and crude-fluid storage.
 
-Future indicators should reuse this pattern: query existing semantic geology or generated blocks, remain deterministic where appropriate, and avoid creating a parallel geology model.
+Future indicators and integrations should query the existing semantic geology and avoid creating parallel occurrence models.
