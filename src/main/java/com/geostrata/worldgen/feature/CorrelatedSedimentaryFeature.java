@@ -1,12 +1,14 @@
 package com.geostrata.worldgen.feature;
 
 import com.geostrata.GeoStrata;
+import com.geostrata.block.GeoStrataBlocks;
 import com.geostrata.geology.CorrelatedSedimentaryExperiment;
 import com.geostrata.geology.CorrelatedSedimentaryRuntime;
 import com.geostrata.geology.FaultDamageZone;
 import com.geostrata.geology.GeologyProvince;
 import com.geostrata.geology.GeologyProvinceSampler;
 import com.geostrata.geology.LithologyCatalog;
+import com.geostrata.geology.PetroleumBearingRockField;
 import com.geostrata.geology.SedimentarySuccessions;
 import com.geostrata.geology.TectonicStructuralField;
 import net.minecraft.block.Block;
@@ -273,20 +275,37 @@ public final class CorrelatedSedimentaryFeature extends Feature<DefaultFeatureCo
             if (column == null) {
                 column = new ColumnCache(
                         site.column(worldSeed, x, z, provinceContext),
-                        site.field().tectonicField().column(x, z)
+                        site.field().tectonicField().column(x, z),
+                        PetroleumBearingRockField.column(worldSeed, x, z)
                 );
                 columns[columnIndex] = column;
             }
             String lithology = FaultDamageZone.contains(site.ownership().province(), column.tectonic(), y)
                     ? "breccia"
                     : column.geology().outputLithology(y, catalog);
-            BlockState replacement = replacementState(lithology, catalog, outputStates);
+            BlockState replacement = petroleumState(
+                    lithology,
+                    column.petroleum(),
+                    replacementState(lithology, catalog, outputStates)
+            );
             if (!existing.equals(replacement)) {
                 states.swapUnsafe(localX, localY, localZ, replacement);
                 placed++;
             }
         }
         return placed;
+    }
+
+    private static BlockState petroleumState(
+            String lithology,
+            PetroleumBearingRockField.Column petroleum,
+            BlockState fallback
+    ) {
+        return switch (petroleum.expression(lithology)) {
+            case OIL_SHALE -> GeoStrataBlocks.OIL_SHALE_STATE;
+            case OIL_SANDS -> GeoStrataBlocks.OIL_SANDS_STATE;
+            case NONE -> fallback;
+        };
     }
 
     private static BlockState replacementState(
@@ -360,7 +379,8 @@ public final class CorrelatedSedimentaryFeature extends Feature<DefaultFeatureCo
 
     private record ColumnCache(
             CorrelatedSedimentaryRuntime.Column geology,
-            TectonicStructuralField.Column tectonic
+            TectonicStructuralField.Column tectonic,
+            PetroleumBearingRockField.Column petroleum
     ) {
     }
 }
