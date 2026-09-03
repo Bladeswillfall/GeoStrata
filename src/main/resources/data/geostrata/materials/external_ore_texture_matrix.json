@@ -3,8 +3,8 @@
   "model": "geostrata:external_ore_texture_matrix",
   "resolution": 16,
   "hostTextureRoot": "geostrata:block/host",
-  "overlayTextureRoot": "geostrata:block/ore_source",
-  "compositeTextureRoot": "geostrata:block/ore",
+  "overlayTextureRoot": "geostrata:block/external_ore_source",
+  "compositeTextureRoot": "geostrata:block/external_ore",
   "grades": {
     "poor": {
       "targetPixels": 18
