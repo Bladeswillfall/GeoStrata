@@ -33,6 +33,11 @@ public final class CorrelatedExperimentCompanion implements ModInitializer {
             RegistryKeys.PLACED_FEATURE,
             new Identifier("create_new_age", "thorium_ore")
     );
+    private static final Identifier CREATE_NUCLEAR_RAW_URANIUM = new Identifier("createnuclear", "raw_uranium");
+    private static final RegistryKey<PlacedFeature> CREATE_NUCLEAR_URANIUM_ORE = RegistryKey.of(
+            RegistryKeys.PLACED_FEATURE,
+            new Identifier("createnuclear", "uranium_ore")
+    );
     private static final List<RegistryKey<PlacedFeature>> BENCHMARK_DIAMOND_ORES = List.of(
             OrePlacedFeatures.ORE_DIAMOND,
             OrePlacedFeatures.ORE_DIAMOND_LARGE,
@@ -63,6 +68,12 @@ public final class CorrelatedExperimentCompanion implements ModInitializer {
                                     context.getGenerationSettings().removeFeature(
                                             GenerationStep.Feature.UNDERGROUND_ORES,
                                             CREATE_NEW_AGE_THORIUM_ORE
+                                    );
+                                }
+                                if (Registries.ITEM.containsId(CREATE_NUCLEAR_RAW_URANIUM)) {
+                                    context.getGenerationSettings().removeFeature(
+                                            GenerationStep.Feature.UNDERGROUND_ORES,
+                                            CREATE_NUCLEAR_URANIUM_ORE
                                     );
                                 }
                                 if (benchmarkSuppressVanillaDiamond) {

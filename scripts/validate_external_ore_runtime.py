@@ -8,6 +8,7 @@ from pathlib import Path
 import re
 import struct
 import sys
+import zlib
 
 ROOT = Path(__file__).resolve().parents[1]
 RESOURCES = ROOT / "src/main/resources"
@@ -51,6 +52,53 @@ def require_png(path: Path) -> None:
         fail(f"{path.relative_to(ROOT)} must be a PNG")
     if struct.unpack(">II", header[16:24]) != (16, 16):
         fail(f"{path.relative_to(ROOT)} must be exactly 16x16")
+
+
+def opaque_pixel_count(path: Path) -> int:
+    data = path.read_bytes()
+    offset = 8
+    compressed = bytearray()
+    while offset < len(data):
+        length = struct.unpack(">I", data[offset:offset + 4])[0]
+        kind = data[offset + 4:offset + 8]
+        payload = data[offset + 8:offset + 8 + length]
+        if kind == b"IHDR" and payload[8:10] != b"\x08\x06":
+            fail(f"{path.relative_to(ROOT)} must use 8-bit RGBA pixels")
+        if kind == b"IDAT":
+            compressed.extend(payload)
+        offset += length + 12
+    raw = zlib.decompress(compressed)
+    stride = 16 * 4
+    previous = bytearray(stride)
+    opaque = 0
+    cursor = 0
+    for _ in range(16):
+        filter_type = raw[cursor]
+        encoded = raw[cursor + 1:cursor + 1 + stride]
+        cursor += stride + 1
+        row = bytearray(stride)
+        for index, value in enumerate(encoded):
+            left = row[index - 4] if index >= 4 else 0
+            above = previous[index]
+            upper_left = previous[index - 4] if index >= 4 else 0
+            if filter_type == 0:
+                predictor = 0
+            elif filter_type == 1:
+                predictor = left
+            elif filter_type == 2:
+                predictor = above
+            elif filter_type == 3:
+                predictor = (left + above) // 2
+            elif filter_type == 4:
+                p = left + above - upper_left
+                distances = (abs(p - left), abs(p - above), abs(p - upper_left))
+                predictor = (left, above, upper_left)[distances.index(min(distances))]
+            else:
+                fail(f"{path.relative_to(ROOT)} uses unsupported PNG filter {filter_type}")
+            row[index] = (value + predictor) & 255
+        opaque += sum(row[index] > 0 for index in range(3, stride, 4))
+        previous = row
+    return opaque
 
 
 def tag_values(path: Path) -> set[str]:
@@ -105,6 +153,7 @@ def main() -> None:
     registrations = {match.group("name"): match.groupdict() for match in EXTERNAL_BLOCK.finditer(BLOCKS_SOURCE.read_text(encoding="utf-8"))}
     hosts_supported = set(HOST.findall(HOST_SOURCE.read_text(encoding="utf-8")))
     ores_tag = tag_values(DATA / "tags/blocks/ores.json")
+    common_ores = tag_values(RESOURCES / "data/c/tags/blocks/ores.json")
     pickaxe = tag_values(RESOURCES / "data/minecraft/tags/blocks/mineable/pickaxe.json")
     stone = tag_values(RESOURCES / "data/minecraft/tags/blocks/needs_stone_tool.json")
     providers = {
@@ -158,6 +207,8 @@ def main() -> None:
             if block not in ores_tag or block not in pickaxe or block not in stone:
                 fail(f"{block} is missing ore/pickaxe/stone-tool classification")
             require_png(ASSETS / f"textures/block/external_ore_source/{material}/{grade}.png")
+            if opaque_pixel_count(ASSETS / f"textures/block/external_ore_source/{material}/{grade}.png") != matrix["grades"][grade]["targetPixels"]:
+                fail(f"{material} {grade} overlay must match its declared target pixel count")
 
             for host in hosts:
                 texture = ASSETS / f"textures/block/external_ore/{material}/{host}/{grade}.png"
@@ -181,12 +232,15 @@ def main() -> None:
 
         if tag_values(RESOURCES / f"data/c/tags/blocks/ores/{material}.json") != set(expected_blocks):
             fail(f"c:ores/{material} must contain all four GeoStrata grades")
+        if f"#c:ores/{material}" not in common_ores:
+            fail(f"c:ores must include #c:ores/{material}")
 
     companion = COMPANION_SOURCE.read_text(encoding="utf-8")
     suppression_contracts = {
         "zinc": ("create", "raw_zinc", "zinc_ore"),
         "tin": ("create_dd", "raw_tin", "tin_ore"),
         "thorium": ("create_new_age", "thorium", "thorium_ore"),
+        "uranium": ("createnuclear", "raw_uranium", "uranium_ore"),
     }
     for material, (namespace, output, placed_feature) in suppression_contracts.items():
         if material not in occurrences:

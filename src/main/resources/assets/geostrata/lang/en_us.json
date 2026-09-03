@@ -62,5 +62,9 @@
   "block.geostrata.poor_thorium_ore": "Poor Thorium Ore",
   "block.geostrata.medium_thorium_ore": "Medium Thorium Ore",
   "block.geostrata.rich_thorium_ore": "Rich Thorium Ore",
-  "block.geostrata.massive_thorium_ore": "Massive Thorium Ore"
+  "block.geostrata.massive_thorium_ore": "Massive Thorium Ore",
+  "block.geostrata.poor_uranium_ore": "Poor Uranium Ore",
+  "block.geostrata.medium_uranium_ore": "Medium Uranium Ore",
+  "block.geostrata.rich_uranium_ore": "Rich Uranium Ore",
+  "block.geostrata.massive_uranium_ore": "Massive Uranium Ore"
 }

@@ -286,6 +286,90 @@
         "rich": "geostrata:rich_thorium_ore",
         "massive": "geostrata:massive_thorium_ore"
       }
+    },
+    {
+      "id": "uranium",
+      "providerMod": "create_nuclear",
+      "outputItem": "createnuclear:raw_uranium",
+      "hostLithologies": [
+        "granite",
+        "rhyolite",
+        "gneiss"
+      ],
+      "provinceContexts": [
+        "cratonic_shield",
+        "volcanic_arc",
+        "orogenic_belt"
+      ],
+      "depositStyles": [
+        "vein",
+        "disseminated"
+      ],
+      "formationRoutes": [
+        {
+          "id": "felsic_hydrothermal",
+          "hostLithologies": [
+            "granite",
+            "rhyolite",
+            "gneiss"
+          ],
+          "provinceContexts": [
+            "cratonic_shield",
+            "volcanic_arc",
+            "orogenic_belt"
+          ],
+          "depositStyles": [
+            "vein",
+            "disseminated"
+          ]
+        }
+      ],
+      "generation": {
+        "activationChance": 0.16,
+        "candidateGrid": {
+          "horizontalCellSize": 192,
+          "verticalCellSize": 96,
+          "horizontalMargin": 12,
+          "verticalMargin": 8,
+          "horizontalSearchPaddingBlocks": 208,
+          "verticalSearchPaddingBlocks": 192
+        },
+        "depthAffinity": [
+          {
+            "maxY": -49,
+            "multiplier": 0.55
+          },
+          {
+            "minY": -48,
+            "maxY": 8,
+            "multiplier": 1.2
+          },
+          {
+            "minY": 9,
+            "maxY": 64,
+            "multiplier": 0.5
+          },
+          {
+            "minY": 65,
+            "multiplier": 0.0
+          }
+        ],
+        "bodyScale": 0.62,
+        "discoveryStringers": {
+          "count": 5,
+          "minLength": 24.0,
+          "maxLength": 46.0,
+          "minRadius": 0.5,
+          "maxRadius": 0.68,
+          "exposedHaloBlocks": 2.0
+        }
+      },
+      "gradeBlocks": {
+        "poor": "geostrata:poor_uranium_ore",
+        "medium": "geostrata:medium_uranium_ore",
+        "rich": "geostrata:rich_uranium_ore",
+        "massive": "geostrata:massive_uranium_ore"
+      }
     }
   ]
 }

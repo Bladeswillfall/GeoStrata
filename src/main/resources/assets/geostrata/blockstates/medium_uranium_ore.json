@@ -1,0 +1,49 @@
+{
+  "variants": {
+    "host=limestone": {
+      "model": "geostrata:block/ore/uranium/granite/medium"
+    },
+    "host=chalk": {
+      "model": "geostrata:block/ore/uranium/granite/medium"
+    },
+    "host=shale": {
+      "model": "geostrata:block/ore/uranium/granite/medium"
+    },
+    "host=slate": {
+      "model": "geostrata:block/ore/uranium/granite/medium"
+    },
+    "host=mudstone": {
+      "model": "geostrata:block/ore/uranium/granite/medium"
+    },
+    "host=siltstone": {
+      "model": "geostrata:block/ore/uranium/granite/medium"
+    },
+    "host=marble": {
+      "model": "geostrata:block/ore/uranium/granite/medium"
+    },
+    "host=quartzite": {
+      "model": "geostrata:block/ore/uranium/granite/medium"
+    },
+    "host=schist": {
+      "model": "geostrata:block/ore/uranium/granite/medium"
+    },
+    "host=gneiss": {
+      "model": "geostrata:block/ore/uranium/gneiss/medium"
+    },
+    "host=granite": {
+      "model": "geostrata:block/ore/uranium/granite/medium"
+    },
+    "host=basalt": {
+      "model": "geostrata:block/ore/uranium/granite/medium"
+    },
+    "host=rhyolite": {
+      "model": "geostrata:block/ore/uranium/rhyolite/medium"
+    },
+    "host=conglomerate": {
+      "model": "geostrata:block/ore/uranium/granite/medium"
+    },
+    "host=breccia": {
+      "model": "geostrata:block/ore/uranium/granite/medium"
+    }
+  }
+}

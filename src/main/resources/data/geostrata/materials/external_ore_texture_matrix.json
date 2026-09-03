@@ -50,6 +50,15 @@
         "gneiss"
       ],
       "continuity": false
+    },
+    "uranium": {
+      "defaultHost": "granite",
+      "validHosts": [
+        "granite",
+        "rhyolite",
+        "gneiss"
+      ],
+      "continuity": false
     }
   }
 }
