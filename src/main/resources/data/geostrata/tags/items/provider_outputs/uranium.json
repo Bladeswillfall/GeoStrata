@@ -4,6 +4,10 @@
     {
       "id": "createnuclear:raw_uranium",
       "required": false
+    },
+    {
+      "id": "modern_industrialization:raw_uranium",
+      "required": false
     }
   ]
 }
