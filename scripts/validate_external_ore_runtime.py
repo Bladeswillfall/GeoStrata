@@ -279,7 +279,14 @@ def main() -> None:
             ),
         ],
         "thorium": [("create_new_age", "thorium", ("thorium_ore",))],
-        "uranium": [("createnuclear", "raw_uranium", ("uranium_ore",))],
+        "uranium": [
+            ("createnuclear", "raw_uranium", ("uranium_ore",)),
+            (
+                "modern_industrialization",
+                "raw_uranium",
+                ("ore_generator_uranium", "deepslate_ore_generator_uranium"),
+            ),
+        ],
     }
     for material, contracts in suppression_contracts.items():
         if material not in occurrences:

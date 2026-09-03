@@ -52,6 +52,20 @@ public final class CorrelatedExperimentCompanion implements ModInitializer {
             RegistryKeys.PLACED_FEATURE,
             new Identifier("createnuclear", "uranium_ore")
     );
+    private static final Identifier MODERN_INDUSTRIALIZATION_RAW_URANIUM = new Identifier(
+            "modern_industrialization",
+            "raw_uranium"
+    );
+    private static final List<RegistryKey<PlacedFeature>> MODERN_INDUSTRIALIZATION_URANIUM_ORES = List.of(
+            RegistryKey.of(
+                    RegistryKeys.PLACED_FEATURE,
+                    new Identifier("modern_industrialization", "ore_generator_uranium")
+            ),
+            RegistryKey.of(
+                    RegistryKeys.PLACED_FEATURE,
+                    new Identifier("modern_industrialization", "deepslate_ore_generator_uranium")
+            )
+    );
     private static final List<RegistryKey<PlacedFeature>> BENCHMARK_DIAMOND_ORES = List.of(
             OrePlacedFeatures.ORE_DIAMOND,
             OrePlacedFeatures.ORE_DIAMOND_LARGE,
@@ -96,6 +110,13 @@ public final class CorrelatedExperimentCompanion implements ModInitializer {
                                             GenerationStep.Feature.UNDERGROUND_ORES,
                                             CREATE_NUCLEAR_URANIUM_ORE
                                     );
+                                }
+                                if (Registries.ITEM.containsId(MODERN_INDUSTRIALIZATION_RAW_URANIUM)) {
+                                    MODERN_INDUSTRIALIZATION_URANIUM_ORES.forEach(feature ->
+                                            context.getGenerationSettings().removeFeature(
+                                                    GenerationStep.Feature.UNDERGROUND_ORES,
+                                                    feature
+                                            ));
                                 }
                                 if (benchmarkSuppressVanillaDiamond) {
                                     BENCHMARK_DIAMOND_ORES.forEach(feature ->

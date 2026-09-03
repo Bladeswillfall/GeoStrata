@@ -297,8 +297,16 @@
     },
     {
       "id": "uranium",
-      "providerMod": "create_nuclear",
-      "outputItem": "createnuclear:raw_uranium",
+      "providers": [
+        {
+          "providerMod": "create_nuclear",
+          "outputItem": "createnuclear:raw_uranium"
+        },
+        {
+          "providerMod": "modern_industrialization",
+          "outputItem": "modern_industrialization:raw_uranium"
+        }
+      ],
       "hostLithologies": [
         "granite",
         "rhyolite",

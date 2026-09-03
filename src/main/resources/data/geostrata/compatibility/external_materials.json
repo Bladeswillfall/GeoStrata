@@ -257,6 +257,13 @@
           "providerOutput": "modern_industrialization:raw_tin",
           "commonTags": ["c:ores/tin", "c:raw_materials/tin"],
           "status": "catalogued"
+        },
+        {
+          "canonicalMaterial": "uranium",
+          "providerBlocks": ["modern_industrialization:uranium_ore", "modern_industrialization:deepslate_uranium_ore"],
+          "providerOutput": "modern_industrialization:raw_uranium",
+          "commonTags": ["c:ores/uranium", "c:raw_materials/uranium"],
+          "status": "catalogued"
         }
       ]
     },
