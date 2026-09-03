@@ -19,9 +19,11 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.world.World;
 
+import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Arrays;
+import java.util.Map;
 import java.util.Optional;
 
 /** Optional bridge that lets GeoStrata own CDG petroleum occurrence without a hard dependency. */
@@ -62,8 +64,7 @@ public final class FabricCreateDieselGeneratorsIntegration {
             }
             bridge.setAmount(world, pos, geologicalOilAmount(world, pos));
         } catch (ReflectiveOperationException exception) {
-            oilStore = null;
-            GeoStrata.LOGGER.warn("Disabling Create: Diesel Generators oil-chunk bridge after an API failure", exception);
+            disableBridge(exception);
         }
     }
 
@@ -89,13 +90,14 @@ public final class FabricCreateDieselGeneratorsIntegration {
         return amount;
     }
 
-    /** Places CDG's own source fluid at only the rarest high-pressure GeoStrata seeps. */
+    /** Places one bucketable CDG source at only the rarest high-pressure GeoStrata seeps. */
     public static void materializeFreeCrude(
             ServerWorld world,
             HydrocarbonReservoirField.Reservoir reservoir,
             int seepY
     ) {
-        if (oilStore == null || !PetroleumChunkField.exposesFreeCrude(reservoir)) {
+        OilStoreBridge bridge = oilStore;
+        if (bridge == null || !PetroleumChunkField.exposesFreeCrude(reservoir)) {
             return;
         }
         Block crudeOil = Registries.BLOCK.get(CRUDE_OIL_ID);
@@ -114,22 +116,57 @@ public final class FabricCreateDieselGeneratorsIntegration {
         if (fluid.isEmpty() || !fluid.isStill() || fluid.getFluid().getBucketItem() == Items.AIR) {
             return;
         }
-        world.setBlockState(target, crudeState, Block.NOTIFY_LISTENERS);
+
+        try {
+            ChunkPos chunk = new ChunkPos(target);
+            int initialAmount = geologicalOilAmount(world, chunk);
+            int storedAmount = bridge.rawAmount(world, chunk);
+            if (!canMaterializeFreeCrude(storedAmount, initialAmount)) {
+                return;
+            }
+            if (world.setBlockState(target, crudeState, Block.NOTIFY_LISTENERS)) {
+                bridge.setAmount(world, chunk, storedAmount - 1);
+            }
+        } catch (ReflectiveOperationException exception) {
+            disableBridge(exception);
+        }
     }
 
-    private record OilStoreBridge(Method load, Method getAmount, Method setAmount) {
+    static boolean canMaterializeFreeCrude(int storedAmount, int geologicalAmount) {
+        return storedAmount > 0 && storedAmount == geologicalAmount;
+    }
+
+    private static void disableBridge(ReflectiveOperationException exception) {
+        oilStore = null;
+        GeoStrata.LOGGER.warn("Disabling Create: Diesel Generators oil-chunk bridge after an API failure", exception);
+    }
+
+    private record OilStoreBridge(Method load, Method getAmount, Method setAmount, Field chunks) {
         static OilStoreBridge create() throws ReflectiveOperationException {
             Class<?> type = Class.forName(OIL_DATA_CLASS);
+            Field chunks = type.getDeclaredField("chunks");
+            chunks.setAccessible(true);
             return new OilStoreBridge(
                     method(type, "load", 1),
                     method(type, "getChunkOilAmount", 1),
-                    method(type, "setChunkAmount", 2)
+                    method(type, "setChunkAmount", 2),
+                    chunks
             );
         }
 
         int amount(ServerWorld world, ChunkPos pos) throws ReflectiveOperationException {
             Object store = invoke(load, null, world);
             return ((Number) invoke(getAmount, store, pos)).intValue();
+        }
+
+        int rawAmount(ServerWorld world, ChunkPos pos) throws ReflectiveOperationException {
+            Object store = invoke(load, null, world);
+            Object raw = chunks.get(store);
+            if (!(raw instanceof Map<?, ?> amounts)) {
+                throw new IllegalAccessException(OIL_DATA_CLASS + ".chunks is not a map");
+            }
+            Object amount = amounts.get(pos);
+            return amount instanceof Number number ? number.intValue() : -1;
         }
 
         void setAmount(ServerWorld world, ChunkPos pos, int amount) throws ReflectiveOperationException {
