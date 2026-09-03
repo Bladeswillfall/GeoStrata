@@ -64,6 +64,10 @@ public final class GeoStrataBlocks {
             "petroleum_stain",
             new PetroleumStainBlock(AbstractBlock.Settings.copy(Blocks.SCULK_VEIN).sounds(BlockSoundGroup.MUD))
     );
+    public static final BitumenBlock BITUMEN = registerEvidence(
+            "bitumen",
+            new BitumenBlock(AbstractBlock.Settings.copy(Blocks.SNOW).sounds(BlockSoundGroup.MUD).strength(0.25F))
+    );
 
     public static final Block POOR_COAL_ORE = registerOre("poor_coal_ore", "coal", OreGrade.POOR, Blocks.COAL_ORE, 3.0F, BlockSoundGroup.STONE);
     public static final Block MEDIUM_COAL_ORE = registerOre("medium_coal_ore", "coal", OreGrade.MEDIUM, Blocks.COAL_ORE, 3.0F, BlockSoundGroup.STONE);
@@ -187,7 +191,7 @@ public final class GeoStrataBlocks {
         return block;
     }
 
-    private static PetroleumStainBlock registerEvidence(String name, PetroleumStainBlock block) {
+    private static <T extends Block> T registerEvidence(String name, T block) {
         register(name, block);
         EVIDENCE_BLOCKS.add(block);
         return block;
