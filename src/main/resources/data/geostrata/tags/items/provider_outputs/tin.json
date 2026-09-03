@@ -8,6 +8,10 @@
     {
       "id": "modern_industrialization:raw_tin",
       "required": false
+    },
+    {
+      "id": "techreborn:raw_tin",
+      "required": false
     }
   ]
 }
