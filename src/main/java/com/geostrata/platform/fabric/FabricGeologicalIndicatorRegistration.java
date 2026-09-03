@@ -198,7 +198,7 @@ public final class FabricGeologicalIndicatorRegistration {
             return;
         }
 
-        int seepY = world.getTopY(Heightmap.Type.MOTION_BLOCKING_NO_LEAVES, body.seepX(), body.seepZ());
+        int seepY = BitumenSurfaceEvidence.surfaceY(world, body.seepX(), body.seepZ());
         BlockState surface = world.getBlockState(new BlockPos(body.seepX(), seepY - 1, body.seepZ()));
         if (!supportsPetroleumEvidence(surface)) {
             return;
