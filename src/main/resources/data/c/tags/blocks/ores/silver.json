@@ -1,0 +1,9 @@
+{
+  "replace": false,
+  "values": [
+    "geostrata:poor_silver_ore",
+    "geostrata:medium_silver_ore",
+    "geostrata:rich_silver_ore",
+    "geostrata:massive_silver_ore"
+  ]
+}
