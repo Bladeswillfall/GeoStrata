@@ -31,6 +31,24 @@ final class OreOccurrenceCatalogTest {
     }
 
     @Test
+    void naturalBlockOverridesAreSparseAndValidated() {
+        JsonObject root = occurrence("shale", "vein");
+        JsonObject occurrence = root.getAsJsonArray("occurrences").get(0).getAsJsonObject();
+        occurrence.add("naturalBlockOverrides", JsonParser.parseString("""
+                {"massive": "minecraft:coal_block"}
+                """));
+
+        OreOccurrenceCatalog.Occurrence iron = OreOccurrenceCatalog.parse(lithologies(), root).require("iron");
+        assertEquals("geostrata:rich_iron_ore", iron.naturalBlock(OreGrade.RICH));
+        assertEquals("minecraft:coal_block", iron.naturalBlock(OreGrade.MASSIVE));
+
+        occurrence.add("naturalBlockOverrides", JsonParser.parseString("""
+                {"unknown": "minecraft:coal_block"}
+                """));
+        assertThrows(IllegalArgumentException.class, () -> OreOccurrenceCatalog.parse(lithologies(), root));
+    }
+
+    @Test
     void bodyStyleConstraintIsOptionalAndFailsClosedWithoutContext() {
         JsonObject root = occurrence("shale", "vein");
         root.getAsJsonArray("occurrences")
