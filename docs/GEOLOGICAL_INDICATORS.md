@@ -8,16 +8,33 @@ GeoStrata exposes subtle player-facing signs of geology without adding a second 
 
 The field does not place an oil fluid or invent a processing chain. That is deliberate: GeoStrata owns the geological occurrence, while a future optional petroleum mod can own fluids, pumps and refining. The returned reservoir record provides stable center/radius, pressure, concentration and seep coordinates for those integrations.
 
-Sufficiently pressured reservoirs now leave two linked clues at their deterministic surface seep point while a player is nearby:
+Sufficiently pressured reservoirs leave linked clues at their deterministic surface seep point while a player is nearby:
 
 - sparse black seep/smoke particles show that the seep is active;
-- a persistent `petroleum_stain` multiface block marks a small deterministic patch of affected ground and exposed rock.
+- a persistent `petroleum_stain` multiface block marks a small deterministic patch of affected ground and exposed rock;
+- stronger reservoirs can additionally accumulate layered `bitumen` crust close to the seep.
 
 `petroleum_stain` deliberately reuses Minecraft's native sculk-vein / lichen-style multiface behavior instead of replacing every possible host with a petroleum-specific block. One stain block can cling to several adjacent faces, including sloped terrain and exposed rock edges.
 
-The patch uses only existing vanilla dark/brown textures and thin model geometry, so no custom renderer or host-by-host texture matrix is required. It attaches only to plausible natural supports: dirt, sand, clay, mud, gravel, vanilla Overworld base stone and GeoStrata rock blocks. It does not replace vegetation or arbitrary occupied blocks.
+The stain patch uses only existing vanilla dark/brown textures and thin model geometry, so no custom renderer or host-by-host texture matrix is required. It attaches only to plausible natural supports: dirt, sand, clay, mud, gravel, vanilla Overworld base stone and GeoStrata rock blocks. It does not replace vegetation or arbitrary occupied blocks.
 
-The stain is materialized lazily from the same seep query that already drives particles. Once placed it persists normally in the world, and repeated checks become read-only. This gives existing saves the physical clue without adding another chunk-generation pass.
+### Bitumen crust
+
+`bitumen` reuses Minecraft's snow-layer state and geometry: one block represents one through eight stacked layers instead of introducing separate thin/thick tar blocks.
+
+Bitumen is intentionally rarer than staining. Only reservoirs with pressure of at least `0.72` can form it. The footprint is a deterministic 2-3 block radius around the same seep coordinate already used by the particles and stain. Placement follows the local terrain rather than drawing a circular blob:
+
+- level and downhill cells are favored;
+- uphill spread is strongly penalized;
+- drops greater than two blocks and climbs greater than one block are rejected;
+- depressions receive thicker accumulation;
+- higher-pressure reservoir centers receive the deepest crusts.
+
+Thin one- and two-layer crusts are mostly visual. From three layers upward, walking becomes progressively sticky; seven- and eight-layer crusts strongly reduce horizontal movement and also damp upward motion. This uses ordinary block/entity movement hooks rather than custom sinking physics.
+
+Bitumen currently has no survival drop. It is geological evidence, not a new hand-harvested petroleum economy. Extraction, refining, crude-fluid production and depletion remain future technology-integration concerns.
+
+Both stain and bitumen are materialized lazily from the same seep query that already drives particles. Once placed they persist normally in the world. This gives existing saves the physical clues without adding another chunk-generation pass.
 
 ## Firedamp mist
 
@@ -53,9 +70,9 @@ These indicators are deliberately post-generation and local:
 - no persistent per-chunk geology state;
 - no per-tick full-radius scan;
 - hydrocarbon geometry and gas potential are reconstructed from seed + geology;
-- petroleum stain writes are bounded to a tiny patch and stop once the deterministic faces already exist;
+- petroleum stain and bitumen writes are bounded to tiny deterministic patches near an already-resolved seep;
 - coal haze only examines a small loaded neighborhood once per second;
 - firedamp scans for nearby heat sources only after a rare gas-prone geology match;
-- particles and stain blocks are evidence, not geological authority.
+- particles and petroleum evidence blocks are clues, not geological authority.
 
 Future indicators should reuse this pattern: query existing semantic geology or generated blocks, remain deterministic where appropriate, and avoid creating a parallel geology model.

@@ -198,13 +198,14 @@ public final class FabricGeologicalIndicatorRegistration {
             return;
         }
 
-        int seepY = world.getTopY(Heightmap.Type.MOTION_BLOCKING_NO_LEAVES, body.seepX(), body.seepZ());
+        int seepY = BitumenSurfaceEvidence.surfaceY(world, body.seepX(), body.seepZ());
         BlockState surface = world.getBlockState(new BlockPos(body.seepX(), seepY - 1, body.seepZ()));
-        if (!supportsOilStain(surface)) {
+        if (!supportsPetroleumEvidence(surface)) {
             return;
         }
 
         materializeOilStain(world, body);
+        BitumenSurfaceEvidence.materialize(world, body);
         world.spawnParticles(
                 ParticleTypes.SQUID_INK,
                 body.seepX() + 0.5,
@@ -286,7 +287,7 @@ public final class FabricGeologicalIndicatorRegistration {
                 : GeoStrataBlocks.PETROLEUM_STAIN.getDefaultState();
         boolean attached = existing.isOf(GeoStrataBlocks.PETROLEUM_STAIN);
         for (Direction direction : Direction.values()) {
-            if (direction == Direction.UP || !supportsOilStain(world.getBlockState(target.offset(direction)))) {
+            if (direction == Direction.UP || !supportsPetroleumEvidence(world.getBlockState(target.offset(direction)))) {
                 continue;
             }
             BlockState attachedState = GeoStrataBlocks.PETROLEUM_STAIN.withDirection(
@@ -320,7 +321,7 @@ public final class FabricGeologicalIndicatorRegistration {
         return roll < chance;
     }
 
-    private static boolean supportsOilStain(BlockState state) {
+    static boolean supportsPetroleumEvidence(BlockState state) {
         return state.isIn(BlockTags.DIRT)
                 || state.isIn(BlockTags.SAND)
                 || state.isIn(BlockTags.BASE_STONE_OVERWORLD)
