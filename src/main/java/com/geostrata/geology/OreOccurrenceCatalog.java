@@ -176,6 +176,7 @@ public final class OreOccurrenceCatalog {
         );
         OreGrade maximumNaturalGrade = parseMaximumNaturalGrade(id, object);
         Map<OreGrade, String> gradeBlocks = parseGradeBlocks(id, requiredObject(object, "gradeBlocks"));
+        Map<OreGrade, String> naturalBlockOverrides = parseNaturalBlockOverrides(id, object);
         return new Occurrence(
                 id,
                 providerMod,
@@ -187,7 +188,8 @@ public final class OreOccurrenceCatalog {
                 generation,
                 terrainFilter,
                 maximumNaturalGrade,
-                gradeBlocks
+                gradeBlocks,
+                naturalBlockOverrides
         );
     }
 
@@ -276,6 +278,30 @@ public final class OreOccurrenceCatalog {
             blocks.put(grade, identifier(object, grade.id()));
         }
         return Collections.unmodifiableMap(blocks);
+    }
+
+    private static Map<OreGrade, String> parseNaturalBlockOverrides(String material, JsonObject occurrence) {
+        JsonElement rawOverrides = occurrence.get("naturalBlockOverrides");
+        if (rawOverrides == null) {
+            return Map.of();
+        }
+        if (!rawOverrides.isJsonObject() || rawOverrides.getAsJsonObject().size() == 0) {
+            throw new IllegalArgumentException(material + " naturalBlockOverrides must be a non-empty object");
+        }
+        JsonObject object = rawOverrides.getAsJsonObject();
+        Set<String> knownGrades = ECONOMIC_GRADES.stream()
+                .map(OreGrade::id)
+                .collect(java.util.stream.Collectors.toSet());
+        if (!knownGrades.containsAll(object.keySet())) {
+            throw new IllegalArgumentException(material + " naturalBlockOverrides contains an unknown ore grade");
+        }
+        EnumMap<OreGrade, String> overrides = new EnumMap<>(OreGrade.class);
+        for (OreGrade grade : ECONOMIC_GRADES) {
+            if (object.has(grade.id())) {
+                overrides.put(grade, identifier(object, grade.id()));
+            }
+        }
+        return Collections.unmodifiableMap(overrides);
     }
 
     private static void requireKnownHosts(String id, List<String> hosts, Set<String> knownLithologies) {
@@ -568,7 +594,8 @@ public final class OreOccurrenceCatalog {
             OreGenerationProfile generation,
             TerrainFilter terrainFilter,
             OreGrade maximumNaturalGrade,
-            Map<OreGrade, String> gradeBlocks
+            Map<OreGrade, String> gradeBlocks,
+            Map<OreGrade, String> naturalBlockOverrides
     ) {
         public Occurrence {
             hostLithologies = List.copyOf(hostLithologies);
@@ -591,6 +618,38 @@ public final class OreOccurrenceCatalog {
             EnumMap<OreGrade, String> copiedBlocks = new EnumMap<>(OreGrade.class);
             copiedBlocks.putAll(gradeBlocks);
             gradeBlocks = Collections.unmodifiableMap(copiedBlocks);
+            EnumMap<OreGrade, String> copiedOverrides = new EnumMap<>(OreGrade.class);
+            copiedOverrides.putAll(naturalBlockOverrides);
+            naturalBlockOverrides = Collections.unmodifiableMap(copiedOverrides);
+        }
+
+        public Occurrence(
+                String id,
+                String providerMod,
+                String outputItem,
+                List<String> hostLithologies,
+                List<GeologyProvince> provinceContexts,
+                List<String> depositStyles,
+                List<FormationRoute> formationRoutes,
+                OreGenerationProfile generation,
+                TerrainFilter terrainFilter,
+                OreGrade maximumNaturalGrade,
+                Map<OreGrade, String> gradeBlocks
+        ) {
+            this(
+                    id,
+                    providerMod,
+                    outputItem,
+                    hostLithologies,
+                    provinceContexts,
+                    depositStyles,
+                    formationRoutes,
+                    generation,
+                    terrainFilter,
+                    maximumNaturalGrade,
+                    gradeBlocks,
+                    Map.of()
+            );
         }
 
         public Occurrence(
@@ -710,6 +769,13 @@ public final class OreOccurrenceCatalog {
                 throw new IllegalArgumentException("ore grade must not be null");
             }
             return grade.ordinal() > maximumNaturalGrade.ordinal() ? maximumNaturalGrade : grade;
+        }
+
+        public String naturalBlock(OreGrade grade) {
+            if (grade == null) {
+                throw new IllegalArgumentException("ore grade must not be null");
+            }
+            return naturalBlockOverrides.getOrDefault(grade, gradeBlocks.get(grade));
         }
     }
 
