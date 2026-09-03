@@ -47,7 +47,8 @@ When CDG is present:
 - reservoir pressure and concentration map into CDG's native Fabric 1.20.1 rich-deposit range of roughly `8,000` to `400,000` mB;
 - a geologically dry chunk is explicitly stored as `0`, preventing CDG's unrelated biome/RNG oil placement from becoming a second occurrence model;
 - GeoStrata only writes when CDG reports `-1` (uninitialized). Existing positive, zero or depleted values are never overwritten, so pumpjack depletion remains authoritative;
-- CDG's normal bedrock-reaching pumpjack continues to read and consume its own saved chunk amount;
+- CDG's `oil_deposit` tag is vanilla bedrock, so its normal pipe-to-bedrock pumpjack validation, pumping cadence, fluid tank and depletion path remain unchanged;
+- CDG's optional infinite-deposit mode still makes positive petroleum chunks infinite, while a tiny optional compatibility mixin preserves stored geological `0` chunks as dry instead of turning them into infinite wells;
 - reservoirs with pressure at least `0.90` may materialize CDG's native `crude_oil` source block at the seep. Because this is CDG's own source fluid, ordinary CDG bucket filling works without compatibility recipes or a duplicate bucket item.
 
 This is the intended ownership split: GeoStrata decides **where petroleum exists and how rich the geology is**; Create: Diesel Generators decides **how the oil is pumped, bucketed, processed and consumed**.
