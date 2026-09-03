@@ -37,21 +37,15 @@ public final class GradedOreBlock extends ExperienceDroppingBlock {
 
     @Override
     public List<ItemStack> getDroppedStacks(BlockState state, LootContextParameterSet.Builder builder) {
-        String rawOutput = providerOutputItem(OreOccurrenceCatalog.current().byId().get(material));
-        if (rawOutput != null) {
-            Identifier outputId = new Identifier(rawOutput);
+        OreOccurrenceCatalog.Occurrence occurrence = OreOccurrenceCatalog.current().byId().get(material);
+        if (occurrence != null && !"minecraft".equals(occurrence.providerMod())) {
+            Identifier outputId = new Identifier(occurrence.outputItem());
             builder.addDynamicDrop(
                     GeoStrata.id("provider_output/" + material),
                     consumer -> consumer.accept(new ItemStack(Registries.ITEM.get(outputId)))
             );
         }
         return super.getDroppedStacks(state, builder);
-    }
-
-    static String providerOutputItem(OreOccurrenceCatalog.Occurrence occurrence) {
-        return occurrence == null || "minecraft".equals(occurrence.providerMod())
-                ? null
-                : occurrence.outputItem();
     }
 
     public String material() {
