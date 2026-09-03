@@ -17,6 +17,7 @@ public final class FabricGeoStrata implements ModInitializer {
         FabricContentRegistration.register();
         FabricGeologyReloadRegistration.register();
         FabricWorldgenRegistration.register();
+        FabricGeologicalIndicatorRegistration.register();
         GeoStrataCommands.register();
         GeologyResolveCommands.register();
         MetamorphismCommands.register();
