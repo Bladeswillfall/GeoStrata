@@ -400,6 +400,18 @@ def validate_material_catalog() -> int:
     if any(not isinstance(value, int) for value in grade_pixels) or grade_pixels != sorted(set(grade_pixels)):
         fail("ore texture matrix targetPixels must increase strictly by grade")
     for material, occurrence in occurrences.items():
+        natural_overrides = occurrence.get("naturalBlockOverrides")
+        if natural_overrides is not None and (
+            not isinstance(natural_overrides, dict)
+            or not natural_overrides
+            or any(
+                grade not in grade_order
+                or not isinstance(block, str)
+                or IDENTIFIER.fullmatch(block) is None
+                for grade, block in natural_overrides.items()
+            )
+        ):
+            fail(f"ore occurrence {material} has invalid naturalBlockOverrides")
         matrix_ore = matrix_ores[material]
         if not isinstance(matrix_ore, dict):
             fail(f"ore texture matrix entry {material} must be an object")
