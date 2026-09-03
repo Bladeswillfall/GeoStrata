@@ -15,7 +15,6 @@ import net.minecraft.util.Identifier;
 import net.minecraft.util.math.intprovider.UniformIntProvider;
 
 import java.util.List;
-import java.util.function.Function;
 
 /** Ore block whose mining XP follows the shared grade contract. */
 public final class GradedOreBlock extends ExperienceDroppingBlock {
@@ -38,29 +37,21 @@ public final class GradedOreBlock extends ExperienceDroppingBlock {
 
     @Override
     public List<ItemStack> getDroppedStacks(BlockState state, LootContextParameterSet.Builder builder) {
-        addProviderOutputDrop(
-                material,
-                OreOccurrenceCatalog.current().byId().get(material),
-                builder,
-                outputId -> new ItemStack(Registries.ITEM.get(outputId))
-        );
+        String rawOutput = providerOutputItem(OreOccurrenceCatalog.current().byId().get(material));
+        if (rawOutput != null) {
+            Identifier outputId = new Identifier(rawOutput);
+            builder.addDynamicDrop(
+                    GeoStrata.id("provider_output/" + material),
+                    consumer -> consumer.accept(new ItemStack(Registries.ITEM.get(outputId)))
+            );
+        }
         return super.getDroppedStacks(state, builder);
     }
 
-    static void addProviderOutputDrop(
-            String material,
-            OreOccurrenceCatalog.Occurrence occurrence,
-            LootContextParameterSet.Builder builder,
-            Function<Identifier, ItemStack> outputResolver
-    ) {
-        if (occurrence == null || "minecraft".equals(occurrence.providerMod())) {
-            return;
-        }
-        Identifier outputId = new Identifier(occurrence.outputItem());
-        builder.addDynamicDrop(
-                GeoStrata.id("provider_output/" + material),
-                consumer -> consumer.accept(outputResolver.apply(outputId))
-        );
+    static String providerOutputItem(OreOccurrenceCatalog.Occurrence occurrence) {
+        return occurrence == null || "minecraft".equals(occurrence.providerMod())
+                ? null
+                : occurrence.outputItem();
     }
 
     public String material() {
