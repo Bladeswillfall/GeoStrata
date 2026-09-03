@@ -5,10 +5,13 @@ import com.geostrata.block.GradedOreBlock;
 import com.geostrata.geology.GeologyProvinceSampler;
 import com.geostrata.geology.OreDepositExperiment;
 import com.geostrata.geology.OreGrade;
+import com.geostrata.geology.OreOccurrenceCatalog;
 import com.google.gson.JsonObject;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
+import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
+import net.minecraft.registry.Registries;
 import net.minecraft.registry.tag.BlockTags;
 import net.minecraft.server.command.CommandManager;
 import net.minecraft.server.command.ServerCommandSource;
@@ -19,6 +22,7 @@ import net.minecraft.util.math.Direction;
 
 import java.util.ArrayDeque;
 import java.util.EnumMap;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -97,11 +101,12 @@ public final class OreDistributionBenchmarkCommands {
         }
 
         BenchmarkStats stats = new BenchmarkStats(world.getBottomY(), world.getTopY());
+        Map<Block, OreSample> naturalOverrides = naturalOverrideSamples();
         BlockPos.Mutable pos = new BlockPos.Mutable();
         BlockPos.Mutable neighbor = new BlockPos.Mutable();
         for (int chunkX = minChunk; chunkX <= maxChunk; chunkX++) {
             for (int chunkZ = minChunk; chunkZ <= maxChunk; chunkZ++) {
-                scanChunk(world, chunkX, chunkZ, stats, pos, neighbor);
+                scanChunk(world, chunkX, chunkZ, stats, naturalOverrides, pos, neighbor);
             }
         }
         return stats;
@@ -112,6 +117,7 @@ public final class OreDistributionBenchmarkCommands {
             int chunkX,
             int chunkZ,
             BenchmarkStats stats,
+            Map<Block, OreSample> naturalOverrides,
             BlockPos.Mutable pos,
             BlockPos.Mutable neighbor
     ) {
@@ -127,7 +133,7 @@ public final class OreDistributionBenchmarkCommands {
                 int z = startZ + localZ;
                 for (int y = world.getBottomY(); y < world.getTopY(); y++) {
                     pos.set(x, y, z);
-                    OreSample sample = classify(chunk.getBlockState(pos));
+                    OreSample sample = classify(chunk.getBlockState(pos), naturalOverrides);
                     if (sample == null) {
                         continue;
                     }
@@ -141,7 +147,18 @@ public final class OreDistributionBenchmarkCommands {
         }
     }
 
-    private static OreSample classify(BlockState state) {
+    private static Map<Block, OreSample> naturalOverrideSamples() {
+        Map<Block, OreSample> overrides = new HashMap<>();
+        for (OreOccurrenceCatalog.Occurrence occurrence : OreOccurrenceCatalog.current().occurrences()) {
+            for (Map.Entry<OreGrade, String> entry : occurrence.naturalBlockOverrides().entrySet()) {
+                Block block = Registries.BLOCK.get(new net.minecraft.util.Identifier(entry.getValue()));
+                overrides.put(block, new OreSample(occurrence.id(), entry.getKey(), true, "natural_block"));
+            }
+        }
+        return Map.copyOf(overrides);
+    }
+
+    private static OreSample classify(BlockState state, Map<Block, OreSample> naturalOverrides) {
         if (state.getBlock() instanceof GradedOreBlock graded) {
             return new OreSample(
                     graded.material(),
@@ -149,6 +166,10 @@ public final class OreDistributionBenchmarkCommands {
                     true,
                     state.get(GradedOreBlock.HOST).asString()
             );
+        }
+        OreSample naturalOverride = naturalOverrides.get(state.getBlock());
+        if (naturalOverride != null) {
+            return naturalOverride;
         }
         if (state.isIn(BlockTags.COAL_ORES)) {
             return OreSample.vanilla("coal");

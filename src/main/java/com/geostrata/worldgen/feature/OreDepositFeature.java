@@ -1,6 +1,6 @@
 package com.geostrata.worldgen.feature;
 
-import com.geostrata.block.GeoStrataBlocks;
+import com.geostrata.block.GradedOreBlock;
 import com.geostrata.block.OreHost;
 import com.geostrata.geology.CorrelatedSedimentaryExperiment;
 import com.geostrata.geology.ChunkGeneratorTerrainMorphologySampler;
@@ -397,11 +397,13 @@ public final class OreDepositFeature extends Feature<DefaultFeatureConfig> {
         if (grade == null) {
             return false;
         }
-        world.setBlockState(
-                mutable,
-                GeoStrataBlocks.oreState(occurrence.id(), occurrence.capNaturalGrade(grade), host),
-                Block.NOTIFY_LISTENERS
-        );
+        OreGrade naturalGrade = occurrence.capNaturalGrade(grade);
+        Identifier blockId = new Identifier(occurrence.naturalBlock(naturalGrade));
+        Block block = Registries.BLOCK.get(blockId);
+        BlockState state = block instanceof GradedOreBlock gradedOre
+                ? gradedOre.withHost(host)
+                : block.getDefaultState();
+        world.setBlockState(mutable, state, Block.NOTIFY_LISTENERS);
         return true;
     }
 

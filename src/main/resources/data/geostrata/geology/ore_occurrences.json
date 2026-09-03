@@ -105,6 +105,9 @@
         "medium": "geostrata:medium_coal_ore",
         "rich": "geostrata:rich_coal_ore",
         "massive": "geostrata:massive_coal_ore"
+      },
+      "naturalBlockOverrides": {
+        "massive": "minecraft:coal_block"
       }
     },
     {

@@ -65,6 +65,9 @@ final class GeologyResourceContractTest {
         assertEquals("block_runtime_active", core.oreOccurrences().gradeModel().experienceStatus());
         assertTrue(core.oreOccurrences().occurrences().stream()
                 .allMatch(occurrence -> occurrence.gradeBlocks().size() == 4));
+        OreOccurrenceCatalog.Occurrence coal = core.oreOccurrences().require("coal");
+        assertEquals("geostrata:rich_coal_ore", coal.naturalBlock(OreGrade.RICH));
+        assertEquals("minecraft:coal_block", coal.naturalBlock(OreGrade.MASSIVE));
         assertFalse(core.oreOccurrences().gradeModel().traceEconomic());
         assertEquals("not_implemented", core.oreOccurrences().nativeGenerationSuppression());
 
