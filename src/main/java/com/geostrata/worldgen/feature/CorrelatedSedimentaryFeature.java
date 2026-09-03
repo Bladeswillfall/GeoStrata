@@ -302,8 +302,8 @@ public final class CorrelatedSedimentaryFeature extends Feature<DefaultFeatureCo
             BlockState fallback
     ) {
         return switch (petroleum.expression(lithology)) {
-            case OIL_SHALE -> GeoStrataBlocks.OIL_SHALE.getDefaultState();
-            case OIL_SANDS -> GeoStrataBlocks.OIL_SANDS.getDefaultState();
+            case OIL_SHALE -> GeoStrataBlocks.OIL_SHALE_STATE;
+            case OIL_SANDS -> GeoStrataBlocks.OIL_SANDS_STATE;
             case NONE -> fallback;
         };
     }
