@@ -68,14 +68,14 @@ public final class GeoStrataBlocks {
             "bitumen",
             new BitumenBlock(AbstractBlock.Settings.copy(Blocks.SNOW).sounds(BlockSoundGroup.MUD).strength(0.25F))
     );
-    public static final Block OIL_SHALE = registerEvidence(
+    public static final BlockState OIL_SHALE_STATE = registerEvidence(
             "oil_shale",
             new Block(rock(Blocks.TUFF, 1.4F, BlockSoundGroup.TUFF))
-    );
-    public static final Block OIL_SANDS = registerEvidence(
+    ).getDefaultState();
+    public static final BlockState OIL_SANDS_STATE = registerEvidence(
             "oil_sands",
             new Block(rock(Blocks.SANDSTONE, 0.8F, BlockSoundGroup.STONE))
-    );
+    ).getDefaultState();
 
     public static final Block POOR_COAL_ORE = registerOre("poor_coal_ore", "coal", OreGrade.POOR, Blocks.COAL_ORE, 3.0F, BlockSoundGroup.STONE);
     public static final Block MEDIUM_COAL_ORE = registerOre("medium_coal_ore", "coal", OreGrade.MEDIUM, Blocks.COAL_ORE, 3.0F, BlockSoundGroup.STONE);
