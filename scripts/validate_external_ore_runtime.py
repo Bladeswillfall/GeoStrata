@@ -29,6 +29,7 @@ EXTERNAL_BLOCK = re.compile(
     r'(?P<hardness>[0-9.]+)F, BlockSoundGroup\.(?P<sound>[A-Z0-9_]+)\)'
 )
 HOST = re.compile(r'\b[A-Z_]+\("([a-z_]+)"\)')
+IDENTIFIER = re.compile(r'new Identifier\(\s*"([a-z0-9_.-]+)"\s*,\s*"([a-z0-9/._-]+)"\s*\)')
 
 
 def fail(message: str) -> None:
@@ -108,6 +109,31 @@ def tag_values(path: Path) -> set[str]:
     return set(values)
 
 
+def provider_candidates(material: str, occurrence: dict) -> list[tuple[str, str]]:
+    ordered = occurrence.get("providers")
+    legacy = "providerMod" in occurrence or "outputItem" in occurrence
+    if ordered is not None:
+        if legacy or not isinstance(ordered, list) or not ordered:
+            fail(f"{material} must declare either one legacy provider or a non-empty ordered provider list")
+        raw_candidates = ordered
+    else:
+        raw_candidates = [{
+            "providerMod": occurrence.get("providerMod"),
+            "outputItem": occurrence.get("outputItem"),
+        }]
+
+    candidates = []
+    for candidate in raw_candidates:
+        if not isinstance(candidate, dict):
+            fail(f"{material} provider candidates must be objects")
+        provider = candidate.get("providerMod")
+        output = candidate.get("outputItem")
+        if not isinstance(provider, str) or not provider or not isinstance(output, str) or ":" not in output:
+            fail(f"{material} provider candidate must declare providerMod and outputItem")
+        candidates.append((provider, output))
+    return candidates
+
+
 def validate_loot(material: str, grade: str, block: str) -> None:
     path = DATA / f"loot_tables/blocks/{grade}_{material}_ore.json"
     try:
@@ -168,26 +194,31 @@ def main() -> None:
         profile = profiles[material]
         economy = profile.get("gameplay", {}).get("oreEconomy", {})
         matrix_ore = matrix_ores[material]
-        provider = occurrence.get("providerMod")
-        output_item = occurrence.get("outputItem")
+        candidates = provider_candidates(material, occurrence)
+        preferred_output = candidates[0][1]
         hosts = occurrence.get("hostLithologies")
         if hosts != matrix_ore.get("validHosts") or not set(hosts or ()) <= hosts_supported:
             fail(f"{material} runtime and texture hosts must match supported OreHost values")
         if matrix_ore.get("defaultHost") not in hosts or matrix_ore.get("continuity") is not False:
             fail(f"{material} external prototype must have a valid fallback host and no Continuity claim")
-        if economy.get("outputItem") != output_item or economy.get("gradeOrder") != list(GRADES):
-            fail(f"{material} profile economy must match its occurrence")
-        mapping = providers.get((provider, material))
-        if mapping is None or mapping.get("providerOutput") != output_item:
-            fail(f"{material} provider/output does not match external material catalogue")
+        if economy.get("outputItem") != preferred_output or economy.get("gradeOrder") != list(GRADES):
+            fail(f"{material} profile economy must match its preferred occurrence provider")
+        for provider, output_item in candidates:
+            mapping = providers.get((provider, material))
+            if mapping is None or mapping.get("providerOutput") != output_item:
+                fail(f"{material} provider/output does not match external material catalogue: {provider}/{output_item}")
 
         output_tag = economy.get("outputTag")
         if not isinstance(output_tag, str) or ":" not in output_tag:
             fail(f"{material} must declare a provider output tag")
         namespace, tag_path = output_tag.split(":", 1)
         provider_tag = load(RESOURCES / "data" / namespace / "tags/items" / f"{tag_path}.json")
-        if provider_tag != {"replace": False, "values": [{"id": output_item, "required": False}]}:
-            fail(f"{material} provider output tag must contain exactly optional {output_item}")
+        expected_tag = {
+            "replace": False,
+            "values": [{"id": output_item, "required": False} for _, output_item in candidates],
+        }
+        if provider_tag != expected_tag:
+            fail(f"{material} provider output tag must contain exactly its ordered optional provider outputs")
 
         expected_blocks = [f"geostrata:{grade}_{material}_ore" for grade in GRADES]
         grade_blocks = occurrence.get("gradeBlocks", {})
@@ -236,19 +267,29 @@ def main() -> None:
         if f"#c:ores/{material}" not in common_ores:
             fail(f"c:ores must include #c:ores/{material}")
 
-    companion = COMPANION_SOURCE.read_text(encoding="utf-8")
+    companion_ids = set(IDENTIFIER.findall(COMPANION_SOURCE.read_text(encoding="utf-8")))
     suppression_contracts = {
-        "zinc": ("create", "raw_zinc", "zinc_ore"),
-        "tin": ("create_dd", "raw_tin", "tin_ore"),
-        "thorium": ("create_new_age", "thorium", "thorium_ore"),
-        "uranium": ("createnuclear", "raw_uranium", "uranium_ore"),
+        "zinc": [("create", "raw_zinc", ("zinc_ore",))],
+        "tin": [
+            ("create_dd", "raw_tin", ("tin_ore",)),
+            (
+                "modern_industrialization",
+                "raw_tin",
+                ("ore_generator_tin", "deepslate_ore_generator_tin"),
+            ),
+        ],
+        "thorium": [("create_new_age", "thorium", ("thorium_ore",))],
+        "uranium": [("createnuclear", "raw_uranium", ("uranium_ore",))],
     }
-    for material, (namespace, output, placed_feature) in suppression_contracts.items():
+    for material, contracts in suppression_contracts.items():
         if material not in occurrences:
             continue
-        if (f'new Identifier("{namespace}", "{output}")' not in companion
-                or f'new Identifier("{namespace}", "{placed_feature}")' not in companion):
-            fail(f"experimental companion must gate {material} suppression on provider output and placed feature ids")
+        for namespace, output, placed_features in contracts:
+            if (namespace, output) not in companion_ids:
+                fail(f"experimental companion must gate {material} suppression on {namespace}:{output}")
+            for placed_feature in placed_features:
+                if (namespace, placed_feature) not in companion_ids:
+                    fail(f"experimental companion must suppress {namespace}:{placed_feature} for {material}")
 
     print(f"external ore validation OK: {len(occurrences)} materials, {total_blocks} graded blocks")
 
