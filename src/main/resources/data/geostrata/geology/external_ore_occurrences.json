@@ -96,6 +96,10 @@
         {
           "providerMod": "modern_industrialization",
           "outputItem": "modern_industrialization:raw_tin"
+        },
+        {
+          "providerMod": "techreborn",
+          "outputItem": "techreborn:raw_tin"
         }
       ],
       "hostLithologies": [

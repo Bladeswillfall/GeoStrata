@@ -42,6 +42,11 @@ public final class CorrelatedExperimentCompanion implements ModInitializer {
                     new Identifier("modern_industrialization", "deepslate_ore_generator_tin")
             )
     );
+    private static final Identifier TECH_REBORN_RAW_TIN = new Identifier("techreborn", "raw_tin");
+    private static final RegistryKey<PlacedFeature> TECH_REBORN_TIN_ORE = RegistryKey.of(
+            RegistryKeys.PLACED_FEATURE,
+            new Identifier("techreborn", "tin_ore")
+    );
     private static final Identifier CREATE_NEW_AGE_THORIUM = new Identifier("create_new_age", "thorium");
     private static final RegistryKey<PlacedFeature> CREATE_NEW_AGE_THORIUM_ORE = RegistryKey.of(
             RegistryKeys.PLACED_FEATURE,
@@ -98,6 +103,12 @@ public final class CorrelatedExperimentCompanion implements ModInitializer {
                                                     GenerationStep.Feature.UNDERGROUND_ORES,
                                                     feature
                                             ));
+                                }
+                                if (Registries.ITEM.containsId(TECH_REBORN_RAW_TIN)) {
+                                    context.getGenerationSettings().removeFeature(
+                                            GenerationStep.Feature.UNDERGROUND_ORES,
+                                            TECH_REBORN_TIN_ORE
+                                    );
                                 }
                                 if (Registries.ITEM.containsId(CREATE_NEW_AGE_THORIUM)) {
                                     context.getGenerationSettings().removeFeature(

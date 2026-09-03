@@ -268,6 +268,20 @@
       ]
     },
     {
+      "id": "techreborn",
+      "displayName": "Tech Reborn",
+      "modIds": ["techreborn"],
+      "materials": [
+        {
+          "canonicalMaterial": "tin",
+          "providerBlocks": ["techreborn:tin_ore", "techreborn:deepslate_tin_ore"],
+          "providerOutput": "techreborn:raw_tin",
+          "commonTags": ["c:tin_ores", "c:raw_tin_ores"],
+          "status": "catalogued"
+        }
+      ]
+    },
+    {
       "id": "create_new_age",
       "displayName": "Create: New Age",
       "modIds": ["create_new_age"],
@@ -354,7 +368,7 @@
       "scope": "core_geology",
       "canonicalRole": "geostrata:rock/igneous/granite",
       "minecraftBlock": "minecraft:granite",
-      "priorityConsumers": ["create", "create_dreams_and_desires", "modern_industrialization", "create_new_age", "tfmg", "create_nuclear"],
+      "priorityConsumers": ["create", "create_dreams_and_desires", "modern_industrialization", "techreborn", "create_new_age", "tfmg", "create_nuclear"],
       "status": "implemented"
     },
     {

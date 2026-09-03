@@ -277,6 +277,7 @@ def main() -> None:
                 "raw_tin",
                 ("ore_generator_tin", "deepslate_ore_generator_tin"),
             ),
+            ("techreborn", "raw_tin", ("tin_ore",)),
         ],
         "thorium": [("create_new_age", "thorium", ("thorium_ore",))],
         "uranium": [
