@@ -47,6 +47,11 @@ public final class CorrelatedExperimentCompanion implements ModInitializer {
             RegistryKeys.PLACED_FEATURE,
             new Identifier("techreborn", "tin_ore")
     );
+    private static final Identifier TECH_REBORN_RAW_SILVER = new Identifier("techreborn", "raw_silver");
+    private static final RegistryKey<PlacedFeature> TECH_REBORN_SILVER_ORE = RegistryKey.of(
+            RegistryKeys.PLACED_FEATURE,
+            new Identifier("techreborn", "silver_ore")
+    );
     private static final Identifier CREATE_NEW_AGE_THORIUM = new Identifier("create_new_age", "thorium");
     private static final RegistryKey<PlacedFeature> CREATE_NEW_AGE_THORIUM_ORE = RegistryKey.of(
             RegistryKeys.PLACED_FEATURE,
@@ -108,6 +113,12 @@ public final class CorrelatedExperimentCompanion implements ModInitializer {
                                     context.getGenerationSettings().removeFeature(
                                             GenerationStep.Feature.UNDERGROUND_ORES,
                                             TECH_REBORN_TIN_ORE
+                                    );
+                                }
+                                if (Registries.ITEM.containsId(TECH_REBORN_RAW_SILVER)) {
+                                    context.getGenerationSettings().removeFeature(
+                                            GenerationStep.Feature.UNDERGROUND_ORES,
+                                            TECH_REBORN_SILVER_ORE
                                     );
                                 }
                                 if (Registries.ITEM.containsId(CREATE_NEW_AGE_THORIUM)) {
