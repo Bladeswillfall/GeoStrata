@@ -1,6 +1,7 @@
 package com.geostrata.geology;
 
 import com.geostrata.block.GradedOreBlock;
+import net.minecraft.Bootstrap;
 import net.minecraft.block.AbstractBlock;
 import net.minecraft.block.Blocks;
 import net.minecraft.item.ItemStack;
@@ -20,6 +21,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 class ProviderResolvedOreLootTest {
     @Test
     void emitsResolvedProviderOutput() {
+        Bootstrap.initialize();
         OreOccurrenceCatalog.Snapshot previous = OreOccurrenceCatalog.current();
         OreOccurrenceCatalog.Occurrence zinc = new OreOccurrenceCatalog.Occurrence(
                 "zinc",
