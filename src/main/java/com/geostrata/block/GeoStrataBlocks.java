@@ -21,6 +21,7 @@ import net.minecraft.sound.BlockSoundGroup;
 public final class GeoStrataBlocks {
     private static final List<Block> ROCK_BLOCKS = new ArrayList<>();
     private static final List<Block> EARTH_BLOCKS = new ArrayList<>();
+    private static final List<Block> EVIDENCE_BLOCKS = new ArrayList<>();
     private static final List<Block> ORE_BLOCKS_LIST = new ArrayList<>();
     private static final Map<String, EnumMap<OreGrade, Block>> ORE_BLOCKS = new LinkedHashMap<>();
     private static final Map<String, Block> BLOCKS_BY_NAME = new LinkedHashMap<>();
@@ -59,6 +60,10 @@ public final class GeoStrataBlocks {
     public static final Block COMPACTED_MUD = registerEarth("compacted_mud", earth(Blocks.MUD, 0.7F, BlockSoundGroup.MUD));
     public static final Block BLUE_CLAY = registerEarth("blue_clay", earth(Blocks.CLAY, 0.6F, BlockSoundGroup.GRAVEL));
     public static final Block RED_CLAY = registerEarth("red_clay", earth(Blocks.CLAY, 0.6F, BlockSoundGroup.GRAVEL));
+    public static final PetroleumStainBlock PETROLEUM_STAIN = registerEvidence(
+            "petroleum_stain",
+            new PetroleumStainBlock(AbstractBlock.Settings.copy(Blocks.SCULK_VEIN).sounds(BlockSoundGroup.MUD))
+    );
 
     public static final Block POOR_COAL_ORE = registerOre("poor_coal_ore", "coal", OreGrade.POOR, Blocks.COAL_ORE, 3.0F, BlockSoundGroup.STONE);
     public static final Block MEDIUM_COAL_ORE = registerOre("medium_coal_ore", "coal", OreGrade.MEDIUM, Blocks.COAL_ORE, 3.0F, BlockSoundGroup.STONE);
@@ -107,17 +112,24 @@ public final class GeoStrataBlocks {
     }
 
     public static int count() {
-        return ROCK_BLOCKS.size() + EARTH_BLOCKS.size() + ORE_BLOCKS_LIST.size();
+        return ROCK_BLOCKS.size() + EARTH_BLOCKS.size() + EVIDENCE_BLOCKS.size() + ORE_BLOCKS_LIST.size();
     }
 
     public static List<Block> rockBlocks() {
         return List.copyOf(ROCK_BLOCKS);
     }
 
+    public static boolean isRock(Block block) {
+        return ROCK_BLOCKS.contains(block);
+    }
+
     public static List<Block> allBlocks() {
-        List<Block> blocks = new ArrayList<>(ROCK_BLOCKS.size() + EARTH_BLOCKS.size() + ORE_BLOCKS_LIST.size());
+        List<Block> blocks = new ArrayList<>(
+                ROCK_BLOCKS.size() + EARTH_BLOCKS.size() + EVIDENCE_BLOCKS.size() + ORE_BLOCKS_LIST.size()
+        );
         blocks.addAll(ROCK_BLOCKS);
         blocks.addAll(EARTH_BLOCKS);
+        blocks.addAll(EVIDENCE_BLOCKS);
         blocks.addAll(ORE_BLOCKS_LIST);
         return List.copyOf(blocks);
     }
@@ -172,6 +184,12 @@ public final class GeoStrataBlocks {
     private static Block registerEarth(String name, AbstractBlock.Settings settings) {
         Block block = register(name, settings);
         EARTH_BLOCKS.add(block);
+        return block;
+    }
+
+    private static PetroleumStainBlock registerEvidence(String name, PetroleumStainBlock block) {
+        register(name, block);
+        EVIDENCE_BLOCKS.add(block);
         return block;
     }
 
