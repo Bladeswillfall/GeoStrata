@@ -39,6 +39,8 @@ ALLOWED_BODY_STYLES = {
     "flow_or_sheet",
     "volcanic_body",
     "plutonic_body",
+    "mafic_intrusive",
+    "ultramafic_intrusive",
     "contact_aureole",
 }
 ALLOWED_DEPTH_AFFINITIES = {

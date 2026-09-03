@@ -62,7 +62,7 @@ Uses metamorphic basement cut by igneous/volcanic bodies:
 - narrower quartzite cores;
 - steep basalt dikes;
 - finite basalt sills;
-- zoned volcanic complexes with shallow rhyolite above granite/diorite plutonic roots;
+- zoned volcanic complexes with shallow rhyolite above granite/diorite roots and a lower gabbro/peridotite keel;
 - shallow volcanic breccia halos;
 - deep parent-aware contact aureoles around the plutonic root.
 

@@ -19,6 +19,8 @@ final class VolcanicArcModelTest {
             "andesite",
             "granite",
             "diorite",
+            "gabbro",
+            "peridotite",
             "breccia"
     );
 
@@ -100,8 +102,9 @@ final class VolcanicArcModelTest {
                 "the evolved outer granite core should expose the reusable pegmatite formation context"
         );
         assertEquals(
-                new VolcanicArcModel.Sample("diorite", "plutonic_margin"),
-                center.sample(center.complexCenterY() - center.complexRadiusY() * 0.85)
+                new VolcanicArcModel.Sample("peridotite", "ultramafic_intrusive"),
+                center.sample(center.complexCenterY() - center.complexRadiusY() * 0.85),
+                "the deepest central keel should expose an ultramafic ore-formation signal"
         );
         assertEquals(
                 "contact_aureole",
@@ -113,6 +116,36 @@ final class VolcanicArcModelTest {
                 center.sample(center.complexCenterY() - center.complexRadiusY() * 1.02).bodyStyle(),
                 "deep plutonic roots must not inherit the shallow volcanic breccia halo"
         );
+    }
+
+    @Test
+    void lowerPlutonicRootGradesFromGabbroIntoAPeridotiteKeel() {
+        VolcanicArcModel.Context context = VolcanicArcModel.forSite(987654321L, 64, -128, 63.0);
+        VolcanicArcModel.Column gabbro = null;
+        VolcanicArcModel.Column peridotite = null;
+
+        for (int x = -256; x <= 256 && (gabbro == null || peridotite == null); x++) {
+            for (int z = -384; z <= 128 && (gabbro == null || peridotite == null); z++) {
+                VolcanicArcModel.Column column = context.column(x, z, 0.0);
+                VolcanicArcModel.Sample lowerRoot = column.sample(
+                        column.complexCenterY() - column.complexRadiusY() * 0.80
+                );
+                if ("gabbro".equals(lowerRoot.lithology())) {
+                    gabbro = column;
+                } else if ("peridotite".equals(lowerRoot.lithology())) {
+                    peridotite = column;
+                }
+            }
+        }
+
+        assertNotNull(gabbro, "expected gabbro around the lower-root margin");
+        assertNotNull(peridotite, "expected a peridotite keel in the lower-root core");
+        assertEquals("mafic_intrusive", gabbro.sample(
+                gabbro.complexCenterY() - gabbro.complexRadiusY() * 0.80
+        ).bodyStyle());
+        assertEquals("ultramafic_intrusive", peridotite.sample(
+                peridotite.complexCenterY() - peridotite.complexRadiusY() * 0.80
+        ).bodyStyle());
     }
 
     @Test

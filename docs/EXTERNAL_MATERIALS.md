@@ -62,7 +62,7 @@ Create raised the priority of andesite, but it does not own the rock or gate its
 The catalogue records shared geological work instead of inventing a generator per ore:
 
 - **Pegmatite system — implemented context.** The existing Volcanic Arc pluton now labels the evolved outer part of its granite core as `pegmatite_fertile_margin`. Formation routes can require that semantic body style, while reusing existing vein/lens/disseminated ore geometry. This adds no new pegmatite block, noise field or independent generation pass. A distinct pegmatite lithology can still be added later if it earns its gameplay/visual cost. Main beneficiaries: tin, lithium, thorium.
-- **Mafic/ultramafic intrusive system** — future gabbro/peridotite-style hosts using existing disseminated and massive-lens ore geometry. Main beneficiaries: nickel and magnetite.
+- **Mafic/ultramafic intrusive system** — implemented gabbro/peridotite hosts reuse the Volcanic Arc complex and existing disseminated/massive-lens ore geometry. Main beneficiaries: nickel and magnetite.
 - **Skarn/contact replacement** — reuse existing intrusion/contact-metamorphism context plus massive/disseminated/vein geometry. Main beneficiaries: magnetite, zinc and lead.
 - **Sandstone redox mineralisation** — initially reuse stratiform/disseminated geometry inside sandstone rather than implementing chemical transport simulation. Main beneficiary: uranium.
 - **Banded iron-formation system** — recorded as deferred rather than required for the first magnetite implementation.

@@ -44,6 +44,12 @@
     },
     "host=breccia": {
       "model": "geostrata:block/ore/thorium/granite/rich"
+    },
+    "host=gabbro": {
+      "model": "geostrata:block/ore/thorium/granite/rich"
+    },
+    "host=peridotite": {
+      "model": "geostrata:block/ore/thorium/granite/rich"
     }
   }
 }

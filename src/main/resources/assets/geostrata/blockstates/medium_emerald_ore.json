@@ -39,6 +39,12 @@
     "host=rhyolite": {
       "model": "geostrata:block/ore/emerald/rhyolite/medium"
     },
+    "host=gabbro": {
+      "model": "geostrata:block/ore/emerald/gabbro/medium"
+    },
+    "host=peridotite": {
+      "model": "geostrata:block/ore/emerald/peridotite/medium"
+    },
     "host=conglomerate": {
       "model": "geostrata:block/ore/emerald/conglomerate/medium"
     },

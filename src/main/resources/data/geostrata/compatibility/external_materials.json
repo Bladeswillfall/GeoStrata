@@ -96,10 +96,11 @@
       "formationRoutes": [
         {
           "id": "mafic_magmatic",
-          "hostLithologies": ["basalt", "diorite"],
-          "futureHostRoles": ["gabbro", "peridotite"],
+          "hostLithologies": ["gabbro", "peridotite"],
+          "futureHostRoles": [],
           "provinceContexts": ["volcanic_arc", "rift_province"],
           "depositStyles": ["disseminated", "massive_lens_or_pocket"],
+          "bodyStyles": ["mafic_intrusive", "ultramafic_intrusive"],
           "requiredGeology": ["mafic_ultramafic_intrusive_system"]
         },
         {
@@ -158,18 +159,20 @@
       "formationRoutes": [
         {
           "id": "mafic_disseminated",
-          "hostLithologies": ["basalt"],
-          "futureHostRoles": ["gabbro"],
+          "hostLithologies": ["gabbro"],
+          "futureHostRoles": [],
           "provinceContexts": ["rift_province", "volcanic_arc"],
           "depositStyles": ["disseminated"],
+          "bodyStyles": ["mafic_intrusive"],
           "requiredGeology": ["mafic_ultramafic_intrusive_system"]
         },
         {
           "id": "ultramafic_sulfide",
-          "hostLithologies": [],
-          "futureHostRoles": ["peridotite", "ultramafic_intrusive"],
-          "provinceContexts": ["rift_province", "cratonic_shield"],
+          "hostLithologies": ["peridotite"],
+          "futureHostRoles": [],
+          "provinceContexts": ["volcanic_arc", "rift_province", "cratonic_shield"],
           "depositStyles": ["disseminated", "massive_lens_or_pocket"],
+          "bodyStyles": ["ultramafic_intrusive"],
           "requiredGeology": ["mafic_ultramafic_intrusive_system"]
         }
       ]
@@ -357,10 +360,10 @@
       "kind": "formation_context",
       "scope": "core_geology",
       "reusesDepositStyles": ["disseminated", "massive_lens_or_pocket"],
-      "futureLithologies": ["gabbro", "peridotite"],
+      "futureLithologies": [],
       "unlocks": ["nickel", "magnetite"],
       "newOreGeometryRequired": false,
-      "status": "missing"
+      "status": "implemented"
     },
     {
       "id": "skarn_contact_replacement",

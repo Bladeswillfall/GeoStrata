@@ -48,11 +48,12 @@ Within that same complex:
 - the surrounding shallow/intermediate shell resolves to vanilla andesite;
 - the deeper inner root resolves to vanilla granite;
 - the deeper outer margin resolves to vanilla diorite;
+- the lower root resolves to gabbro around a smaller central peridotite keel;
 - the existing breccia halo applies only to the shallow volcanic zone;
 - existing basalt dikes retain first precedence and may cross-cut the complex;
 - existing finite basalt sills retain their current geometry and ordering.
 
-The rhyolite/andesite/granite/diorite split is therefore compositional zoning inside geometry GeoStrata already calculates. It adds no new noise, cell lattice, random roll, block registration or mutable geology state.
+The rhyolite/andesite/granite/diorite/gabbro/peridotite split is therefore compositional zoning inside geometry GeoStrata already calculates. The mafic and ultramafic body-style labels are also the runtime formation signal for compatible ores. This adds no new noise, cell lattice, random roll or mutable geology state.
 
 ### Contact aureole
 

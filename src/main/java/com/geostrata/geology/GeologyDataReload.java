@@ -44,6 +44,8 @@ public final class GeologyDataReload {
             "andesite",
             "granite",
             "diorite",
+            "gabbro",
+            "peridotite",
             "breccia"
     );
 

@@ -39,6 +39,12 @@
     "host=rhyolite": {
       "model": "geostrata:block/ore/copper/rhyolite/rich"
     },
+    "host=gabbro": {
+      "model": "geostrata:block/ore/copper/gabbro/rich"
+    },
+    "host=peridotite": {
+      "model": "geostrata:block/ore/copper/peridotite/rich"
+    },
     "host=conglomerate": {
       "model": "geostrata:block/ore/copper/conglomerate/rich"
     },

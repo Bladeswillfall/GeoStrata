@@ -24,6 +24,8 @@ public final class VolcanicArcModel {
     private static final double COMPLEX_CELL_SPAN = COMPLEX_CELL_SIZE - COMPLEX_CELL_MARGIN * 2.0;
     private static final double COMPLEX_HALO_SCALE = 1.18;
     private static final double PLUTON_TOP_NORMALIZED_Y = -0.20;
+    private static final double MAFIC_ROOT_TOP_NORMALIZED_Y = -0.72;
+    private static final double ULTRAMAFIC_KEEL_HORIZONTAL_RADIUS = 0.10;
     private static final double GRANITE_CORE_RADIUS = 0.58;
     private static final double PEGMATITE_FERTILE_INNER_RADIUS = 0.42;
     private static final double RHYOLITE_CORE_RADIUS = 0.52;
@@ -208,6 +210,11 @@ public final class VolcanicArcModel {
 
         private Sample complexRock(double vertical, double complexRadius) {
             if (vertical <= PLUTON_TOP_NORMALIZED_Y) {
+                if (vertical <= MAFIC_ROOT_TOP_NORMALIZED_Y) {
+                    return complexHorizontalRadius <= ULTRAMAFIC_KEEL_HORIZONTAL_RADIUS
+                            ? new Sample("peridotite", "ultramafic_intrusive")
+                            : new Sample("gabbro", "mafic_intrusive");
+                }
                 if (complexRadius <= GRANITE_CORE_RADIUS) {
                     return new Sample(
                             "granite",
