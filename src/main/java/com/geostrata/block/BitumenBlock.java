@@ -4,8 +4,10 @@ import net.minecraft.block.AbstractBlock;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.SnowBlock;
 import net.minecraft.entity.Entity;
+import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
+import net.minecraft.util.math.random.Random;
 import net.minecraft.world.World;
 
 /** Snow-layer-style bitumen crust with depth-scaled sticky movement. */
@@ -28,5 +30,10 @@ public final class BitumenBlock extends SnowBlock {
             );
         }
         super.onSteppedOn(world, pos, state, entity);
+    }
+
+    @Override
+    public void randomTick(BlockState state, ServerWorld world, BlockPos pos, Random random) {
+        // Bitumen reuses snow geometry/state, not snow's light-driven melting behavior.
     }
 }
