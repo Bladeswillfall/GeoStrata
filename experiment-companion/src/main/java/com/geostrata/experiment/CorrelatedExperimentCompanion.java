@@ -92,6 +92,11 @@ public final class CorrelatedExperimentCompanion implements ModInitializer {
             RegistryKeys.PLACED_FEATURE,
             new Identifier("tfmg", "nickel_ore")
     );
+    private static final Identifier TFMG_RAW_LITHIUM = new Identifier("tfmg", "raw_lithium");
+    private static final RegistryKey<PlacedFeature> TFMG_LITHIUM_ORE = RegistryKey.of(
+            RegistryKeys.PLACED_FEATURE,
+            new Identifier("tfmg", "lithium_ore")
+    );
     private static final List<RegistryKey<PlacedFeature>> BENCHMARK_DIAMOND_ORES = List.of(
             OrePlacedFeatures.ORE_DIAMOND,
             OrePlacedFeatures.ORE_DIAMOND_LARGE,
@@ -185,6 +190,9 @@ public final class CorrelatedExperimentCompanion implements ModInitializer {
         }
         if (Registries.ITEM.containsId(TFMG_RAW_NICKEL)) {
             remove.accept(TFMG_NICKEL_ORE);
+        }
+        if (Registries.ITEM.containsId(TFMG_RAW_LITHIUM)) {
+            remove.accept(TFMG_LITHIUM_ORE);
         }
     }
 }
