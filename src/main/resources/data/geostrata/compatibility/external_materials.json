@@ -300,8 +300,8 @@
         {
           "canonicalMaterial": "uranium",
           "providerBlocks": ["createnuclear:uranium_ore", "createnuclear:deepslate_uranium_ore"],
-          "providerOutput": null,
-          "commonTags": ["c:ores/uranium"],
+          "providerOutput": "createnuclear:raw_uranium",
+          "commonTags": ["c:ores/uranium", "c:raw_materials/uranium"],
           "status": "catalogued"
         },
         {

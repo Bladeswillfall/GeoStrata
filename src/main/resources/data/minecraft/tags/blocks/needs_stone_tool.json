@@ -41,6 +41,10 @@
     "geostrata:poor_thorium_ore",
     "geostrata:medium_thorium_ore",
     "geostrata:rich_thorium_ore",
-    "geostrata:massive_thorium_ore"
+    "geostrata:massive_thorium_ore",
+    "geostrata:poor_uranium_ore",
+    "geostrata:medium_uranium_ore",
+    "geostrata:rich_uranium_ore",
+    "geostrata:massive_uranium_ore"
   ]
 }

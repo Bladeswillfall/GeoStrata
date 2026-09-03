@@ -1,0 +1,9 @@
+{
+  "replace": false,
+  "values": [
+    {
+      "id": "createnuclear:raw_uranium",
+      "required": false
+    }
+  ]
+}

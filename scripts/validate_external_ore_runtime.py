@@ -105,6 +105,7 @@ def main() -> None:
     registrations = {match.group("name"): match.groupdict() for match in EXTERNAL_BLOCK.finditer(BLOCKS_SOURCE.read_text(encoding="utf-8"))}
     hosts_supported = set(HOST.findall(HOST_SOURCE.read_text(encoding="utf-8")))
     ores_tag = tag_values(DATA / "tags/blocks/ores.json")
+    common_ores = tag_values(RESOURCES / "data/c/tags/blocks/ores.json")
     pickaxe = tag_values(RESOURCES / "data/minecraft/tags/blocks/mineable/pickaxe.json")
     stone = tag_values(RESOURCES / "data/minecraft/tags/blocks/needs_stone_tool.json")
     providers = {
@@ -181,12 +182,15 @@ def main() -> None:
 
         if tag_values(RESOURCES / f"data/c/tags/blocks/ores/{material}.json") != set(expected_blocks):
             fail(f"c:ores/{material} must contain all four GeoStrata grades")
+        if f"#c:ores/{material}" not in common_ores:
+            fail(f"c:ores must include #c:ores/{material}")
 
     companion = COMPANION_SOURCE.read_text(encoding="utf-8")
     suppression_contracts = {
         "zinc": ("create", "raw_zinc", "zinc_ore"),
         "tin": ("create_dd", "raw_tin", "tin_ore"),
         "thorium": ("create_new_age", "thorium", "thorium_ore"),
+        "uranium": ("createnuclear", "raw_uranium", "uranium_ore"),
     }
     for material, (namespace, output, placed_feature) in suppression_contracts.items():
         if material not in occurrences:

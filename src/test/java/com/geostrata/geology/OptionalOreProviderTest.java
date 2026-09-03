@@ -44,6 +44,13 @@ final class OptionalOreProviderTest {
                         .bodyStyles()
         );
 
+        OreOccurrenceCatalog.Occurrence uranium = state.oreOccurrences().require("uranium");
+        assertEquals("create_nuclear", uranium.providerMod());
+        assertEquals("createnuclear:raw_uranium", uranium.outputItem());
+        assertEquals(List.of("granite", "rhyolite", "gneiss"), uranium.hostLithologies());
+        assertEquals(List.of("vein", "disseminated"), uranium.depositStyles());
+        assertEquals(0.16, state.oreExperiment().activationChance("uranium"), 1.0e-12);
+
         OreOccurrenceCatalog.Occurrence thorium = state.oreOccurrences().require("thorium");
         assertEquals("create_new_age", thorium.providerMod());
         assertEquals("create_new_age:thorium", thorium.outputItem());
@@ -85,6 +92,15 @@ final class OptionalOreProviderTest {
         assertFalse(state.oreOccurrences().byId().containsKey("thorium"));
         assertFalse(state.oreExperiment().activationChancePerCandidate().containsKey("thorium"));
         assertTrue(state.oreOccurrences().byId().containsKey("tin"));
+    }
+
+    @Test
+    void missingUraniumProviderOutputRemovesOnlyUranium() throws IOException {
+        GeologyDataReload.State state = parse(output -> !"createnuclear:raw_uranium".equals(output));
+
+        assertFalse(state.oreOccurrences().byId().containsKey("uranium"));
+        assertFalse(state.oreExperiment().activationChancePerCandidate().containsKey("uranium"));
+        assertTrue(state.oreOccurrences().byId().containsKey("thorium"));
     }
 
     @Test
