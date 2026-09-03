@@ -11,10 +11,12 @@ import java.util.Optional;
  */
 public final class HydrocarbonReservoirField {
     static final int CELL_SIZE = 384;
+    static final int GAS_CELL_SIZE = 192;
     private static final int CELL_MARGIN = 96;
     private static final long ACTIVATION_SALT = 0x3A6F_696C_7365_6570L;
     private static final long GEOMETRY_SALT = 0x5265_7365_7276_6F69L;
     private static final long SEEP_SALT = 0x5365_6570_706F_696EL;
+    private static final long GAS_SALT = 0x6669_7265_6461_6D70L;
 
     private HydrocarbonReservoirField() {
     }
@@ -33,6 +35,27 @@ public final class HydrocarbonReservoirField {
             return Optional.empty();
         }
         return sample(worldSeed, x, z, lithology.rockClass(), lithology.genesis());
+    }
+
+    /**
+     * Returns a deterministic 0..1 gas-proneness signal for underground indicator use.
+     * This is recomputable geology, not a simulated gas volume or finite resource state.
+     */
+    public static double gasPotential(
+            long worldSeed,
+            int x,
+            int y,
+            int z,
+            GeologyResolver.Result geology
+    ) {
+        if (geology == null) {
+            throw new IllegalArgumentException("resolved geology is required");
+        }
+        LithologyCatalog.Entry lithology = LithologyCatalog.current().byId().get(geology.lithology());
+        if (lithology == null) {
+            return 0.0;
+        }
+        return gasPotential(worldSeed, x, y, z, lithology.rockClass(), lithology.genesis());
     }
 
     static Optional<Reservoir> sample(
@@ -89,6 +112,35 @@ public final class HydrocarbonReservoirField {
         ));
     }
 
+    static double gasPotential(
+            long worldSeed,
+            int x,
+            int y,
+            int z,
+            String rockClass,
+            String genesis
+    ) {
+        double sourceAffinity = gasSourceAffinity(rockClass, genesis);
+        if (sourceAffinity <= 0.0) {
+            return 0.0;
+        }
+
+        double maturity = clamp01((80.0 - y) / 128.0);
+        if (maturity <= 0.0) {
+            return 0.0;
+        }
+
+        int cellX = Math.floorDiv(x, GAS_CELL_SIZE);
+        int cellZ = Math.floorDiv(z, GAS_CELL_SIZE);
+        long gas = hash(worldSeed, cellX, cellZ, GAS_SALT);
+        if (unit(gas) >= 0.16 * sourceAffinity) {
+            return 0.0;
+        }
+
+        double localRichness = 0.55 + unit(mix64(gas)) * 0.45;
+        return clamp01(sourceAffinity * maturity * localRichness);
+    }
+
     static double activationChance(String rockClass, String genesis) {
         if (!"sedimentary".equals(rockClass) || genesis == null) {
             return 0.0;
@@ -100,6 +152,20 @@ public final class HydrocarbonReservoirField {
             case "silt_clastic" -> 0.08;
             case "coarse_clastic" -> 0.05;
             default -> 0.04;
+        };
+    }
+
+    static double gasSourceAffinity(String rockClass, String genesis) {
+        if (!"sedimentary".equals(rockClass) || genesis == null) {
+            return 0.0;
+        }
+        return switch (genesis) {
+            case "mudrock" -> 1.0;
+            case "silt_clastic" -> 0.75;
+            case "carbonate" -> 0.70;
+            case "quartz_sandstone" -> 0.60;
+            case "coarse_clastic" -> 0.40;
+            default -> 0.50;
         };
     }
 
@@ -118,6 +184,10 @@ public final class HydrocarbonReservoirField {
 
     private static double unit(long value) {
         return (value >>> 11) * 0x1.0p-53;
+    }
+
+    private static double clamp01(double value) {
+        return Math.max(0.0, Math.min(1.0, value));
     }
 
     public record Reservoir(
