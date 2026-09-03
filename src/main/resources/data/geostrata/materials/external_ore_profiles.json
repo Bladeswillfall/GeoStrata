@@ -90,6 +90,50 @@
         "textureMatrix": "geostrata:materials/external_ore_texture_matrix",
         "material": "tin"
       }
+    },
+    {
+      "id": "thorium_ore",
+      "primaryBlock": "geostrata:poor_thorium_ore",
+      "derivedBlocks": [
+        "geostrata:medium_thorium_ore",
+        "geostrata:rich_thorium_ore",
+        "geostrata:massive_thorium_ore"
+      ],
+      "family": "ore",
+      "compatibilityRole": "geostrata:ore/thorium",
+      "semanticTags": [
+        "geostrata:ores"
+      ],
+      "gameplay": {
+        "breaking": {
+          "copyFrom": "minecraft:iron_ore",
+          "hardness": 3.0,
+          "blastResistance": 3.0,
+          "requiresTool": true,
+          "mineableWith": "pickaxe",
+          "minimumToolTier": "stone",
+          "soundGroup": "stone"
+        },
+        "cultivation": {
+          "status": "not_applicable"
+        },
+        "oreEconomy": {
+          "material": "thorium",
+          "outputItem": "create_new_age:thorium",
+          "outputTag": "geostrata:provider_outputs/thorium",
+          "gradeOrder": [
+            "poor",
+            "medium",
+            "rich",
+            "massive"
+          ],
+          "source": "geostrata:geology/external_ore_occurrences"
+        }
+      },
+      "assets": {
+        "textureMatrix": "geostrata:materials/external_ore_texture_matrix",
+        "material": "thorium"
+      }
     }
   ]
 }

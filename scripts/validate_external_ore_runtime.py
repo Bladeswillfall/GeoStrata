@@ -186,6 +186,7 @@ def main() -> None:
     suppression_contracts = {
         "zinc": ("create", "raw_zinc", "zinc_ore"),
         "tin": ("create_dd", "raw_tin", "tin_ore"),
+        "thorium": ("create_new_age", "thorium", "thorium_ore"),
     }
     for material, (namespace, output, placed_feature) in suppression_contracts.items():
         if material not in occurrences:

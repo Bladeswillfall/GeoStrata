@@ -43,6 +43,21 @@ final class OptionalOreProviderTest {
                         .orElseThrow()
                         .bodyStyles()
         );
+
+        OreOccurrenceCatalog.Occurrence thorium = state.oreOccurrences().require("thorium");
+        assertEquals("create_new_age", thorium.providerMod());
+        assertEquals("create_new_age:thorium", thorium.outputItem());
+        assertEquals(List.of("granite", "rhyolite", "gneiss"), thorium.hostLithologies());
+        assertEquals(List.of("disseminated", "vein", "massive_lens_or_pocket"), thorium.depositStyles());
+        assertEquals(0.2, state.oreExperiment().activationChance("thorium"), 1.0e-12);
+        assertEquals(
+                List.of("pegmatite_fertile_margin"),
+                thorium.formationRoutes().stream()
+                        .filter(route -> "pegmatite_accessory".equals(route.id()))
+                        .findFirst()
+                        .orElseThrow()
+                        .bodyStyles()
+        );
     }
 
     @Test
@@ -61,6 +76,15 @@ final class OptionalOreProviderTest {
         assertFalse(state.oreOccurrences().byId().containsKey("tin"));
         assertFalse(state.oreExperiment().activationChancePerCandidate().containsKey("tin"));
         assertTrue(state.oreOccurrences().byId().containsKey("zinc"));
+    }
+
+    @Test
+    void missingThoriumProviderOutputRemovesOnlyThorium() throws IOException {
+        GeologyDataReload.State state = parse(output -> !"create_new_age:thorium".equals(output));
+
+        assertFalse(state.oreOccurrences().byId().containsKey("thorium"));
+        assertFalse(state.oreExperiment().activationChancePerCandidate().containsKey("thorium"));
+        assertTrue(state.oreOccurrences().byId().containsKey("tin"));
     }
 
     @Test

@@ -1,0 +1,49 @@
+{
+  "variants": {
+    "host=limestone": {
+      "model": "geostrata:block/ore/thorium/granite/massive"
+    },
+    "host=chalk": {
+      "model": "geostrata:block/ore/thorium/granite/massive"
+    },
+    "host=shale": {
+      "model": "geostrata:block/ore/thorium/granite/massive"
+    },
+    "host=slate": {
+      "model": "geostrata:block/ore/thorium/granite/massive"
+    },
+    "host=mudstone": {
+      "model": "geostrata:block/ore/thorium/granite/massive"
+    },
+    "host=siltstone": {
+      "model": "geostrata:block/ore/thorium/granite/massive"
+    },
+    "host=marble": {
+      "model": "geostrata:block/ore/thorium/granite/massive"
+    },
+    "host=quartzite": {
+      "model": "geostrata:block/ore/thorium/granite/massive"
+    },
+    "host=schist": {
+      "model": "geostrata:block/ore/thorium/granite/massive"
+    },
+    "host=gneiss": {
+      "model": "geostrata:block/ore/thorium/gneiss/massive"
+    },
+    "host=granite": {
+      "model": "geostrata:block/ore/thorium/granite/massive"
+    },
+    "host=basalt": {
+      "model": "geostrata:block/ore/thorium/granite/massive"
+    },
+    "host=rhyolite": {
+      "model": "geostrata:block/ore/thorium/rhyolite/massive"
+    },
+    "host=conglomerate": {
+      "model": "geostrata:block/ore/thorium/granite/massive"
+    },
+    "host=breccia": {
+      "model": "geostrata:block/ore/thorium/granite/massive"
+    }
+  }
+}
