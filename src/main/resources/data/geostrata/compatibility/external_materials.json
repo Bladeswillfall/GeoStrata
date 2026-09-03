@@ -215,6 +215,29 @@
           "requiredGeology": ["sandstone_redox_mineralization"]
         }
       ]
+    },
+    {
+      "id": "silver",
+      "kind": "ore",
+      "canonicalRole": "geostrata:ore/silver",
+      "formationRoutes": [
+        {
+          "id": "felsic_hydrothermal",
+          "hostLithologies": ["granite", "rhyolite", "gneiss"],
+          "futureHostRoles": [],
+          "provinceContexts": ["volcanic_arc", "orogenic_belt"],
+          "depositStyles": ["vein", "disseminated"],
+          "requiredGeology": []
+        },
+        {
+          "id": "orogenic_vein",
+          "hostLithologies": ["gneiss", "granite"],
+          "futureHostRoles": [],
+          "provinceContexts": ["orogenic_belt"],
+          "depositStyles": ["vein"],
+          "requiredGeology": []
+        }
+      ]
     }
   ],
   "providers": [
@@ -264,6 +287,13 @@
           "providerOutput": "modern_industrialization:raw_uranium",
           "commonTags": ["c:ores/uranium", "c:raw_materials/uranium"],
           "status": "catalogued"
+        },
+        {
+          "canonicalMaterial": "silver",
+          "providerBlocks": [],
+          "providerOutput": "modern_industrialization:raw_silver",
+          "commonTags": ["c:raw_materials/silver"],
+          "status": "catalogued_output_only"
         }
       ]
     },
@@ -277,6 +307,13 @@
           "providerBlocks": ["techreborn:tin_ore", "techreborn:deepslate_tin_ore"],
           "providerOutput": "techreborn:raw_tin",
           "commonTags": ["c:tin_ores", "c:raw_tin_ores"],
+          "status": "catalogued"
+        },
+        {
+          "canonicalMaterial": "silver",
+          "providerBlocks": ["techreborn:silver_ore", "techreborn:deepslate_silver_ore"],
+          "providerOutput": "techreborn:raw_silver",
+          "commonTags": ["c:silver_ores", "c:raw_silver_ores"],
           "status": "catalogued"
         }
       ]
