@@ -163,7 +163,7 @@ public final class GeologyDataReload {
     ) {
         return parseState(
                 lithologiesRoot,
-                mergeOccurrenceRoots(oreOccurrencesRoot, externalOreOccurrencesRoot),
+                mergeOccurrenceRoots(oreOccurrencesRoot, externalOreOccurrencesRoot, outputAvailable),
                 oreDepositExperimentRoot,
                 provincesRoot,
                 successionsRoot,
@@ -174,8 +174,19 @@ public final class GeologyDataReload {
     }
 
     private static JsonObject mergeOccurrenceRoots(JsonObject core, JsonObject external) {
+        return mergeOccurrenceRoots(core, external, ignored -> true);
+    }
+
+    private static JsonObject mergeOccurrenceRoots(
+            JsonObject core,
+            JsonObject external,
+            Predicate<String> outputAvailable
+    ) {
         if (core == null || external == null) {
             throw new IllegalArgumentException("core and external ore occurrence catalogs must not be null");
+        }
+        if (outputAvailable == null) {
+            throw new IllegalArgumentException("ore output availability predicate must not be null");
         }
         requireInt(external, "schemaVersion", 1);
         requireString(external, "model", "geostrata:external_ore_occurrence_catalog");
@@ -194,13 +205,63 @@ public final class GeologyDataReload {
             if (!rawOccurrence.isJsonObject()) {
                 throw new IllegalArgumentException("external ore occurrence entry must be an object");
             }
-            JsonObject occurrence = rawOccurrence.getAsJsonObject();
+            JsonObject occurrence = resolveExternalProvider(rawOccurrence.getAsJsonObject(), outputAvailable);
+            if (occurrence != null) {
+                occurrences.add(occurrence);
+            }
+        }
+        return merged;
+    }
+
+    private static JsonObject resolveExternalProvider(
+            JsonObject occurrence,
+            Predicate<String> outputAvailable
+    ) {
+        JsonElement rawProviders = occurrence.get("providers");
+        if (rawProviders == null) {
             if ("minecraft".equals(stringValue(occurrence, "providerMod"))) {
                 throw new IllegalArgumentException("external ore occurrence must not declare minecraft as its provider");
             }
-            occurrences.add(occurrence.deepCopy());
+            return occurrence.deepCopy();
         }
-        return merged;
+        if (occurrence.has("providerMod") || occurrence.has("outputItem")) {
+            throw new IllegalArgumentException(
+                    "external ore occurrence must declare either providerMod/outputItem or providers, not both"
+            );
+        }
+        if (!rawProviders.isJsonArray() || rawProviders.getAsJsonArray().isEmpty()) {
+            throw new IllegalArgumentException("external ore occurrence providers must be a non-empty array");
+        }
+
+        String selectedProvider = null;
+        String selectedOutput = null;
+        for (JsonElement rawProvider : rawProviders.getAsJsonArray()) {
+            if (!rawProvider.isJsonObject()) {
+                throw new IllegalArgumentException("external ore provider candidate must be an object");
+            }
+            JsonObject provider = rawProvider.getAsJsonObject();
+            String providerMod = stringValue(provider, "providerMod");
+            String outputItem = stringValue(provider, "outputItem");
+            if (providerMod == null || outputItem == null) {
+                throw new IllegalArgumentException("external ore provider candidate requires providerMod and outputItem");
+            }
+            if ("minecraft".equals(providerMod)) {
+                throw new IllegalArgumentException("external ore occurrence must not declare minecraft as its provider");
+            }
+            if (selectedProvider == null && outputAvailable.test(outputItem)) {
+                selectedProvider = providerMod;
+                selectedOutput = outputItem;
+            }
+        }
+        if (selectedProvider == null) {
+            return null;
+        }
+
+        JsonObject resolved = occurrence.deepCopy();
+        resolved.remove("providers");
+        resolved.addProperty("providerMod", selectedProvider);
+        resolved.addProperty("outputItem", selectedOutput);
+        return resolved;
     }
 
     private static State parseState(
