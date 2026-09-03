@@ -54,6 +54,16 @@
       "formationRoutes": [{"id":"felsic_hydrothermal","hostLithologies":["granite","rhyolite","gneiss"],"provinceContexts":["volcanic_arc","orogenic_belt"],"depositStyles":["vein","disseminated"]},{"id":"orogenic_vein","hostLithologies":["gneiss","granite"],"provinceContexts":["orogenic_belt"],"depositStyles":["vein"]}],
       "generation": {"activationChance":0.22,"candidateGrid":{"horizontalCellSize":176,"verticalCellSize":88,"horizontalMargin":12,"verticalMargin":8,"horizontalSearchPaddingBlocks":192,"verticalSearchPaddingBlocks":176},"depthAffinity":[{"maxY":-49,"multiplier":0.55},{"minY":-48,"maxY":24,"multiplier":1.15},{"minY":25,"maxY":80,"multiplier":0.65},{"minY":81,"multiplier":0.0}],"bodyScale":0.66,"discoveryStringers":{"count":5,"minLength":26.0,"maxLength":48.0,"minRadius":0.5,"maxRadius":0.7,"exposedHaloBlocks":2.0}},
       "gradeBlocks": {"poor":"geostrata:poor_silver_ore","medium":"geostrata:medium_silver_ore","rich":"geostrata:rich_silver_ore","massive":"geostrata:massive_silver_ore"}
+    },
+    {
+      "id": "lead",
+      "providers": [{"providerMod":"tfmg","outputItem":"tfmg:raw_lead"},{"providerMod":"create_nuclear","outputItem":"createnuclear:raw_lead"}],
+      "hostLithologies": ["limestone", "marble", "shale", "siltstone"],
+      "provinceContexts": ["sedimentary_basin", "orogenic_belt", "rift_province"],
+      "depositStyles": ["vein", "stratiform"],
+      "formationRoutes": [{"id":"carbonate_replacement","hostLithologies":["limestone","marble"],"provinceContexts":["sedimentary_basin","orogenic_belt"],"depositStyles":["vein","stratiform"]},{"id":"clastic_sediment_hosted","hostLithologies":["shale","siltstone"],"provinceContexts":["sedimentary_basin","rift_province"],"depositStyles":["stratiform","vein"]}],
+      "generation": {"activationChance":0.34,"candidateGrid":{"horizontalCellSize":144,"verticalCellSize":72,"horizontalMargin":12,"verticalMargin":8,"horizontalSearchPaddingBlocks":176,"verticalSearchPaddingBlocks":160},"depthAffinity":[{"maxY":-33,"multiplier":0.35},{"minY":-32,"maxY":16,"multiplier":0.85},{"minY":17,"maxY":64,"multiplier":1.2},{"minY":65,"maxY":96,"multiplier":0.6},{"minY":97,"multiplier":0.0}],"bodyScale":0.78,"discoveryStringers":{"count":7,"minLength":30.0,"maxLength":56.0,"minRadius":0.52,"maxRadius":0.74,"exposedHaloBlocks":2.0}},
+      "gradeBlocks": {"poor":"geostrata:poor_lead_ore","medium":"geostrata:medium_lead_ore","rich":"geostrata:rich_lead_ore","massive":"geostrata:massive_lead_ore"}
     }
   ]
 }
