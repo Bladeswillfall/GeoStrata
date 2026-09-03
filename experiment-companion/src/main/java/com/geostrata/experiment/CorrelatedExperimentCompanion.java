@@ -14,6 +14,7 @@ import net.minecraft.world.gen.feature.OrePlacedFeatures;
 import net.minecraft.world.gen.feature.PlacedFeature;
 
 import java.util.List;
+import java.util.function.Consumer;
 
 /** Explicit opt-in companion for rare ore/diamond experiments and debug tools. */
 public final class CorrelatedExperimentCompanion implements ModInitializer {
@@ -150,18 +151,10 @@ public final class CorrelatedExperimentCompanion implements ModInitializer {
                                                     feature
                                             ));
                                 }
-                                if (Registries.ITEM.containsId(TFMG_RAW_LEAD)) {
-                                    context.getGenerationSettings().removeFeature(
-                                            GenerationStep.Feature.UNDERGROUND_ORES,
-                                            TFMG_LEAD_ORE
-                                    );
-                                }
-                                if (Registries.ITEM.containsId(CREATE_NUCLEAR_RAW_LEAD)) {
-                                    context.getGenerationSettings().removeFeature(
-                                            GenerationStep.Feature.UNDERGROUND_ORES,
-                                            CREATE_NUCLEAR_LEAD_ORE
-                                    );
-                                }
+                                suppressLeadWorldgen(feature -> context.getGenerationSettings().removeFeature(
+                                        GenerationStep.Feature.UNDERGROUND_ORES,
+                                        feature
+                                ));
                                 if (benchmarkSuppressVanillaDiamond) {
                                     BENCHMARK_DIAMOND_ORES.forEach(feature ->
                                             context.getGenerationSettings().removeFeature(
@@ -175,6 +168,15 @@ public final class CorrelatedExperimentCompanion implements ModInitializer {
         GeoStrata.LOGGER.info("GeoStrata experiment companion enabled; rare ore/diamond experiments and debug tools active");
         if (benchmarkSuppressVanillaDiamond) {
             GeoStrata.LOGGER.info("GeoStrata benchmark mode: vanilla diamond generation suppressed for attribution");
+        }
+    }
+
+    private static void suppressLeadWorldgen(Consumer<RegistryKey<PlacedFeature>> remove) {
+        if (Registries.ITEM.containsId(TFMG_RAW_LEAD)) {
+            remove.accept(TFMG_LEAD_ORE);
+        }
+        if (Registries.ITEM.containsId(CREATE_NUCLEAR_RAW_LEAD)) {
+            remove.accept(CREATE_NUCLEAR_LEAD_ORE);
         }
     }
 }
