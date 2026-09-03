@@ -55,6 +55,7 @@ public enum OreHost implements StringIdentifiable {
         return switch (material) {
             case "coal", "iron", "copper", "zinc" -> SHALE;
             case "lead" -> LIMESTONE;
+            case "nickel" -> GABBRO;
             case "tin", "thorium", "uranium", "silver" -> GRANITE;
             case "gold" -> SLATE;
             case "emerald" -> SCHIST;

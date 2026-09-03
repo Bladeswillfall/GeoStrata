@@ -6,6 +6,7 @@
     "#c:ores/thorium",
     "#c:ores/uranium",
     "#c:ores/silver",
-    "#c:ores/lead"
+    "#c:ores/lead",
+    "#c:ores/nickel"
   ]
 }

@@ -87,6 +87,11 @@ public final class CorrelatedExperimentCompanion implements ModInitializer {
             RegistryKeys.PLACED_FEATURE,
             new Identifier("createnuclear", "lead_ore")
     );
+    private static final Identifier TFMG_RAW_NICKEL = new Identifier("tfmg", "raw_nickel");
+    private static final RegistryKey<PlacedFeature> TFMG_NICKEL_ORE = RegistryKey.of(
+            RegistryKeys.PLACED_FEATURE,
+            new Identifier("tfmg", "nickel_ore")
+    );
     private static final List<RegistryKey<PlacedFeature>> BENCHMARK_DIAMOND_ORES = List.of(
             OrePlacedFeatures.ORE_DIAMOND,
             OrePlacedFeatures.ORE_DIAMOND_LARGE,
@@ -151,7 +156,7 @@ public final class CorrelatedExperimentCompanion implements ModInitializer {
                                                     feature
                                             ));
                                 }
-                                suppressLeadWorldgen(feature -> context.getGenerationSettings().removeFeature(
+                                suppressProviderWorldgen(feature -> context.getGenerationSettings().removeFeature(
                                         GenerationStep.Feature.UNDERGROUND_ORES,
                                         feature
                                 ));
@@ -171,12 +176,15 @@ public final class CorrelatedExperimentCompanion implements ModInitializer {
         }
     }
 
-    private static void suppressLeadWorldgen(Consumer<RegistryKey<PlacedFeature>> remove) {
+    private static void suppressProviderWorldgen(Consumer<RegistryKey<PlacedFeature>> remove) {
         if (Registries.ITEM.containsId(TFMG_RAW_LEAD)) {
             remove.accept(TFMG_LEAD_ORE);
         }
         if (Registries.ITEM.containsId(CREATE_NUCLEAR_RAW_LEAD)) {
             remove.accept(CREATE_NUCLEAR_LEAD_ORE);
+        }
+        if (Registries.ITEM.containsId(TFMG_RAW_NICKEL)) {
+            remove.accept(TFMG_NICKEL_ORE);
         }
     }
 }
