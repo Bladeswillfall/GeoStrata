@@ -77,8 +77,9 @@ final class OptionalOreProviderTest {
         assertEquals("geostrata:massive_bauxite_ore", bauxite.naturalBlock(OreGrade.MASSIVE));
 
         OreOccurrenceCatalog.Occurrence lignite = state.oreOccurrences().require("lignite");
-        assertTrue(lignite.gradeBlocks().isEmpty());
-        assertEquals("tfmg:lignite", lignite.naturalBlock(OreGrade.RICH));
+        assertEquals("tfmg:lignite", lignite.outputItem());
+        assertEquals("geostrata:poor_lignite_ore", lignite.naturalBlock(OreGrade.POOR));
+        assertEquals("geostrata:massive_lignite_ore", lignite.naturalBlock(OreGrade.MASSIVE));
 
         OreOccurrenceCatalog.Occurrence fireclay = state.oreOccurrences().require("fireclay");
         assertTrue(fireclay.gradeBlocks().isEmpty());

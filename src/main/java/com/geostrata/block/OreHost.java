@@ -53,7 +53,7 @@ public enum OreHost implements StringIdentifiable {
 
     public static OreHost defaultFor(String material) {
         return switch (material) {
-            case "coal", "iron", "copper", "zinc" -> SHALE;
+            case "coal", "lignite", "iron", "copper", "zinc" -> SHALE;
             case "bauxite" -> BASALT;
             case "lead" -> LIMESTONE;
             case "nickel", "magnetite" -> GABBRO;

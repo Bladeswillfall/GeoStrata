@@ -13,6 +13,7 @@
     "thorium": {"defaultHost":"granite","validHosts":["granite","rhyolite","gneiss"],"continuity":false},
     "magnetite": {"defaultHost":"gabbro","validHosts":["gabbro","peridotite"],"continuity":false},
     "bauxite": {"defaultHost":"basalt","validHosts":["basalt"],"continuity":false},
+    "lignite": {"defaultHost":"shale","validHosts":["shale"],"continuity":false},
     "uranium": {"defaultHost":"granite","validHosts":["granite","rhyolite","gneiss"],"continuity":false},
     "silver": {"defaultHost":"granite","validHosts":["granite","rhyolite","gneiss"],"continuity":false},
     "lead": {"defaultHost":"limestone","validHosts":["limestone","marble","shale","siltstone"],"continuity":false},

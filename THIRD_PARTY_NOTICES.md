@@ -15,9 +15,9 @@ Redistribution and use in source and binary forms, with or without modification,
 
 THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-## Create: The Factory Must Grow — Bauxite visual reference
+## Create: The Factory Must Grow — Bauxite and Lignite visual references
 
-GeoStrata's Bauxite mineral overlay uses the TFMG 1.20.1 Bauxite palette as a colour/visual reference, combined with GeoStrata's own ore-overlay geometry and basalt host-rock composite.
+GeoStrata's Bauxite and Lignite mineral overlays use their TFMG 1.20.1 palettes as colour/visual references. GeoStrata combines them with its own ore-overlay geometry and host-rock composites; Lignite specifically reuses GeoStrata's existing coal-grade density geometry on shale.
 
 The MIT License (MIT)
 
