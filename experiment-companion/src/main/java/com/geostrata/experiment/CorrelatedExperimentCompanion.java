@@ -83,9 +83,16 @@ public final class CorrelatedExperimentCompanion implements ModInitializer {
             )
     );
     private static final Identifier TFMG_RAW_LEAD = new Identifier("tfmg", "raw_lead");
+    private static final Identifier TFMG_BAUXITE = new Identifier("tfmg", "bauxite");
+    private static final Identifier TFMG_LIGNITE = new Identifier("tfmg", "lignite");
+    private static final Identifier TFMG_FIRECLAY_BALL = new Identifier("tfmg", "fireclay_ball");
     private static final RegistryKey<PlacedFeature> TFMG_LEAD_ORE = RegistryKey.of(
             RegistryKeys.PLACED_FEATURE,
             new Identifier("tfmg", "lead_ore")
+    );
+    private static final RegistryKey<PlacedFeature> TFMG_STRIATED_ORES_OVERWORLD = RegistryKey.of(
+            RegistryKeys.PLACED_FEATURE,
+            new Identifier("tfmg", "tfmg_striated_ores_overworld")
     );
     private static final Identifier CREATE_NUCLEAR_RAW_LEAD = new Identifier("createnuclear", "raw_lead");
     private static final RegistryKey<PlacedFeature> CREATE_NUCLEAR_LEAD_ORE = RegistryKey.of(
@@ -192,6 +199,12 @@ public final class CorrelatedExperimentCompanion implements ModInitializer {
         }
         if (Registries.ITEM.containsId(TFMG_RAW_LEAD)) {
             remove.accept(TFMG_LEAD_ORE);
+        }
+        if (Registries.ITEM.containsId(TFMG_RAW_LEAD)
+                && Registries.ITEM.containsId(TFMG_BAUXITE)
+                && Registries.ITEM.containsId(TFMG_LIGNITE)
+                && Registries.ITEM.containsId(TFMG_FIRECLAY_BALL)) {
+            remove.accept(TFMG_STRIATED_ORES_OVERWORLD);
         }
         if (Registries.ITEM.containsId(CREATE_NUCLEAR_RAW_LEAD)) {
             remove.accept(CREATE_NUCLEAR_LEAD_ORE);
