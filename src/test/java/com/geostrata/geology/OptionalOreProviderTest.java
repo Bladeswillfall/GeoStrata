@@ -47,9 +47,9 @@ final class OptionalOreProviderTest {
         OreOccurrenceCatalog.Occurrence uranium = state.oreOccurrences().require("uranium");
         assertEquals("create_nuclear", uranium.providerMod());
         assertEquals("createnuclear:raw_uranium", uranium.outputItem());
-        assertEquals(List.of("granite", "rhyolite", "gneiss"), uranium.hostLithologies());
-        assertEquals(List.of("vein", "disseminated"), uranium.depositStyles());
-        assertEquals(0.16, state.oreExperiment().activationChance("uranium"), 1.0e-12);
+        assertEquals(List.of("granite", "rhyolite", "gneiss", "sandstone"), uranium.hostLithologies());
+        assertEquals(List.of("vein", "disseminated", "stratiform"), uranium.depositStyles());
+        assertEquals(0.24, state.oreExperiment().activationChance("uranium"), 1.0e-12);
 
         OreOccurrenceCatalog.Occurrence thorium = state.oreOccurrences().require("thorium");
         assertEquals("create_new_age", thorium.providerMod());
@@ -199,7 +199,7 @@ final class OptionalOreProviderTest {
         OreOccurrenceCatalog.Occurrence uranium = state.oreOccurrences().require("uranium");
         assertEquals("modern_industrialization", uranium.providerMod());
         assertEquals("modern_industrialization:raw_uranium", uranium.outputItem());
-        assertEquals(0.16, state.oreExperiment().activationChance("uranium"), 1.0e-12);
+        assertEquals(0.24, state.oreExperiment().activationChance("uranium"), 1.0e-12);
     }
 
     @Test

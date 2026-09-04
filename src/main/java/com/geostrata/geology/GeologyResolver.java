@@ -86,26 +86,39 @@ public final class GeologyResolver {
         }
         String parentLithology = site.sample(x, y, z).bed().lithology();
         String lithology = site.outputLithology(worldSeed, x, y, z, catalog);
+        GeologyProvince province = site.ownership().province();
         return new Result(
                 lithology,
                 Optional.of(parentLithology),
-                site.ownership().province(),
+                province,
                 Source.CORRELATED_STRATIGRAPHY,
-                Optional.empty()
+                SandstoneRedoxField.bodyStyle(worldSeed, x, z, lithology, province)
         );
     }
 
     static Result resolve(int x, int y, int z, ProvinceBackgroundRuntime.Chunk background) {
+        return resolve(0L, x, y, z, background);
+    }
+
+    static Result resolve(long worldSeed, int x, int y, int z, ProvinceBackgroundRuntime.Chunk background) {
         if (background == null) {
             throw new IllegalArgumentException("province background must not be null");
         }
         ProvinceBackgroundRuntime.ResolvedSample sample = background.sampleAt(x, y, z);
+        GeologyProvince province = background.provinceAt(x, y, z);
+        Optional<String> bodyStyle = SandstoneRedoxField.bodyStyle(
+                worldSeed,
+                x,
+                z,
+                sample.lithology(),
+                province
+        ).or(() -> Optional.of(sample.bodyStyle()));
         return new Result(
                 sample.lithology(),
                 Optional.ofNullable(sample.parentLithology()),
-                background.provinceAt(x, y, z),
+                province,
                 Source.PROVINCE_BACKGROUND,
-                Optional.of(sample.bodyStyle())
+                bodyStyle
         );
     }
 
@@ -124,7 +137,7 @@ public final class GeologyResolver {
         if (correlated.isPresent()) {
             return Optional.of(resolve(worldSeed, x, y, z, correlated.get(), catalog));
         }
-        return background.map(value -> resolve(x, y, z, value));
+        return background.map(value -> resolve(worldSeed, x, y, z, value));
     }
 
     public enum Source {

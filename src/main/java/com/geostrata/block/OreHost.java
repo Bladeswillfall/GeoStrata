@@ -13,6 +13,7 @@ public enum OreHost implements StringIdentifiable {
     SLATE("slate"),
     MUDSTONE("mudstone"),
     SILTSTONE("siltstone"),
+    SANDSTONE("sandstone"),
     MARBLE("marble"),
     QUARTZITE("quartzite"),
     SCHIST("schist"),

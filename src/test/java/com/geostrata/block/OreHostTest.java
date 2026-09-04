@@ -22,6 +22,8 @@ final class OreHostTest {
         assertEquals(OreHost.GRANITE, OreHost.byId("granite"));
         assertTrue(OreHost.supports("gabbro"));
         assertTrue(OreHost.supports("peridotite"));
+        assertTrue(OreHost.supports("sandstone"));
+        assertEquals(OreHost.SANDSTONE, OreHost.byId("sandstone"));
         assertFalse(OreHost.supports("diorite"));
         assertFalse(OreHost.supports("hornfels"));
         assertThrows(IllegalArgumentException.class, () -> OreHost.byId("diorite"));
