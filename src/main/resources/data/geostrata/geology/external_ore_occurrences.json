@@ -39,10 +39,10 @@
       "id": "magnetite",
       "providerMod": "create_new_age",
       "outputItem": "create_new_age:magnetite_block",
-      "hostLithologies": ["gabbro", "peridotite"],
+      "hostLithologies": ["gabbro", "peridotite", "limestone", "marble"],
       "provinceContexts": ["volcanic_arc"],
       "depositStyles": ["disseminated", "massive_lens_or_pocket"],
-      "formationRoutes": [{"id":"mafic_magmatic","hostLithologies":["gabbro","peridotite"],"provinceContexts":["volcanic_arc"],"depositStyles":["disseminated","massive_lens_or_pocket"],"bodyStyles":["mafic_intrusive","ultramafic_intrusive"]}],
+      "formationRoutes": [{"id":"mafic_magmatic","hostLithologies":["gabbro","peridotite"],"provinceContexts":["volcanic_arc"],"depositStyles":["disseminated","massive_lens_or_pocket"],"bodyStyles":["mafic_intrusive","ultramafic_intrusive"]},{"id":"skarn_contact","hostLithologies":["limestone","marble"],"provinceContexts":["volcanic_arc"],"depositStyles":["massive_lens_or_pocket","disseminated"],"bodyStyles":["contact_aureole"]}],
       "generation": {"activationChance":0.32,"candidateGrid":{"horizontalCellSize":144,"verticalCellSize":72,"horizontalMargin":12,"verticalMargin":8,"horizontalSearchPaddingBlocks":176,"verticalSearchPaddingBlocks":160},"depthAffinity":[{"maxY":-49,"multiplier":1.1},{"minY":-48,"maxY":16,"multiplier":1.25},{"minY":17,"maxY":40,"multiplier":0.55},{"minY":41,"multiplier":0.0}],"bodyScale":0.82,"discoveryStringers":{"count":7,"minLength":30.0,"maxLength":56.0,"minRadius":0.52,"maxRadius":0.74,"exposedHaloBlocks":2.0}},
       "gradeBlocks": {"poor":"geostrata:poor_magnetite_ore","medium":"geostrata:medium_magnetite_ore","rich":"geostrata:rich_magnetite_ore","massive":"geostrata:massive_magnetite_ore"}
     },
