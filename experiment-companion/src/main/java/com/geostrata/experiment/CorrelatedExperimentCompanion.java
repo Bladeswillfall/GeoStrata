@@ -153,12 +153,6 @@ public final class CorrelatedExperimentCompanion implements ModInitializer {
                                             CREATE_NEW_AGE_THORIUM_ORE
                                     );
                                 }
-                                if (Registries.ITEM.containsId(CREATE_NEW_AGE_MAGNETITE)) {
-                                    context.getGenerationSettings().removeFeature(
-                                            GenerationStep.Feature.UNDERGROUND_ORES,
-                                            CREATE_NEW_AGE_MAGNETITE_ORE
-                                    );
-                                }
                                 if (Registries.ITEM.containsId(CREATE_NUCLEAR_RAW_URANIUM)) {
                                     context.getGenerationSettings().removeFeature(
                                             GenerationStep.Feature.UNDERGROUND_ORES,
@@ -193,6 +187,9 @@ public final class CorrelatedExperimentCompanion implements ModInitializer {
     }
 
     private static void suppressProviderWorldgen(Consumer<RegistryKey<PlacedFeature>> remove) {
+        if (Registries.ITEM.containsId(CREATE_NEW_AGE_MAGNETITE)) {
+            remove.accept(CREATE_NEW_AGE_MAGNETITE_ORE);
+        }
         if (Registries.ITEM.containsId(TFMG_RAW_LEAD)) {
             remove.accept(TFMG_LEAD_ORE);
         }
