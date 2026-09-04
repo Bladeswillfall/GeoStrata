@@ -25,9 +25,9 @@ final class OptionalOreProviderTest {
         OreOccurrenceCatalog.Occurrence zinc = state.oreOccurrences().require("zinc");
         assertEquals("create", zinc.providerMod());
         assertEquals("create:raw_zinc", zinc.outputItem());
-        assertEquals(List.of("shale", "siltstone"), zinc.hostLithologies());
-        assertEquals(List.of("stratiform"), zinc.depositStyles());
-        assertEquals(0.5, state.oreExperiment().activationChance("zinc"), 1.0e-12);
+        assertEquals(List.of("shale", "siltstone", "limestone", "marble"), zinc.hostLithologies());
+        assertEquals(List.of("stratiform", "massive_lens_or_pocket", "disseminated"), zinc.depositStyles());
+        assertEquals(0.75, state.oreExperiment().activationChance("zinc"), 1.0e-12);
 
         OreOccurrenceCatalog.Occurrence tin = state.oreOccurrences().require("tin");
         assertEquals("create_dreams_and_desires", tin.providerMod());

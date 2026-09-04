@@ -32,7 +32,12 @@ final class PngAssetIntegrityTest {
         Path assets = Path.of("src/main/resources/assets/geostrata");
         try (var paths = Files.walk(assets)) {
             for (Path path : paths.filter(file -> file.toString().endsWith(".png")).sorted().toList()) {
-                var image = ImageIO.read(path.toFile());
+                final java.awt.image.BufferedImage image;
+                try {
+                    image = ImageIO.read(path.toFile());
+                } catch (IOException exception) {
+                    throw new AssertionError("unreadable PNG: " + path, exception);
+                }
                 assertNotNull(image, path.toString());
                 assertTrue(image.getWidth() > 0 && image.getHeight() > 0, path.toString());
             }
