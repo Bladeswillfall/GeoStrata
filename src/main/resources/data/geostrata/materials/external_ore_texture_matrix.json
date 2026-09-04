@@ -11,6 +11,7 @@
     "zinc": {"defaultHost":"shale","validHosts":["shale","siltstone"],"continuity":false},
     "tin": {"defaultHost":"granite","validHosts":["granite","gneiss"],"continuity":false},
     "thorium": {"defaultHost":"granite","validHosts":["granite","rhyolite","gneiss"],"continuity":false},
+    "magnetite": {"defaultHost":"gabbro","validHosts":["gabbro","peridotite"],"continuity":false},
     "uranium": {"defaultHost":"granite","validHosts":["granite","rhyolite","gneiss"],"continuity":false},
     "silver": {"defaultHost":"granite","validHosts":["granite","rhyolite","gneiss"],"continuity":false},
     "lead": {"defaultHost":"limestone","validHosts":["limestone","marble","shale","siltstone"],"continuity":false},

@@ -58,6 +58,11 @@ public final class CorrelatedExperimentCompanion implements ModInitializer {
             RegistryKeys.PLACED_FEATURE,
             new Identifier("create_new_age", "thorium_ore")
     );
+    private static final Identifier CREATE_NEW_AGE_MAGNETITE = new Identifier("create_new_age", "magnetite_block");
+    private static final RegistryKey<PlacedFeature> CREATE_NEW_AGE_MAGNETITE_ORE = RegistryKey.of(
+            RegistryKeys.PLACED_FEATURE,
+            new Identifier("create_new_age", "magnetite")
+    );
     private static final Identifier CREATE_NUCLEAR_RAW_URANIUM = new Identifier("createnuclear", "raw_uranium");
     private static final RegistryKey<PlacedFeature> CREATE_NUCLEAR_URANIUM_ORE = RegistryKey.of(
             RegistryKeys.PLACED_FEATURE,
@@ -182,6 +187,9 @@ public final class CorrelatedExperimentCompanion implements ModInitializer {
     }
 
     private static void suppressProviderWorldgen(Consumer<RegistryKey<PlacedFeature>> remove) {
+        if (Registries.ITEM.containsId(CREATE_NEW_AGE_MAGNETITE)) {
+            remove.accept(CREATE_NEW_AGE_MAGNETITE_ORE);
+        }
         if (Registries.ITEM.containsId(TFMG_RAW_LEAD)) {
             remove.accept(TFMG_LEAD_ORE);
         }

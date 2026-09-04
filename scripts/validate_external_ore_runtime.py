@@ -280,6 +280,7 @@ def main() -> None:
             ("techreborn", "raw_tin", ("tin_ore",)),
         ],
         "thorium": [("create_new_age", "thorium", ("thorium_ore",))],
+        "magnetite": [("create_new_age", "magnetite_block", ("magnetite",))],
         "uranium": [
             ("createnuclear", "raw_uranium", ("uranium_ore",)),
             (
