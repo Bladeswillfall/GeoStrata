@@ -65,6 +65,22 @@ final class OptionalOreProviderTest {
                         .orElseThrow()
                         .bodyStyles()
         );
+
+        OreOccurrenceCatalog.Occurrence lead = state.oreOccurrences().require("lead");
+        assertEquals(List.of("vein", "stratiform"), lead.depositStyles());
+        assertTrue(lead.requiresBodyStyleContext("vein", GeologyProvince.VOLCANIC_ARC));
+        assertFalse(lead.requiresBodyStyleContext("vein", GeologyProvince.OROGENIC_BELT));
+        assertEquals(List.of(), lead.hostLithologiesFor("vein", GeologyProvince.VOLCANIC_ARC));
+        assertEquals(
+                List.of("limestone", "marble"),
+                lead.hostLithologiesFor("vein", GeologyProvince.VOLCANIC_ARC, "contact_aureole")
+        );
+        OreOccurrenceCatalog.FormationRoute skarn = lead.formationRoutes().stream()
+                .filter(route -> "intrusion_contact_skarn".equals(route.id()))
+                .findFirst()
+                .orElseThrow();
+        assertEquals(List.of(GeologyProvince.VOLCANIC_ARC), skarn.provinceContexts());
+        assertEquals(List.of("contact_aureole"), skarn.bodyStyles());
     }
 
     @Test
