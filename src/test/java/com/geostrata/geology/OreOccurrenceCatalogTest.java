@@ -49,6 +49,31 @@ final class OreOccurrenceCatalogTest {
     }
 
     @Test
+    void providerNativeOccurrenceCanReplaceEveryGradeWithoutGradeBlocks() {
+        JsonObject root = occurrence("shale", "vein");
+        JsonObject occurrence = root.getAsJsonArray("occurrences").get(0).getAsJsonObject();
+        occurrence.remove("gradeBlocks");
+        occurrence.add("naturalBlockOverrides", JsonParser.parseString("""
+                {
+                  "poor": "minecraft:iron_ore",
+                  "medium": "minecraft:iron_ore",
+                  "rich": "minecraft:iron_ore",
+                  "massive": "minecraft:iron_ore"
+                }
+                """));
+
+        OreOccurrenceCatalog.Occurrence iron = OreOccurrenceCatalog.parse(lithologies(), root).require("iron");
+        assertTrue(iron.gradeBlocks().isEmpty());
+        assertEquals("minecraft:iron_ore", iron.naturalBlock(OreGrade.POOR));
+        assertEquals("minecraft:iron_ore", iron.naturalBlock(OreGrade.MASSIVE));
+
+        occurrence.add("naturalBlockOverrides", JsonParser.parseString("""
+                {"massive": "minecraft:iron_ore"}
+                """));
+        assertThrows(IllegalArgumentException.class, () -> OreOccurrenceCatalog.parse(lithologies(), root));
+    }
+
+    @Test
     void bodyStyleConstraintIsOptionalAndFailsClosedWithoutContext() {
         JsonObject root = occurrence("shale", "vein");
         root.getAsJsonArray("occurrences")
