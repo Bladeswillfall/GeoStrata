@@ -66,6 +66,31 @@ final class OptionalOreProviderTest {
                         .bodyStyles()
         );
 
+        OreOccurrenceCatalog.Occurrence magnetite = state.oreOccurrences().require("magnetite");
+        assertEquals(List.of("gabbro", "peridotite", "limestone", "marble"), magnetite.hostLithologies());
+        assertEquals(List.of("disseminated", "massive_lens_or_pocket"), magnetite.depositStyles());
+        assertTrue(magnetite.requiresBodyStyleContext("disseminated", GeologyProvince.VOLCANIC_ARC));
+        assertFalse(magnetite.requiresBodyStyleContext("disseminated", GeologyProvince.OROGENIC_BELT));
+        assertEquals(List.of(), magnetite.hostLithologiesFor("disseminated", GeologyProvince.VOLCANIC_ARC));
+        assertEquals(
+                List.of("limestone", "marble"),
+                magnetite.hostLithologiesFor("disseminated", GeologyProvince.VOLCANIC_ARC, "contact_aureole")
+        );
+        assertEquals(
+                List.of("limestone", "marble"),
+                magnetite.hostLithologiesFor("massive_lens_or_pocket", GeologyProvince.VOLCANIC_ARC, "contact_aureole")
+        );
+        assertEquals(
+                List.of(),
+                magnetite.hostLithologiesFor("disseminated", GeologyProvince.OROGENIC_BELT, "contact_aureole")
+        );
+        OreOccurrenceCatalog.FormationRoute magnetiteSkarn = magnetite.formationRoutes().stream()
+                .filter(route -> "skarn_contact".equals(route.id()))
+                .findFirst()
+                .orElseThrow();
+        assertEquals(List.of(GeologyProvince.VOLCANIC_ARC), magnetiteSkarn.provinceContexts());
+        assertEquals(List.of("contact_aureole"), magnetiteSkarn.bodyStyles());
+
         OreOccurrenceCatalog.Occurrence lead = state.oreOccurrences().require("lead");
         assertEquals(List.of("vein", "stratiform"), lead.depositStyles());
         assertTrue(lead.requiresBodyStyleContext("vein", GeologyProvince.VOLCANIC_ARC));
