@@ -175,8 +175,8 @@ public final class OreOccurrenceCatalog {
                 styles
         );
         OreGrade maximumNaturalGrade = parseMaximumNaturalGrade(id, object);
-        Map<OreGrade, String> gradeBlocks = parseGradeBlocks(id, requiredObject(object, "gradeBlocks"));
         Map<OreGrade, String> naturalBlockOverrides = parseNaturalBlockOverrides(id, object);
+        Map<OreGrade, String> gradeBlocks = parseGradeBlocks(id, object, naturalBlockOverrides);
         return new Occurrence(
                 id,
                 providerMod,
@@ -268,7 +268,24 @@ public final class OreOccurrenceCatalog {
                 .orElseThrow(() -> new IllegalArgumentException(material + " uses unknown maximumNaturalGrade " + id));
     }
 
-    private static Map<OreGrade, String> parseGradeBlocks(String material, JsonObject object) {
+    private static Map<OreGrade, String> parseGradeBlocks(
+            String material,
+            JsonObject occurrence,
+            Map<OreGrade, String> naturalBlockOverrides
+    ) {
+        JsonElement rawBlocks = occurrence.get("gradeBlocks");
+        if (rawBlocks == null) {
+            if (naturalBlockOverrides.size() != ECONOMIC_GRADES.size()) {
+                throw new IllegalArgumentException(
+                        material + " without gradeBlocks must override every economic grade with a natural block"
+                );
+            }
+            return Map.of();
+        }
+        if (!rawBlocks.isJsonObject()) {
+            throw new IllegalArgumentException(material + " gradeBlocks must be an object");
+        }
+        JsonObject object = rawBlocks.getAsJsonObject();
         Set<String> expected = ECONOMIC_GRADES.stream().map(OreGrade::id).collect(java.util.stream.Collectors.toSet());
         if (!object.keySet().equals(expected)) {
             throw new IllegalArgumentException(material + " gradeBlocks must define every economic grade exactly once");
@@ -621,6 +638,13 @@ public final class OreOccurrenceCatalog {
             EnumMap<OreGrade, String> copiedOverrides = new EnumMap<>(OreGrade.class);
             copiedOverrides.putAll(naturalBlockOverrides);
             naturalBlockOverrides = Collections.unmodifiableMap(copiedOverrides);
+            for (OreGrade grade : ECONOMIC_GRADES) {
+                if (!gradeBlocks.containsKey(grade) && !naturalBlockOverrides.containsKey(grade)) {
+                    throw new IllegalArgumentException(
+                            "ore occurrence must resolve a natural block for every economic grade"
+                    );
+                }
+            }
         }
 
         public Occurrence(
@@ -775,7 +799,11 @@ public final class OreOccurrenceCatalog {
             if (grade == null) {
                 throw new IllegalArgumentException("ore grade must not be null");
             }
-            return naturalBlockOverrides.getOrDefault(grade, gradeBlocks.get(grade));
+            String block = naturalBlockOverrides.getOrDefault(grade, gradeBlocks.get(grade));
+            if (block == null) {
+                throw new IllegalStateException("ore occurrence has no natural block for grade " + grade.id());
+            }
+            return block;
         }
     }
 
