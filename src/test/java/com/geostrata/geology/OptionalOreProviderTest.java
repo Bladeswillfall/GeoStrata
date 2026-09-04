@@ -68,6 +68,36 @@ final class OptionalOreProviderTest {
     }
 
     @Test
+    void tfmgStriatedResourcesUseProviderNativeBlocks() throws IOException {
+        GeologyDataReload.State state = parse(output -> true);
+
+        OreOccurrenceCatalog.Occurrence bauxite = state.oreOccurrences().require("bauxite");
+        assertTrue(bauxite.gradeBlocks().isEmpty());
+        assertEquals("tfmg:bauxite", bauxite.outputItem());
+        assertEquals("tfmg:bauxite", bauxite.naturalBlock(OreGrade.POOR));
+        assertEquals("tfmg:bauxite", bauxite.naturalBlock(OreGrade.MASSIVE));
+
+        OreOccurrenceCatalog.Occurrence lignite = state.oreOccurrences().require("lignite");
+        assertTrue(lignite.gradeBlocks().isEmpty());
+        assertEquals("tfmg:lignite", lignite.naturalBlock(OreGrade.RICH));
+
+        OreOccurrenceCatalog.Occurrence fireclay = state.oreOccurrences().require("fireclay");
+        assertTrue(fireclay.gradeBlocks().isEmpty());
+        assertEquals("tfmg:fireclay_ball", fireclay.outputItem());
+        assertEquals("tfmg:fireclay", fireclay.naturalBlock(OreGrade.MEDIUM));
+    }
+
+    @Test
+    void missingTfmgFireclayOutputRemovesOnlyFireclayOccurrence() throws IOException {
+        GeologyDataReload.State state = parse(output -> !"tfmg:fireclay_ball".equals(output));
+
+        assertFalse(state.oreOccurrences().byId().containsKey("fireclay"));
+        assertTrue(state.oreOccurrences().byId().containsKey("bauxite"));
+        assertTrue(state.oreOccurrences().byId().containsKey("lignite"));
+        assertTrue(state.oreOccurrences().byId().containsKey("lead"));
+    }
+
+    @Test
     void missingOptionalProviderOutputRemovesOccurrenceAndActivation() throws IOException {
         GeologyDataReload.State state = parse(output -> !"create:raw_zinc".equals(output));
 
