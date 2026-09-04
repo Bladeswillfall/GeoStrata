@@ -29,7 +29,12 @@ class OreOccurrenceConstraintTest {
                 List.of("vein"),
                 OreOccurrenceCatalog.TerrainFilter.none(),
                 OreGrade.RICH,
-                Map.of()
+                Map.of(
+                        OreGrade.POOR, "geostrata:poor_emerald_ore",
+                        OreGrade.MEDIUM, "geostrata:medium_emerald_ore",
+                        OreGrade.RICH, "geostrata:rich_emerald_ore",
+                        OreGrade.MASSIVE, "geostrata:massive_emerald_ore"
+                )
         );
         assertEquals(OreGrade.MEDIUM, occurrence.capNaturalGrade(OreGrade.MEDIUM));
         assertEquals(OreGrade.RICH, occurrence.capNaturalGrade(OreGrade.MASSIVE));
