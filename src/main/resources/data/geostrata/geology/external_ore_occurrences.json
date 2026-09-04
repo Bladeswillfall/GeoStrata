@@ -66,7 +66,7 @@
       "depositStyles": ["coal_seam"],
       "formationRoutes": [{"id":"shallow_coalification","hostLithologies":["shale"],"provinceContexts":["sedimentary_basin","rift_province"],"depositStyles":["coal_seam"]}],
       "generation": {"activationChance":0.34,"candidateGrid":{"horizontalCellSize":160,"verticalCellSize":64,"horizontalMargin":12,"verticalMargin":8,"horizontalSearchPaddingBlocks":176,"verticalSearchPaddingBlocks":160},"depthAffinity":[{"maxY":-17,"multiplier":0.25},{"minY":-16,"maxY":32,"multiplier":0.9},{"minY":33,"maxY":96,"multiplier":1.2},{"minY":97,"maxY":160,"multiplier":0.55},{"minY":161,"multiplier":0.0}],"bodyScale":0.8},
-      "naturalBlockOverrides": {"poor":"tfmg:lignite","medium":"tfmg:lignite","rich":"tfmg:lignite","massive":"tfmg:lignite"}
+      "gradeBlocks": {"poor":"geostrata:poor_lignite_ore","medium":"geostrata:medium_lignite_ore","rich":"geostrata:rich_lignite_ore","massive":"geostrata:massive_lignite_ore"}
     },
     {
       "id": "fireclay",
