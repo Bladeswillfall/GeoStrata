@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate provider-gated external ore runtime data and assets."""
+"""Validate provider-gated external ore and natural-deposit runtime data and assets."""
 
 from __future__ import annotations
 
@@ -169,13 +169,17 @@ def main() -> None:
         fail("external ore texture matrix has drifted")
 
     occurrences = {entry.get("id"): entry for entry in occurrence_root.get("occurrences", []) if isinstance(entry, dict)}
+    graded_occurrences = {material: entry for material, entry in occurrences.items() if "gradeBlocks" in entry}
+    native_occurrences = {material: entry for material, entry in occurrences.items() if "gradeBlocks" not in entry}
     profiles = {
         entry.get("gameplay", {}).get("oreEconomy", {}).get("material"): entry
         for entry in profile_root.get("materials", []) if isinstance(entry, dict)
     }
     matrix_ores = matrix.get("ores")
-    if not occurrences or set(occurrences) != set(profiles) or not isinstance(matrix_ores, dict) or set(matrix_ores) != set(occurrences):
-        fail("external occurrence, profile and texture-matrix materials must match exactly")
+    if not occurrences or not isinstance(matrix_ores, dict):
+        fail("external occurrence and texture-matrix catalogs must not be empty")
+    if set(graded_occurrences) != set(profiles) or set(matrix_ores) != set(graded_occurrences):
+        fail("graded external occurrences, profiles and texture-matrix materials must match exactly")
 
     registrations = {match.group("name"): match.groupdict() for match in EXTERNAL_BLOCK.finditer(BLOCKS_SOURCE.read_text(encoding="utf-8"))}
     hosts_supported = set(HOST.findall(HOST_SOURCE.read_text(encoding="utf-8")))
@@ -191,10 +195,31 @@ def main() -> None:
 
     total_blocks = 0
     for material, occurrence in occurrences.items():
+        candidates = provider_candidates(material, occurrence)
+        for provider, output_item in candidates:
+            mapping = providers.get((provider, material))
+            if mapping is None or mapping.get("providerOutput") != output_item:
+                fail(f"{material} provider/output does not match external material catalogue: {provider}/{output_item}")
+
+        if material in native_occurrences:
+            overrides = occurrence.get("naturalBlockOverrides")
+            if not isinstance(overrides, dict) or set(overrides) != set(GRADES):
+                fail(f"{material} provider-native occurrence must override every economic grade")
+            natural_blocks = list(overrides.values())
+            if not all(isinstance(block, str) and ":" in block for block in natural_blocks):
+                fail(f"{material} provider-native occurrence has invalid natural block IDs")
+            if len(set(natural_blocks)) != 1:
+                fail(f"{material} provider-native occurrence must use one provider block for all grades")
+            natural_block = natural_blocks[0]
+            for provider, _ in candidates:
+                mapping = providers[(provider, material)]
+                if natural_block not in mapping.get("providerBlocks", []):
+                    fail(f"{material} natural block {natural_block} is not catalogued for provider {provider}")
+            continue
+
         profile = profiles[material]
         economy = profile.get("gameplay", {}).get("oreEconomy", {})
         matrix_ore = matrix_ores[material]
-        candidates = provider_candidates(material, occurrence)
         preferred_output = candidates[0][1]
         hosts = occurrence.get("hostLithologies")
         if hosts != matrix_ore.get("validHosts") or not set(hosts or ()) <= hosts_supported:
@@ -203,10 +228,6 @@ def main() -> None:
             fail(f"{material} external prototype must have a valid fallback host and no Continuity claim")
         if economy.get("outputItem") != preferred_output or economy.get("gradeOrder") != list(GRADES):
             fail(f"{material} profile economy must match its preferred occurrence provider")
-        for provider, output_item in candidates:
-            mapping = providers.get((provider, material))
-            if mapping is None or mapping.get("providerOutput") != output_item:
-                fail(f"{material} provider/output does not match external material catalogue: {provider}/{output_item}")
 
         output_tag = economy.get("outputTag")
         if not isinstance(output_tag, str) or ":" not in output_tag:
@@ -281,6 +302,9 @@ def main() -> None:
         ],
         "thorium": [("create_new_age", "thorium", ("thorium_ore",))],
         "magnetite": [("create_new_age", "magnetite_block", ("magnetite",))],
+        "bauxite": [("tfmg", "bauxite", ("tfmg_striated_ores_overworld",))],
+        "lignite": [("tfmg", "lignite", ("tfmg_striated_ores_overworld",))],
+        "fireclay": [("tfmg", "fireclay_ball", ("tfmg_striated_ores_overworld",))],
         "uranium": [
             ("createnuclear", "raw_uranium", ("uranium_ore",)),
             (
@@ -290,7 +314,7 @@ def main() -> None:
             ),
         ],
         "lead": [
-            ("tfmg", "raw_lead", ("lead_ore",)),
+            ("tfmg", "raw_lead", ("lead_ore", "tfmg_striated_ores_overworld")),
             ("createnuclear", "raw_lead", ("lead_ore",)),
         ],
         "nickel": [("tfmg", "raw_nickel", ("nickel_ore",))],
@@ -306,7 +330,11 @@ def main() -> None:
                 if (namespace, placed_feature) not in companion_ids:
                     fail(f"experimental companion must suppress {namespace}:{placed_feature} for {material}")
 
-    print(f"external ore validation OK: {len(occurrences)} materials, {total_blocks} graded blocks")
+    print(
+        f"external ore validation OK: {len(occurrences)} materials "
+        f"({len(graded_occurrences)} graded, {len(native_occurrences)} provider-native), "
+        f"{total_blocks} graded blocks"
+    )
 
 
 if __name__ == "__main__":
