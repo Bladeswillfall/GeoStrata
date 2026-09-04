@@ -1,0 +1,9 @@
+{
+  "replace": false,
+  "values": [
+    "geostrata:poor_bauxite_ore",
+    "geostrata:medium_bauxite_ore",
+    "geostrata:rich_bauxite_ore",
+    "geostrata:massive_bauxite_ore"
+  ]
+}

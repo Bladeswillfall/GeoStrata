@@ -55,7 +55,7 @@
       "depositStyles": ["stratiform"],
       "formationRoutes": [{"id":"lateritic_basalt_weathering","hostLithologies":["basalt"],"provinceContexts":["volcanic_arc","rift_province"],"depositStyles":["stratiform"]}],
       "generation": {"activationChance":0.16,"candidateGrid":{"horizontalCellSize":176,"verticalCellSize":64,"horizontalMargin":12,"verticalMargin":8,"horizontalSearchPaddingBlocks":192,"verticalSearchPaddingBlocks":128},"depthAffinity":[{"maxY":31,"multiplier":0.0},{"minY":32,"maxY":64,"multiplier":0.35},{"minY":65,"maxY":128,"multiplier":1.0},{"minY":129,"multiplier":0.6}],"bodyScale":0.85},
-      "naturalBlockOverrides": {"poor":"tfmg:bauxite","medium":"tfmg:bauxite","rich":"tfmg:bauxite","massive":"tfmg:bauxite"}
+      "gradeBlocks": {"poor":"geostrata:poor_bauxite_ore","medium":"geostrata:medium_bauxite_ore","rich":"geostrata:rich_bauxite_ore","massive":"geostrata:massive_bauxite_ore"}
     },
     {
       "id": "lignite",
