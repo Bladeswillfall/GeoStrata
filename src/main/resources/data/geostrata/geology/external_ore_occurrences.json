@@ -47,6 +47,39 @@
       "gradeBlocks": {"poor":"geostrata:poor_magnetite_ore","medium":"geostrata:medium_magnetite_ore","rich":"geostrata:rich_magnetite_ore","massive":"geostrata:massive_magnetite_ore"}
     },
     {
+      "id": "bauxite",
+      "providerMod": "tfmg",
+      "outputItem": "tfmg:bauxite",
+      "hostLithologies": ["basalt"],
+      "provinceContexts": ["volcanic_arc", "rift_province"],
+      "depositStyles": ["stratiform"],
+      "formationRoutes": [{"id":"lateritic_basalt_weathering","hostLithologies":["basalt"],"provinceContexts":["volcanic_arc","rift_province"],"depositStyles":["stratiform"]}],
+      "generation": {"activationChance":0.16,"candidateGrid":{"horizontalCellSize":176,"verticalCellSize":64,"horizontalMargin":12,"verticalMargin":8,"horizontalSearchPaddingBlocks":192,"verticalSearchPaddingBlocks":128},"depthAffinity":[{"maxY":31,"multiplier":0.0},{"minY":32,"maxY":64,"multiplier":0.35},{"minY":65,"maxY":128,"multiplier":1.0},{"minY":129,"multiplier":0.6}],"bodyScale":0.85},
+      "naturalBlockOverrides": {"poor":"tfmg:bauxite","medium":"tfmg:bauxite","rich":"tfmg:bauxite","massive":"tfmg:bauxite"}
+    },
+    {
+      "id": "lignite",
+      "providerMod": "tfmg",
+      "outputItem": "tfmg:lignite",
+      "hostLithologies": ["shale"],
+      "provinceContexts": ["sedimentary_basin", "rift_province"],
+      "depositStyles": ["coal_seam"],
+      "formationRoutes": [{"id":"shallow_coalification","hostLithologies":["shale"],"provinceContexts":["sedimentary_basin","rift_province"],"depositStyles":["coal_seam"]}],
+      "generation": {"activationChance":0.34,"candidateGrid":{"horizontalCellSize":160,"verticalCellSize":64,"horizontalMargin":12,"verticalMargin":8,"horizontalSearchPaddingBlocks":176,"verticalSearchPaddingBlocks":160},"depthAffinity":[{"maxY":-17,"multiplier":0.25},{"minY":-16,"maxY":32,"multiplier":0.9},{"minY":33,"maxY":96,"multiplier":1.2},{"minY":97,"maxY":160,"multiplier":0.55},{"minY":161,"multiplier":0.0}],"bodyScale":0.8},
+      "naturalBlockOverrides": {"poor":"tfmg:lignite","medium":"tfmg:lignite","rich":"tfmg:lignite","massive":"tfmg:lignite"}
+    },
+    {
+      "id": "fireclay",
+      "providerMod": "tfmg",
+      "outputItem": "tfmg:fireclay_ball",
+      "hostLithologies": ["mudstone"],
+      "provinceContexts": ["sedimentary_basin", "rift_province"],
+      "depositStyles": ["stratiform"],
+      "formationRoutes": [{"id":"coal_underclay","hostLithologies":["mudstone"],"provinceContexts":["sedimentary_basin","rift_province"],"depositStyles":["stratiform"]}],
+      "generation": {"activationChance":0.22,"candidateGrid":{"horizontalCellSize":160,"verticalCellSize":64,"horizontalMargin":12,"verticalMargin":8,"horizontalSearchPaddingBlocks":176,"verticalSearchPaddingBlocks":160},"depthAffinity":[{"maxY":-17,"multiplier":0.35},{"minY":-16,"maxY":48,"multiplier":1.1},{"minY":49,"maxY":112,"multiplier":0.75},{"minY":113,"multiplier":0.0}],"bodyScale":0.72},
+      "naturalBlockOverrides": {"poor":"tfmg:fireclay","medium":"tfmg:fireclay","rich":"tfmg:fireclay","massive":"tfmg:fireclay"}
+    },
+    {
       "id": "uranium",
       "providers": [{"providerMod":"create_nuclear","outputItem":"createnuclear:raw_uranium"},{"providerMod":"modern_industrialization","outputItem":"modern_industrialization:raw_uranium"}],
       "hostLithologies": ["granite", "rhyolite", "gneiss"],
