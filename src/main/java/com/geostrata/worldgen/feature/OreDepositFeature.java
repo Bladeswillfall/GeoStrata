@@ -5,6 +5,7 @@ import com.geostrata.block.OreHost;
 import com.geostrata.geology.CorrelatedSedimentaryExperiment;
 import com.geostrata.geology.ChunkGeneratorTerrainMorphologySampler;
 import com.geostrata.geology.FaultControlledOrePlanner;
+import com.geostrata.geology.FireclayUnderclayPlanner;
 import com.geostrata.geology.GeologyProvince;
 import com.geostrata.geology.GeologyProvinceSampler;
 import com.geostrata.geology.GeologyResolver;
@@ -92,9 +93,13 @@ public final class OreDepositFeature extends Feature<DefaultFeatureConfig> {
         ProvinceSampleCache provinces = new ProvinceSampleCache(worldSeed);
         FormationContextCache formationContexts = new FormationContextCache(world);
         List<BlockBox> protectedStructurePieces = StructurePieceProtection.forChunk(world, chunk);
+        OreOccurrenceCatalog.Occurrence fireclayOccurrence = occurrences.byId().get("fireclay");
 
         int placed = 0;
         for (OreOccurrenceCatalog.Occurrence occurrence : occurrences.occurrences()) {
+            if ("fireclay".equals(occurrence.id())) {
+                continue;
+            }
             placed += placeMaterial(
                     world,
                     worldSeed,
@@ -103,6 +108,7 @@ public final class OreDepositFeature extends Feature<DefaultFeatureConfig> {
                     startZ,
                     endZ,
                     occurrence,
+                    fireclayOccurrence,
                     hosts,
                     structuralCycleThickness,
                     provinces,
@@ -122,6 +128,7 @@ public final class OreDepositFeature extends Feature<DefaultFeatureConfig> {
             int startZ,
             int endZ,
             OreOccurrenceCatalog.Occurrence occurrence,
+            OreOccurrenceCatalog.Occurrence fireclayOccurrence,
             LazyHostResolver hosts,
             double structuralCycleThickness,
             ProvinceSampleCache provinces,
@@ -196,10 +203,91 @@ public final class OreDepositFeature extends Feature<DefaultFeatureConfig> {
                             occupied,
                             protectedStructurePieces
                     );
+                    placed += placeFireclayUnderclay(
+                            world,
+                            worldSeed,
+                            startX,
+                            endX,
+                            startZ,
+                            endZ,
+                            occurrence,
+                            proposal,
+                            body,
+                            province,
+                            fireclayOccurrence,
+                            hosts,
+                            formationContexts,
+                            occupied,
+                            protectedStructurePieces
+                    );
                 }
             }
         }
         return placed;
+    }
+
+    private static int placeFireclayUnderclay(
+            StructureWorldAccess world,
+            long worldSeed,
+            int startX,
+            int endX,
+            int startZ,
+            int endZ,
+            OreOccurrenceCatalog.Occurrence parentOccurrence,
+            OreDepositCandidatePlanner.Proposal parentProposal,
+            OreDepositGeometry.Body parentBody,
+            GeologyProvince province,
+            OreOccurrenceCatalog.Occurrence fireclayOccurrence,
+            LazyHostResolver hosts,
+            FormationContextCache formationContexts,
+            VerticalEnvelope occupied,
+            List<BlockBox> protectedStructurePieces
+    ) {
+        if (fireclayOccurrence == null || !FireclayUnderclayPlanner.supportsParent(parentOccurrence.id())) {
+            return 0;
+        }
+        OreDepositCandidatePlanner.Proposal proposal = FireclayUnderclayPlanner.proposal(parentProposal, parentBody);
+        boolean usesBodyStyleContext = fireclayOccurrence.formationRoutes().stream()
+                .anyMatch(OreOccurrenceCatalog.FormationRoute::requiresBodyStyle);
+        List<String> routeHosts = routeHostsForCandidate(
+                fireclayOccurrence,
+                proposal,
+                province,
+                formationContexts,
+                usesBodyStyleContext
+        );
+        if (routeHosts.isEmpty() || !activeCandidate(world, worldSeed, fireclayOccurrence, proposal, province)) {
+            return 0;
+        }
+        if (!qualifiesTerrain(world, fireclayOccurrence, proposal)) {
+            return 0;
+        }
+
+        OreDepositGeometry.Body body = FireclayUnderclayPlanner.body(
+                proposal,
+                parentBody,
+                fireclayOccurrence.generation()
+        );
+        OreDiscoveryStringers.Field discovery = OreDiscoveryStringers.forBody(body);
+        OreDepositGeometry.Bounds bounds = OreExposurePlacement.placementBounds(body, discovery);
+        if (!intersectsChunk(bounds, startX, endX, startZ, endZ, occupied)) {
+            return 0;
+        }
+        return placeBody(
+                world,
+                startX,
+                endX,
+                startZ,
+                endZ,
+                fireclayOccurrence,
+                body,
+                discovery,
+                bounds,
+                hosts,
+                Set.copyOf(routeHosts),
+                occupied,
+                protectedStructurePieces
+        );
     }
 
     private static List<String> routeHostsForCandidate(
