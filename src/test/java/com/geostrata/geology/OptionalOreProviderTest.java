@@ -68,14 +68,13 @@ final class OptionalOreProviderTest {
     }
 
     @Test
-    void tfmgStriatedResourcesUseProviderNativeBlocks() throws IOException {
+    void tfmgStriatedResourcesUseExpectedRuntimeOwnership() throws IOException {
         GeologyDataReload.State state = parse(output -> true);
 
         OreOccurrenceCatalog.Occurrence bauxite = state.oreOccurrences().require("bauxite");
-        assertTrue(bauxite.gradeBlocks().isEmpty());
         assertEquals("tfmg:bauxite", bauxite.outputItem());
-        assertEquals("tfmg:bauxite", bauxite.naturalBlock(OreGrade.POOR));
-        assertEquals("tfmg:bauxite", bauxite.naturalBlock(OreGrade.MASSIVE));
+        assertEquals("geostrata:poor_bauxite_ore", bauxite.naturalBlock(OreGrade.POOR));
+        assertEquals("geostrata:massive_bauxite_ore", bauxite.naturalBlock(OreGrade.MASSIVE));
 
         OreOccurrenceCatalog.Occurrence lignite = state.oreOccurrences().require("lignite");
         assertTrue(lignite.gradeBlocks().isEmpty());
