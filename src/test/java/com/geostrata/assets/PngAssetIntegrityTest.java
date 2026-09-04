@@ -1,6 +1,8 @@
 package com.geostrata.assets;
 
+import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestFactory;
 
 import javax.imageio.ImageIO;
 import java.io.IOException;
@@ -27,15 +29,18 @@ final class PngAssetIntegrityTest {
             "red_clay"
     );
 
-    @Test
-    void bundledPngAssetsAreReadable() throws IOException {
+    @TestFactory
+    List<DynamicTest> bundledPngAssetsAreReadable() throws IOException {
         Path assets = Path.of("src/main/resources/assets/geostrata");
         try (var paths = Files.walk(assets)) {
-            for (Path path : paths.filter(file -> file.toString().endsWith(".png")).sorted().toList()) {
-                var image = ImageIO.read(path.toFile());
-                assertNotNull(image, path.toString());
-                assertTrue(image.getWidth() > 0 && image.getHeight() > 0, path.toString());
-            }
+            return paths.filter(file -> file.toString().endsWith(".png"))
+                    .sorted()
+                    .map(path -> DynamicTest.dynamicTest(path.toString(), () -> {
+                        var image = ImageIO.read(path.toFile());
+                        assertNotNull(image, path.toString());
+                        assertTrue(image.getWidth() > 0 && image.getHeight() > 0, path.toString());
+                    }))
+                    .toList();
         }
     }
 
