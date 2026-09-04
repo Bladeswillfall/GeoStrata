@@ -119,6 +119,10 @@ public final class GeoStrataBlocks {
     private static final Block MEDIUM_BAUXITE_ORE = registerExternalOre("medium_bauxite_ore", "bauxite", OreGrade.MEDIUM, Blocks.IRON_ORE, 3.0F, BlockSoundGroup.STONE);
     private static final Block RICH_BAUXITE_ORE = registerExternalOre("rich_bauxite_ore", "bauxite", OreGrade.RICH, Blocks.IRON_ORE, 3.0F, BlockSoundGroup.STONE);
     private static final Block MASSIVE_BAUXITE_ORE = registerExternalOre("massive_bauxite_ore", "bauxite", OreGrade.MASSIVE, Blocks.IRON_ORE, 3.0F, BlockSoundGroup.STONE);
+    private static final Block POOR_LIGNITE_ORE = registerExternalOre("poor_lignite_ore", "lignite", OreGrade.POOR, Blocks.IRON_ORE, 3.0F, BlockSoundGroup.STONE);
+    private static final Block MEDIUM_LIGNITE_ORE = registerExternalOre("medium_lignite_ore", "lignite", OreGrade.MEDIUM, Blocks.IRON_ORE, 3.0F, BlockSoundGroup.STONE);
+    private static final Block RICH_LIGNITE_ORE = registerExternalOre("rich_lignite_ore", "lignite", OreGrade.RICH, Blocks.IRON_ORE, 3.0F, BlockSoundGroup.STONE);
+    private static final Block MASSIVE_LIGNITE_ORE = registerExternalOre("massive_lignite_ore", "lignite", OreGrade.MASSIVE, Blocks.IRON_ORE, 3.0F, BlockSoundGroup.STONE);
     private static final Block POOR_URANIUM_ORE = registerExternalOre("poor_uranium_ore", "uranium", OreGrade.POOR, Blocks.IRON_ORE, 3.0F, BlockSoundGroup.STONE);
     private static final Block MEDIUM_URANIUM_ORE = registerExternalOre("medium_uranium_ore", "uranium", OreGrade.MEDIUM, Blocks.IRON_ORE, 3.0F, BlockSoundGroup.STONE);
     private static final Block RICH_URANIUM_ORE = registerExternalOre("rich_uranium_ore", "uranium", OreGrade.RICH, Blocks.IRON_ORE, 3.0F, BlockSoundGroup.STONE);
