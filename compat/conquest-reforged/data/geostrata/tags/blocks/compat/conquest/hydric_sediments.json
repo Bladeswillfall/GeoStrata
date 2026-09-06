@@ -1,0 +1,21 @@
+{
+  "replace": false,
+  "values": [
+    "#geostrata:compat/conquest/natural_soils",
+    "#geostrata:compat/conquest/natural_muds",
+    {"id": "conquest:dark_silt", "required": false},
+    {"id": "conquest:light_silt", "required": false},
+    {"id": "conquest:wet_sand", "required": false},
+    {"id": "conquest:sand_and_gravel", "required": false},
+    {"id": "conquest:wet_sand_and_gravel", "required": false},
+    {"id": "conquest:tan_sand", "required": false},
+    {"id": "conquest:brown_sand", "required": false},
+    {"id": "conquest:purple_sand", "required": false},
+    {"id": "conquest:gray_sand", "required": false},
+    {"id": "conquest:light_gray_sand", "required": false},
+    {"id": "conquest:light_gravel", "required": false},
+    {"id": "conquest:dark_gravel", "required": false},
+    {"id": "conquest:gray_gravel", "required": false},
+    {"id": "conquest:white_gravel", "required": false}
+  ]
+}

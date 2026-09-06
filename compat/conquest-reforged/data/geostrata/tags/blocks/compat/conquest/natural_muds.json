@@ -1,0 +1,7 @@
+{
+  "replace": false,
+  "values": [
+    {"id": "conquest:clay_rich_mud", "required": false},
+    {"id": "conquest:mud", "required": false}
+  ]
+}

@@ -1,0 +1,9 @@
+{
+  "replace": false,
+  "values": [
+    {"id": "conquest:unfertile_loamy_dirt", "required": false},
+    {"id": "conquest:dark_fertile_soil", "required": false},
+    {"id": "conquest:sandy_soil", "required": false},
+    {"id": "conquest:dark_sandy_soil", "required": false}
+  ]
+}

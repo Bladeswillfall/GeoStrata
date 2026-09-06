@@ -1,0 +1,27 @@
+{
+  "replace": false,
+  "values": [
+    {"id": "conquest:brown_granite", "required": false},
+    {"id": "conquest:dark_brown_granite", "required": false},
+    {"id": "conquest:light_brown_granite", "required": false},
+    {"id": "conquest:dark_gray_granite", "required": false},
+    {"id": "conquest:light_gray_granite", "required": false},
+    {"id": "conquest:white_granite", "required": false},
+    {"id": "conquest:rough_anorthosite", "required": false},
+    {"id": "conquest:tuff", "required": false},
+    {"id": "conquest:dacite", "required": false},
+    {"id": "conquest:rhyolite", "required": false},
+    {"id": "conquest:gray_limestone", "required": false},
+    {"id": "conquest:dark_limestone", "required": false},
+    {"id": "conquest:pink_limestone", "required": false},
+    {"id": "conquest:tan_limestone", "required": false},
+    {"id": "conquest:shale", "required": false},
+    {"id": "conquest:graywacke", "required": false},
+    {"id": "conquest:mudstone", "required": false},
+    {"id": "conquest:light_brown_mudstone", "required": false},
+    {"id": "conquest:faded_gray_sandstone", "required": false},
+    {"id": "conquest:faded_darker_gray_sandstone", "required": false},
+    {"id": "conquest:brown_sandstone", "required": false},
+    {"id": "conquest:tan_sandstone", "required": false}
+  ]
+}
