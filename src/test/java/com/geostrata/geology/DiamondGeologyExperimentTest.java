@@ -5,29 +5,28 @@ import com.google.gson.JsonParser;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 final class DiamondGeologyExperimentTest {
     @Test
-    void parsesDisabledDiamondExperiment() {
+    void parsesCoreDiamondRuntime() {
         DiamondGeologyExperiment.Snapshot snapshot = DiamondGeologyExperiment.parse(valid());
 
-        assertFalse(snapshot.enabled());
-        assertEquals("not_implemented", snapshot.nativeGenerationSuppression());
+        assertTrue(snapshot.enabled());
+        assertEquals("core_runtime", snapshot.runtimeStatus());
+        assertEquals("core_overworld", snapshot.nativeGenerationSuppression());
         assertEquals(0.06, snapshot.pipeActivationChance("kimberlite"), 1.0e-12);
         assertEquals(0.02, snapshot.pipeActivationChance("lamproite"), 1.0e-12);
         assertEquals(0.12, snapshot.structuralActivationChancePerCell(), 1.0e-12);
     }
 
     @Test
-    void companionActivationOwnsOverworldDiamondGeneration() {
-        DiamondGeologyExperiment.Snapshot snapshot = DiamondGeologyExperiment.parse(valid()).activated(true);
-
-        assertTrue(snapshot.enabled());
-        assertEquals("experimental_runtime", snapshot.runtimeStatus());
-        assertEquals("experimental_companion_overworld", snapshot.nativeGenerationSuppression());
+    void companionNoLongerControlsDiamondActivation() {
+        DiamondGeologyExperiment.Snapshot snapshot = DiamondGeologyExperiment.parse(valid());
+        assertSame(snapshot, snapshot.activated(false));
+        assertSame(snapshot, snapshot.activated(true));
     }
 
     @Test
@@ -49,9 +48,9 @@ final class DiamondGeologyExperimentTest {
                 {
                   "schemaVersion": 1,
                   "model": "geostrata:diamond_geology_experiment",
-                  "runtimeStatus": "experimental_opt_in",
-                  "enabled": false,
-                  "nativeGenerationSuppression": "not_implemented",
+                  "runtimeStatus": "core_runtime",
+                  "enabled": true,
+                  "nativeGenerationSuppression": "core_overworld",
                   "pipeActivationChancePerCell": {
                     "kimberlite": 0.06,
                     "lamproite": 0.02

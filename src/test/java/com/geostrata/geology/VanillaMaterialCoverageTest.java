@@ -32,9 +32,9 @@ final class VanillaMaterialCoverageTest {
                 Map.entry("coal", "geostrata_core"),
                 Map.entry("iron", "geostrata_core"),
                 Map.entry("copper", "geostrata_core"),
-                Map.entry("gold", "geostrata_experimental_with_vanilla_fallback"),
-                Map.entry("emerald", "geostrata_experimental_with_vanilla_fallback"),
-                Map.entry("diamond", "geostrata_experimental_with_vanilla_fallback"),
+                Map.entry("gold", "geostrata_core"),
+                Map.entry("emerald", "geostrata_core"),
+                Map.entry("diamond", "geostrata_core"),
                 Map.entry("redstone", "minecraft_owned"),
                 Map.entry("lapis", "minecraft_owned"),
                 Map.entry("nether_gold", "dimension_out_of_scope"),
@@ -44,8 +44,10 @@ final class VanillaMaterialCoverageTest {
 
         Set<String> configured = ids(read("geology/ore_occurrences.json").getAsJsonArray("occurrences"));
         assertTrue(configured.containsAll(Set.of("coal", "iron", "copper", "gold", "emerald")));
-        assertEquals("experimental_opt_in", read("geology/diamond_geology_experiment.json")
-                .get("runtimeStatus").getAsString());
+        JsonObject diamond = read("geology/diamond_geology_experiment.json");
+        assertEquals("core_runtime", diamond.get("runtimeStatus").getAsString());
+        assertTrue(diamond.get("enabled").getAsBoolean());
+        assertEquals("core_overworld", diamond.get("nativeGenerationSuppression").getAsString());
     }
 
     @Test

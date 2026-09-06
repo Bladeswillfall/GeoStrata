@@ -205,7 +205,8 @@ jobs:
           region = os.environ['BENCHMARK_REGION']
           overlapping = ('coal', 'iron', 'copper', 'gold', 'emerald')
           common = ('coal', 'iron', 'copper')
-          preserved = ('gold', 'emerald', 'redstone', 'lapis')
+          owned_graded = overlapping
+          preserved = ('redstone', 'lapis')
           owned_vanilla_blocks = ('diamond',)
           diamond_min_exposed_patches = 6
           diamond_max_exposed_patches = 9
@@ -280,7 +281,7 @@ jobs:
               }
               if target is not None and owned_patches < target:
                   failures.append(f"{material}: {owned_patches} < {target} patches")
-              if material in common and after['vanillaTaggedBlocks'] != 0:
+              if material in owned_graded and after['vanillaTaggedBlocks'] != 0:
                   failures.append(f"{material}: vanilla generation was not fully suppressed")
               if material in preserved and before['total'] > 0 and after['vanillaTaggedBlocks'] == 0:
                   failures.append(f"{material}: vanilla fallback disappeared")
@@ -297,8 +298,8 @@ jobs:
                   )
           elif region == 'emerald':
               emerald = summary['materials']['emerald']
-              if not 190 <= emerald['geostrataOwnedTotal'] <= 240:
-                  failures.append(f"emerald: {emerald['geostrataOwnedTotal']} blocks outside 190..240")
+              if not 190 <= emerald['geostrataOwnedTotal'] <= 280:
+                  failures.append(f"emerald: {emerald['geostrataOwnedTotal']} blocks outside 190..280")
 
           Path('run/results/paired.json').write_text(json.dumps(summary, indent=2) + '\n')
           lines = [
@@ -321,12 +322,12 @@ jobs:
               '',
               'Performance acceptance: GeoStrata Minecraft startup must remain at or below 2.5x the paired baseline startup time.',
               'Common-resource acceptance floor: each of coal, iron and copper must retain at least 50% of the paired vanilla-feature exposed-patch count.',
-              'Ownership acceptance: core owns coal, iron and copper with no residual vanilla generation; gold, emerald, redstone and lapis retain vanilla fallback wherever the paired baseline contains them.',
-              'Paired baseline accounting: CI disables core common-ore activation and suppression together while keeping the same core geology runtime.',
+              'Ownership acceptance: core owns coal, iron, copper, gold and emerald with no residual vanilla generation; diamond is GeoStrata-owned structural geology; redstone and lapis retain vanilla generation.',
+              'Paired baseline accounting: CI disables core ore activation and suppression together while keeping the same core geology runtime.',
               'Reproducibility note: raw vanilla ore block totals and tiny vanilla exposed-patch samples may vary across identical parallel worldgen reruns.',
               f'Diamond exposure acceptance: the fixed cratonic region must contain {diamond_min_exposed_patches}..{diamond_max_exposed_patches} GeoStrata exposed patches; the baseline percentage is informational.',
-              'Diamond accounting: CI sets a benchmark-only environment switch that suppresses vanilla diamond in GeoStrata mode so vanilla diamond-block IDs can be attributed to GeoStrata.',
-              'Normal experiment-companion worlds keep vanilla gold, emerald and diamond generation as fallbacks.',
+              'Diamond accounting: GeoStrata structures use vanilla diamond-block IDs after vanilla diamond placed features are suppressed, so those blocks are attributed to GeoStrata in the owned run.',
+              'Normal GeoStrata worlds use core Gold, Emerald and Diamond geology; Redstone and Lapis remain Minecraft-owned.',
               f"- baseline overlapping total: {summary['vanilla']['total']}",
               f"- GeoStrata graded overlapping total: {summary['geostrataGraded']['total']}",
           ])

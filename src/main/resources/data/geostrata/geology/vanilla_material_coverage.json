@@ -6,9 +6,9 @@
     {"id":"coal","dimension":"overworld","status":"geostrata_core","occurrence":"coal"},
     {"id":"iron","dimension":"overworld","status":"geostrata_core","occurrence":"iron"},
     {"id":"copper","dimension":"overworld","status":"geostrata_core","occurrence":"copper"},
-    {"id":"gold","dimension":"overworld","status":"geostrata_experimental_with_vanilla_fallback","occurrence":"gold"},
-    {"id":"emerald","dimension":"overworld","status":"geostrata_experimental_with_vanilla_fallback","occurrence":"emerald"},
-    {"id":"diamond","dimension":"overworld","status":"geostrata_experimental_with_vanilla_fallback","experiment":"geostrata:geology/diamond_geology_experiment.json"},
+    {"id":"gold","dimension":"overworld","status":"geostrata_core","occurrence":"gold"},
+    {"id":"emerald","dimension":"overworld","status":"geostrata_core","occurrence":"emerald"},
+    {"id":"diamond","dimension":"overworld","status":"geostrata_core","experiment":"geostrata:geology/diamond_geology_experiment.json"},
     {"id":"redstone","dimension":"overworld","status":"minecraft_owned"},
     {"id":"lapis","dimension":"overworld","status":"minecraft_owned"},
     {"id":"nether_gold","dimension":"the_nether","status":"dimension_out_of_scope"},
@@ -29,7 +29,7 @@
     "GeoStrata core ownership means Minecraft placed-feature generation is suppressed and residual vanilla common-ore states are removed by the existing late geology pass.",
     "Vanilla granite, diorite and andesite blob features are suppressed because GeoStrata's volcanic-arc runtime owns their coherent natural bodies.",
     "Tuff follows Minecraft's ore-replaceable host boundary and may be subsumed into GeoStrata host geology; explicit diamond-pipe tuff remains a separate prospecting clue.",
-    "Gold, emerald and diamond keep vanilla generation until their GeoStrata gameplay is promoted from experiment to core.",
+    "Gold and emerald use GeoStrata's graded occurrence runtime; diamond uses the core cratonic fault and rare kimberlite/lamproite pipe routes.",
     "Redstone and lapis deliberately remain Minecraft-owned; coverage does not imply replacement.",
     "Nether and End geology remain outside the current Overworld geology runtime."
   ]

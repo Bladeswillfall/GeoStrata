@@ -5,7 +5,7 @@ import com.google.gson.JsonObject;
 
 import java.util.Map;
 
-/** Disabled-by-default activation boundary for GeoStrata's diamond geology prototype. */
+/** Core activation contract for GeoStrata's pipe- and structure-controlled diamond geology. */
 public final class DiamondGeologyExperiment {
     private static volatile Snapshot snapshot = Snapshot.unloaded();
 
@@ -23,9 +23,9 @@ public final class DiamondGeologyExperiment {
     static Snapshot parse(JsonObject root) {
         requireInt(root, "schemaVersion", 1);
         requireString(root, "model", "geostrata:diamond_geology_experiment");
-        requireString(root, "runtimeStatus", "experimental_opt_in");
+        requireString(root, "runtimeStatus", "core_runtime");
         boolean enabled = requireBoolean(root, "enabled");
-        requireString(root, "nativeGenerationSuppression", "not_implemented");
+        requireString(root, "nativeGenerationSuppression", "core_overworld");
 
         JsonObject rawPipeChances = requiredObject(root, "pipeActivationChancePerCell");
         Map<String, Double> pipeChances = Map.of(
@@ -38,9 +38,9 @@ public final class DiamondGeologyExperiment {
 
         double structuralChance = chance(root, "structuralActivationChancePerCell");
         return new Snapshot(
-                "experimental_opt_in",
+                "core_runtime",
                 enabled,
-                "not_implemented",
+                "core_overworld",
                 pipeChances,
                 structuralChance
         );
@@ -132,17 +132,9 @@ public final class DiamondGeologyExperiment {
             return !pipeActivationChancePerCell.isEmpty();
         }
 
+        /** Kept for compatibility with the existing reload call; core diamond geology no longer depends on the companion. */
         Snapshot activated(boolean companionLoaded) {
-            if (!companionLoaded) {
-                return this;
-            }
-            return new Snapshot(
-                    "experimental_runtime",
-                    true,
-                    "experimental_companion_overworld",
-                    pipeActivationChancePerCell,
-                    structuralActivationChancePerCell
-            );
+            return this;
         }
 
         public double pipeActivationChance(String kind) {
