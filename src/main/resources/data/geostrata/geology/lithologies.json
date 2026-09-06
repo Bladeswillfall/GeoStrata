@@ -72,6 +72,18 @@
       "runtimeAuthority": "sedimentary_stratigraphy"
     },
     {
+      "id": "calcite",
+      "block": "minecraft:calcite",
+      "rockClass": "sedimentary",
+      "genesis": "crystalline_carbonate",
+      "bodyStyle": "thin_bed",
+      "depthAffinity": "shallow_to_mid",
+      "continuity": "local",
+      "biomeTag": "geostrata:has_common_rocks",
+      "baselineFeature": null,
+      "runtimeAuthority": "sedimentary_stratigraphy"
+    },
+    {
       "id": "conglomerate",
       "block": "geostrata:conglomerate",
       "rockClass": "sedimentary",
@@ -173,8 +185,20 @@
       "runtimeAuthority": "contact_metamorphism"
     },
     {
+      "id": "tuff",
+      "block": "minecraft:tuff",
+      "rockClass": "igneous",
+      "genesis": "pyroclastic_volcaniclastic",
+      "bodyStyle": "pyroclastic_halo",
+      "depthAffinity": "shallow_to_mid",
+      "continuity": "local",
+      "biomeTag": "geostrata:has_mountain_rocks",
+      "baselineFeature": null,
+      "runtimeAuthority": "volcanic_arc_complex"
+    },
+    {
       "id": "basalt",
-      "block": "geostrata:basalt",
+      "block": "minecraft:basalt",
       "rockClass": "igneous",
       "genesis": "mafic_extrusive",
       "bodyStyle": "flow_or_sheet",
