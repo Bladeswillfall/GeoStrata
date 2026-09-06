@@ -9,19 +9,19 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 final class DiamondGeologyResourceTest {
     private static final Path RESOURCES = Path.of("src/main/resources");
 
     @Test
-    void bundledDiamondExperimentIsSafeByDefault() throws IOException {
+    void bundledDiamondGeologyIsCoreOwned() throws IOException {
         JsonObject root = read("data/geostrata/geology/diamond_geology_experiment.json");
         DiamondGeologyExperiment.Snapshot snapshot = DiamondGeologyExperiment.parse(root);
 
-        assertFalse(snapshot.enabled());
-        assertEquals("not_implemented", snapshot.nativeGenerationSuppression());
+        assertTrue(snapshot.enabled());
+        assertEquals("core_runtime", snapshot.runtimeStatus());
+        assertEquals("core_overworld", snapshot.nativeGenerationSuppression());
         assertTrue(snapshot.pipeActivationChance("kimberlite") > snapshot.pipeActivationChance("lamproite"));
         assertEquals(0.18, snapshot.structuralActivationChancePerCell(), 0.0);
     }
