@@ -38,49 +38,55 @@ public final class FabricWorldgenRegistration {
             OrePlacedFeatures.ORE_DIAMOND_BURIED
     );
     private static final Identifier CREATE_RAW_ZINC = new Identifier("create", "raw_zinc");
-    private static final RegistryKey<PlacedFeature> CREATE_ZINC_ORE = providerFeature("create", "zinc_ore");
+    private static final RegistryKey<PlacedFeature> CREATE_ZINC_ORE =
+            providerFeature(new Identifier("create", "zinc_ore"));
     private static final Identifier CREATE_DD_RAW_TIN = new Identifier("create_dd", "raw_tin");
-    private static final RegistryKey<PlacedFeature> CREATE_DD_TIN_ORE = providerFeature("create_dd", "tin_ore");
+    private static final RegistryKey<PlacedFeature> CREATE_DD_TIN_ORE =
+            providerFeature(new Identifier("create_dd", "tin_ore"));
     private static final Identifier MODERN_INDUSTRIALIZATION_RAW_TIN =
             new Identifier("modern_industrialization", "raw_tin");
     private static final List<RegistryKey<PlacedFeature>> MODERN_INDUSTRIALIZATION_TIN_ORES = List.of(
-            providerFeature("modern_industrialization", "ore_generator_tin"),
-            providerFeature("modern_industrialization", "deepslate_ore_generator_tin")
+            providerFeature(new Identifier("modern_industrialization", "ore_generator_tin")),
+            providerFeature(new Identifier("modern_industrialization", "deepslate_ore_generator_tin"))
     );
     private static final Identifier TECH_REBORN_RAW_TIN = new Identifier("techreborn", "raw_tin");
-    private static final RegistryKey<PlacedFeature> TECH_REBORN_TIN_ORE = providerFeature("techreborn", "tin_ore");
+    private static final RegistryKey<PlacedFeature> TECH_REBORN_TIN_ORE =
+            providerFeature(new Identifier("techreborn", "tin_ore"));
     private static final Identifier TECH_REBORN_RAW_SILVER = new Identifier("techreborn", "raw_silver");
     private static final RegistryKey<PlacedFeature> TECH_REBORN_SILVER_ORE =
-            providerFeature("techreborn", "silver_ore");
+            providerFeature(new Identifier("techreborn", "silver_ore"));
     private static final Identifier CREATE_NEW_AGE_THORIUM = new Identifier("create_new_age", "thorium");
     private static final RegistryKey<PlacedFeature> CREATE_NEW_AGE_THORIUM_ORE =
-            providerFeature("create_new_age", "thorium_ore");
+            providerFeature(new Identifier("create_new_age", "thorium_ore"));
     private static final Identifier CREATE_NEW_AGE_MAGNETITE = new Identifier("create_new_age", "magnetite_block");
     private static final RegistryKey<PlacedFeature> CREATE_NEW_AGE_MAGNETITE_ORE =
-            providerFeature("create_new_age", "magnetite");
+            providerFeature(new Identifier("create_new_age", "magnetite"));
     private static final Identifier CREATE_NUCLEAR_RAW_URANIUM = new Identifier("createnuclear", "raw_uranium");
     private static final RegistryKey<PlacedFeature> CREATE_NUCLEAR_URANIUM_ORE =
-            providerFeature("createnuclear", "uranium_ore");
+            providerFeature(new Identifier("createnuclear", "uranium_ore"));
     private static final Identifier MODERN_INDUSTRIALIZATION_RAW_URANIUM =
             new Identifier("modern_industrialization", "raw_uranium");
     private static final List<RegistryKey<PlacedFeature>> MODERN_INDUSTRIALIZATION_URANIUM_ORES = List.of(
-            providerFeature("modern_industrialization", "ore_generator_uranium"),
-            providerFeature("modern_industrialization", "deepslate_ore_generator_uranium")
+            providerFeature(new Identifier("modern_industrialization", "ore_generator_uranium")),
+            providerFeature(new Identifier("modern_industrialization", "deepslate_ore_generator_uranium"))
     );
     private static final Identifier TFMG_RAW_LEAD = new Identifier("tfmg", "raw_lead");
     private static final Identifier TFMG_BAUXITE = new Identifier("tfmg", "bauxite");
     private static final Identifier TFMG_LIGNITE = new Identifier("tfmg", "lignite");
     private static final Identifier TFMG_FIRECLAY_BALL = new Identifier("tfmg", "fireclay_ball");
-    private static final RegistryKey<PlacedFeature> TFMG_LEAD_ORE = providerFeature("tfmg", "lead_ore");
+    private static final RegistryKey<PlacedFeature> TFMG_LEAD_ORE =
+            providerFeature(new Identifier("tfmg", "lead_ore"));
     private static final RegistryKey<PlacedFeature> TFMG_STRIATED_ORES_OVERWORLD =
-            providerFeature("tfmg", "tfmg_striated_ores_overworld");
+            providerFeature(new Identifier("tfmg", "tfmg_striated_ores_overworld"));
     private static final Identifier CREATE_NUCLEAR_RAW_LEAD = new Identifier("createnuclear", "raw_lead");
     private static final RegistryKey<PlacedFeature> CREATE_NUCLEAR_LEAD_ORE =
-            providerFeature("createnuclear", "lead_ore");
+            providerFeature(new Identifier("createnuclear", "lead_ore"));
     private static final Identifier TFMG_RAW_NICKEL = new Identifier("tfmg", "raw_nickel");
-    private static final RegistryKey<PlacedFeature> TFMG_NICKEL_ORE = providerFeature("tfmg", "nickel_ore");
+    private static final RegistryKey<PlacedFeature> TFMG_NICKEL_ORE =
+            providerFeature(new Identifier("tfmg", "nickel_ore"));
     private static final Identifier TFMG_RAW_LITHIUM = new Identifier("tfmg", "raw_lithium");
-    private static final RegistryKey<PlacedFeature> TFMG_LITHIUM_ORE = providerFeature("tfmg", "lithium_ore");
+    private static final RegistryKey<PlacedFeature> TFMG_LITHIUM_ORE =
+            providerFeature(new Identifier("tfmg", "lithium_ore"));
     private static final TagKey<Biome> HAS_COMMON_ROCKS = biomeTag("has_common_rocks");
     private static final TagKey<Biome> HAS_COASTAL_ROCKS = biomeTag("has_coastal_rocks");
     private static final TagKey<Biome> HAS_SURFACE_SEDIMENTS = biomeTag("has_surface_sediments");
@@ -246,8 +252,8 @@ public final class FabricWorldgenRegistration {
         return RegistryKey.of(RegistryKeys.PLACED_FEATURE, GeoStrata.id(path));
     }
 
-    private static RegistryKey<PlacedFeature> providerFeature(String namespace, String path) {
-        return RegistryKey.of(RegistryKeys.PLACED_FEATURE, new Identifier(namespace, path));
+    private static RegistryKey<PlacedFeature> providerFeature(Identifier id) {
+        return RegistryKey.of(RegistryKeys.PLACED_FEATURE, id);
     }
 
     private static TagKey<Biome> biomeTag(String name) {
