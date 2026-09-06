@@ -47,14 +47,15 @@ final class OreDepositExperimentTest {
     }
 
     @Test
-    void companionActivationKeepsTheConfiguredChance() {
-        OreDepositExperiment.Snapshot configured = experiment(false, 0.36);
-        OreDepositExperiment.Snapshot activated = configured.activated(true, true);
+    void coreActivationKeepsResolvedProviderChanceWithoutCompanion() {
+        OreDepositExperiment.Snapshot configured = configuredWithTin();
+        OreDepositExperiment.Snapshot activated = configured.activated(false, true);
 
         assertTrue(activated.enabled());
-        assertEquals("experimental_runtime", activated.runtimeStatus());
+        assertEquals("core_ore_runtime", activated.runtimeStatus());
         assertEquals("core_common_overworld", activated.nativeGenerationSuppression());
-        assertEquals(0.36, activated.activationChance("copper"));
+        assertEquals(0.0008, activated.activationChance("tin"));
+        assertEquals(activated, configured.activated(true, true));
     }
 
     @Test
@@ -70,7 +71,7 @@ final class OreDepositExperimentTest {
         OreDepositExperiment.Snapshot core = configured.activated(false, true);
 
         assertTrue(core.enabled());
-        assertEquals("core_common_runtime", core.runtimeStatus());
+        assertEquals("core_ore_runtime", core.runtimeStatus());
         assertEquals("core_common_overworld", core.nativeGenerationSuppression());
         assertEquals(Set.of("coal", "iron", "copper", "gold", "emerald"), core.activationChancePerCandidate().keySet());
         assertEquals(0.8, core.activationChance("gold"));
@@ -79,7 +80,17 @@ final class OreDepositExperimentTest {
     }
 
     @Test
-    void coreSuppressesAllOwnedVanillaOres() throws IOException {
+    void commonOwnershipBenchmarkOptOutKeepsProviderOresActive() {
+        OreDepositExperiment.Snapshot benchmark = configuredWithTin().activated(false, false);
+
+        assertTrue(benchmark.enabled());
+        assertEquals("core_ore_runtime", benchmark.runtimeStatus());
+        assertEquals("not_implemented", benchmark.nativeGenerationSuppression());
+        assertEquals(Set.of("tin"), benchmark.activationChancePerCandidate().keySet());
+    }
+
+    @Test
+    void coreSuppressesOwnedVanillaAndProviderOres() throws IOException {
         String core = Files.readString(Path.of(
                 "src/main/java/com/geostrata/platform/fabric/FabricWorldgenRegistration.java"
         ));
@@ -96,10 +107,16 @@ final class OreDepositExperimentTest {
         assertTrue(core.contains("ORE_DIAMOND"));
         assertTrue(core.contains("ORE_DIAMOND_LARGE"));
         assertTrue(core.contains("ORE_DIAMOND_BURIED"));
+        assertTrue(core.contains("ore_generator_tin"));
+        assertTrue(core.contains("ore_generator_uranium"));
+        assertTrue(core.contains("tfmg_striated_ores_overworld"));
+        assertTrue(core.contains("silver_ore"));
+        assertFalse(companion.contains("ore_generator_tin"));
+        assertFalse(companion.contains("tfmg_striated_ores_overworld"));
+        assertFalse(companion.contains("silver_ore"));
         assertFalse(companion.contains("ORE_COAL_UPPER"));
         assertFalse(companion.contains("ORE_IRON_UPPER"));
         assertFalse(companion.contains("ORE_COPPER"));
-        assertTrue(companion.contains("BENCHMARK_DIAMOND_ORES"));
         assertTrue(companion.contains("GEOSTRATA_BENCHMARK_SUPPRESS_VANILLA_DIAMOND"));
         assertTrue(core.contains("GEOSTRATA_BENCHMARK_DISABLE_CORE_COMMON_ORE_OWNERSHIP"));
         assertTrue(workflow.contains("GEOSTRATA_BENCHMARK_DISABLE_CORE_COMMON_ORE_OWNERSHIP"));
@@ -122,6 +139,23 @@ final class OreDepositExperimentTest {
         assertThrows(
                 IllegalArgumentException.class,
                 () -> OreDepositExperiment.active(1L, null, -1, 0, 2, experiment)
+        );
+    }
+
+    private static OreDepositExperiment.Snapshot configuredWithTin() {
+        return new OreDepositExperiment.Snapshot(
+                "experimental_opt_in",
+                false,
+                "chunk_local_valid_host_clipping",
+                "not_implemented",
+                Map.of(
+                        "coal", 0.8,
+                        "iron", 0.5,
+                        "copper", 0.36,
+                        "gold", 0.8,
+                        "emerald", 0.08,
+                        "tin", 0.0008
+                )
         );
     }
 

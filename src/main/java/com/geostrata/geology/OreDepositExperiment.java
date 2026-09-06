@@ -8,7 +8,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-/** Activation boundary for core Overworld ores and companion-only optional ore experiments. */
+/** Activation boundary for core Overworld ore generation. */
 public final class OreDepositExperiment {
     private static final long ACTIVATION_SALT = 0xDB4F0B9175AE2165L;
     private static final List<String> CORE_COMMON_MATERIALS = List.of("coal", "iron", "copper", "gold", "emerald");
@@ -256,45 +256,26 @@ public final class OreDepositExperiment {
             return !activationChancePerCandidate.isEmpty();
         }
 
-        Snapshot activated(boolean companionLoaded, boolean coreCommonOwnershipEnabled) {
-            if (companionLoaded) {
-                if (coreCommonOwnershipEnabled) {
-                    return new Snapshot(
-                            "experimental_runtime",
-                            true,
-                            placementMode,
-                            "core_common_overworld",
-                            activationChancePerCandidate
-                    );
+        Snapshot activated(boolean ignoredCompanionLoaded, boolean coreCommonOwnershipEnabled) {
+            LinkedHashMap<String, Double> activeChances = new LinkedHashMap<>(activationChancePerCandidate);
+            if (coreCommonOwnershipEnabled) {
+                for (String material : CORE_COMMON_MATERIALS) {
+                    if (!activeChances.containsKey(material)) {
+                        throw new IllegalArgumentException("core Overworld ore runtime requires material " + material);
+                    }
                 }
-                LinkedHashMap<String, Double> rareChances = new LinkedHashMap<>(activationChancePerCandidate);
-                CORE_COMMON_MATERIALS.forEach(rareChances::remove);
-                return new Snapshot(
-                        "experimental_runtime",
-                        true,
-                        placementMode,
-                        "not_implemented",
-                        rareChances
-                );
+            } else {
+                CORE_COMMON_MATERIALS.forEach(activeChances::remove);
             }
-            if (!coreCommonOwnershipEnabled) {
+            if (activeChances.isEmpty()) {
                 return this;
             }
-
-            LinkedHashMap<String, Double> commonChances = new LinkedHashMap<>();
-            for (String material : CORE_COMMON_MATERIALS) {
-                Double chance = activationChancePerCandidate.get(material);
-                if (chance == null) {
-                    throw new IllegalArgumentException("core Overworld ore runtime requires material " + material);
-                }
-                commonChances.put(material, chance);
-            }
             return new Snapshot(
-                    "core_common_runtime",
+                    "core_ore_runtime",
                     true,
                     placementMode,
-                    "core_common_overworld",
-                    commonChances
+                    coreCommonOwnershipEnabled ? "core_common_overworld" : "not_implemented",
+                    activeChances
             );
         }
 
