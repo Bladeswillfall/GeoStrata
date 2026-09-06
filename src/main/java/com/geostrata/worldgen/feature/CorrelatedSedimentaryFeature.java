@@ -327,7 +327,7 @@ public final class CorrelatedSedimentaryFeature extends Feature<DefaultFeatureCo
             CorrelatedSedimentaryRuntime.TerrainAwareSite site,
             LithologyCatalog.Snapshot catalog
     ) {
-        if (existing.isIn(hostTag)) {
+        if (VanillaCommonOreCleanup.replaceable(existing, hostTag)) {
             return true;
         }
         if (site.ownership().province() != GeologyProvince.OROGENIC_BELT) {
