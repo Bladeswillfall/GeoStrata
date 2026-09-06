@@ -113,9 +113,14 @@ def property_text(
 
 
 def main() -> None:
-    hosts = tuple(sorted(path.stem for path in HOST_ROOT.glob("*.png")))
-    if not hosts:
-        fail("no GeoStrata host textures found")
+    matrix = load_matrix()
+    matrix_hosts = matrix.get("hosts")
+    if not isinstance(matrix_hosts, list) or not matrix_hosts or not all(isinstance(host, str) for host in matrix_hosts):
+        fail("ore texture matrix must contain host ids")
+    hosts = tuple(sorted(matrix_hosts))
+    missing_sources = [host for host in hosts if not (HOST_ROOT / f"{host}.png").is_file()]
+    if missing_sources:
+        fail(f"missing host source textures for core transition hosts: {', '.join(missing_sources)}")
     ore_states = ore_states_by_host(hosts)
 
     legacy = list(LEGACY_TILESET_ROOT.glob("*.png"))
@@ -130,9 +135,9 @@ def main() -> None:
     }
 
     if set(PROPERTIES_ROOT.glob("*.properties")) != expected_properties:
-        fail("host transition property coverage does not exactly match GeoStrata host textures")
+        fail("host transition property coverage does not exactly match core texture-matrix hosts")
     if set(TEXTURE_ROOT.rglob("*.png")) != expected_textures:
-        fail("host transition sprite coverage does not exactly match GeoStrata host textures")
+        fail("host transition sprite coverage does not exactly match core texture-matrix hosts")
 
     for host in hosts:
         property_path = PROPERTIES_ROOT / f"{host}.properties"
