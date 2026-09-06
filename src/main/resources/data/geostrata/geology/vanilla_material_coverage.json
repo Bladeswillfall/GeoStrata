@@ -16,21 +16,21 @@
     {"id":"ancient_debris","dimension":"the_nether","status":"dimension_out_of_scope"}
   ],
   "naturalBlockGroups": [
-    {"id":"overworld_base_host","status":"geostrata_host_substrate","blocks":["minecraft:stone","minecraft:deepslate","minecraft:tuff"]},
-    {"id":"core_vanilla_lithologies","status":"geostrata_core_lithology","blocks":["minecraft:granite","minecraft:diorite","minecraft:andesite","minecraft:sandstone"]},
+    {"id":"overworld_base_host","status":"geostrata_host_substrate","blocks":["minecraft:stone","minecraft:deepslate"]},
+    {"id":"core_vanilla_lithologies","status":"geostrata_core_lithology","blocks":["minecraft:granite","minecraft:diorite","minecraft:andesite","minecraft:tuff","minecraft:basalt","minecraft:calcite","minecraft:sandstone"]},
     {"id":"surface_sediments","status":"minecraft_material_with_geostrata_surface_rules","blocks":["minecraft:dirt","minecraft:sand","minecraft:red_sand","minecraft:gravel","minecraft:clay","minecraft:mud"]},
     {"id":"preserved_surface_soils","status":"minecraft_owned_preserved","blocks":["minecraft:grass_block","minecraft:coarse_dirt","minecraft:podzol","minecraft:mycelium","minecraft:rooted_dirt","minecraft:moss_block"]},
     {"id":"preserved_badlands_strata","status":"minecraft_owned_preserved","blocks":["minecraft:red_sandstone","minecraft:terracotta","minecraft:white_terracotta","minecraft:orange_terracotta","minecraft:yellow_terracotta","minecraft:brown_terracotta","minecraft:red_terracotta","minecraft:light_gray_terracotta"]},
-    {"id":"preserved_overworld_geology","status":"minecraft_owned_preserved","blocks":["minecraft:bedrock","minecraft:calcite","minecraft:dripstone_block","minecraft:pointed_dripstone","minecraft:obsidian","minecraft:smooth_basalt","minecraft:amethyst_block","minecraft:budding_amethyst"]},
-    {"id":"nether_geology","status":"dimension_out_of_scope","blocks":["minecraft:netherrack","minecraft:basalt","minecraft:blackstone","minecraft:soul_sand","minecraft:soul_soil","minecraft:magma_block","minecraft:glowstone"]},
+    {"id":"preserved_overworld_geology","status":"minecraft_owned_preserved","blocks":["minecraft:bedrock","minecraft:dripstone_block","minecraft:pointed_dripstone","minecraft:obsidian","minecraft:smooth_basalt","minecraft:amethyst_block","minecraft:budding_amethyst"]},
+    {"id":"nether_geology","status":"dimension_out_of_scope","blocks":["minecraft:netherrack","minecraft:blackstone","minecraft:soul_sand","minecraft:soul_soil","minecraft:magma_block","minecraft:glowstone"]},
     {"id":"end_geology","status":"dimension_out_of_scope","blocks":["minecraft:end_stone"]}
   ],
   "notes": [
-    "GeoStrata core ownership means Minecraft placed-feature generation is suppressed and residual vanilla common-ore states are removed by the existing late geology pass.",
-    "Vanilla granite, diorite and andesite blob features are suppressed because GeoStrata's volcanic-arc runtime owns their coherent natural bodies.",
-    "Tuff follows Minecraft's ore-replaceable host boundary and may be subsumed into GeoStrata host geology; explicit diamond-pipe tuff remains a separate prospecting clue.",
+    "GeoStrata core ownership means Minecraft placed-feature generation is suppressed for the vanilla ores and lithology blobs that GeoStrata replaces.",
+    "Vanilla granite, diorite and andesite are coherent volcanic-arc bodies; tuff forms shallow pyroclastic halos; calcite occurs as thin crystalline-carbonate beds; natural basalt resolves to minecraft:basalt while the legacy geostrata:basalt block remains registered for existing worlds.",
+    "The Nether remains outside the current geology runtime, so native Nether basalt placement is left untouched even though minecraft:basalt is reused as an Overworld GeoStrata lithology.",
     "Gold and emerald use GeoStrata's graded occurrence runtime; diamond uses the core cratonic fault and rare kimberlite/lamproite pipe routes.",
-    "Redstone and lapis deliberately remain Minecraft-owned; coverage does not imply replacement.",
-    "Nether and End geology remain outside the current Overworld geology runtime."
+    "Geodes/amethyst, dripstone and obsidian remain Minecraft-owned by design.",
+    "Redstone and lapis deliberately remain Minecraft-owned; coverage does not imply replacement."
   ]
 }
