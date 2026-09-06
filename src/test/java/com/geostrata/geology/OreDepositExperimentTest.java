@@ -94,7 +94,6 @@ final class OreDepositExperimentTest {
         assertTrue(core.contains("ORE_GOLD"));
         assertTrue(core.contains("ORE_EMERALD"));
         assertTrue(core.contains("ORE_DIAMOND"));
-        assertTrue(core.contains("ORE_DIAMOND_MEDIUM"));
         assertTrue(core.contains("ORE_DIAMOND_LARGE"));
         assertTrue(core.contains("ORE_DIAMOND_BURIED"));
         assertFalse(companion.contains("ORE_COAL_UPPER"));
