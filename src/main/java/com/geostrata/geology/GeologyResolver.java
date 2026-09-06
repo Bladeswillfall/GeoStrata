@@ -86,39 +86,26 @@ public final class GeologyResolver {
         }
         String parentLithology = site.sample(x, y, z).bed().lithology();
         String lithology = site.outputLithology(worldSeed, x, y, z, catalog);
-        GeologyProvince province = site.ownership().province();
         return new Result(
                 lithology,
                 Optional.of(parentLithology),
-                province,
+                site.ownership().province(),
                 Source.CORRELATED_STRATIGRAPHY,
-                SandstoneRedoxField.bodyStyle(worldSeed, x, z, lithology, province)
+                Optional.empty()
         );
     }
 
     static Result resolve(int x, int y, int z, ProvinceBackgroundRuntime.Chunk background) {
-        return resolve(0L, x, y, z, background);
-    }
-
-    static Result resolve(long worldSeed, int x, int y, int z, ProvinceBackgroundRuntime.Chunk background) {
         if (background == null) {
             throw new IllegalArgumentException("province background must not be null");
         }
         ProvinceBackgroundRuntime.ResolvedSample sample = background.sampleAt(x, y, z);
-        GeologyProvince province = background.provinceAt(x, y, z);
-        Optional<String> bodyStyle = SandstoneRedoxField.bodyStyle(
-                worldSeed,
-                x,
-                z,
-                sample.lithology(),
-                province
-        ).or(() -> Optional.of(sample.bodyStyle()));
         return new Result(
                 sample.lithology(),
                 Optional.ofNullable(sample.parentLithology()),
-                province,
+                background.provinceAt(x, y, z),
                 Source.PROVINCE_BACKGROUND,
-                bodyStyle
+                Optional.of(sample.bodyStyle())
         );
     }
 
@@ -137,7 +124,7 @@ public final class GeologyResolver {
         if (correlated.isPresent()) {
             return Optional.of(resolve(worldSeed, x, y, z, correlated.get(), catalog));
         }
-        return background.map(value -> resolve(worldSeed, x, y, z, value));
+        return background.map(value -> resolve(x, y, z, value));
     }
 
     public enum Source {
@@ -172,6 +159,7 @@ public final class GeologyResolver {
         private final LithologyCatalog.Snapshot catalog;
         private final Optional<CorrelatedSedimentaryRuntime.TerrainAwareSite> correlated;
         private final Optional<ProvinceBackgroundRuntime.Chunk> background;
+        private byte[] sandstoneRedoxColumns;
 
         private PreparedChunk(
                 int startX,
@@ -193,7 +181,42 @@ public final class GeologyResolver {
             if (x < startX || x >= startX + CHUNK_SIZE || z < startZ || z >= startZ + CHUNK_SIZE) {
                 throw new IllegalArgumentException("coordinate is outside prepared geology chunk");
             }
-            return GeologyResolver.resolve(worldSeed, x, y, z, correlated, background, catalog);
+            return GeologyResolver.resolve(worldSeed, x, y, z, correlated, background, catalog)
+                    .map(result -> withSandstoneRedox(x, z, result));
+        }
+
+        private Result withSandstoneRedox(int x, int z, Result result) {
+            if (!"sandstone".equals(result.lithology())
+                    || (result.province() != GeologyProvince.SEDIMENTARY_BASIN
+                    && result.province() != GeologyProvince.RIFT_PROVINCE)) {
+                return result;
+            }
+
+            if (sandstoneRedoxColumns == null) {
+                sandstoneRedoxColumns = new byte[CHUNK_SIZE * CHUNK_SIZE];
+            }
+            int index = (z - startZ) * CHUNK_SIZE + (x - startX);
+            byte state = sandstoneRedoxColumns[index];
+            if (state == 0) {
+                state = (byte) (SandstoneRedoxField.bodyStyle(
+                        worldSeed,
+                        x,
+                        z,
+                        result.lithology(),
+                        result.province()
+                ).isPresent() ? 2 : 1);
+                sandstoneRedoxColumns[index] = state;
+            }
+            if (state != 2) {
+                return result;
+            }
+            return new Result(
+                    result.lithology(),
+                    result.parentLithology(),
+                    result.province(),
+                    result.source(),
+                    Optional.of(SandstoneRedoxField.BODY_STYLE)
+            );
         }
     }
 }
