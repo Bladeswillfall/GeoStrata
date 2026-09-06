@@ -109,7 +109,8 @@ public final class ProvinceBackgroundFeature extends Feature<DefaultFeatureConfi
             int sectionBottomY = chunk.sectionIndexToCoord(sectionIndex) * SECTION_SIZE;
             int sectionMinY = Math.max(minY, sectionBottomY);
             int sectionMaxY = Math.min(maxY, sectionBottomY + SECTION_SIZE - 1);
-            if (sectionMinY > sectionMaxY || !section.hasAny(state -> state.isIn(hostTag))) {
+            if (sectionMinY > sectionMaxY
+                    || !section.hasAny(state -> VanillaCommonOreCleanup.replaceable(state, hostTag))) {
                 continue;
             }
 
@@ -184,7 +185,7 @@ public final class ProvinceBackgroundFeature extends Feature<DefaultFeatureConfi
         int placed = 0;
         for (int localY = context.minLocalY(); localY <= context.maxLocalY(); localY++) {
             BlockState existing = context.states().get(localX, localY, localZ);
-            if (!existing.isIn(context.hostTag())) {
+            if (!VanillaCommonOreCleanup.replaceable(existing, context.hostTag())) {
                 continue;
             }
             int worldY = context.sectionBottomY() + localY;
