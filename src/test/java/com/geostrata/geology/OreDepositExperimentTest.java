@@ -58,7 +58,7 @@ final class OreDepositExperimentTest {
     }
 
     @Test
-    void coreRuntimeActivatesOnlyProvenCommonMaterials() {
+    void coreRuntimeActivatesAllOwnedVanillaOverworldMaterials() {
         OreDepositExperiment.Snapshot configured = new OreDepositExperiment.Snapshot(
                 "experimental_opt_in",
                 false,
@@ -72,13 +72,14 @@ final class OreDepositExperimentTest {
         assertTrue(core.enabled());
         assertEquals("core_common_runtime", core.runtimeStatus());
         assertEquals("core_common_overworld", core.nativeGenerationSuppression());
-        assertEquals(Set.of("coal", "iron", "copper"), core.activationChancePerCandidate().keySet());
-        assertFalse(OreDepositExperiment.active(8675309L, "gold", -1, 0, 2, core));
+        assertEquals(Set.of("coal", "iron", "copper", "gold", "emerald"), core.activationChancePerCandidate().keySet());
+        assertEquals(0.8, core.activationChance("gold"));
+        assertEquals(0.08, core.activationChance("emerald"));
         assertSame(configured, configured.activated(false, false));
     }
 
     @Test
-    void coreSuppressesOnlyProvenCommonOres() throws IOException {
+    void coreSuppressesAllOwnedVanillaOres() throws IOException {
         String core = Files.readString(Path.of(
                 "src/main/java/com/geostrata/platform/fabric/FabricWorldgenRegistration.java"
         ));
@@ -90,8 +91,12 @@ final class OreDepositExperimentTest {
         assertTrue(core.contains("ORE_COAL_UPPER"));
         assertTrue(core.contains("ORE_IRON_UPPER"));
         assertTrue(core.contains("ORE_COPPER"));
-        assertFalse(core.contains("ORE_GOLD"));
-        assertFalse(core.contains("ORE_EMERALD"));
+        assertTrue(core.contains("ORE_GOLD"));
+        assertTrue(core.contains("ORE_EMERALD"));
+        assertTrue(core.contains("ORE_DIAMOND"));
+        assertTrue(core.contains("ORE_DIAMOND_MEDIUM"));
+        assertTrue(core.contains("ORE_DIAMOND_LARGE"));
+        assertTrue(core.contains("ORE_DIAMOND_BURIED"));
         assertFalse(companion.contains("ORE_COAL_UPPER"));
         assertFalse(companion.contains("ORE_IRON_UPPER"));
         assertFalse(companion.contains("ORE_COPPER"));
