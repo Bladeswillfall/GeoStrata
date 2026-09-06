@@ -76,6 +76,21 @@ final class VanillaMaterialCoverageTest {
     }
 
     @Test
+    void coreVanillaIgneousBlobsAreSuppressed() throws IOException {
+        String registration = Files.readString(Path.of(
+                "src/main/java/com/geostrata/platform/fabric/FabricWorldgenRegistration.java"
+        ));
+
+        assertTrue(registration.contains("REPLACED_VANILLA_IGNEOUS_BLOBS"));
+        assertTrue(registration.contains("ORE_GRANITE_UPPER"));
+        assertTrue(registration.contains("ORE_GRANITE_LOWER"));
+        assertTrue(registration.contains("ORE_DIORITE_UPPER"));
+        assertTrue(registration.contains("ORE_DIORITE_LOWER"));
+        assertTrue(registration.contains("ORE_ANDESITE_UPPER"));
+        assertTrue(registration.contains("ORE_ANDESITE_LOWER"));
+    }
+
+    @Test
     void naturalVanillaGeologyHasAnExplicitHandlingGroup() throws IOException {
         JsonArray groups = read("geology/vanilla_material_coverage.json").getAsJsonArray("naturalBlockGroups");
         Set<String> covered = new HashSet<>();
