@@ -1,14 +1,22 @@
 # External material compatibility catalogue
 
-GeoStrata should eventually own the **natural geological occurrence** of supported ores and minerals while the detected provider mod continues to own items, recipes, processing and progression.
+GeoStrata owns the **natural geological occurrence** of supported runtime ores and minerals while the detected provider mod continues to own items, recipes, processing and progression.
 
-The machine-readable backlog is:
+The machine-readable planning backlog is:
 
 ```text
 src/main/resources/data/geostrata/compatibility/external_materials.json
 ```
 
-It is planning metadata only. Nothing in the catalogue enables a dependency, registers a block, suppresses another mod's worldgen, or causes GeoStrata to place provider-owned material yet.
+That catalogue remains planning metadata: it does not itself enable dependencies, register blocks, or place provider-owned material.
+
+Runtime provider occurrences live separately in:
+
+```text
+src/main/resources/data/geostrata/geology/external_ore_occurrences.json
+```
+
+Those occurrences are part of the normal core ore runtime. At reload, GeoStrata keeps only occurrences whose provider output is actually registered, selects the first available provider from ordered fallbacks, and leaves absent providers absent. Fabric core worldgen suppresses only the verified native ore features associated with a registered provider output; provider machinery, recipes, processing and progression remain untouched. No experiment companion is required and the standalone GeoStrata jar still loads with none of the optional providers installed.
 
 ## Canonical material first
 
