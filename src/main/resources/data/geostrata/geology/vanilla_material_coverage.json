@@ -16,15 +16,16 @@
     {"id":"ancient_debris","dimension":"the_nether","status":"dimension_out_of_scope"}
   ],
   "naturalBlockGroups": [
-    {"id":"overworld_base_host","status":"geostrata_host_substrate","blocks":["minecraft:stone","minecraft:deepslate"]},
+    {"id":"overworld_base_host","status":"geostrata_host_substrate","blocks":["minecraft:stone","minecraft:deepslate","minecraft:tuff"]},
     {"id":"core_vanilla_lithologies","status":"geostrata_core_lithology","blocks":["minecraft:granite","minecraft:diorite","minecraft:andesite","minecraft:sandstone"]},
     {"id":"surface_sediments","status":"minecraft_material_with_geostrata_surface_rules","blocks":["minecraft:dirt","minecraft:sand","minecraft:red_sand","minecraft:gravel","minecraft:clay","minecraft:mud"]},
-    {"id":"preserved_overworld_geology","status":"minecraft_owned_preserved","blocks":["minecraft:bedrock","minecraft:tuff","minecraft:calcite","minecraft:dripstone_block","minecraft:pointed_dripstone","minecraft:red_sandstone","minecraft:terracotta","minecraft:obsidian","minecraft:smooth_basalt","minecraft:amethyst_block","minecraft:budding_amethyst"]},
+    {"id":"preserved_overworld_geology","status":"minecraft_owned_preserved","blocks":["minecraft:bedrock","minecraft:calcite","minecraft:dripstone_block","minecraft:pointed_dripstone","minecraft:red_sandstone","minecraft:terracotta","minecraft:obsidian","minecraft:smooth_basalt","minecraft:amethyst_block","minecraft:budding_amethyst"]},
     {"id":"nether_geology","status":"dimension_out_of_scope","blocks":["minecraft:netherrack","minecraft:basalt","minecraft:blackstone","minecraft:soul_sand","minecraft:soul_soil","minecraft:magma_block"]},
     {"id":"end_geology","status":"dimension_out_of_scope","blocks":["minecraft:end_stone"]}
   ],
   "notes": [
     "GeoStrata core ownership means Minecraft placed-feature generation is suppressed and residual vanilla common-ore states are removed by the existing late geology pass.",
+    "Tuff follows Minecraft's ore-replaceable host boundary and may be subsumed into GeoStrata host geology; explicit diamond-pipe tuff remains a separate prospecting clue.",
     "Gold, emerald and diamond keep vanilla generation until their GeoStrata gameplay is promoted from experiment to core.",
     "Redstone and lapis deliberately remain Minecraft-owned; coverage does not imply replacement.",
     "Nether and End geology remain outside the current Overworld geology runtime."
