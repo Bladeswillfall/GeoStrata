@@ -8,10 +8,10 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-/** Activation boundary for core common ores and companion-only rare ore experiments. */
+/** Activation boundary for core Overworld ores and companion-only optional ore experiments. */
 public final class OreDepositExperiment {
     private static final long ACTIVATION_SALT = 0xDB4F0B9175AE2165L;
-    private static final List<String> CORE_COMMON_MATERIALS = List.of("coal", "iron", "copper");
+    private static final List<String> CORE_COMMON_MATERIALS = List.of("coal", "iron", "copper", "gold", "emerald");
     private static volatile Snapshot snapshot = Snapshot.unloaded();
 
     private OreDepositExperiment() {
@@ -285,7 +285,7 @@ public final class OreDepositExperiment {
             for (String material : CORE_COMMON_MATERIALS) {
                 Double chance = activationChancePerCandidate.get(material);
                 if (chance == null) {
-                    throw new IllegalArgumentException("core common ore runtime requires material " + material);
+                    throw new IllegalArgumentException("core Overworld ore runtime requires material " + material);
                 }
                 commonChances.put(material, chance);
             }
