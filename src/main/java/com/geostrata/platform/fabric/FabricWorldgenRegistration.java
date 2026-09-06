@@ -18,14 +18,22 @@ import java.util.List;
 public final class FabricWorldgenRegistration {
     private static final String BENCHMARK_DISABLE_COMMON_OWNERSHIP_ENV =
             "GEOSTRATA_BENCHMARK_DISABLE_CORE_COMMON_ORE_OWNERSHIP";
-    private static final List<RegistryKey<PlacedFeature>> REPLACED_VANILLA_COMMON_ORES = List.of(
+    private static final List<RegistryKey<PlacedFeature>> REPLACED_VANILLA_CORE_ORES = List.of(
             OrePlacedFeatures.ORE_COAL_UPPER,
             OrePlacedFeatures.ORE_COAL_LOWER,
             OrePlacedFeatures.ORE_IRON_UPPER,
             OrePlacedFeatures.ORE_IRON_MIDDLE,
             OrePlacedFeatures.ORE_IRON_SMALL,
             OrePlacedFeatures.ORE_COPPER,
-            OrePlacedFeatures.ORE_COPPER_LARGE
+            OrePlacedFeatures.ORE_COPPER_LARGE,
+            OrePlacedFeatures.ORE_GOLD_EXTRA,
+            OrePlacedFeatures.ORE_GOLD,
+            OrePlacedFeatures.ORE_GOLD_LOWER,
+            OrePlacedFeatures.ORE_EMERALD,
+            OrePlacedFeatures.ORE_DIAMOND,
+            OrePlacedFeatures.ORE_DIAMOND_MEDIUM,
+            OrePlacedFeatures.ORE_DIAMOND_LARGE,
+            OrePlacedFeatures.ORE_DIAMOND_BURIED
     );
     private static final TagKey<Biome> HAS_COMMON_ROCKS = biomeTag("has_common_rocks");
     private static final TagKey<Biome> HAS_COASTAL_ROCKS = biomeTag("has_coastal_rocks");
@@ -47,7 +55,7 @@ public final class FabricWorldgenRegistration {
 
     public static void register() {
         if (commonOreOwnershipEnabled()) {
-            removeCommonVanillaOres();
+            removeCoreVanillaOres();
         }
         removeVanillaIgneousBlobs();
         addToTag("correlated_sedimentary_experiment", HAS_COMMON_ROCKS, GenerationStep.Feature.TOP_LAYER_MODIFICATION);
@@ -92,12 +100,12 @@ public final class FabricWorldgenRegistration {
         return !Boolean.parseBoolean(System.getenv(BENCHMARK_DISABLE_COMMON_OWNERSHIP_ENV));
     }
 
-    private static void removeCommonVanillaOres() {
-        BiomeModifications.create(GeoStrata.id("common_ore_worldgen_ownership"))
+    private static void removeCoreVanillaOres() {
+        BiomeModifications.create(GeoStrata.id("core_ore_worldgen_ownership"))
                 .add(
                         ModificationPhase.REMOVALS,
                         BiomeSelectors.foundInOverworld(),
-                        context -> REPLACED_VANILLA_COMMON_ORES.forEach(feature ->
+                        context -> REPLACED_VANILLA_CORE_ORES.forEach(feature ->
                                 context.getGenerationSettings().removeFeature(
                                         GenerationStep.Feature.UNDERGROUND_ORES,
                                         feature
