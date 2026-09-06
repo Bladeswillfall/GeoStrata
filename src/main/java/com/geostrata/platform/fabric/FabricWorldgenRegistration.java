@@ -31,7 +31,6 @@ public final class FabricWorldgenRegistration {
             OrePlacedFeatures.ORE_GOLD_LOWER,
             OrePlacedFeatures.ORE_EMERALD,
             OrePlacedFeatures.ORE_DIAMOND,
-            OrePlacedFeatures.ORE_DIAMOND_MEDIUM,
             OrePlacedFeatures.ORE_DIAMOND_LARGE,
             OrePlacedFeatures.ORE_DIAMOND_BURIED
     );
