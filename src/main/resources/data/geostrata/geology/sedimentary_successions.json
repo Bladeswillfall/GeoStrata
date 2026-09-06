@@ -24,6 +24,7 @@
       "beds": [
         {"lithology": "mudstone", "relativeThickness": 0.8},
         {"lithology": "chalk", "relativeThickness": 1.1},
+        {"lithology": "calcite", "relativeThickness": 0.25},
         {"lithology": "limestone", "relativeThickness": 0.7},
         {"lithology": "shale", "relativeThickness": 0.6}
       ]
