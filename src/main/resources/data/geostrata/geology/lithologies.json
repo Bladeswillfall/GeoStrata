@@ -205,7 +205,8 @@
       "depthAffinity": "shallow_to_mid",
       "continuity": "regional",
       "biomeTag": "geostrata:has_common_rocks",
-      "baselineFeature": "basalt_ore"
+      "baselineFeature": null,
+      "runtimeAuthority": "baseline_fallback_and_igneous_intrusions"
     },
     {
       "id": "rhyolite",
