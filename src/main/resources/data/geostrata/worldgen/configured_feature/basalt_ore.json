@@ -3,7 +3,7 @@
   "config": {
     "targets": [{
       "target": {"predicate_type": "minecraft:tag_match", "tag": "geostrata:worldgen/base_stone_replaceables"},
-      "state": {"Name": "geostrata:basalt"}
+      "state": {"Name": "minecraft:basalt"}
     }],
     "discard_chance_on_air_exposure": 0.0,
     "long_radius": 14,
