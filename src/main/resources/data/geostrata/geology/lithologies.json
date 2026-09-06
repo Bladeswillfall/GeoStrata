@@ -209,18 +209,6 @@
       "runtimeAuthority": "baseline_fallback_and_igneous_intrusions"
     },
     {
-      "id": "legacy_basalt",
-      "block": "geostrata:basalt",
-      "rockClass": "igneous",
-      "genesis": "mafic_extrusive",
-      "bodyStyle": "flow_or_sheet",
-      "depthAffinity": "shallow_to_mid",
-      "continuity": "regional",
-      "biomeTag": "geostrata:has_common_rocks",
-      "baselineFeature": null,
-      "runtimeAuthority": "legacy_save_compatibility"
-    },
-    {
       "id": "rhyolite",
       "block": "geostrata:rhyolite",
       "rockClass": "igneous",
