@@ -86,7 +86,31 @@ This arrangement is deliberately asymmetric: Streams Reflowing being absent chan
 
 ## Conquest Reforged
 
-Conquest remains optional integration content in the development pack. No Conquest adapter or palette contract currently ships in this repository. Add that data only with a distributable compatibility artifact that consumes it. GeoStrata's standalone jar must continue to load and generate without Conquest.
+A distributable data-only bridge now lives under `compat/conquest-reforged/`. The development baseline is Minecraft 1.20.1 with Conquest Reforged 1.7.0 Fabric.
+
+The bridge deliberately uses existing GeoStrata contracts instead of adding a Conquest API dependency:
+
+- a conservative private tag of natural Conquest rocks extends `geostrata:worldgen/base_stone_replaceables`;
+- small private soil and mud palettes extend the corresponding GeoStrata surface-material tags;
+- a broader hydric-sediment palette extends `geostrata:worldgen/hydric_sediment_replaceables`;
+- the natural-rock palette also extends vanilla `minecraft:sculk_replaceable`, so substituting Conquest terrain does not create sculk dead zones.
+
+All direct `conquest:*` values are optional tag entries. The bridge therefore fails safely if Conquest is absent or a future release removes one of the curated IDs. It contains no Conquest assets and does not classify decorative masonry merely because it uses a geological material name.
+
+This is intentionally a **terrain/material bridge**, not a palette-replacement engine. GeoStrata still owns geological identity and deposit placement. A future visual integration may map GeoStrata semantic lithologies onto Conquest building palettes, but only if a real use case justifies that extra resource layer.
+
+## Geolosys
+
+Geolosys 1.20.1 is Forge-only while GeoStrata's current shipping artifact is Fabric 1.20.1. Do not add an inert Fabric adapter or a hard dependency merely to claim compatibility.
+
+When GeoStrata has a real Forge loader artifact, the preferred integration boundary is:
+
+- GeoStrata remains authoritative for natural deposit geometry, host geology and grade;
+- Geolosys generation for a resource must not run in parallel with the same GeoStrata occurrence;
+- Geolosys prospecting/sample gameplay may consume GeoStrata deposit semantics where its public/data contracts allow it;
+- provider-owned material outputs stay provider-owned rather than being duplicated inside GeoStrata.
+
+That bridge should be implemented against an actual Forge consumer, not prebuilt as unused framework.
 
 ## Integration rule
 
