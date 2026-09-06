@@ -100,13 +100,17 @@ final class VanillaMaterialCoverageTest {
                 "minecraft:stone", "minecraft:deepslate", "minecraft:tuff",
                 "minecraft:granite", "minecraft:diorite", "minecraft:andesite",
                 "minecraft:sandstone", "minecraft:red_sandstone",
-                "minecraft:sand", "minecraft:red_sand", "minecraft:gravel",
-                "minecraft:clay", "minecraft:mud", "minecraft:terracotta",
+                "minecraft:dirt", "minecraft:grass_block", "minecraft:coarse_dirt",
+                "minecraft:podzol", "minecraft:mycelium", "minecraft:rooted_dirt", "minecraft:moss_block",
+                "minecraft:sand", "minecraft:red_sand", "minecraft:gravel", "minecraft:clay", "minecraft:mud",
+                "minecraft:terracotta", "minecraft:white_terracotta", "minecraft:orange_terracotta",
+                "minecraft:yellow_terracotta", "minecraft:brown_terracotta", "minecraft:red_terracotta",
+                "minecraft:light_gray_terracotta",
                 "minecraft:calcite", "minecraft:dripstone_block", "minecraft:pointed_dripstone",
                 "minecraft:smooth_basalt", "minecraft:amethyst_block", "minecraft:budding_amethyst",
                 "minecraft:bedrock", "minecraft:obsidian",
                 "minecraft:netherrack", "minecraft:basalt", "minecraft:blackstone",
-                "minecraft:soul_sand", "minecraft:soul_soil", "minecraft:magma_block",
+                "minecraft:soul_sand", "minecraft:soul_soil", "minecraft:magma_block", "minecraft:glowstone",
                 "minecraft:end_stone"
         )));
     }
