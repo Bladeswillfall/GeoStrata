@@ -5,7 +5,7 @@ package com.geostrata.geology;
  *
  * <p>This is deliberately province-specific rather than a generic architecture engine.
  * It supplies a varied metamorphic basement, mafic dikes/sills, zoned volcanic complexes
- * and their breccia/contact aureoles while reusing the shared structural offset supplied
+ * and their tuff/breccia/contact aureoles while reusing the shared structural offset supplied
  * by GeoStrata's terrain-aware field.</p>
  */
 public final class VolcanicArcModel {
@@ -195,7 +195,7 @@ public final class VolcanicArcModel {
                 return complexRock(vertical, complexRadius);
             }
             if (vertical > PLUTON_TOP_NORMALIZED_Y && complexRadius <= COMPLEX_HALO_SCALE) {
-                return new Sample("breccia", "volcanic_breccia");
+                return new Sample("tuff", "pyroclastic_halo");
             }
             if (sillFootprint <= 1.0 && Math.abs(y - sillCenterY) <= SILL_HALF_THICKNESS) {
                 return new Sample("basalt", "sill");

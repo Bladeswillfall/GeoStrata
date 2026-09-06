@@ -14,6 +14,7 @@ import java.util.Map;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 final class VanillaMaterialCoverageTest {
@@ -90,6 +91,36 @@ final class VanillaMaterialCoverageTest {
         assertTrue(registration.contains("ORE_DIORITE_LOWER"));
         assertTrue(registration.contains("ORE_ANDESITE_UPPER"));
         assertTrue(registration.contains("ORE_ANDESITE_LOWER"));
+        assertTrue(registration.contains("ORE_TUFF"));
+    }
+
+    @Test
+    void vanillaTuffCalciteAndBasaltAreCoreLithologies() throws IOException {
+        JsonArray groups = read("geology/vanilla_material_coverage.json").getAsJsonArray("naturalBlockGroups");
+        Set<String> core = groupBlocks(groups, "core_vanilla_lithologies");
+        Set<String> preserved = groupBlocks(groups, "preserved_overworld_geology");
+        Set<String> netherOnly = groupBlocks(groups, "nether_geology");
+
+        assertTrue(core.containsAll(Set.of("minecraft:tuff", "minecraft:calcite", "minecraft:basalt")));
+        assertFalse(preserved.contains("minecraft:tuff"));
+        assertFalse(preserved.contains("minecraft:calcite"));
+        assertFalse(netherOnly.contains("minecraft:basalt"));
+
+        JsonArray lithologies = read("geology/lithologies.json").getAsJsonArray("lithologies");
+        Map<String, String> blocks = new HashMap<>();
+        lithologies.forEach(raw -> {
+            JsonObject entry = raw.getAsJsonObject();
+            blocks.put(entry.get("id").getAsString(), entry.get("block").getAsString());
+        });
+        assertEquals("minecraft:tuff", blocks.get("tuff"));
+        assertEquals("minecraft:calcite", blocks.get("calcite"));
+        assertEquals("minecraft:basalt", blocks.get("basalt"));
+
+        String basaltFallback = Files.readString(Path.of(
+                "src/main/resources/data/geostrata/worldgen/configured_feature/basalt_ore.json"
+        ));
+        assertTrue(basaltFallback.contains("minecraft:basalt"));
+        assertFalse(basaltFallback.contains("geostrata:basalt"));
     }
 
     @Test
@@ -101,17 +132,17 @@ final class VanillaMaterialCoverageTest {
         assertTrue(covered.containsAll(Set.of(
                 "minecraft:stone", "minecraft:deepslate", "minecraft:tuff",
                 "minecraft:granite", "minecraft:diorite", "minecraft:andesite",
-                "minecraft:sandstone", "minecraft:red_sandstone",
+                "minecraft:basalt", "minecraft:calcite", "minecraft:sandstone", "minecraft:red_sandstone",
                 "minecraft:dirt", "minecraft:grass_block", "minecraft:coarse_dirt",
                 "minecraft:podzol", "minecraft:mycelium", "minecraft:rooted_dirt", "minecraft:moss_block",
                 "minecraft:sand", "minecraft:red_sand", "minecraft:gravel", "minecraft:clay", "minecraft:mud",
                 "minecraft:terracotta", "minecraft:white_terracotta", "minecraft:orange_terracotta",
                 "minecraft:yellow_terracotta", "minecraft:brown_terracotta", "minecraft:red_terracotta",
                 "minecraft:light_gray_terracotta",
-                "minecraft:calcite", "minecraft:dripstone_block", "minecraft:pointed_dripstone",
+                "minecraft:dripstone_block", "minecraft:pointed_dripstone",
                 "minecraft:smooth_basalt", "minecraft:amethyst_block", "minecraft:budding_amethyst",
                 "minecraft:bedrock", "minecraft:obsidian",
-                "minecraft:netherrack", "minecraft:basalt", "minecraft:blackstone",
+                "minecraft:netherrack", "minecraft:blackstone",
                 "minecraft:soul_sand", "minecraft:soul_soil", "minecraft:magma_block", "minecraft:glowstone",
                 "minecraft:end_stone"
         )));
@@ -119,6 +150,16 @@ final class VanillaMaterialCoverageTest {
 
     private static JsonObject read(String path) throws IOException {
         return JsonParser.parseString(Files.readString(RESOURCES.resolve(path))).getAsJsonObject();
+    }
+
+    private static Set<String> groupBlocks(JsonArray groups, String id) {
+        for (var raw : groups) {
+            JsonObject group = raw.getAsJsonObject();
+            if (id.equals(group.get("id").getAsString())) {
+                return strings(group.getAsJsonArray("blocks"));
+            }
+        }
+        throw new AssertionError("missing vanilla material group " + id);
     }
 
     private static Set<String> ids(JsonArray values) {

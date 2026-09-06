@@ -14,6 +14,7 @@ final class VolcanicArcModelTest {
             "gneiss",
             "schist",
             "quartzite",
+            "tuff",
             "basalt",
             "rhyolite",
             "andesite",
@@ -112,10 +113,32 @@ final class VolcanicArcModelTest {
                 "deep country rock just outside the pluton should enter the contact aureole"
         );
         assertNotEquals(
-                "volcanic_breccia",
+                "pyroclastic_halo",
                 center.sample(center.complexCenterY() - center.complexRadiusY() * 1.02).bodyStyle(),
-                "deep plutonic roots must not inherit the shallow volcanic breccia halo"
+                "deep plutonic roots must not inherit the shallow tuff halo"
         );
+    }
+
+    @Test
+    void shallowVolcanicComplexesHaveATuffPyroclasticHalo() {
+        VolcanicArcModel.Context context = VolcanicArcModel.forSite(987654321L, 64, -128, 63.0);
+        VolcanicArcModel.Sample halo = null;
+
+        for (int x = -256; x <= 256 && halo == null; x += 2) {
+            for (int z = -384; z <= 128 && halo == null; z += 2) {
+                VolcanicArcModel.Column column = context.column(x, z, 0.0);
+                for (double offset = 0.0; offset <= 1.3 && halo == null; offset += 0.05) {
+                    VolcanicArcModel.Sample sample = column.sample(
+                            column.complexCenterY() + column.complexRadiusY() * offset
+                    );
+                    if ("pyroclastic_halo".equals(sample.bodyStyle())) {
+                        halo = sample;
+                    }
+                }
+            }
+        }
+
+        assertEquals(new VolcanicArcModel.Sample("tuff", "pyroclastic_halo"), halo);
     }
 
     @Test
