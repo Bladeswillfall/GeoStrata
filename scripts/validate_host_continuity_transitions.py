@@ -20,6 +20,7 @@ MATRIX_PATH = RESOURCES / "data" / "geostrata" / "materials" / "ore_texture_matr
 TILE_COUNT = 17
 GRADES = ("poor", "medium", "rich", "massive")
 VANILLA_HOST_BLOCKS = {"granite": "minecraft:granite"}
+TRANSITION_EXCLUDED_HOSTS = {"sandstone"}
 
 
 def fail(message: str) -> None:
@@ -113,9 +114,13 @@ def property_text(
 
 
 def main() -> None:
-    hosts = tuple(sorted(path.stem for path in HOST_ROOT.glob("*.png")))
+    hosts = tuple(sorted(
+        path.stem
+        for path in HOST_ROOT.glob("*.png")
+        if path.stem not in TRANSITION_EXCLUDED_HOSTS
+    ))
     if not hosts:
-        fail("no GeoStrata host textures found")
+        fail("no GeoStrata transition host textures found")
     ore_states = ore_states_by_host(hosts)
 
     legacy = list(LEGACY_TILESET_ROOT.glob("*.png"))
@@ -130,9 +135,9 @@ def main() -> None:
     }
 
     if set(PROPERTIES_ROOT.glob("*.properties")) != expected_properties:
-        fail("host transition property coverage does not exactly match GeoStrata host textures")
+        fail("host transition property coverage does not exactly match transition-enabled host textures")
     if set(TEXTURE_ROOT.rglob("*.png")) != expected_textures:
-        fail("host transition sprite coverage does not exactly match GeoStrata host textures")
+        fail("host transition sprite coverage does not exactly match transition-enabled host textures")
 
     for host in hosts:
         property_path = PROPERTIES_ROOT / f"{host}.properties"

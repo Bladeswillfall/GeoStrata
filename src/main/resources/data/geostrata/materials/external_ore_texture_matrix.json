@@ -14,7 +14,7 @@
     "magnetite": {"defaultHost":"gabbro","validHosts":["gabbro","peridotite","limestone","marble"],"continuity":false},
     "bauxite": {"defaultHost":"basalt","validHosts":["basalt"],"continuity":false},
     "lignite": {"defaultHost":"shale","validHosts":["shale"],"continuity":false},
-    "uranium": {"defaultHost":"granite","validHosts":["granite","rhyolite","gneiss"],"continuity":false},
+    "uranium": {"defaultHost":"granite","validHosts":["granite","rhyolite","gneiss","sandstone"],"continuity":false},
     "silver": {"defaultHost":"granite","validHosts":["granite","rhyolite","gneiss"],"continuity":false},
     "lead": {"defaultHost":"limestone","validHosts":["limestone","marble","shale","siltstone"],"continuity":false},
     "nickel": {"defaultHost":"gabbro","validHosts":["gabbro","peridotite"],"continuity":false},

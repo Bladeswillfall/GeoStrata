@@ -633,8 +633,16 @@ def validate_material_catalog() -> int:
     except OSError as exc:
         fail(f"cannot read {ORE_HOST_SOURCE.relative_to(ROOT)}: {exc}")
     source_hosts = set(re.findall(r'\b[A-Z_]+\("([a-z_]+)"\)', host_source))
-    if source_hosts != matrix_host_set:
-        fail("OreHost.java must exactly match the artist texture-matrix hosts")
+    if not matrix_host_set.issubset(source_hosts):
+        fail(
+            "OreHost.java must support every artist texture-matrix host; "
+            f"missing={sorted(matrix_host_set - source_hosts)}"
+        )
+    if not source_hosts.issubset(rock_materials | lithology_hosts):
+        fail(
+            "OreHost.java may only expose registered rock materials or lithologies; "
+            f"unknown={sorted(source_hosts - rock_materials - lithology_hosts)}"
+        )
     validate_continuity_hosts(matrix_hosts)
     return len(materials)
 
