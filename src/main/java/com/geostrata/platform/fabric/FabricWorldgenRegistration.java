@@ -47,7 +47,8 @@ public final class FabricWorldgenRegistration {
             OrePlacedFeatures.ORE_DIORITE_UPPER,
             OrePlacedFeatures.ORE_DIORITE_LOWER,
             OrePlacedFeatures.ORE_ANDESITE_UPPER,
-            OrePlacedFeatures.ORE_ANDESITE_LOWER
+            OrePlacedFeatures.ORE_ANDESITE_LOWER,
+            OrePlacedFeatures.ORE_TUFF
     );
 
     private FabricWorldgenRegistration() {
