@@ -48,8 +48,7 @@
     },
     {
       "id": "bauxite",
-      "providerMod": "tfmg",
-      "outputItem": "tfmg:bauxite",
+      "providers": [{"providerMod":"tfmg","outputItem":"tfmg:bauxite"},{"providerMod":"modern_industrialization","outputItem":"modern_industrialization:bauxite_dust"}],
       "hostLithologies": ["basalt"],
       "provinceContexts": ["volcanic_arc", "rift_province"],
       "depositStyles": ["stratiform"],
@@ -101,7 +100,7 @@
     },
     {
       "id": "lead",
-      "providers": [{"providerMod":"tfmg","outputItem":"tfmg:raw_lead"},{"providerMod":"create_nuclear","outputItem":"createnuclear:raw_lead"}],
+      "providers": [{"providerMod":"tfmg","outputItem":"tfmg:raw_lead"},{"providerMod":"create_nuclear","outputItem":"createnuclear:raw_lead"},{"providerMod":"modern_industrialization","outputItem":"modern_industrialization:raw_lead"}],
       "hostLithologies": ["limestone", "marble", "shale", "siltstone"],
       "provinceContexts": ["sedimentary_basin", "orogenic_belt", "rift_province", "volcanic_arc"],
       "depositStyles": ["vein", "stratiform"],
