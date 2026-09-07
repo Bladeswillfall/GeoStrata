@@ -70,6 +70,18 @@ public final class FabricWorldgenRegistration {
             providerFeature(new Identifier("modern_industrialization", "ore_generator_uranium")),
             providerFeature(new Identifier("modern_industrialization", "deepslate_ore_generator_uranium"))
     );
+    private static final Identifier MODERN_INDUSTRIALIZATION_RAW_LEAD =
+            new Identifier("modern_industrialization", "raw_lead");
+    private static final List<RegistryKey<PlacedFeature>> MODERN_INDUSTRIALIZATION_LEAD_ORES = List.of(
+            providerFeature(new Identifier("modern_industrialization", "ore_generator_lead")),
+            providerFeature(new Identifier("modern_industrialization", "deepslate_ore_generator_lead"))
+    );
+    private static final Identifier MODERN_INDUSTRIALIZATION_BAUXITE_DUST =
+            new Identifier("modern_industrialization", "bauxite_dust");
+    private static final List<RegistryKey<PlacedFeature>> MODERN_INDUSTRIALIZATION_BAUXITE_ORES = List.of(
+            providerFeature(new Identifier("modern_industrialization", "ore_generator_bauxite")),
+            providerFeature(new Identifier("modern_industrialization", "deepslate_ore_generator_bauxite"))
+    );
     private static final Identifier TFMG_RAW_LEAD = new Identifier("tfmg", "raw_lead");
     private static final Identifier TFMG_BAUXITE = new Identifier("tfmg", "bauxite");
     private static final Identifier TFMG_LIGNITE = new Identifier("tfmg", "lignite");
@@ -194,6 +206,8 @@ public final class FabricWorldgenRegistration {
                 remove,
                 MODERN_INDUSTRIALIZATION_URANIUM_ORES
         );
+        suppressWhenPresent(MODERN_INDUSTRIALIZATION_RAW_LEAD, remove, MODERN_INDUSTRIALIZATION_LEAD_ORES);
+        suppressWhenPresent(MODERN_INDUSTRIALIZATION_BAUXITE_DUST, remove, MODERN_INDUSTRIALIZATION_BAUXITE_ORES);
         suppressWhenPresent(TFMG_RAW_LEAD, remove, TFMG_LEAD_ORE);
         if (Registries.ITEM.containsId(TFMG_RAW_LEAD)
                 && Registries.ITEM.containsId(TFMG_BAUXITE)
