@@ -20,7 +20,7 @@ MATRIX = DATA / "materials/external_ore_texture_matrix.json"
 PROVIDERS = DATA / "compatibility/external_materials.json"
 BLOCKS_SOURCE = ROOT / "src/main/java/com/geostrata/block/GeoStrataBlocks.java"
 HOST_SOURCE = ROOT / "src/main/java/com/geostrata/block/OreHost.java"
-COMPANION_SOURCE = ROOT / "experiment-companion/src/main/java/com/geostrata/experiment/CorrelatedExperimentCompanion.java"
+CORE_WORLDGEN_SOURCE = ROOT / "src/main/java/com/geostrata/platform/fabric/FabricWorldgenRegistration.java"
 GRADES = ("poor", "medium", "rich", "massive")
 YIELDS = dict(zip(GRADES, (1, 2, 4, 8), strict=True))
 EXTERNAL_BLOCK = re.compile(
@@ -288,7 +288,7 @@ def main() -> None:
         if f"#c:ores/{material}" not in common_ores:
             fail(f"c:ores must include #c:ores/{material}")
 
-    companion_ids = set(IDENTIFIER.findall(COMPANION_SOURCE.read_text(encoding="utf-8")))
+    core_ids = set(IDENTIFIER.findall(CORE_WORLDGEN_SOURCE.read_text(encoding="utf-8")))
     suppression_contracts = {
         "zinc": [("create", "raw_zinc", ("zinc_ore",))],
         "tin": [
@@ -324,11 +324,11 @@ def main() -> None:
         if material not in occurrences:
             continue
         for namespace, output, placed_features in contracts:
-            if (namespace, output) not in companion_ids:
-                fail(f"experimental companion must gate {material} suppression on {namespace}:{output}")
+            if (namespace, output) not in core_ids:
+                fail(f"Fabric core must gate {material} suppression on {namespace}:{output}")
             for placed_feature in placed_features:
-                if (namespace, placed_feature) not in companion_ids:
-                    fail(f"experimental companion must suppress {namespace}:{placed_feature} for {material}")
+                if (namespace, placed_feature) not in core_ids:
+                    fail(f"Fabric core must suppress {namespace}:{placed_feature} for {material}")
 
     print(
         f"external ore validation OK: {len(occurrences)} materials "
