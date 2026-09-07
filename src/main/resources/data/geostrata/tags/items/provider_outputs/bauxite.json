@@ -4,6 +4,10 @@
     {
       "id": "tfmg:bauxite",
       "required": false
+    },
+    {
+      "id": "modern_industrialization:bauxite_dust",
+      "required": false
     }
   ]
 }
